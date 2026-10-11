@@ -7,7 +7,7 @@ export function paint(rows, pal = {}, ctx2, ox = 0, oy = 0) {
   const P = { ...PAL, ...pal };
   rows.forEach((row, y) => [...row].forEach((ch, x) => { if (ch !== '.' && P[ch]) { ctx2.fillStyle = P[ch]; ctx2.fillRect(ox + x, oy + y, 1, 1); } }));
 }
-export function sprite(rows, pal) { const c = mk(16, 16), x = c.getContext('2d'); paint(rows, pal, x); return c; }
+export function sprite(rows, pal) { const c = mk(rows[0].length, rows.length), x = c.getContext('2d'); paint(rows, pal, x); return c; }
 function rng(seed) { let a = seed; return () => { a = (a + 0x6D2B79F5) | 0; let t = Math.imul(a ^ (a >>> 15), 1 | a); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
 function noiseTile(base, shades, seed, density = 0.18) {
   const c = mk(16, 16), x = c.getContext('2d'), r = rng(seed);
@@ -45,8 +45,17 @@ const ENEMY_ART = {
   imp: ['................', '..r..........r..', '..rr........rr..', '...rrrrrrrrrr...', '...rrrrrrrrrr...', '..rrykrrrrkyrr..', '..rrkkrrrrkkrr..', '..rrrrrwwrrrrr..', '...rrrrrrrrrr...', '..o.rrrRRrrr.o..', '.oo.rrrrrrrr.oo.', '.oyo.rrrrrr.oyo.', '..o..rr..rr..o..', '.....rr..rr.....', '....kkk..kkk....', '................'],
   golem: ['................', '................', '....SSSSSSSS....', '...SssssssssS...', '...SskyssykSs...', '...SsssssssS....', '..SSSSssssSSSS..', '.SssSSSSSSSSssS.', '.SsssSssssSsssS.', '.SssssSssSssssS.', '.SSssssssssssSS.', '..SSSSSSSSSSSS..', '...SsS....SsS...', '...SsS....SsS...', '..SSSSS..SSSSS..', '................'],
   wraith: ['................', '.....cccccc.....', '....cwwwwwwc....', '...cwwwwwwwwc...', '...cwkkwwkkwc...', '...cwkkwwkkwc...', '...cwwwkkwwwc...', '..ccwwwwwwwwcc..', '..cwwwwwwwwwwc..', '.ccwwwwwwwwwwcc.', '.cwwwwwwwwwwwwc.', '.cwwcwwwwwwcwwc.', '..c.cwwcwwwc.c..', '.....c.cwc......', '................', '................'],
-  wyrm: ['................', '.R..........R...', '.RR........RR...', '..RRrrrrrrrRR...', '..RrrrrrrrrrrR..', '.RrryyrrryyrrR..', '.RrrkkrrrkkrrR..', '.RrrrrrrrrrrrR..', '..RrrrwwwwrrrR..', '..RRrrkkkkrrRR..', '.RRRrrrrrrrrRRRR', 'RoRRrrrooorrRRoR', 'RoRRrrrooorrRRoR', '.RRRrrrooorrRRR.', '..RRRRrrrrRRRR..', '....RR....RR....'],
+  wyrmMini: ['................', '.R..........R...', '.RR........RR...', '..RRrrrrrrrRR...', '..RrrrrrrrrrrR..', '.RrryyrrryyrrR..', '.RrrkkrrrkkrrR..', '.RrrrrrrrrrrrR..', '..RrrrwwwwrrrR..', '..RRrrkkkkrrRR..', '.RRRrrrrrrrrRRRR', 'RoRRrrrooorrRRoR', 'RoRRrrrooorrRRoR', '.RRRrrrooorrRRR.', '..RRRRrrrrRRRR..', '....RR....RR....'],
 };
+// ---------- 32x32 boss: left half (16 cols) mirrored ----------
+const mirror = (half) => half.map((r) => r + [...r].reverse().join(''));
+const BIG_PAL = { e: '#6e3a28', E: '#4a2418', f: '#f08a50' };
+const BIG = { wyrm: mirror([
+  '................', '..R.............', '..RR............', '...RR.....RRRRRR', '...RRR...RRrrrrr', '....RRR.RRrrrrrr', '....RRRRRrrrrrrr',
+  '.....RrrrrrrrrrR', '.....RrrryyyyRrr', '.....Rrryykkyrrr', '.....RrrrrrrrrrR', '......RRrrrrrrrr', '.....RRRrrrrwwrr', '....RRrRRrrrkkkk',
+  '...RReRRRRrrkwkw', '..RReeRRrrrrrrrr', '.RReeeRRrRrrrrrr', 'RReeeeRRrrRRrrrr', 'RReeeeReRrrRRRrr', 'RReeeReeRRrrrrrr',
+  'RReeReeeeRRrrfff', '.RReReeeeERRfffo', '..RRRReeEE.RRfof', '....RRRRE..RRfof', '.....RR....RRffo', '.....RRR..RRRRff',
+  '....RRRRR.RRRrrr', '....RwRwR.RRrrrr', '....RwRwRRRRRRR', '.....RRRRR......', '................', '................']) };
 // ---------- heroes: head template + body template recolored per job ----------
 const HEAD = {
   hair: ['................', '.....kkkkkk.....', '....kHHHHHHk....', '...kHHhHHhHHk...', '...kHFFFFFFHk...', '...kFkFFFFkFk...', '....kFFFFFFk....'],
@@ -71,7 +80,11 @@ function heroPal(job) { const [, H, h, T, t, A, F] = HERO_STYLE[job]; return { H
 // ---------- tile sheet ----------
 const T = {};
 function buildTiles() {
-  const grass = [0, 1, 2, 3].map((i) => noiseTile('#4f9a3f', ['#5aa84a', '#468a38', '#3d7a30', '#6ab85a'], 10 + i));
+  const grass = [0, 1, 2, 3].map((i) => {
+    const c = noiseTile('#4f9a3f', ['#5aa84a', '#468a38', '#3d7a30', '#6ab85a'], 10 + i), x = c.getContext('2d'), r = rng(90 + i);
+    if (i % 2) for (let k = 0; k < 3; k++) { x.fillStyle = ['#f2f2f2', '#f4d35e', '#ee80a8'][Math.floor(r() * 3)]; x.fillRect(Math.floor(r() * 15), Math.floor(r() * 15), 1, 1); }
+    return c;
+  });
   const water = [0, 1].map((i) => { const c = noiseTile('#2c5fa8', ['#2a5598', '#3a70c0'], 20 + i, 0.1), x = c.getContext('2d'); x.fillStyle = '#6aa4e8'; for (let k = 0; k < 4; k++) x.fillRect(((k * 5) + i * 3) % 14, 2 + k * 4, 3, 1); return c; });
   const cobble = [0, 1].map((i) => noiseTile('#9a8760', ['#8a7752', '#aa9770', '#7a6a48'], 30 + i, 0.3));
   const dfloor = [0, 1].map((i) => noiseTile('#3b3744', ['#34303c', '#443f4e', '#2c2834'], 40 + i, 0.25));
@@ -82,12 +95,12 @@ function buildTiles() {
   const stone = brick('#4a4256', '#2e2838', 50), cobbleDark = cobble;
   T.town = { '.': cobble, '#': [stone], S: [over(cobble[0], sp('shop'))], I: [over(cobble[0], sp('inn'))], G: [over(cobble[0], sp('guild'))], E: [over(cobble[0], sp('exit'))] };
   const dwall = brick('#26222e', '#15121b', 60);
-  T.dungeon = { '.': dfloor, '#': [dwall], E: [over(dfloor[0], sp('exit'))], C: [over(dfloor[0], sp('chest'))], c: [over(dfloor[0], sp('chestOpen'))], X: [over(dfloor[1], enemy('wyrm'))] };
+  T.dungeon = { '.': dfloor, '#': [dwall], E: [over(dfloor[0], sp('exit'))], C: [over(dfloor[0], sp('chest'))], c: [over(dfloor[0], sp('chestOpen'))], X: [over(dfloor[1], enemy('wyrmMini'))] };
 }
-export function enemy(id) { if (!cache.has('e' + id)) cache.set('e' + id, sprite(ENEMY_ART[id])); return cache.get('e' + id); }
+export function enemy(id) { if (!cache.has('e' + id)) cache.set('e' + id, sprite(BIG[id] || ENEMY_ART[id], BIG[id] ? BIG_PAL : undefined)); return cache.get('e' + id); }
 export function hero(job) { if (!cache.has('h' + job)) cache.set('h' + job, sprite(heroRows(job), heroPal(job))); return cache.get('h' + job); }
-export function url(canvas, scale = 4) { const c = mk(16 * scale, 16 * scale), x = c.getContext('2d'); x.imageSmoothingEnabled = false; x.drawImage(canvas, 0, 0, 16 * scale, 16 * scale); return c.toDataURL(); }
-export const enemyURL = (id) => { const k = 'eu' + id; if (!cache.has(k)) cache.set(k, url(enemy(id), id === 'wyrm' ? 8 : 4)); return cache.get(k); };
+export function url(canvas, scale = 4) { const c = mk(canvas.width * scale, canvas.height * scale), x = c.getContext('2d'); x.imageSmoothingEnabled = false; x.drawImage(canvas, 0, 0, c.width, c.height); return c.toDataURL(); }
+export const enemyURL = (id) => { const k = 'eu' + id; if (!cache.has(k)) cache.set(k, url(enemy(id), 4)); return cache.get(k); };
 export const heroURL = (job) => { const k = 'hu' + job; if (!cache.has(k)) cache.set(k, url(hero(job), 3)); return cache.get(k); };
 // tile lookup: variant picked by position so textures don't tile obviously
 export function tile(map, ch, x, y, frame = 0) {
@@ -97,3 +110,4 @@ export function tile(map, ch, x, y, frame = 0) {
 }
 export const floorTile = (map, x, y) => tile(map, '.', x, y);
 export { ART, ENEMY_ART, heroRows };
+export const isBig = (id) => !!BIG[id];

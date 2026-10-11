@@ -1,10 +1,10 @@
-<!doctype html><body style="background:#222;margin:8px"><canvas id=c width=900 height=330></canvas>
+<!doctype html><body style="background:#222;margin:8px"><canvas id=c width=900 height=420></canvas>
 <script type=module>
 import * as S from '../src/sprites.js';
 import { JOBS, ENEMIES } from '../src/data.js';
 const c=document.getElementById('c'),x=c.getContext('2d');x.imageSmoothingEnabled=false;
 let i=0;for(const j of Object.keys(JOBS)){x.drawImage(S.hero(j),i++*72,0,64,64)}
-i=0;for(const e of Object.keys(ENEMIES)){x.drawImage(S.enemy(e),i++*72,80,64,64)}
+i=0;for(const e of Object.keys(ENEMIES)){const s=S.enemy(e);x.drawImage(s,i++*72,80,s.width*4>64?64:64,64)} x.drawImage(S.enemy('wyrm'),700,0,128,128);
 const rows=[['world','.TM~HD'],['town','.#SIGE'],['dungeon','.#ECX']];
 rows.forEach(([m,chars],r)=>[...chars].forEach((ch,k)=>x.drawImage(S.tile(m,ch,1,1),k*72,160+r*80,64,64)));
 document.title='ready';

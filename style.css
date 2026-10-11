@@ -16,12 +16,12 @@ button.sel{border-color:var(--acc);background:#33305f}
 button.primary{background:#4a3fb5;border-color:var(--acc)}
 #overlay{display:none;position:fixed;inset:0;background:rgba(5,7,12,.82);overflow:auto;padding:10px;z-index:5}
 #overlay.on{display:block}
-.win{max-width:620px;margin:0 auto;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px}
+.win{max-width:620px;margin:0 auto;background:linear-gradient(180deg,#1c2a78 0%,#0e1650 100%);border:3px solid #e8ecf8;border-radius:8px;padding:12px;box-shadow:0 0 0 2px #060a28,inset 0 0 0 2px #060a28,0 8px 30px rgba(0,0,0,.6);text-shadow:1px 1px 0 rgba(0,0,0,.45)}
 h2,h3{margin:4px 0 8px}h3{font-size:14px;color:var(--dim);text-transform:uppercase;letter-spacing:.06em}
 .row{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin:4px 0}
 .grow{flex:1}
 .dim{color:var(--dim)}.gold{color:var(--gold)}.bad{color:var(--bad)}
-.card{background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:8px;margin:6px 0}
+.card{background:rgba(6,10,40,.55);border:1px solid var(--line);border-radius:8px;padding:8px;margin:6px 0}
 .chip{display:inline-block;background:#2b2559;border:1px solid var(--acc);border-radius:10px;padding:0 8px;font-size:12px;margin:1px}
 .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:6px}
 .bar{height:8px;background:#0b0d14;border-radius:4px;overflow:hidden;margin-top:2px}
@@ -32,8 +32,8 @@ h2,h3{margin:4px 0 8px}h3{font-size:14px;color:var(--dim);text-transform:upperca
 .slot.sel{border-color:var(--acc)}
 .slot .t{flex:1}.slot small{color:var(--dim);display:block}
 /* battle */
-.foes{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;min-height:120px;align-items:flex-end;margin:6px 0}
-.foe{text-align:center;min-width:90px;padding:6px;border-radius:8px;border:1px solid transparent}
+.foes{display:flex;gap:6px;justify-content:center;flex-wrap:wrap;margin:6px 0}
+.foe{text-align:center;min-width:96px;padding:4px 8px;border-radius:6px;border:1px solid var(--line);background:rgba(6,10,40,.55)}
 .foe .ico{font-size:44px;line-height:1.1}.foe.dead{opacity:.2}
 .foe.targetable{border-color:var(--acc);cursor:pointer;background:#2b2559}
 .log{height:130px;overflow:auto;background:#0b0d14;border:1px solid var(--line);border-radius:6px;padding:6px;font-size:13px}
@@ -47,3 +47,15 @@ h2,h3{margin:4px 0 8px}h3{font-size:14px;color:var(--dim);text-transform:upperca
 .foe img{display:block;margin:0 auto 4px}
 .foe.flash,.pm.flash{animation:hit .35s}
 @keyframes hit{0%{transform:translateX(0);filter:brightness(2.2)}25%{transform:translateX(-6px)}50%{transform:translateX(6px)}100%{transform:translateX(0);filter:none}}
+
+body{font-family:system-ui,"Segoe UI",Roboto,sans-serif;background:radial-gradient(circle at 50% 0,#1a2150,#0b0e1c 60%)}
+.slot,.pm{background:rgba(6,10,40,.55)}
+canvas.stage{display:block;width:100%;image-rendering:pixelated;border:2px solid #060a28;border-radius:4px;background:#000;box-shadow:0 0 0 1px #8c9be0}
+#overlay.title{display:flex;align-items:flex-end;justify-content:center;background:linear-gradient(transparent 55%,rgba(5,7,20,.85))}
+#overlay.title .win{margin:0 0 6vh;min-width:260px}
+button{text-shadow:1px 1px 0 rgba(0,0,0,.5)}
+button.primary{background:linear-gradient(#5a4fd0,#3a2fa0)}
+
+h2,h3,#loc{font-family:"Press Start 2P",ui-monospace,monospace}
+h2{font-size:15px;line-height:1.5}h3{font-size:10px}
+#hud{font-size:13px}#loc{font-size:11px}

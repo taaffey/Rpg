@@ -19,7 +19,15 @@ Controls: Arrows/WASD to move, Esc/M for the menu (on-screen pad on touch device
 ## Vertical slice content
 Town (shop, inn+save, guild) -> overworld -> Ashen Cavern (chests, 5 enemy types, boss: Ashen Wyrm). Level cap 12.
 
-## Art and sound (all generated in code, no asset files)
+## Visuals (all generated in code, no asset files)
+- **Battle stage** (`src/stage.js`): painted low-res backdrops (field, cavern, lava-lit boss lair), heroes right / foes left,
+  attack lunges, hit flashes, enemy dissolve and hero KO poses, per-element spell particles (fire, ice, bolt, holy, dark,
+  slash, heal), pixel-font damage numbers, status icons over sprites.
+- **Map**: smooth tile-to-tile walking, torch-lit darkness in the cavern, cloud shadows and flowers on the overworld,
+  shoreline foam, battle-start screen wipe. Animated title screen. FF-style window skin.
+- **Boss**: a 32x32 Ashen Wyrm, authored as a half-sprite and mirrored in code.
+
+## Art and sound
 - `src/sprites.js`: 16x16 ASCII-grid pixel sprites (8 job heroes, 9 enemies, tiles, objects) plus seeded procedural textures.
   Heroes are recolored from shared head/body templates, so a new job is a palette entry.
 - `src/audio.js`: Web Audio chiptune engine (square/triangle/saw/noise). Looping tracks for town, overworld, cavern,

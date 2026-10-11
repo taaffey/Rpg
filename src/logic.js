@@ -182,7 +182,7 @@ export class Battle {
   }
   hurt(t, d, L, prefix, weak = false) {
     t.hp = Math.max(0, t.hp - d);
-    this.fx.push({ t: 'hit', name: t.name, ko: t.hp <= 0, weak });
+    this.fx.push({ t: 'hit', name: t.name, d, ko: t.hp <= 0, weak });
     L.push(`${prefix} (${d})${t.hp <= 0 ? ` — ${t.name} falls!` : ''}`);
   }
   act(a, cmd) {
@@ -194,9 +194,9 @@ export class Battle {
         break;
       case 'item': {
         const it = ITEMS[cmd.item]; let t = cmd.target;
-        if (it.revive) { if (alive(t)) { L.push(`${a.name} fumbles the ${it.name}.`); break; } t.hp = Math.round(t.maxhp * it.revive); L.push(`${a.name} revives ${t.name}!`); }
+        if (it.revive) { if (alive(t)) { L.push(`${a.name} fumbles the ${it.name}.`); break; } t.hp = Math.round(t.maxhp * it.revive); this.fx.push({ t: 'heal', name: t.name, amount: t.hp, revived: true }); L.push(`${a.name} revives ${t.name}!`); }
         else if (!alive(t)) { L.push(`${a.name}’s ${it.name} has no effect.`); }
-        else if (it.heal) { const h = Math.min(it.heal, t.maxhp - t.hp); t.hp += h; L.push(`${a.name} uses ${it.name}: ${t.name} +${h} HP`); }
+        else if (it.heal) { const h = Math.min(it.heal, t.maxhp - t.hp); t.hp += h; this.fx.push({ t: 'heal', name: t.name, amount: h }); L.push(`${a.name} uses ${it.name}: ${t.name} +${h} HP`); }
         else if (it.mpr) { const h = Math.min(it.mpr, t.maxmp - t.mp); t.mp += h; L.push(`${a.name} uses ${it.name}: ${t.name} +${h} MP`); }
         break;
       }
@@ -223,8 +223,8 @@ export class Battle {
       if (f === 'slow' && alive(t)) { t.st.slow = 3; L.push(`  ${t.name} is slowed.`); }
       if (f === 'atkup') { t.st.atkup = 4; L.push(`  ${t.name}'s power rises.`); }
       if (f === 'defup') { t.st.defup = 4; L.push(`  ${t.name}'s guard rises.`); }
-      if (f === 'drain' && dealt > 0 && alive(a)) { const h = Math.min(Math.round(dealt * 0.5), a.maxhp - a.hp); if (h > 0) { a.hp += h; L.push(`  ${a.name} drains ${h} HP.`); } }
-      if (f === 'revive' && !alive(t)) { t.hp = Math.round(t.maxhp * 0.4); L.push(`  ${t.name} is revived!`); }
+      if (f === 'drain' && dealt > 0 && alive(a)) { const h = Math.min(Math.round(dealt * 0.5), a.maxhp - a.hp); if (h > 0) { a.hp += h; this.fx.push({ t: 'heal', name: a.name, amount: h }); L.push(`  ${a.name} drains ${h} HP.`); } }
+      if (f === 'revive' && !alive(t)) { t.hp = Math.round(t.maxhp * 0.4); this.fx.push({ t: 'heal', name: t.name, amount: t.hp, revived: true }); L.push(`  ${t.name} is revived!`); }
     }
   }
   damage(a, t, s, mult = 1, elem = s.elem) {
@@ -240,7 +240,7 @@ export class Battle {
       a.mp -= s.mp;
     }
     const elem = s.elem === 'random' ? pick(['fire', 'ice', 'bolt'], this.rng) : s.elem;
-    this.fx.push({ t: 'cast', kind: s.kind, elem, hostile: !!s.hostile, side: a.side });
+    this.fx.push({ t: 'cast', actor: a.name, kind: s.kind, elem, hostile: !!s.hostile, side: a.side });
     L.push(`${a.name} uses ${s.name}${s.tags.length ? ` [${s.tags.join(' + ')}]` : ''}!`);
     const targets = this.resolveTargets(a, s, target);
     for (const t of targets) {
@@ -251,7 +251,7 @@ export class Battle {
           const em = elemMult(t, elem);
           this.hurt(t, d, L, `  ${t.name} takes ${d}${em > 1 ? ' — weakness!' : em < 1 ? ' — resisted' : ''}`, em > 1);
         }
-        if (s.vamp && total && alive(a)) { const h = Math.min(Math.round(total * s.vamp), a.maxhp - a.hp); if (h > 0) { a.hp += h; L.push(`  ${a.name} siphons ${h} HP.`); } }
+        if (s.vamp && total && alive(a)) { const h = Math.min(Math.round(total * s.vamp), a.maxhp - a.hp); if (h > 0) { a.hp += h; this.fx.push({ t: 'heal', name: a.name, amount: h }); L.push(`  ${a.name} siphons ${h} HP.`); } }
         this.applyFx(a, t, s, L, total);
         if (s.chain) {
           const others = this.foes(a).filter((x) => alive(x) && x !== t);
@@ -261,7 +261,7 @@ export class Battle {
         if (s.pow) {
           if (!alive(t)) continue;
           const h = Math.min(Math.round((a.mag * s.pow + 8) * (0.9 + this.rng() * 0.2)), t.maxhp - t.hp);
-          t.hp += h; L.push(`  ${t.name} recovers ${h} HP.`);
+          t.hp += h; this.fx.push({ t: 'heal', name: t.name, amount: h }); L.push(`  ${t.name} recovers ${h} HP.`);
         }
         this.applyFx(a, t, s, L, 0);
       } else if (s.kind === 'buff') {
