@@ -190,7 +190,7 @@ function draw(t = performance.now() / 1000) {
       cx.drawImage(SP.tile(m.theme, ch, x, y, frame), sx(x), sy(y), TS, TS);
     }
   } else {
-    const outside = m.kind === 'outdoor' ? () => '~' : (x, y) => ((x * 7 + y * 5) % 3 === 0 ? (m.theme === 'snowtown' ? 't' : 'T') : '.');
+    const outside = m.kind === 'outdoor' ? () => '~' : m.kind !== 'town' ? () => '#' : (x, y) => ((x * 7 + y * 5) % 3 === 0 ? (m.theme === 'snowtown' ? 't' : 'T') : '.');
     const get = (x, y) => { if (x < 0 || y < 0 || x >= W || y >= H) return outside(x, y); const ch = tileAt(x, y); return ch === 'X' ? '.' : ch === 'B' && gateOpen() ? '_' : ch; };
     const ax0 = Math.floor(camX) - 1, ax1 = Math.ceil(camX + VW) + 1, ay0 = Math.floor(camY) - 1, ay1 = Math.ceil(camY + VH) + 1, ctx = { gateOpen: gateOpen(), flags: G.flags };
     m.gateOpen = ctx.gateOpen;
@@ -208,7 +208,7 @@ function draw(t = performance.now() / 1000) {
   for (const it of items) if (!it.z) put(it);
   const torches = [], theme = m.theme;
   if (m.kind === 'dungeon') for (let y = Math.max(0, y0 - 1); y < y1 - 1; y++) for (let x = x0; x < x1; x++) if (tileAt(x, y) === '#' && tileAt(x, y + 1) === '.' && (x * 5 + y * 3) % 7 === 0) { cx.drawImage(SP.torch(Math.floor(t * 7 + x) % 2, theme), sx(x), sy(y), TS, TS); torches.push([sx(x) + TS / 2, sy(y) + TS * 0.4]); }
-  for (const [dx, dy, k] of m.decor || []) cx.drawImage(SP.decor(k), sx(dx), sy(dy), TS, TS);
+  if (!R?.drawsDecor?.(m)) for (const [dx, dy, k] of m.decor || []) cx.drawImage(SP.decor(k), sx(dx), sy(dy), TS, TS);
   // characters: standing on the bottom of their tile, sprites may be taller than one tile
   const stand = (img, X, Y, bob = 0) => { const h = img.height * (TS / 16); cx.fillStyle = 'rgba(0,0,0,.32)'; cx.beginPath(); cx.ellipse(X + TS / 2, Y + TS - 3, 10, 4, 0, 0, 7); cx.fill(); cx.drawImage(img, X, Y + TS - h - bob, TS, h); return h; };
   const sorted = items.filter((it) => it.z === 1).map((it) => ({ k: it.sy ?? it.y + (it.h ?? it.img.height / 16), f: () => put(it) }));
@@ -284,7 +284,7 @@ async function step(dx, dy) {
   const m = mapDef(), nx = G.x + dx, ny = G.y + dy, t = tileAt(nx, ny);
   face = dx > 0 ? 'right' : dx < 0 ? 'left' : dy > 0 ? 'down' : 'up';
   const npc = npcAt(nx, ny); if (npc) return talk(npc);
-  if (decorAt(nx, ny)) return;
+  if (decorAt(nx, ny) || m.blocks?.has(`${nx},${ny}`)) return; // m.blocks: solid props placed by a map renderer (stalls, barrels, fences...)
   if (t === 'C') { if (!G.flags.chests[chestKey(nx, ny)]) openChest(nx, ny); return; }
   if (!walkable(t)) return;
   G.x = nx; G.y = ny; trail.push({ x: nx, y: ny }); if (trail.length > 8) trail.shift();
