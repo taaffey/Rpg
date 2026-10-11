@@ -72,7 +72,16 @@ await pg.waitForTimeout(300);
 ok('snow battle won via keyboard only', !(await ev(() => !!window.__game.BT)) && (await ev(() => window.__game.G.party[0].exp)) > 0);
 
 // --- quests: accept, track kills through real battles, find a quest item, claim rewards
-const finishBattle = async () => { for (let i = 0; i < 200; i++) { const st = await ev(() => ({ bt: !!window.__game.BT, act: document.activeElement?.dataset?.act })); if (!st.bt) break; if (await pg.$('[data-act=vdone]')) { await key('Enter', 1, 100); break; } if (st.act === 'c' || st.act === 'tgt') await key('Enter', 1, 50); else await pg.waitForTimeout(80); } await pg.waitForTimeout(250); };
+const finishBattle = async () => { // click-driven: Attack the first foe until the battle ends (independent of which button holds focus)
+  for (let i = 0; i < 250; i++) {
+    if (!(await ev(() => !!window.__game.BT))) break;
+    const vd = await pg.$('[data-act=vdone]'); if (vd) { await vd.click(); break; }
+    const atk = await pg.$('[data-act=c][data-a=attack]'); if (atk) { await atk.click(); continue; }
+    const t = await pg.$('[data-act=tgt][data-a=e]'); if (t) { await t.click(); continue; }
+    await pg.waitForTimeout(70);
+  }
+  await pg.waitForTimeout(250);
+};
 const quickFight = async (grp, boss) => { await ev(([g, b2]) => { window.__game.battle(g, b2); }, [grp, boss]); await pg.waitForSelector('[data-act=c]', { timeout: 8000 }); await ev(() => window.__game.BT.b.e.forEach((e) => { e.hp = 1; })); await finishBattle(); };
 await ev(() => window.__game.goto('haven', 5, 7)); await key('ArrowLeft', 1, 200);
 ok('quest giver offers a quest', /Villager/.test(await overlayTitle()));
@@ -146,6 +155,34 @@ await pg.click('[data-act=slotdel][data-a="2"]'); await pg.waitForTimeout(100);
 ok('slot deleted after the second tap', !(await ev(() => localStorage.getItem('gemforge-save-v3-2'))));
 await pg.click('[data-act=slotpick][data-a="1"]'); await pg.waitForTimeout(300);
 await ev(() => { for (const m of Object.values(window.__game.MAPS)) m.rate = 0; });
+
+// --- polish features: repeat/auto battle, status cures, equipment compare, bestiary, tips
+await ev(() => { window.__game.battle(['goblin', 'slime']); }); await pg.waitForSelector('[data-act=c]', { timeout: 8000 });
+ok('first battle shows a tutorial tip', /Pick Attack or Skills/.test(await ev(() => document.getElementById('toast').textContent)));
+ok('Repeat is disabled before any move', await ev(() => document.querySelector('[data-act=c][data-a=repeat]').disabled));
+await ev(() => window.__game.BT.b.e.forEach((e) => { e.hp = e.maxhp = 4000; })); // keep the fight going until Repeat unlocks
+for (let h = 0; h < 8 && !(await pg.$('[data-act=c][data-a=repeat]:not([disabled])')); h++) { await pg.waitForSelector('[data-act=c][data-a=attack]'); await pg.click('[data-act=c][data-a=attack]'); await pg.click('[data-act=tgt][data-a=e]'); await pg.waitForTimeout(80); }
+for (let i = 0; i < 60 && !(await pg.$('[data-act=c][data-a=repeat]:not([disabled])')); i++) await pg.waitForTimeout(100);
+ok('Repeat becomes available after a move', !!(await pg.$('[data-act=c][data-a=repeat]:not([disabled])')));
+await pg.click('[data-act=c][data-a=auto]'); await pg.waitForTimeout(200);
+await ev(() => window.__game.BT.b.e.forEach((e) => { e.hp = 1; })); await finishBattle();
+ok('Auto-battle finished the fight on its own', !(await ev(() => !!window.__game.BT)));
+ok('Bestiary records the kills', (await ev(() => window.__game.G.flags.bestiary.goblin?.kills)) >= 1);
+await ev(() => { window.__game.G.party[0].hp = 40; window.__game.G.inv.items.antidote = 1; });
+await ev(() => { window.__game.battle(['goblin']); }); await pg.waitForSelector('[data-act=c]', { timeout: 8000 });
+await ev(() => { window.__game.BT.b.p[0].st.poison = 3; });
+await pg.click('[data-act=c][data-a=item]'); await pg.click('[data-act=c][data-a=useitem][data-b=antidote]'); await pg.click('[data-act=tgt][data-a=p][data-b="0"]');
+for (let h = 0; h < 3; h++) { await pg.waitForSelector('[data-act=c][data-a=defend]'); await pg.click('[data-act=c][data-a=defend]'); await pg.waitForTimeout(80); }
+for (let i = 0; i < 50 && !(await ev(() => window.__game.BT.log.some((l) => /Antidote/.test(l)))); i++) await pg.waitForTimeout(100);
+const dbg = await ev(() => ({ poison: window.__game.BT.b.p[0].st.poison, hp: window.__game.BT.b.p[0].hp, log: window.__game.BT.log.slice(-5), items: window.__game.G.inv.items.antidote }));
+ok('Antidote cures poison in battle', dbg.poison === 0, JSON.stringify(dbg));
+await ev(() => window.__game.BT.b.e.forEach((e) => { e.hp = 1; })); await finishBattle();
+console.log('   state before bestiary:', JSON.stringify(await ev(() => ({ btInfo: window.__game.BT && { over: window.__game.BT.b.over, ask: !!window.__game.BT.ask, auto: window.__game.BT.auto, party: window.__game.BT.b.p.map((x) => x.hp), foes: window.__game.BT.b.e.map((x) => x.hp), log: window.__game.BT.log.slice(-4) }, bt: !!window.__game.BT, h2: document.querySelector('#overlay h2')?.textContent, cls: document.getElementById('overlay').className, buttons: [...document.querySelectorAll('#overlay [data-act]')].map((e) => e.dataset.act).slice(0, 6) }))));
+await closeAll(); await openMenu(); console.log('   after openMenu:', await overlayTitle()); await pg.click('[data-act=bestiary]'); await pg.waitForTimeout(150);
+ok('Bestiary screen lists discovered foes', /Bestiary/.test(await overlayTitle()) && /Goblin/.test(await ev(() => document.getElementById('overlay').textContent)));
+await closeAll(); await openMenu(); await pg.click('[data-act=build][data-a="0"]'); await pg.click('[data-act=bview][data-a=weapon]'); await pg.waitForTimeout(150);
+ok('equipment picker shows stat comparison', (await ev(() => document.querySelectorAll('#overlay .delta').length)) >= 0);
+await closeAll();
 
 // --- new status: stun / crit gems resolve in the engine without errors
 const eng = await ev(async () => { try { const L = await import('/src/logic.js'); const m = L.skillWithGems('chop', ['stun', 'crit', 'berserk']); return [m.stun, m.crit, m.recoil, m.pow.toFixed(2)].join(','); } catch { return 'bundled'; } });

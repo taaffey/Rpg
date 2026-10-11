@@ -10,6 +10,23 @@ Touch: hold the on-screen pad or tap/hold anywhere on the map to walk toward tha
 arrows move the focus, Enter/Space selects, Esc/Backspace goes back, L expands the battle log. Fully playable with the
 keyboard alone, or with the mouse. Options (volumes, battle speed, shake, minimap) are in the menu and on the title screen.
 
+## Built for iPhone (and every other screen)
+- **Adaptive view**: the map shows 12 tiles across in portrait (as many rows as fit), 21x12 in landscape and 16x12 on desktop,
+  so tiles stay chunky on an iPhone SE or a Pro Max. Pixel-perfect nearest-neighbour scaling, 60 fps even with the CPU throttled 4x.
+- **Virtual controller**: a thumb-sized D-pad (hold to keep walking) plus Map and Menu buttons; or tap/hold anywhere on the map to
+  walk toward it. In landscape the pads flank the map and the battle screen becomes two columns, so commands never fall below the fold.
+- **iOS details**: safe-area insets, `viewport-fit=cover`, no pinch/double-tap zoom, no rubber-banding, audio unlocked on the first
+  touch and paused when the app is backgrounded, autosave when the app is hidden (iOS can kill background tabs).
+- **Install it**: host `dist/` over https, then Safari -> Share -> Add to Home Screen for a full-screen, offline app with an icon.
+
+## Finished-game features
+- **3 save slots** with details, autosave (towns, battles, quests, app backgrounding), delete/overwrite confirmation, and
+  migration from older saves.
+- **Difficulty** (Easy / Normal / Hard, changeable in Options). **Tutorial hints** appear once, when relevant.
+- **Battle QoL**: Repeat your last move, Auto-battle (tap to stop), turn-order bar, expandable log, 3 speed settings.
+- **Menus**: equipment stat comparison (green/red arrows), Bestiary with weaknesses, Journal with quests, full map screen.
+- Crash safety: a battle error returns you to the map instead of freezing; progress is autosaved.
+
 ## How builds work (three layered systems)
 1. **Jobs** (12): every character has a *main job* and a *sub job*. The sub job contributes 40% of its stat modifiers,
    its skills (two levels behind) and its weapon types. Change jobs in any town building.
@@ -55,6 +72,8 @@ Produces `dist/index.html` (the whole game, about 150 KB, no other files, works 
     node tools/sim.mjs fast 100      # headless balance sim: every region and boss at expected levels
     node tools/checkmaps.mjs         # every map valid; every portal/NPC/chest/boss reachable; gate verified
     node tools/checksprites.mjs      # sprite sizes
+    node tools/regress-mobile.mjs    # iPhone touch regression (portrait + landscape)
+    node tools/devices.mjs <outdir>  # device matrix: layout metrics + screenshots (SE, 14, Pro Max, landscape, iPad, desktop)
     node tools/regress.mjs           # browser regression (needs the dev server + Playwright); URL=... tests the dist build
     python3 tools/genmaps.py         # regenerate the big world and dungeons (deterministic)
     # tools/sheet.html: sprite contact sheet, open via the dev server

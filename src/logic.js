@@ -207,6 +207,7 @@ export class Battle {
         const it = ITEMS[cmd.item]; let t = cmd.target;
         if (it.revive) { if (alive(t)) { L.push(`${a.name} fumbles the ${it.name}.`); break; } t.hp = Math.round(t.maxhp * it.revive); this.fx.push({ t: 'heal', name: t.name, amount: t.hp, revived: true }); L.push(`${a.name} revives ${t.name}!`); }
         else if (!alive(t)) { L.push(`${a.name}’s ${it.name} has no effect.`); }
+        else if (it.cure) { const ks = it.cure === 'all' ? ['poison', 'slow', 'stun'] : [it.cure], had = ks.filter((k) => t.st[k] > 0); ks.forEach((k) => { t.st[k] = 0; }); L.push(had.length ? `${a.name} uses ${it.name}: ${t.name} is cured.` : `${a.name} uses ${it.name}, but nothing happens.`); if (had.length) this.fx.push({ t: 'heal', name: t.name, amount: 0 }); }
         else if (it.heal) { const h = Math.min(it.heal, t.maxhp - t.hp); t.hp += h; this.fx.push({ t: 'heal', name: t.name, amount: h }); L.push(`${a.name} uses ${it.name}: ${t.name} +${h} HP`); }
         else if (it.mpr) { const h = Math.min(it.mpr, t.maxmp - t.mp); t.mp += h; L.push(`${a.name} uses ${it.name}: ${t.name} +${h} MP`); }
         break;

@@ -140,7 +140,10 @@ body{margin:0;background-color:#0b0e1c;background-image:radial-gradient(circle a
   .battle .order{margin-bottom:4px}
 }
 
-#toast{position:absolute;left:50%;bottom:calc(env(safe-area-inset-bottom,0px) + 90px);transform:translate(-50%,12px);background:rgba(10,14,48,.92);border:2px solid #8c9be0;border-radius:10px;padding:8px 14px;font-size:13px;opacity:0;pointer-events:none;transition:opacity .25s,transform .25s;z-index:30;max-width:90%;text-align:center}
+#toast{position:absolute;left:50%;top:calc(env(safe-area-inset-top,0px) + 54px);transform:translate(-50%,-10px);background:rgba(10,14,48,.92);border:2px solid #8c9be0;border-radius:10px;padding:8px 14px;font-size:13px;opacity:0;pointer-events:none;transition:opacity .25s,transform .25s;z-index:30;max-width:90%;text-align:center}
 #toast.on{opacity:1;transform:translate(-50%,0)}
 .col{display:flex;flex-direction:column;gap:6px}
 button.danger{border-color:#ff6b6b;background:#5a1f2a}
+
+.delta{font-size:12px;display:flex;gap:8px;flex-wrap:wrap;margin-top:2px}.delta .up{color:#7af0a0}.delta .down{color:#ff8a8a}
+.autobtn{margin-left:auto;font-size:11px;padding:2px 8px;min-height:28px;background:#4a3fb5;border-color:#8c7bff}

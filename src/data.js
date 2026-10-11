@@ -349,3 +349,11 @@ export const DIFFICULTY = {
   normal: { name: 'Normal', desc: 'The intended balance.', mod: { hp: 1, atk: 1, mag: 1, def: 1, reward: 1 } },
   hard: { name: 'Hard', desc: 'Tougher enemies (+25% HP, +20% damage) with +20% EXP and gold.', mod: { hp: 1.25, atk: 1.2, mag: 1.2, def: 1.1, reward: 1.2 } },
 };
+
+Object.assign(ITEMS, {
+  antidote: { name: 'Antidote', cure: 'poison', price: 20, desc: 'Cure poison' },
+  remedy: { name: 'Remedy', cure: 'all', price: 80, desc: 'Cure poison, slow and stun' },
+});
+for (const id of ['haven_general', 'mire_general']) SHOPS[id].stock.items.push('antidote');
+SHOPS.frost_general.stock.items.push('antidote', 'remedy');
+SHOPS.mire_general.stock.items.push('remedy');
