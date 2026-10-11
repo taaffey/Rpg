@@ -109,8 +109,8 @@ const gateOpen = () => { const g = mapDef().gate; return !g || !!G.flags.bosses[
 const walkable = (t) => WALK.has(t) || (t === 'B' && gateOpen());
 const decorAt = (x, y) => mapDef().decor?.some((d) => d[0] === x && d[1] === y);
 const npcAt = (x, y) => mapDef().npcs?.find((n) => n.x === x && n.y === y);
-const regionOf = () => { if (G.map !== 'world') return null; const t = tileAt(G.x, G.y); return t === ',' || t === 't' ? 'snow' : t === ':' ? 'swamp' : G.y <= 13 ? 'plains' : 'green'; };
-const REGION_NAME = { snow: 'Frostfields', swamp: 'Mire Marsh', plains: 'Northern Plains', green: 'Greenmarch' };
+const regionOf = () => { if (G.map !== 'world') return null; const t = tileAt(G.x, G.y); return t === ',' || t === 't' ? 'snow' : t === ':' ? 'swamp' : t === 'd' ? 'desert' : G.y <= 13 ? 'plains' : 'green'; };
+const REGION_NAME = { snow: 'Frostfields', swamp: 'Mire Marsh', plains: 'Northern Plains', green: 'Greenmarch', desert: 'Sunscar Sands' };
 function musicFor() { const m = mapDef(); return m.kind === 'outdoor' ? (regionOf() === 'snow' ? 'snow' : 'world') : m.music; }
 function reveal() { // fog of war
   const m = mapDef(); if (!m.fog) return;
