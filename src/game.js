@@ -77,7 +77,8 @@ const save = () => { if (!G || !G.slot) return false; try { localStorage.setItem
 })();
 let toastT = null;
 function toast(msg, ms = 2200) { const t = $('#toast'); if (!t) return; t.textContent = msg; t.classList.add('on'); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('on'), ms); }
-function tip(id, text, ms = 5200) { if (!G || G.flags.tips[id]) return; G.flags.tips[id] = true; toast('💡 ' + text, ms); }
+const tipOnce = (id) => { if (!G || G.flags.tips[id]) return false; G.flags.tips[id] = true; return true; };
+function tip(id, text, ms = 5200) { if (!tipOnce(id)) return; if (BT) BT.log.push('💡 ' + text); else toast('💡 ' + text, ms); } // in battle the hint goes to the log so it never covers the stage
 const TOUCH = matchMedia('(pointer:coarse)').matches;
 function autosave() { if (!G || !G.slot || BT) return; if (save()) toast('💾 Autosaved', 1400); }
 const mapDef = () => MAPS[G.map];
@@ -274,7 +275,7 @@ async function step(dx, dy) {
   reveal(); draw();
   tip('move', TOUCH ? 'Tap anywhere on the map or hold the pad to walk. ☰ opens your party menu.' : 'Arrows or WASD to walk. Esc opens your party menu. A yellow ! marks someone with news.');
   if (m.kind === 'outdoor') { const reg = regionOf(); if (reg !== G.region) { G.region = reg; banner(REGION_NAME[reg]); music(musicFor()); } }
-  if (m.boss && t === 'X' && !G.flags.bosses[m.boss.id]) { mapShake(); sfx('crit'); await sleep(350); return battle([m.boss.id], m.boss.id); }
+  if (m.boss && t === 'X' && !G.flags.bosses[m.boss.id]) { busy = true; mapShake(); sfx('crit'); await sleep(350); busy = false; return battle([m.boss.id], m.boss.id); }
   const table = m.enc || m.encByTile?.[t];
   if (table && Math.random() < m.rate) { const tb = ENCOUNTERS[table]; await battle(tb[Math.floor(Math.random() * tb.length)]); }
 }
@@ -467,18 +468,18 @@ function intro() {
   <p>Visit the <b>Guild</b> to choose jobs, the <b>Smithy</b> for gear, and open the <b>Menu</b> (Esc) to socket gems into skills. Talk to townsfolk: a <span class="gold">!</span> marks someone with news. Check your <b>Journal</b> if you get lost.</p>${btn('close', 'Begin', '', '', 'primary')}`);
 }
 function mainMenu() {
-  tip('menu', 'Tap a hero, then Edit a skill slot to socket gems. Gems rewrite how a skill works.');
+  const menuTip = tipOnce('menu') ? '💡 Tap a hero, then Edit a skill slot to socket gems. Gems rewrite how a skill works.' : '';
   show(`<h2>Menu</h2><div class="grid">${G.party.map((c, i) => { const s = maxOf(c); return `<div class="pm"><img src="${SP.heroURL(c.main)}" width="32" height="32" class="px" style="float:right">${btn('build', `<b>${esc(c.name)}</b> Lv${c.level}`, i)}<div class="dim">${JOBS[c.main].icon} ${JOBS[c.main].name}${c.sub ? ' / ' + JOBS[c.sub].name : ''}</div>HP ${c.hp}/${s.hp}${bar(c.hp, s.hp, 'hp')}MP ${c.mp}/${s.mp}${bar(c.mp, s.mp, 'mp')}</div>`; }).join('')}</div>
-  <div class="row">${btn('items', '🎒 Items')}${btn('mapscreen', '🗺 Map')}${btn('journal', '📜 Journal')}${btn('bestiary', '📖 Bestiary')}${btn('opts', '⚙ Options')}${btn('save', '💾 Save')}${btn('title', 'Title')}${btn('close', 'Close', '', '', 'primary')}</div><div id="msg" class="dim"></div><div class="dim" style="margin-top:6px">Playtime ${fmtTime(G.playtime)} · Battles won ${G.stats?.wins || 0}</div>`);
+  <div class="row">${btn('items', '🎒 Items')}${btn('mapscreen', '🗺 Map')}${btn('journal', '📜 Journal')}${btn('bestiary', '📖 Bestiary')}${btn('opts', '⚙ Options')}${btn('save', '💾 Save')}${btn('title', 'Title')}${btn('close', 'Close', '', '', 'primary')}</div><div id="msg" class="dim">${menuTip}</div><div class="dim" style="margin-top:6px">Playtime ${fmtTime(G.playtime)} · Battles won ${G.stats?.wins || 0}</div>`);
 }
 const fmtTime = (sec = 0) => { sec = Math.floor(sec); const h = Math.floor(sec / 3600), m = Math.floor((sec % 3600) / 60), s2 = sec % 60; return `${h}:${String(m).padStart(2, '0')}:${String(s2).padStart(2, '0')}`; };
 ACT.bestiary = () => {
   const ids = Object.keys(ENEMIES), seen = ids.filter((id) => G.flags.bestiary[id]);
   show(`<h2>📖 Bestiary</h2><p class="dim">Foes discovered: <b class="gold">${seen.length}/${ids.length}</b>. Defeat a creature to learn its weaknesses.</p><div class="grid">${ids.map((id) => {
     const r = G.flags.bestiary[id], d = ENEMIES[id];
-    if (!r) return `<div class="card dim" style="text-align:center">❔<br>???</div>`;
+    if (!r) return '';
     return `<div class="card"><img class="px" src="${SP.enemyURL(id)}" width="${SP.isBig(id) ? 64 : 48}" height="${SP.isBig(id) ? 64 : 48}" alt="" style="float:right"><b>${d.name}</b>${d.boss ? ' <span class="chip">Boss</span>' : ''}<div class="dim">Defeated ${r.kills}</div><div>HP ${d.hp} · ATK ${d.atk} · MAG ${d.mag}</div><div>${r.kills ? `weak ${d.weak.map((w) => ELEM_ICON[w]).join('') || '—'} · resists ${d.res.map((w) => ELEM_ICON[w]).join('') || '—'}` : '<span class="dim">weaknesses unknown</span>'}</div></div>`;
-  }).join('')}</div>${btn('menu', 'Back', '', '', 'primary')}`);
+  }).join('')}</div>${ids.length - seen.length ? `<div class="card dim" style="text-align:center">❔ ${ids.length - seen.length} more creatures are still undiscovered</div>` : ''}${btn('menu', 'Back', '', '', 'primary')}`);
 };
 ACT.title = title;
 ACT.save = () => { $('#msg').textContent = save() ? `Game saved to slot ${G.slot}.` : 'Could not save (storage may be full or blocked).'; };
@@ -639,6 +640,7 @@ function stageKind(bossId) {
   const r = regionOf(); return r === 'snow' ? 'snow' : r === 'swamp' ? 'swamp' : 'world';
 }
 async function battle(groupIds, bossId = null) {
+  if (BT) return; // never run two battles at once
   try { await battleInner(groupIds, bossId); } catch (err) { // never leave the player stuck in a broken battle
     console.error(err); try { BT?.stage?.stop(); } catch {} BT = null; busy = false; trans = 0; hide(); music(musicFor()); toast('⚠ Battle error: back to the map', 3500);
   }
@@ -655,6 +657,7 @@ async function battleInner(groupIds, bossId = null) {
   if (bossId) BT.stage.card(BOSSES[bossId].name.toUpperCase(), 2.6);
   renderBattle();
   while (!b.over) {
+    if (BT.auto && b.p.some((x) => x.hp <= 0 || x.hp < x.maxhp * 0.3)) { BT.auto = false; toast('⏩ Auto-battle stopped: someone needs help', 3000); renderBattle(); } // never auto-march a party into a wipe
     const cmds = new Map();
     for (const p of b.p.filter((x) => x.hp > 0)) {
       const cmd = await askCommand(p);
@@ -710,7 +713,7 @@ function playFx(list) {
 }
 function cmdHtml(a) {
   const p = a.p, c = p.ch;
-  if (a.stage === 'root') return `<div class="row"><b>${esc(p.name)}</b>${btn('c', '⚔️ Attack', 'attack')}${btn('c', '✨ Skills', 'skills')}${btn('c', '🎒 Item', 'item')}${btn('c', '🛡️ Defend', 'defend')}${btn('c', '🔁 Repeat', 'repeat', '', '', !BT.last.has(p.name))}${btn('c', '⏩ Auto', 'auto')}${btn('c', '🏃 Flee', 'flee', '', '', BT.b.boss)}</div>`;
+  if (a.stage === 'root') return `<div class="cmdhead"><b>${esc(p.name)}</b> <span class="dim">${JOBS[p.ch.main].name} · choose a move</span></div><div class="cmdgrid">${btn('c', '⚔️ Attack', 'attack')}${btn('c', '✨ Skills', 'skills')}${btn('c', '🎒 Item', 'item')}${btn('c', '🛡️ Defend', 'defend')}${btn('c', '🔁 Repeat', 'repeat', '', '', !BT.last.has(p.name))}${btn('c', '⏩ Auto', 'auto')}${btn('c', '🏃 Flee', 'flee', '', '', BT.b.boss)}</div>`;
   if (a.stage === 'skills') {
     return `<div class="row"><b>${esc(p.name)}</b> ${btn('c', '← Back', 'root')}</div>` + [0, 1, 2, 3, SIG].map((i) => {
       const sid = slotSkill(c, i); if (!sid) return '';
@@ -771,7 +774,7 @@ async function victory(b, bossId) {
   const lines = [];
   for (const c of G.party) if (c.hp > 0) {
     const ups = gainExp(c, r.exp);
-    if (ups.length) { tip('levelup', 'Level up! New skills unlock as heroes grow. Check the build screen for empty skill slots.', 6500); setTimeout(() => sfx('levelup'), 1400); lines.push(`🎉 ${esc(c.name)} reached level ${ups.at(-1)}!`); autofill(c); }
+    if (ups.length) { if (tipOnce('levelup')) lines.push('💡 New skills unlock as heroes level up. Check the build screen for empty skill slots.'); setTimeout(() => sfx('levelup'), 1400); lines.push(`🎉 ${esc(c.name)} reached level ${ups.at(-1)}!`); autofill(c); }
   }
   for (const d of r.drops) { if (d.kind === 'items') G.inv.items[d.id] = (G.inv.items[d.id] || 0) + 1; else G.inv[d.kind].push(d.id); lines.push(`Found ${DB[d.kind][d.id].name}`); }
   for (const e of b.e) for (const [id, q] of Object.entries(QUESTS)) if (qstate(id) === 'active' && q.goal.type === 'kill' && q.goal.ids.includes(e.id)) G.flags.qprog[id] = Math.min(q.goal.n, (G.flags.qprog[id] || 0) + 1);
@@ -785,7 +788,7 @@ async function victory(b, bossId) {
   if (bossId) G.flags.bosses[bossId] = true;
   miniDirty = true;
   for (const e of b.e) { const r2 = (G.flags.bestiary[e.id] ||= { seen: 1, kills: 0 }); r2.kills++; }
-  if (G.party.some((c) => c.hp > 0 && c.hp < maxOf(c).hp * 0.35)) tip('rest', 'Low on HP? Inns heal the whole party and save your game. Potions work from the Items menu.', 6000);
+  if (G.party.some((c) => c.hp > 0 && c.hp < maxOf(c).hp * 0.35) && tipOnce('rest')) lines.push('💡 Low on HP? Inns heal the whole party and save your game. Potions work from the Items menu.');
   questLog(lines);
   await new Promise((res) => {
     ov.innerHTML = `<div class="win"><h2>${def ? '🏆 ' + def.name + ' is slain!' : 'Victory!'}</h2><p>+${r.exp} EXP · +<span class="gold">${r.gold} G</span></p>${lines.map((l) => `<div>${l}</div>`).join('')}<div class="row">${btn('vdone', 'Continue', '', '', 'primary')}</div></div>`;

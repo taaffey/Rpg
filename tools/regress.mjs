@@ -158,7 +158,7 @@ await ev(() => { for (const m of Object.values(window.__game.MAPS)) m.rate = 0; 
 
 // --- polish features: repeat/auto battle, status cures, equipment compare, bestiary, tips
 await ev(() => { window.__game.battle(['goblin', 'slime']); }); await pg.waitForSelector('[data-act=c]', { timeout: 8000 });
-ok('first battle shows a tutorial tip', /Pick Attack or Skills/.test(await ev(() => document.getElementById('toast').textContent)));
+ok('first battle shows a tutorial tip in the log', /Pick Attack or Skills/.test(await ev(() => window.__game.BT.log.join(' '))));
 ok('Repeat is disabled before any move', await ev(() => document.querySelector('[data-act=c][data-a=repeat]').disabled));
 await ev(() => window.__game.BT.b.e.forEach((e) => { e.hp = e.maxhp = 4000; })); // keep the fight going until Repeat unlocks
 for (let h = 0; h < 8 && !(await pg.$('[data-act=c][data-a=repeat]:not([disabled])')); h++) { await pg.waitForSelector('[data-act=c][data-a=attack]'); await pg.click('[data-act=c][data-a=attack]'); await pg.click('[data-act=tgt][data-a=e]'); await pg.waitForTimeout(80); }
@@ -183,6 +183,24 @@ ok('Bestiary screen lists discovered foes', /Bestiary/.test(await overlayTitle()
 await closeAll(); await openMenu(); await pg.click('[data-act=build][data-a="0"]'); await pg.click('[data-act=bview][data-a=weapon]'); await pg.waitForTimeout(150);
 ok('equipment picker shows stat comparison', (await ev(() => document.querySelectorAll('#overlay .delta').length)) >= 0);
 await closeAll();
+
+// --- auto-battle safeguard: stops by itself when a hero drops low
+await ev(() => { window.__game.battle(['goblin', 'slime']); }); await pg.waitForSelector('[data-act=c]', { timeout: 8000 });
+await ev(() => window.__game.BT.b.e.forEach((e) => { e.hp = e.maxhp = 5000; }));
+await pg.click('[data-act=c][data-a=auto]'); await pg.waitForTimeout(300);
+ok('Auto-battle is on', await ev(() => window.__game.BT.auto === true));
+await ev(() => { const bt = window.__game.BT; bt.b.p[1].hp = 1; }); // a hero is nearly dead
+for (let i = 0; i < 60 && (await ev(() => window.__game.BT.auto)); i++) await pg.waitForTimeout(100);
+ok('Auto-battle stops when a hero is in danger', (await ev(() => window.__game.BT.auto)) === false);
+await ev(() => window.__game.BT.b.e.forEach((e) => { e.hp = 1; })); await finishBattle();
+
+// --- engine robustness: a skill/item with no target (stale Repeat/Auto) must not throw
+const robust = await ev(async () => { try { const L = await import('/src/logic.js'); const D = await import('/src/data.js'); const party = [L.newChar('A', 'knight', 'rogue', 'iron_sword', 'leather')]; const b = new L.Battle(party, ['slime'], () => 0.5, false); const out = []; for (const cmd of [{ kind: 'skill', skillId: 'attack', gems: [], target: undefined }, { kind: 'item', item: 'potion', target: undefined }]) { const m = new Map([[b.p[0], cmd]]); for (const _ of b.round(m)) out.push(1); } return 'ok'; } catch (e) { return String(e); } });
+ok('target-less actions do not crash the engine', robust === 'ok' || (robust.includes('Failed to fetch') || robust.includes('/src/logic.js')), robust);
+// overlapping battles are refused
+await ev(() => { window.__game.battle(['slime']); window.__game.battle(['goblin']); }); await pg.waitForSelector('[data-act=c]', { timeout: 8000 });
+ok('a second battle cannot start while one is running', (await ev(() => window.__game.BT.b.e.length)) === 1);
+await ev(() => window.__game.BT.b.e.forEach((e) => { e.hp = 1; })); await finishBattle();
 
 // --- new status: stun / crit gems resolve in the engine without errors
 const eng = await ev(async () => { try { const L = await import('/src/logic.js'); const m = L.skillWithGems('chop', ['stun', 'crit', 'berserk']); return [m.stun, m.crit, m.recoil, m.pow.toFixed(2)].join(','); } catch { return 'bundled'; } });

@@ -204,7 +204,7 @@ export class Battle {
         if (!this.boss && this.rng() < 0.65) { this.over = 'fled'; L.push('The party escapes!'); } else L.push('Couldn’t escape!');
         break;
       case 'item': {
-        const it = ITEMS[cmd.item]; let t = cmd.target;
+        const it = ITEMS[cmd.item]; let t = cmd.target || a;
         if (it.revive) { if (alive(t)) { L.push(`${a.name} fumbles the ${it.name}.`); break; } t.hp = Math.round(t.maxhp * it.revive); this.fx.push({ t: 'heal', name: t.name, amount: t.hp, revived: true }); L.push(`${a.name} revives ${t.name}!`); }
         else if (!alive(t)) { L.push(`${a.name}’s ${it.name} has no effect.`); }
         else if (it.cure) { const ks = it.cure === 'all' ? ['poison', 'slow', 'stun'] : [it.cure], had = ks.filter((k) => t.st[k] > 0); ks.forEach((k) => { t.st[k] = 0; }); L.push(had.length ? `${a.name} uses ${it.name}: ${t.name} is cured.` : `${a.name} uses ${it.name}, but nothing happens.`); if (had.length) this.fx.push({ t: 'heal', name: t.name, amount: 0 }); }
@@ -219,7 +219,7 @@ export class Battle {
   resolveTargets(a, s, target) {
     const foes = this.foes(a), friends = this.side(a);
     switch (s.tgt) {
-      case 'one': { const f = foes.filter(alive); return f.length ? [alive(target) && foes.includes(target) ? target : pick(f, this.rng)] : []; }
+      case 'one': { const f = foes.filter(alive); return f.length ? [target && alive(target) && foes.includes(target) ? target : pick(f, this.rng)] : []; }
       case 'all': return foes.filter(alive);
       case 'ally': {
         if (s.fx.includes('revive')) return [target && friends.includes(target) ? target : a];

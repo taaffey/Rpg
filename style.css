@@ -140,10 +140,16 @@ body{margin:0;background-color:#0b0e1c;background-image:radial-gradient(circle a
   .battle .order{margin-bottom:4px}
 }
 
-#toast{position:absolute;left:50%;top:calc(env(safe-area-inset-top,0px) + 54px);transform:translate(-50%,-10px);background:rgba(10,14,48,.92);border:2px solid #8c9be0;border-radius:10px;padding:8px 14px;font-size:13px;opacity:0;pointer-events:none;transition:opacity .25s,transform .25s;z-index:30;max-width:90%;text-align:center}
+#toast{position:absolute;left:50%;top:calc(env(safe-area-inset-top,0px) + 54px);transform:translate(-50%,-10px);background:rgba(10,14,48,.92);border:2px solid #8c9be0;border-radius:10px;padding:6px 12px;font-size:12px;line-height:1.35;opacity:0;pointer-events:none;transition:opacity .25s,transform .25s;z-index:30;width:max-content;max-width:min(92%,380px);text-align:center}
 #toast.on{opacity:1;transform:translate(-50%,0)}
 .col{display:flex;flex-direction:column;gap:6px}
 button.danger{border-color:#ff6b6b;background:#5a1f2a}
 
 .delta{font-size:12px;display:flex;gap:8px;flex-wrap:wrap;margin-top:2px}.delta .up{color:#7af0a0}.delta .down{color:#ff8a8a}
 .autobtn{margin-left:auto;font-size:11px;padding:2px 8px;min-height:28px;background:#4a3fb5;border-color:#8c7bff}
+
+.cmdhead{margin:2px 0 6px}
+.cmdgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.cmdgrid button{padding:6px 4px;font-size:14px;white-space:nowrap}
+@media (max-width:420px){.cmdgrid button{font-size:13px;padding:6px 2px}}
+.logwrap .log{padding-right:64px}

@@ -72,6 +72,7 @@ Produces `dist/index.html` (the whole game, about 150 KB, no other files, works 
     node tools/sim.mjs fast 100      # headless balance sim: every region and boss at expected levels
     node tools/checkmaps.mjs         # every map valid; every portal/NPC/chest/boss reachable; gate verified
     node tools/checksprites.mjs      # sprite sizes
+    node tools/fuzz.mjs 4 1500       # randomized playtest: a bot plays the real UI, checks invariants, soft-locks, page errors
     node tools/regress-mobile.mjs    # iPhone touch regression (portrait + landscape)
     node tools/devices.mjs <outdir>  # device matrix: layout metrics + screenshots (SE, 14, Pro Max, landscape, iPad, desktop)
     node tools/regress.mjs           # browser regression (needs the dev server + Playwright); URL=... tests the dist build
