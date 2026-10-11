@@ -48,4 +48,9 @@ export const VARIANT = {
   ice_golem: ['golem', { S: '#3a6aa0', s: '#8fd8f0' }],
   frost_wraith: ['wraith', { c: '#ffffff', w: '#c8f4ff' }],
   ice_imp: ['imp', { r: '#4a8ae0', R: '#27428a', o: '#c8f4ff', y: '#ffffff' }],
+  storm_bat: ['bat', { p: '#f4d35e', P: '#a07828', r: '#fff6a0' }],
+  thunder_imp: ['imp', { r: '#f4d35e', R: '#a07828', o: '#7fd8f0', y: '#ffffff' }],
+  gale_wraith: ['wraith', { c: '#f4d35e', w: '#fff6c8' }],
 };
+// recolored 32x32 bosses: id -> [big art id, palette overrides]
+export const BIGVAR = { storm_drake: ['wyrm', { r: '#4a8ae0', R: '#27428a', o: '#f4d35e', e: '#3a4a78', E: '#202850', f: '#ffe08a', y: '#fff6a0' }] };

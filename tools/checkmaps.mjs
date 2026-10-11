@@ -27,8 +27,9 @@ for (const [id, m] of Object.entries(MAPS)) {
 }
 // gate: without the flag only the south is reachable; with it, the whole world is
 const w0 = reach('world', MAPS.world.spawn, false), w1 = reach('world', MAPS.world.spawn, true);
-for (const [pid, p] of [['frost', MAPS.world.places[1]], ['spire', MAPS.world.places[4]]]) if (w0.has(`${p[0]},${p[1]}`)) fail(`gate leaks to ${p[2]}`);
+const place = (n) => MAPS.world.places.find((p) => p[2] === n);
+for (const n of ['Frostholm', 'Frost Spire', 'Storm Cavern']) if (w0.has(`${place(n)[0]},${place(n)[1]}`)) fail(`gate leaks to ${n}`);
 for (const p of MAPS.world.places) if (!w1.has(`${p[0]},${p[1]}`)) fail(`${p[2]} unreachable even with gate open`);
-for (const p of MAPS.world.places.filter((_, i) => [0, 2, 3].includes(i))) if (!w0.has(`${p[0]},${p[1]}`)) fail(`${p[2]} should be reachable before the gate`);
+for (const n of ['Haven Town', 'Ashen Cavern', 'Sunken Crypt', 'Mirewood']) if (!w0.has(`${place(n)[0]},${place(n)[1]}`)) fail(`${n} should be reachable before the gate`);
 console.log(bad ? `${bad} problem(s)` : `all ${Object.keys(MAPS).length} maps valid; gate verified`);
 process.exit(bad ? 1 : 0);

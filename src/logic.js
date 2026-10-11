@@ -57,7 +57,7 @@ export function sanitize(c, inv) {
 // ---------- Gem rewriting: base skill + gems => final skill ----------
 export function skillWithGems(id, gems = []) {
   const sk = SKILLS[id];
-  const m = { id, ...sk, fx: [...(sk.fx || [])], hits: sk.hits || 1, pierce: sk.pierce || 0, chain: false, echo: false, vamp: 0, swift: false, stun: 0, execute: false, recoil: 0, siphon: 0, guard: false, crit: 0, tags: [] };
+  const m = { id, ...sk, fx: [...(sk.fx || [])], hits: sk.hits || 1, pierce: sk.pierce || 0, chain: false, echo: false, vamp: 0, swift: false, stun: 0, execute: !!sk.execute, recoil: 0, siphon: 0, guard: false, crit: sk.crit || 0, tags: [] };
   let mpMul = 1;
   for (const gid of gems) {
     const g = GEMS[gid];

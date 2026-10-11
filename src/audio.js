@@ -49,6 +49,10 @@ const TRACKS = {
   spire: { step: 0.3, voices: [
     { wave: 'square', vol: 0.075, notes: mel(['E5:2 B5 E6 B5:2 G5:2', 'D5:2 A5 D6 A5:2 F#5:2', 'C5:2 G5 C6 G5:2 E5:2', 'B4:4 F#5:2 B5:2', 'E5:2 B5 E6 B5:2 G5:2', 'F#5:2 C#6 F#6 C#6:2 A5:2', 'G5:2 B5 D6 B5:2 G5:2', 'E6:6 -:2']) },
     { wave: 'triangle', vol: 0.18, notes: bass(['E2', 'D2', 'C2', 'B1', 'E2', 'F#2', 'G2', 'E2']) }] },
+  ending: { step: 0.26, voices: [
+    { wave: 'square', vol: 0.09, notes: mel(['C5:2 E5 G5 C6:2 G5:2', 'A4:2 C5 E5 A5:2 G5:2', 'F4:2 A4 C5 F5:2 E5:2', 'G4:2 B4 D5 G5:4', 'E5:2 G5 C6 E6:2 D6:2', 'C6:2 B5 A5 G5:2 A5:2', 'F5:2 A5 C6 F6:2 E6:2', 'D6:2 G5:2 C6:4']) },
+    { wave: 'triangle', vol: 0.05, notes: mel(['E4:8', 'C4:8', 'A3:8', 'B3:8', 'G4:8', 'E4:8', 'C4:8', 'D4:8']) },
+    { wave: 'triangle', vol: 0.19, notes: bass(['C3', 'A2', 'F2', 'G2', 'C3', 'F2', 'F2', 'G2']) }] },
   victory: { once: true, step: 0.13, voices: [
     { wave: 'square', vol: 0.1, notes: parse('C5 C5 C5 C5:3 Ab4:3 Bb4:3 C5:2 Bb4 C5:6') }, { wave: 'triangle', vol: 0.18, notes: parse('C3:3 C3:3 Ab2:3 Bb2:3 C3:6') }] },
   gameover: { once: true, step: 0.28, voices: [

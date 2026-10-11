@@ -11,9 +11,9 @@ arrows move the focus, Enter/Space selects, Esc/Backspace goes back, L expands t
 keyboard alone, or with the mouse. Options (volumes, battle speed, shake, minimap) are in the menu and on the title screen.
 
 ## How builds work (three layered systems)
-1. **Jobs** (10): every character has a *main job* and a *sub job*. The sub job contributes 40% of its stat modifiers,
+1. **Jobs** (12): every character has a *main job* and a *sub job*. The sub job contributes 40% of its stat modifiers,
    its skills (two levels behind) and its weapon types. Change jobs in any town building.
-2. **Weapons** (9 types, 36 weapons): each type grants a **signature skill**; many carry a free **innate gem**.
+2. **Weapons** (10 types, 39 weapons): each type grants a **signature skill**; many carry a free **innate gem**.
 3. **Gems** (21): socket gems into any skill slot to rewrite it: element swaps, Chain, Echo, Vampiric, Piercing, Thrifty,
    Overcharge, Wide, Venom, Swift, Focus, Stun, Crit, Execute, Berserk, Siphon, Guard. Capacity comes from sockets on
    weapon/armor/accessory (max 3 per skill).
@@ -21,16 +21,20 @@ keyboard alone, or with the mouse. Options (volumes, battle speed, shake, minima
 ## The world
 - **Overworld** (40x30) with four regions: Greenmarch, Mire Marsh (swamp), Northern Plains and the Frostfields. Fog of war,
   a minimap and a full map screen. A rockslide gates the north until the Ashen Wyrm falls.
-- **Towns**: Haven Town and Frostholm. Buildings are enterable interiors (inn, general store, smithy, guild, houses) with
+- **Towns**: Haven Town, the swamp stilt-village Mirewood, and Frostholm. Buildings are enterable interiors (inn, general store, smithy, guild, houses) with
   NPCs, dialogue, shops and chests. A `!` over an NPC marks news.
-- **Dungeons** with their own lighting, music and enemies: Ashen Cavern (boss: Ashen Wyrm), Sunken Crypt (Lich King Morvath),
-  Frost Spire (Frost Titan, the final boss). 25 enemies including recolored tiers. Level cap 20. A journal tracks goals.
+- **Dungeons** with their own lighting, music and enemies: Ashen Cavern (Ashen Wyrm), Sunken Crypt (Lich King Morvath),
+  Frost Spire (Frost Titan, the final boss) and the optional Storm Cavern on the Northern Plains (Storm Drake).
+  29 enemies including recolored tiers. Level cap 20.
+- **Side quests** (7): kill, find-an-item and boss quests from NPCs (`!` = offer, `?` = ready to turn in), tracked in the journal.
+- **Ending**: a cinematic dawn scene with scrolling credits and your stats (play time, battles, quests, gems).
 
 ## Visuals and sound (all generated in code)
 - `src/sprites.js`, `src/art2.js`: ASCII-grid pixel sprites (10 jobs, townsfolk, 25 enemies, three 32x32 bosses, furniture,
   tile themes), recolor variants, gem icons.
 - `src/stage.js`: animated battle stage: painted backdrops per region, per-enemy attack animations (squash, swoop, pounce,
-  float, stomp), hit flashes, spell projectiles and per-element particles, floating damage numbers.
+  float, stomp), hit flashes, spell projectiles and per-element particles, floating damage numbers, an arena slide-in, boss title cards,
+  camera zoom on big hits and a victory pose.
 - Map: smooth walking, party trail with walk cycle, torch lighting, weather per region, battle wipe, animated title screen.
 - `src/audio.js`: Web Audio chiptune: 11 looping tracks (town, Frostholm, overworld, snow, cavern, crypt, spire, battle, boss)
   plus jingles and ~20 effects. Notation is a tiny string format (`"E5:2 G5 -:2"` = note:length-in-steps, `-` = rest).

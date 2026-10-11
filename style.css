@@ -86,3 +86,11 @@ button:focus-visible,.foe:focus,.pm:focus{box-shadow:0 0 10px #ffd25a}
 .opt{margin:8px 0}.opt label{display:flex;justify-content:space-between}.opt input[type=range]{width:100%;accent-color:#8c7bff}
 .controls{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:2px 12px}
 .card.done{border-color:#5ed17a}.card.done b{color:#7af0a0}
+
+/* polish: map shake, credits */
+canvas#map.shake{animation:mapshake .4s}
+@keyframes mapshake{0%,100%{transform:none}15%{transform:translate(-6px,3px)}30%{transform:translate(6px,-4px)}45%{transform:translate(-5px,-3px)}60%{transform:translate(4px,4px)}80%{transform:translate(-2px,1px)}}
+.credits{height:150px;overflow:hidden;margin:8px 0;text-align:center;mask-image:linear-gradient(transparent,#000 15%,#000 85%,transparent);-webkit-mask-image:linear-gradient(transparent,#000 15%,#000 85%,transparent)}
+.credits .roll{animation:roll 34s linear forwards;padding-top:150px}
+.credits .roll div{line-height:1.9}.credits .roll .h{font-family:"Press Start 2P",ui-monospace,monospace;font-size:11px;color:#ffd25a;margin-top:6px}
+@keyframes roll{from{transform:translateY(0)}to{transform:translateY(-120%)}}

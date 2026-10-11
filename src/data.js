@@ -272,3 +272,70 @@ export const SHOPS = {
   frost_general: { title: '🛒 Frostholm Provisions', stock: { items: ['potion', 'hipotion', 'ether', 'megaether', 'phoenix', 'elixir'], gems: ['fire', 'frost', 'bolt', 'holy', 'shadow', 'chain', 'vamp', 'pierce', 'thrifty', 'overcharge', 'wide', 'venom', 'swift', 'focusg', 'guard', 'crit', 'berserk', 'echo', 'stun', 'siphon', 'execute'] } },
   frost_smith: { title: '⚒️ Frostholm Forge', stock: { weapons: ['mythril_sword', 'frostbrand', 'stiletto', 'sage_staff', 'longbow', 'frost_bow', 'steel_fist', 'thorn_whip', 'grave_scythe', 'arcane_tome', 'blizzard_tome', 'war_axe'], armors: ['mythril_mail', 'frost_robe', 'yeti_fur'], accs: ['sage_ring', 'berserk_ring', 'life_charm', 'gem_crown', 'socket_jewel', 'frost_pendant', 'lich_ring'] } },
 };
+
+// =====================================================================
+// ===== Content pack 3: Samurai + Paladin, katanas, Storm Cavern, quests =====
+// =====================================================================
+Object.assign(SKILLS, {
+  iai: S('Iaido', 3, 'one', 'phys', 1.4, { crit: 0.3, pierce: 0.2 }),
+  // samurai
+  kiai: S('Kiai', 3, 'self', 'buff', 0, { fx: ['atkup'] }),
+  flashcut: S('Flashcut', 5, 'one', 'phys', 0.8, { hits: 2 }),
+  windblade: S('Wind Blade', 7, 'all', 'phys', 0.9),
+  bladestorm: S('Blade Storm', 10, 'one', 'phys', 0.5, { hits: 5 }),
+  zanshin: S('Zanshin', 16, 'one', 'phys', 3.4, { pierce: 0.5 }),
+  // paladin
+  holylight: S('Holy Light', 4, 'one', 'mag', 1.5, { elem: 'holy' }),
+  layhands: S('Lay on Hands', 4, 'ally', 'heal', 1.6),
+  divineshield: S('Divine Shield', 8, 'allies', 'buff', 0, { fx: ['defup'] }),
+  crusade: S('Crusade', 11, 'all', 'phys', 1.1, { elem: 'holy' }),
+  sacredblade: S('Sacred Blade', 12, 'one', 'phys', 2.4, { elem: 'holy' }),
+  divinegrace: S('Divine Grace', 14, 'ally', 'heal', 0, { fx: ['revive'] }),
+  // enemy-only
+  sparkbolt: S('Spark Bolt', 0, 'one', 'mag', 1.4, { elem: 'bolt' }),
+  thunderbreath: S('Thunder Breath', 0, 'all', 'mag', 1.0, { elem: 'bolt' }),
+  stormclaw: S('Storm Claw', 0, 'one', 'phys', 1.6, { elem: 'bolt' }),
+});
+WEAPON_TYPES.katana = { name: 'Katana', sig: 'iai' };
+Object.assign(JOBS, {
+  samurai: { name: 'Samurai', icon: '🗾', desc: 'Swift blade master with crits and multi-hit strikes.', mod: { hp: 1.1, mp: 0.7, atk: 1.4, def: 0.95, mag: 0.6, spd: 1.3 }, weapons: ['katana', 'bow'], skills: [['kiai', 1], ['flashcut', 2], ['windblade', 4], ['bladestorm', 6], ['zanshin', 9]] },
+  paladin: { name: 'Paladin', icon: '⚜️', desc: 'Holy warrior who fights, heals and guards.', mod: { hp: 1.3, mp: 1.0, atk: 1.0, def: 1.4, mag: 1.0, spd: 0.8 }, weapons: ['sword', 'staff'], skills: [['holylight', 1], ['layhands', 2], ['divineshield', 4], ['crusade', 6], ['sacredblade', 8], ['divinegrace', 10]] },
+});
+Object.assign(WEAPONS, {
+  iron_katana: W2('Iron Katana', 'katana', 13, 0, 1, 380), moonblade: W2('Moonblade', 'katana', 23, 0, 2, 1000, 'crit'), storm_katana: W2('Storm Katana', 'katana', 32, 0, 3, 0, 'bolt'),
+});
+Object.assign(ARMORS, { storm_cloak: { name: 'Storm Cloak', def: 18, mp: 28, mag: 8, spd: 3, res: ['bolt'], sockets: 2, price: 0 } });
+Object.assign(ACCS, {
+  family_ring: { name: 'Family Ring', hp: 30, def: 3, sockets: 1, price: 0 }, wolf_fang: { name: 'Wolf Fang', atk: 6, spd: 4, sockets: 0, price: 0 },
+  swamp_lantern: { name: 'Swamp Lantern', mag: 6, mp: 15, sockets: 1, price: 0 }, frost_amulet: { name: 'Frost Amulet', def: 6, hp: 30, res: ['ice'], sockets: 1, price: 0 },
+});
+Object.assign(ENEMIES, {
+  storm_bat: E('Storm Bat', '🦇', 250, 44, 10, 10, 16, 120, 66, [['bite', 2], ['sparkbolt', 1]], { weak: ['ice'], res: ['bolt'] }),
+  thunder_imp: E('Thunder Imp', '👹', 270, 14, 11, 54, 12, 128, 70, [['sparkbolt', 3], ['tackle', 1]], { weak: ['ice'], res: ['bolt'] }),
+  gale_wraith: E('Gale Wraith', '👻', 310, 14, 13, 58, 15, 140, 76, [['sparkbolt', 2], ['draintouch', 1], ['hexbolt', 1]], { weak: ['holy', 'ice'], res: ['bolt'] }),
+  storm_drake: E('Storm Drake', '🐲', 2500, 48, 18, 52, 12, 2000, 1800, [['stormclaw', 3], ['thunderbreath', 2], ['claw', 1]], { weak: ['ice'], res: ['bolt'], boss: true }),
+});
+Object.assign(ENCOUNTERS, { storm: [['storm_bat', 'storm_bat'], ['thunder_imp', 'thunder_imp'], ['gale_wraith'], ['storm_bat', 'thunder_imp'], ['gale_wraith', 'storm_bat'], ['thunder_imp', 'gale_wraith', 'storm_bat']] });
+Object.assign(DROPS, { storm_bat: [0.1, 'gems', 'swift'], thunder_imp: [0.1, 'gems', 'bolt'], gale_wraith: [0.12, 'gems', 'echo'] });
+BOSSES.storm_drake = { name: 'Storm Drake', intro: 'Thunder splits the cavern as the Storm Drake descends!', optional: true, loot: { weapons: ['storm_katana'], armors: ['storm_cloak'], gems: ['siphon', 'crit'] } };
+SHOPS.haven_smith.stock.weapons.push('iron_katana');
+SHOPS.frost_smith.stock.weapons.push('moonblade');
+SHOPS.mire_general = { title: '🛒 Mirewood Trading Post', stock: { items: ['potion', 'hipotion', 'ether', 'phoenix'], gems: ['fire', 'frost', 'bolt', 'holy', 'shadow', 'chain', 'vamp', 'thrifty', 'venom', 'guard', 'crit'], weapons: ['iron_katana', 'hand_axe', 'battle_axe', 'viper_fang', 'serpent_lash'], armors: ['chain', 'mage_cloak', 'yeti_fur'], accs: ['ward_amulet', 'fire_pendant', 'swift_boots'] } };
+
+// ---- side quests. goal: {type:'kill', ids, n} | {type:'find', item} | {type:'boss', id}
+export const QUESTS = {
+  slimes: { title: 'Slime Trouble', giver: 'Haven villager', goal: { type: 'kill', ids: ['slime'], n: 6 }, reward: { gold: 150, items: { potion: 3 }, gems: ['thrifty'] },
+    lines: { offer: ['Slimes keep oozing into the cellars and ruining the grain!', 'Could you clear out six of them on the grassland?'], active: ['Slimes, on the grass outside town. Six of them, please!'], ready: ['You did it! My cellars are safe again. Take this, with my thanks!'], done: ['Not a single slime in my cellar since you passed through. Thank you.'] } },
+  heirloom: { title: 'The Lost Heirloom', giver: 'Haven fisher', goal: { type: 'find', item: 'heirloom', where: 'Ashen Cavern' }, reward: { gold: 100, accs: ['family_ring'] },
+    lines: { offer: ['My grandmother\'s ring... I dropped it fleeing the Ashen Cavern years ago.', 'If you find it in some hidden corner of the cavern, I\'d be forever grateful.'], active: ['The ring should be in a dead end of the Ashen Cavern, far from the entrance.'], ready: ['That\'s it! That\'s her ring! Please, take this family heirloom of my own.'], done: ['Grandmother\'s ring is back on the mantel. Bless you.'] } },
+  wolves: { title: 'Pelts for the Furrier', giver: 'Haven traveler', goal: { type: 'kill', ids: ['wolf', 'mire_wolf'], n: 5 }, reward: { gold: 200, accs: ['wolf_fang'] },
+    lines: { offer: ['I\'m a furrier by trade. Wolf pelts are in short supply since the Wyrm woke.', 'Bring me proof of five wolves, from the plains or the marsh, and I\'ll pay well.'], active: ['Five wolves, plains or marsh. I\'ll know the pelts when I see them.'], ready: ['Fine work! These are prime pelts. Here: a fang charm I carved myself.'], done: ['Business is booming thanks to you.'] } },
+  marsh: { title: 'Cleanse the Marsh', giver: 'Mirewood warden', goal: { type: 'kill', ids: ['bog_slime', 'zombie'], n: 8 }, reward: { gold: 400, gems: ['guard'], items: { elixir: 1 } },
+    lines: { offer: ['Mirewood stands on stilts, but the bog creatures climb up anyway.', 'Slay eight bog slimes or zombies and the village will rest easier.'], active: ['Eight bog slimes or zombies. They lurk in the marsh around the village.'], ready: ['The marsh is quiet tonight. The village is in your debt.'], done: ['The village sleeps soundly. You are always welcome here.'] } },
+  lantern: { title: 'The Lost Lantern', giver: 'Mirewood boatwright', goal: { type: 'find', item: 'lantern', where: 'Sunken Crypt' }, reward: { gold: 300, accs: ['swamp_lantern'] },
+    lines: { offer: ['My late brother\'s lantern fell from his boat into the Sunken Crypt\'s flooded entrance.', 'It would mean everything to have it back. Look for a chest deep in the crypt.'], active: ['The lantern is in a chest somewhere in the Sunken Crypt.'], ready: ['His lantern! It still shines. Please, take this charm it inspired.'], done: ['I light it every night, in his memory.'] } },
+  yetis: { title: 'Yeti Hunt', giver: 'Frostholm hunter', goal: { type: 'kill', ids: ['yeti'], n: 4 }, reward: { gold: 600, accs: ['frost_amulet'] },
+    lines: { offer: ['Yetis raid our storehouses every winter night.', 'Slay four of the great beasts and the village will reward you.'], active: ['Four yetis. They roam the Frostfields. Bring fire!'], ready: ['Four yetis down! Take this amulet. It has kept our hunters warm for generations.'], done: ['The storehouses are safe. Thank you, friend.'] } },
+  stormdrake: { title: 'Slay the Storm Drake', giver: 'Frostholm old hunter', goal: { type: 'boss', id: 'storm_drake' }, reward: { gold: 1500, gems: ['stun', 'echo'] },
+    lines: { offer: ['A great drake nests in a cavern on the northern plains. Lightning plagues the sky for miles.', 'Slay the Storm Drake and I will pay the village\'s whole reserve. Ice is its weakness.'], active: ['The Storm Cavern, on the Northern Plains. Ice magic, friend.'], ready: ['The skies are clear for the first time in years! The village\'s reserve is yours.'], done: ['Clear skies at last. You are a legend.'] } },
+};

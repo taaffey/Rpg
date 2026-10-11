@@ -22,7 +22,7 @@ function brick(base, line, seed) {
   return c;
 }
 
-import { FURN, NPC_STYLE, ENEMY2, BIG2, VARIANT } from './art2.js';
+import { FURN, NPC_STYLE, ENEMY2, BIG2, VARIANT, BIGVAR } from './art2.js';
 // ---------- object sprites (drawn over a floor tile) ----------
 const ART = {
   tree: ['................', '.....GGGGG......', '....GGgggGG.....', '...GGgggglGG....', '..GGggggggggG...', '..GgglgggggggG..', '...GGgggggglGG..', '..GGgggglggggGG.', '.GGggggggggggggG', '.GGGGgggggggGGGG', '..GGGGGGGGGGGG..', '.....NNnN.......', '.....NnnN.......', '.....NNnN.......', '................', '................'],
@@ -78,6 +78,8 @@ export const HERO_STYLE = { // job -> [head, H, h, T, t, A, F]
   hexer: ['hood', '#4a2a80', '#2a1550', '#2a2038', '#15101d', '#6ef0a0', '#d8c8b0'],
   berserker: ['hair', '#c03020', '#802010', '#8a5a30', '#55341c', '#d94a4a', '#e8b890'],
   alchemist: ['hood', '#3aa86a', '#2a7048', '#e8e0d0', '#b8b0a0', '#7fd8f0', '#f0c8a0'],
+  samurai: ['hair', '#202030', '#101018', '#c04040', '#802020', '#f2f2f2', '#f0c8a0'],
+  paladin: ['helm', '#e8e8f0', '#a8a8c0', '#f2f2f2', '#c8c8d8', '#f4d35e', '#f0c8a0'],
   bard: ['pointy', '#d94a4a', '#8a2430', '#2aa0a0', '#1a7070', '#f4d35e', '#f0c8a0'],
 };
 function rowsFor(h, frame = 0) {
@@ -131,6 +133,9 @@ function buildTiles() {
     const fl = [0, 1].map((i) => noiseTile(floorBase, floorShades, seed + i, 0.25));
     return { '.': fl, '#': [brick(wallBase, wallLine, seed + 9)], E: [over(fl[0], sp('exit'))], C: [over(fl[0], sp('chest'))], c: [over(fl[0], sp('chestOpen'))], X: [fl[1]] };
   };
+  T.storm = dungeon('#3a3c5a', ['#32344e', '#46486c', '#2a2c44'], '#1a1c38', '#0e1028', 340);
+  const swampWood = [0, 1].map((i) => plank('#6a5a3a', '#3e3220', 21 + i));
+  T.swamptown = { '.': swampWood, '#': [vplank('#4a3a22', '#2a2010', 24)], ...ov(swampWood) };
   T.cavern = dungeon('#3b3744', ['#34303c', '#443f4e', '#2c2834'], '#26222e', '#15121b', 40);
   T.crypt = dungeon('#38403a', ['#2e362f', '#46504a', '#262c28'], '#1c2a22', '#0e1814', 140);
   T.spire = dungeon('#6a86a8', ['#5a76a0', '#7a96b8', '#8aa6c8'], '#3a5a8a', '#24406a', 240);
@@ -139,14 +144,15 @@ const BIGALL = () => ({ ...BIG, lich: mirror(BIG2.lich), titan: mirror(BIG2.tita
 export function enemy(id) {
   if (cache.has('e' + id)) return cache.get('e' + id);
   const big = BIGALL()[id]; let c;
-  if (big) c = sprite(big, BIG_PAL);
+  if (BIGVAR[id]) c = sprite(BIGALL()[BIGVAR[id][0]], { ...BIG_PAL, ...BIGVAR[id][1] });
+  else if (big) c = sprite(big, BIG_PAL);
   else if (VARIANT[id]) { const [base, pal] = VARIANT[id]; c = sprite(ENEMY_ART[base] || ENEMY2[base], pal); }
   else c = sprite(ENEMY2[id] || ENEMY_ART[id]);
   cache.set('e' + id, c); return c;
 }
 export const baseOf = (id) => (VARIANT[id] ? VARIANT[id][0] : id);
 export function hero(job, frame = 0) { const k = `h${job}${frame}`; if (!cache.has(k)) cache.set(k, sprite(heroRows(job, frame), heroPal(job))); return cache.get(k); }
-const TORCH_PAL = { cavern: undefined, crypt: { y: '#c8ffb0', o: '#4aff7a' }, spire: { y: '#ffffff', o: '#7fd8f0' } };
+const TORCH_PAL = { cavern: undefined, storm: { y: '#fff6a0', o: '#ffd22a' }, crypt: { y: '#c8ffb0', o: '#4aff7a' }, spire: { y: '#ffffff', o: '#7fd8f0' } };
 export const torch = (frame, theme = 'cavern') => { const k = `torch${frame}${theme}`; if (!cache.has(k)) cache.set(k, sprite(ART[frame ? 'torchB' : 'torchA'], TORCH_PAL[theme])); return cache.get(k); };
 const DECOR_ART = { lamp: () => ART.lamp, tree: () => ART.tree, banner: () => ART.guild, ...Object.fromEntries(Object.keys(FURN).map((k) => [k, () => FURN[k]])) };
 export function decor(kind) { const k = 'd' + kind; if (!cache.has(k)) cache.set(k, sprite(DECOR_ART[kind]())); return cache.get(k); }
@@ -176,4 +182,4 @@ export function tile(map, ch, x, y, frame = 0) {
 }
 export const floorTile = (map, x, y) => tile(map, '.', x, y);
 export { ART, ENEMY_ART, heroRows };
-export const isBig = (id) => !!BIGALL()[id];
+export const isBig = (id) => !!BIGALL()[id] || !!BIGVAR[id];

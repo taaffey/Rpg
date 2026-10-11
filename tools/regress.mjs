@@ -69,6 +69,39 @@ for (let i = 0; i < 120; i++) {
 await pg.waitForTimeout(300);
 ok('snow battle won via keyboard only', !(await ev(() => !!window.__game.BT)) && (await ev(() => window.__game.G.party[0].exp)) > 0);
 
+// --- quests: accept, track kills through real battles, find a quest item, claim rewards
+const finishBattle = async () => { for (let i = 0; i < 200; i++) { const st = await ev(() => ({ bt: !!window.__game.BT, act: document.activeElement?.dataset?.act })); if (!st.bt) break; if (await pg.$('[data-act=vdone]')) { await key('Enter', 1, 100); break; } if (st.act === 'c' || st.act === 'tgt') await key('Enter', 1, 50); else await pg.waitForTimeout(80); } await pg.waitForTimeout(250); };
+const quickFight = async (grp, boss) => { await ev(([g, b2]) => { window.__game.battle(g, b2); }, [grp, boss]); await pg.waitForSelector('[data-act=c]', { timeout: 8000 }); await ev(() => window.__game.BT.b.e.forEach((e) => { e.hp = 1; })); await finishBattle(); };
+await ev(() => window.__game.goto('haven', 5, 7)); await key('ArrowLeft', 1, 200);
+ok('quest giver offers a quest', /Villager/.test(await overlayTitle()));
+for (let i = 0; i < 4 && !(await pg.$('[data-act=qaccept]')); i++) await key('Enter', 1, 120);
+await pg.click('[data-act=qaccept]'); await pg.waitForTimeout(150);
+ok('quest accepted', (await ev(() => window.__game.G.flags.quests.slimes)) === 'active');
+await ev(() => { window.__game.OPT.speed = 'instant'; });
+await quickFight(['slime', 'slime', 'slime']); await quickFight(['slime', 'slime', 'slime']);
+ok('kills counted toward the quest', (await ev(() => window.__game.G.flags.qprog.slimes)) === 6);
+await ev(() => window.__game.goto('haven', 5, 7)); await key('ArrowLeft', 1, 200);
+for (let i = 0; i < 4 && !(await pg.$('[data-act=qclaim]')); i++) await key('Enter', 1, 120);
+const goldBefore = await ev(() => window.__game.G.gold); await pg.click('[data-act=qclaim]'); await pg.waitForTimeout(150);
+ok('quest reward granted', (await ev(() => window.__game.G.gold)) === goldBefore + 150 && (await ev(() => window.__game.G.flags.quests.slimes)) === 'done');
+await closeAll();
+await ev(() => window.__game.goto('cavern', 18, 11)); await key('ArrowDown', 1, 250);
+ok('hidden quest chest gives the heirloom', (await ev(() => window.__game.G.flags.qitems.heirloom)) === true);
+await closeAll();
+// --- new regions: Mirewood interior NPCs, Storm Cavern boss, ending cinematic
+await ev(() => { window.__game.G.flags.bosses.wyrm = true; window.__game.goto('mirewood', 8, 9); }); await pg.waitForTimeout(300);
+ok('Mirewood loads', (await ev(() => window.__game.G.map)) === 'mirewood');
+await quickFight(['storm_drake'], 'storm_drake');
+ok('Storm Drake slain, loot and flag set', (await ev(() => window.__game.G.flags.bosses.storm_drake)) === true && (await ev(() => window.__game.G.inv.weapons.includes('storm_katana'))));
+await closeAll();
+await ev(() => { window.__game.G.flags.bosses.wyrm = true; });
+await ev(() => { window.__game.battle(['titan'], 'titan'); }); await pg.waitForSelector('[data-act=c]', { timeout: 8000 });
+await ev(() => window.__game.BT.b.e.forEach((e) => { e.hp = 1; })); await finishBattle();
+await pg.waitForTimeout(500);
+ok('ending cinematic shown after the Titan', /Frost Titan falls/.test(await overlayTitle()));
+await pg.screenshot({ path: process.env.SHOT || '/tmp/ending.png' });
+await pg.click('[data-act=edone]'); await pg.waitForTimeout(200);
+
 // --- new status: stun / crit gems resolve in the engine without errors
 const eng = await ev(async () => { const L = await import('/src/logic.js'); const m = L.skillWithGems('chop', ['stun', 'crit', 'berserk']); return [m.stun, m.crit, m.recoil, m.pow.toFixed(2)].join(','); });
 ok('new gems rewrite skills', eng === '0.35,0.25,0.08,2.24', eng);

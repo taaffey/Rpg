@@ -18,6 +18,7 @@ const DUNGEON_PAL = {
   dungeon: { top: '#1d1a2c', bot: '#2c2840', stal: '#100e1a', f0: '#2a2638', f1: '#15121f', specks: ['#34304a', '#1c1828', '#3c3858'], flame: '#ffb23a', tip: '#fff2a0', rim: 'rgba(255,255,255,.05)' },
   boss: { top: '#2a0f18', bot: '#5a1a10', stal: '#14070a', f0: '#3a1612', f1: '#1a0a0a', specks: ['#4a1c14', '#2a0e0c', '#6a2a18'], flame: '#ffb23a', tip: '#fff2a0', rim: 'rgba(255,120,40,.35)', lava: true },
   crypt: { top: '#0e1a16', bot: '#22342c', stal: '#070e0c', f0: '#22322a', f1: '#0e1612', specks: ['#2a3c34', '#162018', '#34483e'], flame: '#6aff8a', tip: '#d8ffe0', rim: 'rgba(120,255,160,.12)', graves: true },
+  storm: { top: '#14162e', bot: '#34386a', stal: '#0a0c1c', f0: '#2e3258', f1: '#14162a', specks: ['#3c4070', '#1e2040', '#4a4e84'], flame: '#ffe45a', tip: '#ffffff', rim: 'rgba(255,230,90,.2)' },
   spire: { top: '#274670', bot: '#5a82b4', stal: '#cfe8fa', f0: '#7a9cc8', f1: '#3a5a88', specks: ['#8ab0d8', '#4a6a98', '#a8c8e8'], flame: '#8ad8ff', tip: '#ffffff', rim: 'rgba(255,255,255,.3)', ice: true },
 };
 function backdrop(kind) {
@@ -68,10 +69,16 @@ export class Stage {
     this.v = new Map();
     battle.e.forEach((e, i) => { const big = SP.isBig(e.id), spr = SP.enemy(e.id), [px, py] = big ? [46, 36] : epos[i]; this.v.set(e.name, { c: e, side: 'e', style: STYLE[SP.baseOf(e.id)] || STYLE[e.id] || 'lunge', spr, x: px, y: py, w: spr.width, h: spr.height, dead: false, t: 0, flash: 0, lunge: 0, cast: 0, seed: i * 1.7 }); });
     battle.p.forEach((p, i) => { const spr = SP.hero(p.ch.main), [px, py] = HERO_POS[i]; this.v.set(p.name, { c: p, side: 'p', style: 'lunge', spr, x: px, y: py, w: 16, h: 16, dead: p.hp <= 0, deadT: p.hp <= 0 ? 9 : 0, t: 0, flash: 0, lunge: 0, cast: 0, seed: i * 1.3 }); });
+    this.born = performance.now(); this.zoom = 0; this.cardT = -1; this.cardText = ''; this.cardDur = 2; this.won = false; this.ease = 0;
     this.loop = this.loop.bind(this); requestAnimationFrame(this.loop);
   }
   stop() { this.running = false; }
   setActive(name) { this.active = name; }
+  card(text, dur = 2.2) { this.cardText = text; this.cardT = 0; this.cardDur = dur; }
+  victory() {
+    this.won = true; this.card('VICTORY!', 1.6);
+    for (const v of this.v.values()) if (v.side === 'p' && !v.dead) { this.effect('holy', v.x + 8, v.y + 8); this.burst(v.x + 8, v.y + 2, 'holy', 8, 14, { g: 30 }); }
+  }
   // ----- events from the battle engine -----
   event(e) {
     const v = this.v.get(e.actor || e.name);
@@ -88,6 +95,7 @@ export class Stage {
       this.effect(el, cx, cy);
       this.number(cx, v.y - 2, e.d, e.weak ? '#ffd25a' : v.side === 'p' ? '#ff7a7a' : '#ffffff');
       if (e.weak && FX.shake) this.shake = 0.25;
+      if (e.weak || (e.ko && v.side === 'e' && SP.isBig(v.c.id))) this.zoom = Math.max(this.zoom, v.w >= 32 ? 0.08 : 0.045);
       if (e.ko) { v.dead = true; v.deadT = 0; }
     } else if (e.t === 'heal' && v) {
       if (e.revived) { v.dead = false; v.deadT = 0; }
@@ -118,16 +126,30 @@ export class Stage {
   draw(t, dt) {
     const x = this.ctx; x.imageSmoothingEnabled = false;
     const sh = this.shake > 0 ? (Math.random() - 0.5) * 3 : 0; this.shake = Math.max(0, this.shake - dt);
-    x.save(); x.translate(Math.round(sh), 0); x.drawImage(this.bg, 0, 0);
+    this.ease = 1 - Math.pow(1 - Math.min(1, (performance.now() - this.born) / 750), 3); this.zoom = Math.max(0, this.zoom - dt * 0.2);
+    x.save(); x.translate(Math.round(sh), 0);
+    if (this.zoom > 0 && FX.shake) { x.translate(W / 2, H / 2); x.scale(1 + this.zoom, 1 + this.zoom); x.translate(-W / 2, -H / 2); }
+    x.drawImage(this.bg, 0, 0);
     this.ambient(x, t);
     const list = [...this.v.values()].sort((a, b) => a.y + a.h - (b.y + b.h));
     for (const v of list) this.drawOne(x, v, t, dt);
     this.drawParts(x, dt);
     x.restore();
+    this.drawCard(x, dt);
+  }
+  drawCard(x, dt) {
+    if (this.cardT < 0) return;
+    this.cardT += dt; const p = this.cardT / this.cardDur; if (p >= 1) { this.cardT = -1; return; }
+    const slide = Math.min(1, p / 0.15), fade = p > 0.8 ? (1 - p) / 0.2 : 1, w = W * slide;
+    x.globalAlpha = 0.72 * fade; x.fillStyle = '#05060f'; x.fillRect(0, 34, w, 20); x.fillStyle = '#e8c060'; x.fillRect(0, 34, w, 1); x.fillRect(0, 53, w, 1);
+    x.globalAlpha = fade; x.textAlign = 'center'; x.textBaseline = 'middle'; x.font = '8px "Press Start 2P", ui-monospace, monospace';
+    x.lineWidth = 2; x.strokeStyle = '#201000'; x.strokeText(this.cardText, W / 2 + (1 - slide) * 80, 44.5); x.fillStyle = '#fff2b0'; x.fillText(this.cardText, W / 2 + (1 - slide) * 80, 44.5);
+    x.globalAlpha = 1; x.textBaseline = 'alphabetic';
   }
   ambient(x, t) {
     if (this.kind === 'world') { x.fillStyle = 'rgba(255,255,255,.75)'; for (let i = 0; i < 3; i++) { const cx = ((t * 3 + i * 60) % (W + 40)) - 20, cy = 6 + i * 9; x.fillRect(cx, cy, 14, 3); x.fillRect(cx + 3, cy - 2, 8, 2); x.fillRect(cx + 2, cy + 3, 10, 1); } }
     else if (this.kind === 'boss') { x.fillStyle = '#ff9a3a'; for (let i = 0; i < 10; i++) { const px = (i * 17 + t * 6) % W, py = 88 - ((t * 14 + i * 23) % 70); x.fillRect(Math.round(px), Math.round(py), 1, 1); } }
+    else if (this.kind === 'storm') { const ph = (t * 0.45) % 1; const f = ph < 0.04 ? 0.5 : ph > 0.07 && ph < 0.09 ? 0.3 : 0; if (f) { x.fillStyle = `rgba(255,255,255,${f})`; x.fillRect(0, 0, W, H); } x.fillStyle = 'rgba(255,240,140,.7)'; for (let i = 0; i < 8; i++) x.fillRect(Math.round((i * 21 + t * 8) % W), Math.round(88 - ((t * 9 + i * 19) % 80)), 1, 1); }
     else if (this.kind === 'snow' || this.kind === 'spire') { x.fillStyle = 'rgba(255,255,255,.85)'; for (let i = 0; i < 26; i++) x.fillRect(Math.round((i * 23 + Math.sin(t * 0.8 + i) * 5 + t * 4) % W), Math.round((t * (9 + (i % 4) * 2) + i * 17) % H), 1, 1); }
     else if (this.kind === 'swamp') { x.fillStyle = 'rgba(190,210,170,.10)'; for (let i = 0; i < 4; i++) x.fillRect(0, 50 + i * 9 + Math.round(Math.sin(t * 0.5 + i) * 2), W, 4); x.fillStyle = '#e8ff80'; for (let i = 0; i < 6; i++) if (Math.sin(t * 2 + i * 2) > 0.2) x.fillRect(Math.round((i * 31 + Math.sin(t + i) * 8) % W), 50 + ((i * 13) % 30), 1, 1); }
     else if (this.kind === 'crypt') { x.fillStyle = 'rgba(140,255,170,.55)'; for (let i = 0; i < 10; i++) x.fillRect(Math.round((i * 17 + Math.sin(t * 0.7 + i) * 6) % W), Math.round(88 - ((t * 5 + i * 19) % 80)), 1, 1); }
@@ -152,6 +174,8 @@ export class Stage {
     }
     if (v.cast > 0) oy = -3 * Math.sin((1 - v.cast / 0.5) * Math.PI);
     if (v.side === 'p' && this.active === v.c.name && !v.dead) ox += -7;
+    ox += v.side === 'e' ? -(1 - this.ease) * 90 : (1 - this.ease) * 70; // slide in at battle start
+    if (this.won && v.side === 'p' && !v.dead) oy -= Math.abs(Math.sin(t * 9 + v.seed)) * 5;
     if (!v.dead || v.side === 'p') oy += Math.round(Math.sin(t * 3 + v.seed) * 0.8);
     if (v.flash > 0 && !v.dead) ox += (Math.random() - 0.5) * 3;
     const px = Math.round(v.x + ox), py = Math.round(v.y + oy), sw = v.w;
