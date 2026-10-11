@@ -339,3 +339,6 @@ export const QUESTS = {
   stormdrake: { title: 'Slay the Storm Drake', giver: 'Frostholm old hunter', goal: { type: 'boss', id: 'storm_drake' }, reward: { gold: 1500, gems: ['stun', 'echo'] },
     lines: { offer: ['A great drake nests in a cavern on the northern plains. Lightning plagues the sky for miles.', 'Slay the Storm Drake and I will pay the village\'s whole reserve. Ice is its weakness.'], active: ['The Storm Cavern, on the Northern Plains. Ice magic, friend.'], ready: ['The skies are clear for the first time in years! The village\'s reserve is yours.'], done: ['Clear skies at last. You are a legend.'] } },
 };
+
+// gem-wright: price of each successive bonus socket (per hero)
+export const SOCKET_COST = [600, 1500, 3500];

@@ -1,4 +1,5 @@
 // ===== Gemforge Chronicles: UI, map, menus, battle flow =====
+import { SOCKET_COST } from './data.js';
 import { JOBS, SKILLS, GEMS, WEAPONS, ARMORS, ACCS, ITEMS, WEAPON_TYPES, ENEMIES, ENCOUNTERS, ELEM_ICON, BOSSES, SHOPS, QUESTS } from './data.js';
 import { MAPS, WALK } from './maps.js';
 import * as L from './logic.js';
@@ -107,6 +108,7 @@ function miniOverlay(t) {
 }
 
 // ---------- map rendering ----------
+const plr = { x: 256, y: 192 };
 let face = 1, vx = 0, vy = 0, trans = 0, lastT = 0, trail = [], fv = [];
 const snap = () => { vx = G.x; vy = G.y; trail = [{ x: G.x, y: G.y }]; fv = [0, 1, 2].map(() => ({ x: G.x, y: G.y, f: face, mv: false })); reveal(); };
 const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
@@ -151,7 +153,7 @@ function draw(t = performance.now() / 1000) {
     cx.drawImage(SP.npc(n.type), nx0, ny0 - bob, TS, TS);
     const mk = questMarker(n); if (mk) { cx.fillStyle = mk === '?' ? '#7af0a0' : '#ffd25a'; cx.font = 'bold 14px sans-serif'; cx.textAlign = 'center'; cx.strokeStyle = '#201000'; cx.lineWidth = 3; cx.strokeText(mk, nx0 + TS / 2, ny0 - 3 - bob * 2); cx.fillText(mk, nx0 + TS / 2, ny0 - 3 - bob * 2); }
   }
-  const px = sx(vx), py = sy(vy);
+  const px = sx(vx), py = sy(vy); plr.x = px + TS / 2; plr.y = py + TS / 2;
   const crew = [{ i: 0, x: vx, y: vy, f: face, mv: Math.abs(vx - G.x) + Math.abs(vy - G.y) > 0.05 }, ...fv.slice(0, G.party.length - 1).map((f, i) => ({ i: i + 1, ...f }))].sort((a, b) => a.y - b.y || b.i - a.i);
   for (const c of crew) {
     const cx0 = sx(c.x), cy0 = sy(c.y), hop = c.mv ? Math.round(Math.abs(Math.sin(t * 16 + c.i)) * 2) : 0;
@@ -267,10 +269,23 @@ addEventListener('keydown', (e) => {
   else if ((e.key === 'Escape' || e.key === 'm') && !inOverlay() && !busy) mainMenu();
   else if (e.key === 'n' && !inOverlay()) { OPT.minimap = !OPT.minimap; applyOptions(); }
 });
-document.querySelectorAll('#dpad button').forEach((b) => b.addEventListener('click', () => {
-  const d = b.dataset.d; if (d === 'menu') return inOverlay() ? null : mainMenu();
-  step(...{ up: [0, -1], down: [0, 1], left: [-1, 0], right: [1, 0] }[d]);
-}));
+// touch: hold the d-pad, or tap/hold anywhere on the map to walk toward that spot
+let holdTimer = null;
+const stopHold = () => { clearInterval(holdTimer); holdTimer = null; };
+const startHold = (fn) => { stopHold(); fn(); holdTimer = setInterval(fn, 150); };
+document.querySelectorAll('#dpad button').forEach((b) => {
+  const d = b.dataset.d;
+  if (d === 'menu') return b.addEventListener('click', () => { if (!inOverlay()) mainMenu(); });
+  const v = { up: [0, -1], down: [0, 1], left: [-1, 0], right: [1, 0] }[d];
+  b.addEventListener('pointerdown', (e) => { e.preventDefault(); startHold(() => step(...v)); });
+});
+['pointerup', 'pointercancel', 'pointerleave'].forEach((ev) => { document.querySelectorAll('#dpad button').forEach((b) => b.addEventListener(ev, stopHold)); cv.addEventListener(ev, stopHold); });
+cv.addEventListener('pointerdown', (e) => {
+  if (!G || inOverlay()) return;
+  const r = cv.getBoundingClientRect(), tx = ((e.clientX - r.left) * cv.width) / r.width, ty = ((e.clientY - r.top) * cv.height) / r.height;
+  const aim = () => { const dx = tx - plr.x, dy = ty - plr.y; if (Math.abs(dx) < TS * 0.45 && Math.abs(dy) < TS * 0.45) return; if (Math.abs(dx) > Math.abs(dy)) step(Math.sign(dx), 0); else step(0, Math.sign(dy)); };
+  startHold(aim);
+});
 ACT.close = hide;
 
 function openChest(x, y) {
@@ -299,6 +314,7 @@ function talk(npc) {
   if (npc.service === 'shop') return shop(npc.shop);
   if (npc.service === 'inn') return inn(npc);
   if (npc.service === 'guild') return guild();
+  if (npc.service === 'socketer') return socketer();
   G.flags.talked[`${G.map}:${npc.x},${npc.y}`] = true; curNpc = npc;
   if (!npc.quest) { curLines = npc.text; curFinal = btn('close', 'Close', '', '', 'primary'); return say(0); }
   const id = npc.quest, q = QUESTS[id], st = qstate(id);
@@ -342,6 +358,12 @@ function inn(npc) {
   show(`<h2>🛏️ ${esc(mapDef().name)}</h2><div class="npc">${npcImg('innkeeper', 64)}<p>A night's rest restores everyone and saves your game. <span class="gold">${cost} G</span><br>You have <span class="gold">${G.gold} G</span>.</p></div>${btn('rest', 'Rest', cost, '', 'primary', G.gold < cost)}${btn('close', 'Leave')}`);
 }
 ACT.rest = (cost) => { sfx('rest'); G.gold -= +cost; for (const c of G.party) { const s = maxOf(c); c.hp = s.hp; c.mp = s.mp; } save(); draw(); show(`<h2>🛏️ Rested</h2><p>HP and MP restored. Game saved.</p>${btn('close', 'OK', '', '', 'primary')}`); };
+
+function socketer(msg = '') {
+  show(`<h2>💎 Gem-wright</h2><div class="npc">${npcImg('merchant', 64)}<p>I can bore extra sockets into a hero's gear, so more gems fit on their skills. Each hero can take up to ${SOCKET_COST.length} more. The price rises with each one.<br>You have <span class="gold">${G.gold} G</span>.</p></div>${msg ? `<p class="dim">${msg}</p>` : ''}
+  ${G.party.map((c, i) => { const n = c.extra || 0, cost = SOCKET_COST[n]; return `<div class="slot"><div class="t"><b>${esc(c.name)}</b> <span class="dim">${JOBS[c.main].name}</span><small>Sockets: ${gemCapacity(c)} total (${n}/${SOCKET_COST.length} bonus)</small></div>${n >= SOCKET_COST.length ? '<span class="dim">Maxed</span>' : btn('addsock', `+1 socket · ${cost} G`, i, '', '', G.gold < cost)}</div>`; }).join('')}${btn('close', 'Leave', '', '', 'primary')}`);
+}
+ACT.addsock = (i) => { const c = G.party[+i], n = c.extra || 0, cost = SOCKET_COST[n]; if (cost == null || G.gold < cost) return; G.gold -= cost; c.extra = n + 1; sfx('chest'); socketer(`${c.name} now has ${gemCapacity(c)} sockets.`); };
 
 let shopTab = 'buy', curShop = null;
 function shop(id, msg = '') {

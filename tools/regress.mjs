@@ -103,6 +103,14 @@ ok('ending cinematic shown after the Titan', /Frost Titan falls/.test(await over
 await pg.screenshot({ path: process.env.SHOT || '/tmp/ending.png' });
 await pg.click('[data-act=edone]'); await pg.waitForTimeout(200);
 
+// --- gem-wright sells bonus sockets
+await ev(() => { window.__game.G.gold = 5000; window.__game.goto('haven_smith', 8, 5); }); await key('ArrowUp', 1, 250);
+ok('Gem-wright opens', /Gem-wright/.test(await overlayTitle()));
+const capBefore = await ev(() => window.__game.G.party[1].extra || 0);
+await pg.click('[data-act=addsock][data-a="1"]'); await pg.waitForTimeout(150);
+ok('bonus socket purchased', (await ev(() => window.__game.G.party[1].extra)) === capBefore + 1 && (await ev(() => window.__game.G.gold)) === 4400);
+await closeAll();
+
 // --- new status: stun / crit gems resolve in the engine without errors
 const eng = await ev(async () => { try { const L = await import('/src/logic.js'); const m = L.skillWithGems('chop', ['stun', 'crit', 'berserk']); return [m.stun, m.crit, m.recoil, m.pow.toFixed(2)].join(','); } catch { return 'bundled'; } });
 ok('new gems rewrite skills', eng === '0.35,0.25,0.08,2.24' || eng === 'bundled', eng);

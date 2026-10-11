@@ -94,3 +94,6 @@ canvas#map.shake{animation:mapshake .4s}
 .credits .roll{animation:roll 34s linear forwards;padding-top:150px}
 .credits .roll div{line-height:1.9}.credits .roll .h{font-family:"Press Start 2P",ui-monospace,monospace;font-size:11px;color:#ffd25a;margin-top:6px}
 @keyframes roll{from{transform:translateY(0)}to{transform:translateY(-120%)}}
+
+#gold{white-space:nowrap}
+@media (pointer:coarse),(max-width:560px){#hud .hint{display:none}#dpad{display:flex}#dpad button{touch-action:none;user-select:none;-webkit-user-select:none}canvas#map{touch-action:none}.win{padding:10px}button{min-height:38px}}

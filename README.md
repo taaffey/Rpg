@@ -6,7 +6,7 @@ Plain HTML/JS modules, no build step, no asset files: all art and audio are gene
 ## Run
     python3 -m http.server 8123     # then open http://localhost:8123
 
-Controls: Arrows/WASD move, Esc/M menu, N toggles the minimap (on-screen pad on touch devices). In any menu or battle:
+Touch: hold the on-screen pad or tap/hold anywhere on the map to walk toward that spot. Keyboard: Arrows/WASD move, Esc/M menu, N toggles the minimap (on-screen pad on touch devices). In any menu or battle:
 arrows move the focus, Enter/Space selects, Esc/Backspace goes back, L expands the battle log. Fully playable with the
 keyboard alone, or with the mouse. Options (volumes, battle speed, shake, minimap) are in the menu and on the title screen.
 
@@ -26,6 +26,7 @@ keyboard alone, or with the mouse. Options (volumes, battle speed, shake, minima
 - **Dungeons** with their own lighting, music and enemies: Ashen Cavern (Ashen Wyrm), Sunken Crypt (Lich King Morvath),
   Frost Spire (Frost Titan, the final boss) and the optional Storm Cavern on the Northern Plains (Storm Drake).
   29 enemies including recolored tiers. Level cap 20.
+- **Gem-wright** (in each smithy): spend gold for up to 3 bonus sockets per hero, so more gems fit on their skills.
 - **Side quests** (7): kill, find-an-item and boss quests from NPCs (`!` = offer, `?` = ready to turn in), tracked in the journal.
 - **Ending**: a cinematic dawn scene with scrolling credits and your stats (play time, battles, quests, gems).
 

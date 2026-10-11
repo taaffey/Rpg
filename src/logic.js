@@ -31,7 +31,7 @@ export function learnable(c) {
   if (c.sub) for (const [id, lv] of JOBS[c.sub].skills) if (lv + 2 <= c.level && !out.includes(id)) out.push(id);
   return out;
 }
-export const gemCapacity = (c) => 2 + gear(c).reduce((n, g) => n + (g.sockets || 0), 0);
+export const gemCapacity = (c) => 2 + (c.extra || 0) + gear(c).reduce((n, g) => n + (g.sockets || 0), 0);
 export const gemsUsed = (c) => c.gems.reduce((n, a) => n + a.length, 0);
 export const SLOT_COUNT = 4, SIG = 4, GEMS_PER_SLOT = 3;
 export const slotSkill = (c, i) => (i === SIG ? sigSkill(c) : c.slots[i]);
