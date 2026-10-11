@@ -33,6 +33,9 @@ const ART = {
   guild: ['................', '....pppppppp....', '...pPPPPPPPPp...', '...pPwPPPPwPp...', '...pPPwPPwPPp...', '...pPPPwwPPPp...', '...pPPwPPwPPp...', '...pPwPPPPwPp...', '...pPPPPPPPPp...', '....pPPPPPPp....', '.....pPPPPp.....', '......pPPp......', '.......pp.......', '................', '................', '................'],
   chest: ['................', '................', '................', '...NNNNNNNNNN...', '..NnnnnnnnnnnN..', '..NnnnnnnnnnnN..', '..NNNNyyNNNNNN..', '..NnnnnykNnnnN..', '..NnnnnnnnnnnN..', '..NnnnnnnnnnnN..', '..NNNNNNNNNNNN..', '................', '................', '................', '................', '................'],
   chestOpen: ['................', '..NNNNNNNNNNNN..', '..NnnnnnnnnnnN..', '..NNNNNNNNNNNN..', '..NkkkkkkkkkkN..', '..NkyyyykyyykN..', '..NNNNyyNNNNNN..', '..NnnnnykNnnnN..', '..NnnnnnnnnnnN..', '..NnnnnnnnnnnN..', '..NNNNNNNNNNNN..', '................', '................', '................', '................', '................'],
+  torchA: ['................', '................', '.......y........', '......yoy.......', '......yoy.......', '.......o........', '......kNk.......', '......kNk.......', '......kNk.......', '.....kkkkk......', '................', '................', '................', '................', '................', '................'],
+  torchB: ['................', '.......y........', '......yoy.......', '.....yoyoy......', '......yoy.......', '.......o........', '......kNk.......', '......kNk.......', '......kNk.......', '.....kkkkk......', '................', '................', '................', '................', '................', '................'],
+  lamp: ['................', '.....kkkkk......', '....kyyyyyk.....', '....kyywyyk.....', '....kyyyyyk.....', '.....kkkkk......', '......kSk.......', '......kSk.......', '......kSk.......', '......kSk.......', '......kSk.......', '.....kSSSk......', '....kSSSSSk.....', '................', '................', '................'],
   exit: ['................', '.....yyyy.......', '....yyyyyy......', '....yyyyyy......', '....yyyyyy......', '..yyyyyyyyyy....', '...yyyyyyyy.....', '....yyyyyy......', '.....yyyy.......', '......yy........', '................', '................', '................', '................', '................', '................'],
 };
 // ---------- enemies ----------
@@ -74,7 +77,12 @@ export const HERO_STYLE = { // job -> [head, H, h, T, t, A, F]
   hexer: ['hood', '#4a2a80', '#2a1550', '#2a2038', '#15101d', '#6ef0a0', '#d8c8b0'],
   bard: ['pointy', '#d94a4a', '#8a2430', '#2aa0a0', '#1a7070', '#f4d35e', '#f0c8a0'],
 };
-function heroRows(job) { const [h] = HERO_STYLE[job]; return [...HEAD[h], ...BODY]; }
+function heroRows(job, frame = 0) {
+  const [h] = HERO_STYLE[job], rows = [...HEAD[h], ...BODY];
+  if (frame === 1) { rows[13] = '..kttk....kttk..'; rows[14] = '..kkkk....kkkk..'; }
+  if (frame === 2) { rows[13] = '.....kttkttk....'; rows[14] = '.....kkkkkkk....'; }
+  return rows;
+}
 function heroPal(job) { const [, H, h, T, t, A, F] = HERO_STYLE[job]; return { H, h, T, t, A, F }; }
 
 // ---------- tile sheet ----------
@@ -98,7 +106,22 @@ function buildTiles() {
   T.dungeon = { '.': dfloor, '#': [dwall], E: [over(dfloor[0], sp('exit'))], C: [over(dfloor[0], sp('chest'))], c: [over(dfloor[0], sp('chestOpen'))], X: [over(dfloor[1], enemy('wyrmMini'))] };
 }
 export function enemy(id) { if (!cache.has('e' + id)) cache.set('e' + id, sprite(BIG[id] || ENEMY_ART[id], BIG[id] ? BIG_PAL : undefined)); return cache.get('e' + id); }
-export function hero(job) { if (!cache.has('h' + job)) cache.set('h' + job, sprite(heroRows(job), heroPal(job))); return cache.get('h' + job); }
+export function hero(job, frame = 0) { const k = `h${job}${frame}`; if (!cache.has(k)) cache.set(k, sprite(heroRows(job, frame), heroPal(job))); return cache.get(k); }
+export const torch = (frame) => { const k = 'torch' + frame; if (!cache.has(k)) cache.set(k, sprite(ART[frame ? 'torchB' : 'torchA'])); return cache.get(k); };
+export const lamp = () => { if (!cache.has('lamp')) cache.set('lamp', sprite(ART.lamp)); return cache.get('lamp'); };
+export const treeSprite = () => { if (!cache.has('tree')) cache.set('tree', sprite(ART.tree)); return cache.get('tree'); };
+// 10x10 faceted gem icon, recolored per gem type
+const GEM_COL = { fire: '#ff7a3a', frost: '#7fd8f0', bolt: '#fff27a', holy: '#ffffff', shadow: '#9a62e0', chain: '#9aa0b0', echo: '#3ad0b0', vamp: '#d94a4a', pierce: '#d0d8f0', thrifty: '#5ed17a', overcharge: '#ee50c0', wide: '#4a8ae0', venom: '#a6e87f', swift: '#6ac8ff', focusg: '#f4b13a' };
+const GEM_SHAPE = ['....kk....', '...kLLk...', '..kLLMMk..', '.kLMMMMDk.', 'kLMMMMMDDk', 'kLMMMMMDDk', '.kMMMMMDk.', '..kMMMDk..', '...kDDk...', '....kk....'];
+export function gemIcon(id, scale = 2) {
+  const k = `gi${id}${scale}`; if (cache.has(k)) return cache.get(k);
+  const base = GEM_COL[id] || '#aaaaaa', c = mk(10, 10), x = c.getContext('2d');
+  const shade = (hex, f) => { const n = parseInt(hex.slice(1), 16), ch = (v) => Math.max(0, Math.min(255, Math.round(v * f))); return `rgb(${ch(n >> 16)},${ch((n >> 8) & 255)},${ch(n & 255)})`; };
+  paint(GEM_SHAPE, { M: base, L: shade(base, 1.35) === base ? base : shade(base, 1.3), D: shade(base, 0.6), k: '#15101d' }, x);
+  x.fillStyle = '#ffffff'; x.fillRect(3, 3, 1, 1);
+  const u = mk(10 * scale, 10 * scale), ux = u.getContext('2d'); ux.imageSmoothingEnabled = false; ux.drawImage(c, 0, 0, u.width, u.height);
+  const out = u.toDataURL(); cache.set(k, out); return out;
+}
 export function url(canvas, scale = 4) { const c = mk(canvas.width * scale, canvas.height * scale), x = c.getContext('2d'); x.imageSmoothingEnabled = false; x.drawImage(canvas, 0, 0, c.width, c.height); return c.toDataURL(); }
 export const enemyURL = (id) => { const k = 'eu' + id; if (!cache.has(k)) cache.set(k, url(enemy(id), 4)); return cache.get(k); };
 export const heroURL = (job) => { const k = 'hu' + job; if (!cache.has(k)) cache.set(k, url(hero(job), 3)); return cache.get(k); };

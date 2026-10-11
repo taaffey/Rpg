@@ -16,7 +16,7 @@ const DB = { weapons: WEAPONS, armors: ARMORS, accs: ACCS, gems: GEMS, items: IT
 
 // ---------- overlay plumbing ----------
 const ACT = {};
-function show(html, cls = '') { ov.innerHTML = `<div class="win">${html}</div>`; ov.className = 'on ' + cls; }
+function show(html, cls = '') { ov.innerHTML = `<div class="win anim">${html}</div>`; ov.className = 'on ' + cls; }
 function hide() { ov.className = ''; ov.innerHTML = ''; draw(); }
 const inOverlay = () => ov.classList.contains('on');
 ov.addEventListener('click', (e) => {
@@ -26,7 +26,9 @@ ov.addEventListener('click', (e) => {
   ACT[b.dataset.act]?.(b.dataset.a, b.dataset.b);
 });
 const btn = (act, label, a = '', b = '', cls = '', dis = false) => `<button class="${cls}" data-act="${act}" data-a="${a}" data-b="${b}" ${dis ? 'disabled' : ''}>${label}</button>`;
-const bar = (v, m, cls) => `<div class="bar ${cls}"><i style="width:${Math.max(0, Math.min(100, (v / m) * 100))}%"></i></div>`;
+const bar = (v, m, cls) => { const r = v / m, lvl = cls === 'hp' ? (r < 0.25 ? ' low' : r < 0.5 ? ' mid' : '') : ''; return `<div class="bar ${cls}${lvl}"><i style="width:${Math.max(0, Math.min(100, r * 100))}%"></i></div>`; };
+const gemImg = (g) => `<img class="gi" src="${SP.gemIcon(g)}" width="20" height="20" alt="">`;
+const gemChip = (g, short = false) => `<span class="chip" title="${GEMS[g].desc}">${gemImg(g)}${short ? GEMS[g].name.replace(' Gem', '') : GEMS[g].name}</span>`;
 const statLine = (s) => `<div class="stats">${['hp', 'mp', 'atk', 'def', 'mag', 'spd'].map((k) => `<span>${k.toUpperCase()} <b>${s[k]}</b></span>`).join('')}</div>`;
 const gearLine = (g) => ['atk', 'mag', 'def', 'hp', 'mp', 'spd'].filter((k) => g[k]).map((k) => `${g[k] > 0 ? '+' : ''}${g[k]} ${k}`).concat(g.res ? g.res.map((r) => `resist ${r}`) : [], g.sockets ? [`${g.sockets}◇`] : [], g.innate ? [`innate ${GEMS[g.innate].name}`] : []).join(', ');
 
@@ -55,8 +57,10 @@ const mapDef = () => MAPS[G.map];
 const tileAt = (x, y) => (mapDef().rows[y] || '')[x] ?? '#';
 const chestKey = (x, y) => `${G.map}:${x},${y}`;
 const musicFor = () => (G.map === 'dungeon' ? 'dungeon' : G.map === 'town' ? 'town' : 'world');
-let face = 1, vx = 0, vy = 0, trans = 0, lastT = 0;
-const snap = () => { vx = G.x; vy = G.y; };
+let face = 1, vx = 0, vy = 0, trans = 0, lastT = 0, trail = [], fv = [];
+const snap = () => { vx = G.x; vy = G.y; trail = [{ x: G.x, y: G.y }]; fv = [0, 1, 2].map(() => ({ x: G.x, y: G.y, f: face, mv: false })); };
+const DECOR = { town: [[1, 1, 'tree'], [12, 1, 'tree'], [1, 6, 'tree'], [12, 6, 'tree'], [4, 4, 'lamp'], [9, 4, 'lamp']] };
+const decorAt = (x, y) => DECOR[G.map]?.some((d) => d[0] === x && d[1] === y);
 const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
 function draw(t = performance.now() / 1000) {
   if (!G) return;
@@ -79,11 +83,17 @@ function draw(t = performance.now() / 1000) {
       if (tileAt(x + 1, y) !== '~' && x < W - 1) cx.fillRect(sx(x) + TS - 2, sy(y), 2, TS);
     }
   }
-  const moving = Math.abs(vx - G.x) + Math.abs(vy - G.y) > 0.05;
-  const px = sx(vx), py = sy(vy) - (moving ? Math.round(Math.abs(Math.sin(t * 16)) * 2) : 0);
-  cx.fillStyle = 'rgba(0,0,0,.35)'; cx.beginPath(); cx.ellipse(px + TS / 2, sy(vy) + TS - 3, 10, 4, 0, 0, 7); cx.fill();
-  cx.save(); cx.translate(face < 0 ? px + TS : px, py); cx.scale(face, 1);
-  cx.drawImage(SP.hero(G.party[0].main), 0, 0, TS, TS); cx.restore();
+  const torches = [];
+  if (G.map === 'dungeon') for (let y = 0; y < H - 1; y++) for (let x = 0; x < W; x++) if (tileAt(x, y) === '#' && tileAt(x, y + 1) === '.' && (x * 5 + y * 3) % 7 === 0) { cx.drawImage(SP.torch(Math.floor(t * 7 + x) % 2), sx(x), sy(y), TS, TS); torches.push([sx(x) + TS / 2, sy(y) + TS * 0.4]); }
+  for (const [dx, dy, k] of DECOR[G.map] || []) cx.drawImage(k === 'tree' ? SP.treeSprite() : SP.lamp(), sx(dx), sy(dy), TS, TS);
+  const px = sx(vx), py = sy(vy);
+  const crew = [{ i: 0, x: vx, y: vy, f: face, mv: Math.abs(vx - G.x) + Math.abs(vy - G.y) > 0.05 }, ...fv.slice(0, G.party.length - 1).map((f, i) => ({ i: i + 1, ...f }))].sort((a, b) => a.y - b.y || b.i - a.i);
+  for (const c of crew) {
+    const x0 = sx(c.x), y0 = sy(c.y), hop = c.mv ? Math.round(Math.abs(Math.sin(t * 16 + c.i)) * 2) : 0;
+    cx.fillStyle = 'rgba(0,0,0,.35)'; cx.beginPath(); cx.ellipse(x0 + TS / 2, y0 + TS - 3, 10, 4, 0, 0, 7); cx.fill();
+    cx.save(); cx.translate(c.f < 0 ? x0 + TS : x0, y0 - hop); cx.scale(c.f, 1);
+    cx.drawImage(SP.hero(G.party[c.i].main, c.mv ? [0, 1, 0, 2][Math.floor(t * 10 + c.i) % 4] : 0), 0, 0, TS, TS); cx.restore();
+  }
   if (G.map === 'world') { // drifting cloud shadows
     cx.fillStyle = 'rgba(10,20,40,.13)';
     for (let i = 0; i < 3; i++) { const cxp = ((t * 14 + i * 230) % (cv.width + 240)) - 120; cx.beginPath(); cx.ellipse(cxp, 70 + i * 120, 80, 26, 0, 0, 7); cx.fill(); }
@@ -92,6 +102,9 @@ function draw(t = performance.now() / 1000) {
     const g = cx.createRadialGradient(gx, gy, 30, gx, gy, 175 + fl);
     g.addColorStop(0, 'rgba(255,170,60,.07)'); g.addColorStop(0.45, 'rgba(0,0,10,.28)'); g.addColorStop(1, 'rgba(0,0,10,.88)');
     cx.fillStyle = g; cx.fillRect(0, 0, cv.width, cv.height);
+    cx.globalCompositeOperation = 'lighter'; // torch glow on top of the darkness
+    for (const [tx, ty] of torches) { const r = 52 + Math.sin(t * 11 + tx) * 4, tg = cx.createRadialGradient(tx, ty, 2, tx, ty, r); tg.addColorStop(0, 'rgba(255,150,50,.38)'); tg.addColorStop(1, 'rgba(255,100,20,0)'); cx.fillStyle = tg; cx.fillRect(tx - r, ty - r, r * 2, r * 2); }
+    cx.globalCompositeOperation = 'source-over';
   } else { cx.fillStyle = 'rgba(255,170,80,.06)'; cx.fillRect(0, 0, cv.width, cv.height); }
   if (trans > 0) { // battle-start wipe
     cx.fillStyle = '#000';
@@ -119,23 +132,25 @@ function tick(now) {
   const dt = Math.min(0.05, (now - lastT) / 1000 || 0.016); lastT = now;
   if (!G) return drawTitle(now / 1000);
   const sp = 9 * dt; vx += clamp(G.x - vx, -sp, sp); vy += clamp(G.y - vy, -sp, sp);
+  fv.forEach((f, i) => { const tg = trail[Math.max(0, trail.length - 2 - i)] || { x: G.x, y: G.y }, dx = tg.x - f.x, dy = tg.y - f.y; f.mv = Math.abs(dx) + Math.abs(dy) > 0.02; if (Math.abs(dx) > 0.01) f.f = Math.sign(dx); f.x += clamp(dx, -sp, sp); f.y += clamp(dy, -sp, sp); });
   if (!inOverlay()) draw(now / 1000);
 }
 requestAnimationFrame(tick);
 const frame = () => new Promise((r) => requestAnimationFrame(r));
 async function transition() { sfx('encounter'); for (trans = 0.02; trans < 1.2; trans += 0.065) await frame(); trans = 1; await sleep(60); }
-function goto(map, x, y) { G.map = map; G.x = x; G.y = y; snap(); music(musicFor()); sfx('door'); draw(); }
+function banner(text) { const b = $('#banner'); b.textContent = text; b.classList.remove('show'); void b.offsetWidth; b.classList.add('show'); }
+function goto(map, x, y) { G.map = map; G.x = x; G.y = y; snap(); music(musicFor()); sfx('door'); banner(MAPS[map].name); draw(); }
 const BLOCK = new Set(['#', '~', 'M', 'T']);
 async function step(dx, dy) {
   if (inOverlay() || busy || Math.abs(vx - G.x) + Math.abs(vy - G.y) > 0.45) return;
   const nx = G.x + dx, ny = G.y + dy, t = tileAt(nx, ny);
-  if (BLOCK.has(t)) return;
+  if (BLOCK.has(t) || decorAt(nx, ny)) return;
   if (t === 'S') return shop();
   if (t === 'I') return inn();
   if (t === 'G') return guild();
   if (dx) face = dx;
   if (t === 'C') { if (!G.flags.chests[chestKey(nx, ny)]) openChest(nx, ny); return; }
-  G.x = nx; G.y = ny; if (dx) face = dx;
+  G.x = nx; G.y = ny; if (dx) face = dx; trail.push({ x: nx, y: ny }); if (trail.length > 8) trail.shift();
   if (t === 'H') return goto('town', 6, 6);
   if (t === 'D') return goto('dungeon', 2, 1);
   if (t === 'E') return G.map === 'town' ? goto('world', 7, 4) : goto('world', 19, 9);
@@ -146,7 +161,33 @@ async function step(dx, dy) {
 }
 let busy = false;
 const KEYS = { ArrowUp: [0, -1], w: [0, -1], ArrowDown: [0, 1], s: [0, 1], ArrowLeft: [-1, 0], a: [-1, 0], ArrowRight: [1, 0], d: [1, 0] };
+let lastSig = '';
+const sig = (el) => `${el.dataset.act}|${el.dataset.a}|${el.dataset.b}`;
+const navs = () => [...ov.querySelectorAll('[data-act]')].filter((e) => !e.disabled);
+ov.addEventListener('focusin', (e) => { if (e.target.dataset?.act) lastSig = sig(e.target); });
+let lastTitle = null;
+new MutationObserver(() => { // keep focus stable across same-screen redraws; start at the first control on a new screen
+  const list = navs(); list.forEach((e) => { if (e.tagName !== 'BUTTON') e.tabIndex = 0; });
+  const title = ov.querySelector('h2')?.textContent || ''; if (title !== lastTitle) lastSig = ''; lastTitle = title;
+  const cur = document.activeElement;
+  if (!list.length || (ov.contains(cur) && cur.dataset?.act && sig(cur) === lastSig)) return;
+  (list.find((e) => sig(e) === lastSig) || list[0]).focus({ preventScroll: true });
+}).observe(ov, { childList: true });
+function overlayKey(e) {
+  const list = navs(), i = list.indexOf(document.activeElement);
+  if (['ArrowDown', 'ArrowRight', 'ArrowUp', 'ArrowLeft'].includes(e.key) && list.length) {
+    const d = e.key === 'ArrowDown' || e.key === 'ArrowRight' ? 1 : -1; list[(i + d + list.length) % list.length].focus(); return true;
+  }
+  const f = document.activeElement;
+  if ((e.key === 'Enter' || e.key === ' ') && f?.dataset?.act && f.tagName !== 'BUTTON') { f.click(); return true; }
+  if (e.key === 'Escape' || e.key === 'Backspace') {
+    const b = list.find((x) => /^(close|bmain|leave|menu|bclose)$/.test(x.dataset.act) || (x.dataset.act === 'c' && x.dataset.a === 'root') || (x.dataset.act === 'c' && x.dataset.a === 'item' && false));
+    if (b) { b.click(); return true; }
+  }
+  return false;
+}
 addEventListener('keydown', (e) => {
+  if (inOverlay() && overlayKey(e)) { e.preventDefault(); return; }
   if (!G) return;
   if (KEYS[e.key]) { e.preventDefault(); step(...KEYS[e.key]); }
   else if ((e.key === 'Escape' || e.key === 'm') && !inOverlay() && !busy) mainMenu();
@@ -175,8 +216,8 @@ function title() {
   <div class="row" style="justify-content:center">${btn('new', 'New Game', '', '', 'primary')}${btn('cont', 'Continue', '', '', '', !hasSave())}</div>`, 'title');
   $('#loc').textContent = ''; $('#gold').textContent = ''; music('town');
 }
-ACT.new = () => { newGame(); snap(); music(musicFor()); hide(); intro(); };
-ACT.cont = () => { if (load()) { snap(); music(musicFor()); hide(); } };
+ACT.new = () => { newGame(); snap(); music(musicFor()); hide(); banner(mapDef().name); intro(); };
+ACT.cont = () => { if (load()) { snap(); music(musicFor()); hide(); banner(mapDef().name); } };
 function intro() {
   show(`<h2>Welcome to Haven Town</h2><p>The <b>Ashen Wyrm</b> sleeps beneath the cavern east of here. You and your three companions are the town's last hope.</p>
   <p>Before you leave, visit the <b>Guild (⚔️)</b> to choose jobs, and open the <b>Menu</b> to socket gems into skills. Experiment: the same skill can behave very differently with the right gems.</p>${btn('close', 'Begin', '', '', 'primary')}`);
@@ -192,7 +233,7 @@ ACT.save = () => { $('#msg').textContent = save() ? 'Game saved.' : 'Could not s
 function itemsMenu(msg = '') {
   const it = Object.entries(G.inv.items).filter(([, n]) => n > 0);
   show(`<h2>🎒 Items</h2><p class="gold">${G.gold} G</p>${msg ? `<p>${msg}</p>` : ''}${it.length ? it.map(([id, n]) => `<div class="row">${btn('useitem', `${ITEMS[id].name} ×${n}`, id)}<span class="dim">${ITEMS[id].desc}</span></div>`).join('') : '<p class="dim">No consumables.</p>'}
-  <h3>Gems (${G.inv.gems.length})</h3><div>${G.inv.gems.map((g) => `<span class="chip" title="${GEMS[g].desc}">${GEMS[g].name}</span>`).join('') || '<span class="dim">none</span>'}</div>
+  <h3>Gems (${G.inv.gems.length})</h3><div>${G.inv.gems.map((g) => gemChip(g)).join('') || '<span class="dim">none</span>'}</div>
   <div class="row">${btn('menu', 'Back')}</div>`);
 }
 ACT.items = () => itemsMenu(); ACT.menu = mainMenu;
@@ -226,7 +267,7 @@ function buildMain(c) {
   const slotRow = (i) => {
     const sid = slotSkill(c, i), gems = slotGems(c, i);
     const m2 = sid ? skillWithGems(sid, gems) : null;
-    return `<div class="slot"><div class="t"><b>${i === SIG ? '⭐ Weapon' : `Slot ${i + 1}`}:</b> ${sid ? `<b>${m2.name}</b> ${gems.map((g) => `<span class="chip">${GEMS[g].name.replace(' Gem', '')}</span>`).join('')}` : '<span class="dim">— empty —</span>'}<small>${m2 ? describeSkill(m2) : ''}</small></div>${btn('bslot', 'Edit', i)}</div>`;
+    return `<div class="slot"><div class="t"><b>${i === SIG ? '⭐ Weapon' : `Slot ${i + 1}`}:</b> ${sid ? `<b>${m2.name}</b> ${gems.map((g) => gemChip(g, true)).join('')}` : '<span class="dim">— empty —</span>'}<small>${m2 ? describeSkill(m2) : ''}</small></div>${btn('bslot', 'Edit', i)}</div>`;
   };
   show(`<div class="row">${btn('bnav', '◀', -1)}<h2 class="grow"><img src="${SP.heroURL(c.main)}" width="36" height="36" class="px" style="vertical-align:middle"> ${esc(c.name)} · Lv${c.level}</h2>${btn('bnav', '▶', 1)}</div>
   <div class="dim">EXP ${c.exp}/${c.level < L.MAX_LEVEL ? expNeeded(c.level) : '—'}</div>
@@ -273,12 +314,12 @@ function slotEdit(c) {
   const final = sid ? skillWithGems(sid, slotGems(c, i)) : null;
   const inv = [...new Set(G.inv.gems)];
   show(`<h2>${i === SIG ? '⭐ Weapon skill' : 'Skill slot ' + (i + 1)} — ${esc(c.name)}</h2>
-  <div class="card"><b>${final ? final.name : '— empty —'}</b> ${slotGems(c, i).map((g) => `<span class="chip">${GEMS[g].name}</span>`).join('')}<br><span class="dim">${final ? describeSkill(final) : 'Pick a skill below.'}</span></div>
+  <div class="card"><b>${final ? final.name : '— empty —'}</b> ${slotGems(c, i).map((g) => gemChip(g)).join('')}<br><span class="dim">${final ? describeSkill(final) : 'Pick a skill below.'}</span></div>
   ${i === SIG ? `<div class="dim">Granted by your weapon (${c.weapon ? WEAPONS[c.weapon].name : 'unarmed'}). ${c.weapon && WEAPONS[c.weapon].innate ? 'Includes free innate gem: ' + GEMS[WEAPONS[c.weapon].innate].name + '.' : ''}</div>` :
     `<h3>Skill</h3><div class="row">${btn('setskill', 'Empty', i, '')}${learnable(c).map((s) => btn('setskill', `${SKILLS[s].name} <small>${SKILLS[s].mp}mp</small>`, i, s, c.slots[i] === s ? 'sel' : '')).join('')}</div>`}
   <h3>Socketed gems (${gemsUsed(c)}/${gemCapacity(c)} total · max ${GEMS_PER_SLOT} per skill)</h3>
-  <div class="row">${gems.map((g, k) => btn('ungem', `✖ ${GEMS[g].name}`, i, k)).join('') || '<span class="dim">none</span>'}</div>
-  <h3>Inventory gems</h3>${inv.map((g) => `<div class="slot"><div class="t"><b>${GEMS[g].name}</b> ×${G.inv.gems.filter((x) => x === g).length}<small>${GEMS[g].desc}</small></div>${btn('gem', 'Socket', i, g, '', full || !sid)}</div>`).join('') || '<p class="dim">No spare gems. Buy some in the shop or find them in the cavern.</p>'}
+  <div class="row">${gems.map((g, k) => btn('ungem', `✖ ${gemImg(g)} ${GEMS[g].name}`, i, k)).join('') || '<span class="dim">none</span>'}</div>
+  <h3>Inventory gems</h3>${inv.map((g) => `<div class="slot"><div class="t"><b>${gemImg(g)} ${GEMS[g].name}</b> ×${G.inv.gems.filter((x) => x === g).length}<small>${GEMS[g].desc}</small></div>${btn('gem', 'Socket', i, g, '', full || !sid)}</div>`).join('') || '<p class="dim">No spare gems. Buy some in the shop or find them in the cavern.</p>'}
   ${btn('bmain', 'Back', '', '', 'primary')}`);
 }
 ACT.setskill = (i, sid) => { const c = G.party[B.i]; c.slots[+i] = sid || null; if (!sid) { G.inv.gems.push(...c.gems[+i]); c.gems[+i] = []; } buildScreen(); };
@@ -301,8 +342,8 @@ function catalog() {
   return out;
 }
 function shop(msg = '') {
-  const rows = shopTab === 'buy' ? catalog().map(({ k, id, d }) => `<div class="slot"><div class="t"><b>${d.name}</b><small>${d.desc || (k === 'weapons' ? WEAPON_TYPES[d.type].name + ' · ' : '') + (d.desc ? '' : gearLine(d))}</small></div>${btn('buy', `${d.price} G`, k, id, '', G.gold < d.price)}</div>`)
-    : ['weapons', 'armors', 'accs', 'gems'].flatMap((k) => [...new Set(G.inv[k])].map((id) => { const d = DB[k][id], p = Math.floor((d.price || 200) / 2); return `<div class="slot"><div class="t"><b>${d.name}</b> ×${G.inv[k].filter((x) => x === id).length}</div>${btn('sell', `Sell ${p} G`, k, id)}</div>`; })).concat(Object.entries(G.inv.items).filter(([, n]) => n > 0).map(([id, n]) => `<div class="slot"><div class="t"><b>${ITEMS[id].name}</b> ×${n}</div>${btn('sell', `Sell ${Math.floor(ITEMS[id].price / 2)} G`, 'items', id)}</div>`));
+  const rows = shopTab === 'buy' ? catalog().map(({ k, id, d }) => `<div class="slot"><div class="t"><b>${k === 'gems' ? gemImg(id) + ' ' : ''}${d.name}</b><small>${d.desc || (k === 'weapons' ? WEAPON_TYPES[d.type].name + ' · ' : '') + (d.desc ? '' : gearLine(d))}</small></div>${btn('buy', `${d.price} G`, k, id, '', G.gold < d.price)}</div>`)
+    : ['weapons', 'armors', 'accs', 'gems'].flatMap((k) => [...new Set(G.inv[k])].map((id) => { const d = DB[k][id], p = Math.floor((d.price || 200) / 2); return `<div class="slot"><div class="t"><b>${k === 'gems' ? gemImg(id) + ' ' : ''}${d.name}</b> ×${G.inv[k].filter((x) => x === id).length}</div>${btn('sell', `Sell ${p} G`, k, id)}</div>`; })).concat(Object.entries(G.inv.items).filter(([, n]) => n > 0).map(([id, n]) => `<div class="slot"><div class="t"><b>${ITEMS[id].name}</b> ×${n}</div>${btn('sell', `Sell ${Math.floor(ITEMS[id].price / 2)} G`, 'items', id)}</div>`));
   show(`<h2>🛒 Shop</h2><div class="row"><span class="gold grow">${G.gold} G</span>${btn('tab', 'Buy', 'buy', '', shopTab === 'buy' ? 'sel' : '')}${btn('tab', 'Sell', 'sell', '', shopTab === 'sell' ? 'sel' : '')}</div>${msg ? `<p class="dim">${msg}</p>` : ''}${rows.join('') || '<p class="dim">Nothing to sell.</p>'}${btn('close', 'Leave', '', '', 'primary')}`);
 }
 ACT.tab = (t) => { shopTab = t; shop(); };

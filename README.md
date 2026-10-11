@@ -6,7 +6,8 @@ Plain HTML/JS modules, no build step.
 ## Run
     python3 -m http.server 8123     # then open http://localhost:8123
 
-Controls: Arrows/WASD to move, Esc/M for the menu (on-screen pad on touch devices).
+Controls: Arrows/WASD to move, Esc/M for the menu (on-screen pad on touch devices). In any menu or battle: arrows move the
+focus, Enter/Space selects, Esc/Backspace goes back. The whole game is playable with the keyboard alone, or with the mouse.
 
 ## How builds work (three layered systems)
 1. **Jobs**: every character has a *main job* and a *sub job* (8 jobs). Sub job contributes 40% of its stat modifiers,
@@ -25,6 +26,9 @@ Town (shop, inn+save, guild) -> overworld -> Ashen Cavern (chests, 5 enemy types
   slash, heal), pixel-font damage numbers, status icons over sprites.
 - **Map**: smooth tile-to-tile walking, torch-lit darkness in the cavern, cloud shadows and flowers on the overworld,
   shoreline foam, battle-start screen wipe. Animated title screen. FF-style window skin.
+- **Party & lighting**: the party trails behind the leader with a 4-frame walk cycle; cavern torches flicker and glow;
+  town has trees and lamp posts; a banner announces each new area; menus animate in; pixel icons for every gem;
+  HP bars shift green/yellow/red; spell orbs fly from caster to target.
 - **Boss**: a 32x32 Ashen Wyrm, authored as a half-sprite and mirrored in code.
 
 ## Art and sound

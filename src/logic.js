@@ -240,9 +240,9 @@ export class Battle {
       a.mp -= s.mp;
     }
     const elem = s.elem === 'random' ? pick(['fire', 'ice', 'bolt'], this.rng) : s.elem;
-    this.fx.push({ t: 'cast', actor: a.name, kind: s.kind, elem, hostile: !!s.hostile, side: a.side });
     L.push(`${a.name} uses ${s.name}${s.tags.length ? ` [${s.tags.join(' + ')}]` : ''}!`);
     const targets = this.resolveTargets(a, s, target);
+    this.fx.push({ t: 'cast', actor: a.name, kind: s.kind, elem, hostile: !!s.hostile, side: a.side, targets: targets.map((x) => x.name) });
     for (const t of targets) {
       if (s.kind === 'phys' || s.kind === 'mag') {
         let total = 0;

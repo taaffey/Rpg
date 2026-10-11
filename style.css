@@ -59,3 +59,16 @@ button.primary{background:linear-gradient(#5a4fd0,#3a2fa0)}
 h2,h3,#loc{font-family:"Press Start 2P",ui-monospace,monospace}
 h2{font-size:15px;line-height:1.5}h3{font-size:10px}
 #hud{font-size:13px}#loc{font-size:11px}
+
+#app{position:relative}
+#banner{position:absolute;left:50%;top:76px;transform:translateX(-50%);font:12px "Press Start 2P",ui-monospace,monospace;color:#fff6c0;background:rgba(10,14,48,.8);border:2px solid #e8ecf8;border-radius:6px;padding:8px 14px;opacity:0;pointer-events:none;white-space:nowrap;text-shadow:2px 2px 0 #000}
+#banner.show{animation:banner 2.4s ease-out}
+@keyframes banner{0%{opacity:0;transform:translate(-50%,-10px)}12%{opacity:1;transform:translate(-50%,0)}80%{opacity:1}100%{opacity:0}}
+.win.anim{animation:pop .14s ease-out}
+@keyframes pop{from{opacity:0;transform:translateY(8px) scale(.98)}to{opacity:1;transform:none}}
+[data-act]:focus{outline:2px solid #ffd25a;outline-offset:1px}
+button:focus-visible,.foe:focus,.pm:focus{box-shadow:0 0 10px #ffd25a}
+.gi{image-rendering:pixelated;vertical-align:middle;margin-right:3px}
+.chip{display:inline-flex;align-items:center;gap:1px;padding:0 8px 0 3px}
+.bar.hp.mid>i{background:#e6c34a}.bar.hp.low>i{background:#e05555}
+.bar>i{transition:width .35s}

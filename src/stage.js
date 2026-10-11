@@ -44,7 +44,7 @@ const ELEM_COL = { fire: ['#ff9a2a', '#ffd25a', '#e04a20'], ice: ['#c8f4ff', '#7
 export class Stage {
   constructor(battle, kind) {
     this.b = battle; this.canvas = mk(W, H); this.canvas.className = 'stage'; this.ctx = this.canvas.getContext('2d');
-    this.bg = backdrop(kind); this.kind = kind; this.parts = []; this.floats = []; this.running = true; this.last = performance.now(); this.lastElem = null; this.active = null; this.shake = 0;
+    this.bg = backdrop(kind); this.kind = kind; this.parts = []; this.floats = []; this.proj = []; this.running = true; this.last = performance.now(); this.lastElem = null; this.active = null; this.shake = 0;
     const epos = POS[Math.min(5, battle.e.length)] || POS[5];
     this.v = new Map();
     battle.e.forEach((e, i) => { const big = SP.isBig(e.id), spr = SP.enemy(e.id), [px, py] = big ? [46, 36] : epos[i]; this.v.set(e.name, { c: e, side: 'e', spr, x: px, y: py, w: spr.width, h: spr.height, dead: false, t: 0, flash: 0, lunge: 0, cast: 0, seed: i * 1.7 }); });
@@ -59,6 +59,10 @@ export class Stage {
     if (e.t === 'cast') {
       if (!v) return; this.lastElem = e.kind === 'heal' || e.kind === 'buff' ? (e.kind === 'heal' ? 'heal' : null) : (e.elem && e.elem !== 'random' ? e.elem : e.elem === 'random' ? 'fire' : 'slash');
       if (e.kind === 'phys') v.lunge = 0.32; else { v.cast = 0.5; this.burst(v.x + v.w / 2, v.y + v.h / 2, 'mp', 8, 14); }
+      if (e.kind === 'mag') for (const n of (e.targets || []).slice(0, 4)) { // orb flies from caster to each target
+        const t = this.v.get(n); if (!t) continue;
+        this.proj.push({ sx: v.x + v.w / 2, sy: v.y + v.h / 2, tx: t.x + t.w / 2, ty: t.y + t.h / 2, t: 0, dur: 0.2, col: (ELEM_COL[this.lastElem] || ELEM_COL.mp)[0], col2: (ELEM_COL[this.lastElem] || ELEM_COL.mp)[1] || '#fff' });
+      }
     } else if (e.t === 'hit' && v) {
       v.flash = 0.25; v.shake = 0.3;
       const cx = v.x + v.w / 2, cy = v.y + v.h / 2, el = this.lastElem || 'slash';
@@ -141,6 +145,12 @@ export class Stage {
       else x.fillRect(Math.round(p.x), Math.round(p.y), p.sz, p.h || p.sz);
     }
     x.globalAlpha = 1; this.parts = this.parts.filter((p) => p.t < p.life);
+    for (const o of this.proj) {
+      o.t += dt; const k = Math.min(1, o.t / o.dur), e = k * k * (3 - 2 * k), px = o.sx + (o.tx - o.sx) * e, py = o.sy + (o.ty - o.sy) * e - Math.sin(k * Math.PI) * 8;
+      if (Math.random() < 0.9) this.parts.push({ x: px, y: py, vx: (Math.random() - 0.5) * 8, vy: (Math.random() - 0.5) * 8, g: 0, life: 0.25, t: 0, col: o.col2, sz: 1 });
+      x.fillStyle = o.col; x.fillRect(Math.round(px) - 1, Math.round(py) - 1, 3, 3); x.fillStyle = '#fff'; x.fillRect(Math.round(px), Math.round(py), 1, 1);
+    }
+    this.proj = this.proj.filter((o) => o.t < o.dur);
     for (const f of this.floats) {
       f.t += dt; const rise = Math.min(8, f.t * 22) - (f.t > 0.5 ? (f.t - 0.5) * 6 : 0), y = Math.round(f.y - rise), w = f.s.length * 4 - 1, x0 = Math.round(f.x - w / 2);
       x.globalAlpha = Math.max(0, Math.min(1, (0.9 - f.t) * 4));
