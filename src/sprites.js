@@ -22,6 +22,7 @@ function brick(base, line, seed) {
   return c;
 }
 
+import { FURN, NPC_STYLE, ENEMY2, BIG2, VARIANT } from './art2.js';
 // ---------- object sprites (drawn over a floor tile) ----------
 const ART = {
   tree: ['................', '.....GGGGG......', '....GGgggGG.....', '...GGgggglGG....', '..GGggggggggG...', '..GgglgggggggG..', '...GGgggggglGG..', '..GGgggglggggGG.', '.GGggggggggggggG', '.GGGGgggggggGGGG', '..GGGGGGGGGGGG..', '.....NNnN.......', '.....NnnN.......', '.....NNnN.......', '................', '................'],
@@ -75,43 +76,85 @@ export const HERO_STYLE = { // job -> [head, H, h, T, t, A, F]
   monk: ['hair', '#8a5a30', '#55341c', '#e88a30', '#b06020', '#d94a4a', '#e8b890'],
   ranger: ['hair', '#8a5a30', '#55341c', '#3a8a3a', '#2a6a2a', '#8a5a30', '#f0c8a0'],
   hexer: ['hood', '#4a2a80', '#2a1550', '#2a2038', '#15101d', '#6ef0a0', '#d8c8b0'],
+  berserker: ['hair', '#c03020', '#802010', '#8a5a30', '#55341c', '#d94a4a', '#e8b890'],
+  alchemist: ['hood', '#3aa86a', '#2a7048', '#e8e0d0', '#b8b0a0', '#7fd8f0', '#f0c8a0'],
   bard: ['pointy', '#d94a4a', '#8a2430', '#2aa0a0', '#1a7070', '#f4d35e', '#f0c8a0'],
 };
-function heroRows(job, frame = 0) {
-  const [h] = HERO_STYLE[job], rows = [...HEAD[h], ...BODY];
+function rowsFor(h, frame = 0) {
+  const rows = [...HEAD[h], ...BODY];
   if (frame === 1) { rows[13] = '..kttk....kttk..'; rows[14] = '..kkkk....kkkk..'; }
   if (frame === 2) { rows[13] = '.....kttkttk....'; rows[14] = '.....kkkkkkk....'; }
   return rows;
 }
+function heroRows(job, frame = 0) { return rowsFor(HERO_STYLE[job][0], frame); }
 function heroPal(job) { const [, H, h, T, t, A, F] = HERO_STYLE[job]; return { H, h, T, t, A, F }; }
 
 // ---------- tile sheet ----------
 const T = {};
+function plank(base, line, seed) {
+  const c = noiseTile(base, [line], seed, 0.03), x = c.getContext('2d'); x.fillStyle = line;
+  for (let y = 3; y < 16; y += 4) x.fillRect(0, y, 16, 1);
+  for (let y = 0; y < 4; y++) x.fillRect(((y * 5 + seed) % 12) + 2, y * 4, 1, 3);
+  return c;
+}
+function vplank(base, line, seed) {
+  const c = noiseTile(base, [line], seed, 0.04), x = c.getContext('2d'); x.fillStyle = line;
+  for (let k = 3; k < 16; k += 4) x.fillRect(k, 0, 1, 16); x.fillStyle = 'rgba(0,0,0,.25)'; x.fillRect(0, 15, 16, 1);
+  return c;
+}
 function buildTiles() {
   const grass = [0, 1, 2, 3].map((i) => {
     const c = noiseTile('#4f9a3f', ['#5aa84a', '#468a38', '#3d7a30', '#6ab85a'], 10 + i), x = c.getContext('2d'), r = rng(90 + i);
     if (i % 2) for (let k = 0; k < 3; k++) { x.fillStyle = ['#f2f2f2', '#f4d35e', '#ee80a8'][Math.floor(r() * 3)]; x.fillRect(Math.floor(r() * 15), Math.floor(r() * 15), 1, 1); }
     return c;
   });
+  const snow = [0, 1, 2].map((i) => noiseTile('#e6eef8', ['#d0e0f0', '#ffffff', '#c2d4ea', '#b8ccea'], 70 + i, 0.22));
+  const swamp = [0, 1, 2].map((i) => { const c = noiseTile('#3d5c3a', ['#334f33', '#486a40', '#2c442e', '#52743f'], 80 + i, 0.3), x = c.getContext('2d'); x.fillStyle = '#2d4a56'; x.fillRect(3 + i * 4, 5 + i * 3, 4, 2); x.fillStyle = '#4a7a86'; x.fillRect(4 + i * 4, 5 + i * 3, 2, 1); return c; });
+  const dirt = [0, 1].map((i) => noiseTile('#8a7040', ['#7a6034', '#9a8050', '#6a5030'], 85 + i, 0.3));
   const water = [0, 1].map((i) => { const c = noiseTile('#2c5fa8', ['#2a5598', '#3a70c0'], 20 + i, 0.1), x = c.getContext('2d'); x.fillStyle = '#6aa4e8'; for (let k = 0; k < 4; k++) x.fillRect(((k * 5) + i * 3) % 14, 2 + k * 4, 3, 1); return c; });
+  const bridge = water.map((w) => { const c = mk(16, 16), x = c.getContext('2d'); x.drawImage(w, 0, 0); x.fillStyle = '#8a5a30'; x.fillRect(0, 2, 16, 12); x.fillStyle = '#a87440'; for (let k = 0; k < 16; k += 4) x.fillRect(k, 2, 3, 12); x.fillStyle = '#55341c'; x.fillRect(0, 2, 16, 1); x.fillRect(0, 13, 16, 1); return c; });
   const cobble = [0, 1].map((i) => noiseTile('#9a8760', ['#8a7752', '#aa9770', '#7a6a48'], 30 + i, 0.3));
-  const dfloor = [0, 1].map((i) => noiseTile('#3b3744', ['#34303c', '#443f4e', '#2c2834'], 40 + i, 0.25));
-  const sp = (n) => sprite(ART[n]);
+  const scobble = [0, 1].map((i) => noiseTile('#b8c4d4', ['#a8b6c8', '#ccd8e8', '#98a8bc', '#ffffff'], 36 + i, 0.3));
+  const wood = [0, 1].map((i) => plank('#9a6a3c', '#6e4624', 11 + i));
+  const sp = (n) => sprite(ART[n]), fu = (n) => sprite(FURN[n]);
   T.world = {
-    '.': grass, T: [over(grass[0], sp('tree'))], M: [over(grass[1], sp('mountain'))], '~': water, H: [over(cobble[0], sp('house'))], D: [over(grass[2], sp('cave'))],
+    '.': grass, ',': snow, ':': swamp, _: dirt, '=': bridge, '~': water,
+    T: [over(grass[0], sp('tree'))], t: [over(snow[0], fu('snowtree'))], M: [over(grass[1], sp('mountain'))], B: [over(dirt[0], fu('rockslide'))],
+    H: [over(cobble[0], sp('house'))], D: [over(grass[2], sp('cave'))],
   };
-  const stone = brick('#4a4256', '#2e2838', 50), cobbleDark = cobble;
-  T.town = { '.': cobble, '#': [stone], S: [over(cobble[0], sp('shop'))], I: [over(cobble[0], sp('inn'))], G: [over(cobble[0], sp('guild'))], E: [over(cobble[0], sp('exit'))] };
-  const dwall = brick('#26222e', '#15121b', 60);
-  T.dungeon = { '.': dfloor, '#': [dwall], E: [over(dfloor[0], sp('exit'))], C: [over(dfloor[0], sp('chest'))], c: [over(dfloor[0], sp('chestOpen'))], X: [over(dfloor[1], enemy('wyrmMini'))] };
+  const stone = brick('#4a4256', '#2e2838', 50), sstone = brick('#7a8aa8', '#566684', 52), wwall = vplank('#6a4426', '#3e2614', 14);
+  const ov = (base) => ({ H: [over(base[0], sp('house'))], E: [over(base[0], sp('exit'))], C: [over(base[0], sp('chest'))], c: [over(base[0], sp('chestOpen'))] });
+  T.town = { '.': cobble, '#': [stone], ...ov(cobble) };
+  T.snowtown = { '.': scobble, '#': [sstone], ...ov(scobble) };
+  T.interior = { '.': wood, '#': [wwall], ...ov(wood) };
+  const dungeon = (floorBase, floorShades, wallBase, wallLine, seed) => {
+    const fl = [0, 1].map((i) => noiseTile(floorBase, floorShades, seed + i, 0.25));
+    return { '.': fl, '#': [brick(wallBase, wallLine, seed + 9)], E: [over(fl[0], sp('exit'))], C: [over(fl[0], sp('chest'))], c: [over(fl[0], sp('chestOpen'))], X: [fl[1]] };
+  };
+  T.cavern = dungeon('#3b3744', ['#34303c', '#443f4e', '#2c2834'], '#26222e', '#15121b', 40);
+  T.crypt = dungeon('#38403a', ['#2e362f', '#46504a', '#262c28'], '#1c2a22', '#0e1814', 140);
+  T.spire = dungeon('#6a86a8', ['#5a76a0', '#7a96b8', '#8aa6c8'], '#3a5a8a', '#24406a', 240);
 }
-export function enemy(id) { if (!cache.has('e' + id)) cache.set('e' + id, sprite(BIG[id] || ENEMY_ART[id], BIG[id] ? BIG_PAL : undefined)); return cache.get('e' + id); }
+const BIGALL = () => ({ ...BIG, lich: mirror(BIG2.lich), titan: mirror(BIG2.titan) });
+export function enemy(id) {
+  if (cache.has('e' + id)) return cache.get('e' + id);
+  const big = BIGALL()[id]; let c;
+  if (big) c = sprite(big, BIG_PAL);
+  else if (VARIANT[id]) { const [base, pal] = VARIANT[id]; c = sprite(ENEMY_ART[base] || ENEMY2[base], pal); }
+  else c = sprite(ENEMY2[id] || ENEMY_ART[id]);
+  cache.set('e' + id, c); return c;
+}
+export const baseOf = (id) => (VARIANT[id] ? VARIANT[id][0] : id);
 export function hero(job, frame = 0) { const k = `h${job}${frame}`; if (!cache.has(k)) cache.set(k, sprite(heroRows(job, frame), heroPal(job))); return cache.get(k); }
-export const torch = (frame) => { const k = 'torch' + frame; if (!cache.has(k)) cache.set(k, sprite(ART[frame ? 'torchB' : 'torchA'])); return cache.get(k); };
+const TORCH_PAL = { cavern: undefined, crypt: { y: '#c8ffb0', o: '#4aff7a' }, spire: { y: '#ffffff', o: '#7fd8f0' } };
+export const torch = (frame, theme = 'cavern') => { const k = `torch${frame}${theme}`; if (!cache.has(k)) cache.set(k, sprite(ART[frame ? 'torchB' : 'torchA'], TORCH_PAL[theme])); return cache.get(k); };
+const DECOR_ART = { lamp: () => ART.lamp, tree: () => ART.tree, banner: () => ART.guild, ...Object.fromEntries(Object.keys(FURN).map((k) => [k, () => FURN[k]])) };
+export function decor(kind) { const k = 'd' + kind; if (!cache.has(k)) cache.set(k, sprite(DECOR_ART[kind]())); return cache.get(k); }
+export function npc(type, frame = 0) { const k = `n${type}${frame}`; if (!cache.has(k)) { const [h, H, hh, Tt, t, A, F] = NPC_STYLE[type]; cache.set(k, sprite(rowsFor(h, frame), { H, h: hh, T: Tt, t, A, F })); } return cache.get(k); }
 export const lamp = () => { if (!cache.has('lamp')) cache.set('lamp', sprite(ART.lamp)); return cache.get('lamp'); };
 export const treeSprite = () => { if (!cache.has('tree')) cache.set('tree', sprite(ART.tree)); return cache.get('tree'); };
 // 10x10 faceted gem icon, recolored per gem type
-const GEM_COL = { fire: '#ff7a3a', frost: '#7fd8f0', bolt: '#fff27a', holy: '#ffffff', shadow: '#9a62e0', chain: '#9aa0b0', echo: '#3ad0b0', vamp: '#d94a4a', pierce: '#d0d8f0', thrifty: '#5ed17a', overcharge: '#ee50c0', wide: '#4a8ae0', venom: '#a6e87f', swift: '#6ac8ff', focusg: '#f4b13a' };
+const GEM_COL = { fire: '#ff7a3a', frost: '#7fd8f0', bolt: '#fff27a', holy: '#ffffff', shadow: '#9a62e0', chain: '#9aa0b0', echo: '#3ad0b0', vamp: '#d94a4a', pierce: '#d0d8f0', thrifty: '#5ed17a', overcharge: '#ee50c0', wide: '#4a8ae0', venom: '#a6e87f', swift: '#6ac8ff', focusg: '#f4b13a', stun: '#ffd25a', execute: '#8a2430', berserk: '#ff4a2a', siphon: '#4a8aff', guard: '#c8a050', crit: '#ffb0e0' };
 const GEM_SHAPE = ['....kk....', '...kLLk...', '..kLLMMk..', '.kLMMMMDk.', 'kLMMMMMDDk', 'kLMMMMMDDk', '.kMMMMMDk.', '..kMMMDk..', '...kDDk...', '....kk....'];
 export function gemIcon(id, scale = 2) {
   const k = `gi${id}${scale}`; if (cache.has(k)) return cache.get(k);
@@ -128,9 +171,9 @@ export const heroURL = (job) => { const k = 'hu' + job; if (!cache.has(k)) cache
 // tile lookup: variant picked by position so textures don't tile obviously
 export function tile(map, ch, x, y, frame = 0) {
   if (!T.world) buildTiles();
-  const set = T[map][ch] || T[map]['.'];
+  const set = T[map]?.[ch] || T[map]['.'];
   return set[ch === '~' ? frame % set.length : (x * 7 + y * 13) % set.length];
 }
 export const floorTile = (map, x, y) => tile(map, '.', x, y);
 export { ART, ENEMY_ART, heroRows };
-export const isBig = (id) => !!BIG[id];
+export const isBig = (id) => !!BIGALL()[id];

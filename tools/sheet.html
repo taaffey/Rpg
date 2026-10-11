@@ -1,11 +1,19 @@
-<!doctype html><body style="background:#222;margin:8px"><canvas id=c width=900 height=420></canvas>
+<!doctype html><body style="background:#222;margin:8px"><canvas id=c width=1000 height=760></canvas>
 <script type=module>
 import * as S from '../src/sprites.js';
+import { FURN, NPC_STYLE } from '../src/art2.js';
 import { JOBS, ENEMIES } from '../src/data.js';
 const c=document.getElementById('c'),x=c.getContext('2d');x.imageSmoothingEnabled=false;
-let i=0;for(const j of Object.keys(JOBS)){x.drawImage(S.hero(j),i++*72,0,64,64)}
-i=0;for(const e of Object.keys(ENEMIES)){const s=S.enemy(e);x.drawImage(s,i++*72,80,s.width*4>64?64:64,64)} x.drawImage(S.enemy('wyrm'),700,0,128,128);
-const rows=[['world','.TM~HD'],['town','.#SIGE'],['dungeon','.#ECX']];
-rows.forEach(([m,chars],r)=>[...chars].forEach((ch,k)=>x.drawImage(S.tile(m,ch,1,1),k*72,160+r*80,64,64)));
+const row=(items,y,sz=48,gap=6)=>items.forEach((s,i)=>x.drawImage(s,8+i*(sz+gap),y,s.width*sz/16,s.height*sz/16));
+row(Object.keys(JOBS).map(j=>S.hero(j)),4);
+row(Object.keys(NPC_STYLE).map(n=>S.npc(n)),60);
+const en=Object.keys(ENEMIES).filter(e=>!['wyrm','lich','titan'].includes(e));
+row(en.slice(0,16).map(e=>S.enemy(e)),116,48); row(en.slice(16).map(e=>S.enemy(e)),172,48);
+row(['wyrm','lich','titan'].map(e=>S.enemy(e)),228,128,16);
+row(['barrel','table','shelf','bed','counter','anvil','snowtree','rockslide','lamp','tree','banner'].map(k=>S.decor(k)),370,48);
+let y=430;
+for (const [theme,chars] of [['world','.,:_=~TtMBHD'],['town','.#HECc'],['snowtown','.#HE'],['interior','.#EC'],['cavern','.#ECX'],['crypt','.#ECX'],['spire','.#ECX']]) {
+  [...chars].forEach((ch,k)=>x.drawImage(S.tile(theme,ch,1,1),8+k*50+(theme==='town'?0:0),y,48,48)); x.fillStyle='#fff'; x.font='12px sans-serif'; x.fillText(theme,640,y+28); y+=52;
+}
 document.title='ready';
 </script>

@@ -72,3 +72,17 @@ button:focus-visible,.foe:focus,.pm:focus{box-shadow:0 0 10px #ffd25a}
 .chip{display:inline-flex;align-items:center;gap:1px;padding:0 8px 0 3px}
 .bar.hp.mid>i{background:#e6c34a}.bar.hp.low>i{background:#e05555}
 .bar>i{transition:width .35s}
+
+/* dialogue, turn order, log, options */
+.npc{display:flex;gap:12px;align-items:flex-start;margin:6px 0}
+.npc p{margin:2px 0;flex:1;line-height:1.5}
+.npc img{flex:none;background:rgba(6,10,40,.6);border:2px solid #8c9be0;border-radius:6px;padding:2px}
+.order{display:flex;align-items:center;gap:4px;margin:0 0 6px;flex-wrap:wrap;font-size:11px}
+.order img{border:2px solid transparent;border-radius:4px;background:rgba(6,10,40,.55)}
+.order img.o-p{border-color:#5a8aff}.order img.o-e{border-color:#d05050}.order img.cur{border-color:#ffd25a;box-shadow:0 0 8px #ffd25a}
+.logwrap{position:relative}
+.log.big{height:300px}
+.logtoggle{position:absolute;top:4px;right:6px;font-size:11px;padding:2px 6px;opacity:.85}
+.opt{margin:8px 0}.opt label{display:flex;justify-content:space-between}.opt input[type=range]{width:100%;accent-color:#8c7bff}
+.controls{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:2px 12px}
+.card.done{border-color:#5ed17a}.card.done b{color:#7af0a0}

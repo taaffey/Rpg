@@ -1,46 +1,50 @@
 # Gemforge Chronicles
 
 A turn-based JRPG in the spirit of Final Fantasy 1 and Dragon Warrior, built around deep build customization.
-Plain HTML/JS modules, no build step.
+Plain HTML/JS modules, no build step, no asset files: all art and audio are generated in code.
 
 ## Run
     python3 -m http.server 8123     # then open http://localhost:8123
 
-Controls: Arrows/WASD to move, Esc/M for the menu (on-screen pad on touch devices). In any menu or battle: arrows move the
-focus, Enter/Space selects, Esc/Backspace goes back. The whole game is playable with the keyboard alone, or with the mouse.
+Controls: Arrows/WASD move, Esc/M menu, N toggles the minimap (on-screen pad on touch devices). In any menu or battle:
+arrows move the focus, Enter/Space selects, Esc/Backspace goes back, L expands the battle log. Fully playable with the
+keyboard alone, or with the mouse. Options (volumes, battle speed, shake, minimap) are in the menu and on the title screen.
 
 ## How builds work (three layered systems)
-1. **Jobs**: every character has a *main job* and a *sub job* (8 jobs). Sub job contributes 40% of its stat modifiers,
-   its skills (2 levels behind), and its weapon types. Change jobs in town at the Guild.
-2. **Weapons**: 8 weapon types (sword, dagger, staff, bow, fists, whip, scythe, tome). Each type grants a
-   **signature skill**; some weapons carry a free **innate gem** on it.
-3. **Gems**: socket gems into any skill slot to rewrite it: element swaps, Chain, Echo, Vampiric, Piercing, Thrifty,
-   Overcharge, Wide, Venom, Swift, Focus. Gem capacity comes from weapon/armor/accessory sockets (max 3 per skill).
+1. **Jobs** (10): every character has a *main job* and a *sub job*. The sub job contributes 40% of its stat modifiers,
+   its skills (two levels behind) and its weapon types. Change jobs in any town building.
+2. **Weapons** (9 types, 36 weapons): each type grants a **signature skill**; many carry a free **innate gem**.
+3. **Gems** (21): socket gems into any skill slot to rewrite it: element swaps, Chain, Echo, Vampiric, Piercing, Thrifty,
+   Overcharge, Wide, Venom, Swift, Focus, Stun, Crit, Execute, Berserk, Siphon, Guard. Capacity comes from sockets on
+   weapon/armor/accessory (max 3 per skill).
 
-## Vertical slice content
-Town (shop, inn+save, guild) -> overworld -> Ashen Cavern (chests, 5 enemy types, boss: Ashen Wyrm). Level cap 12.
+## The world
+- **Overworld** (40x30) with four regions: Greenmarch, Mire Marsh (swamp), Northern Plains and the Frostfields. Fog of war,
+  a minimap and a full map screen. A rockslide gates the north until the Ashen Wyrm falls.
+- **Towns**: Haven Town and Frostholm. Buildings are enterable interiors (inn, general store, smithy, guild, houses) with
+  NPCs, dialogue, shops and chests. A `!` over an NPC marks news.
+- **Dungeons** with their own lighting, music and enemies: Ashen Cavern (boss: Ashen Wyrm), Sunken Crypt (Lich King Morvath),
+  Frost Spire (Frost Titan, the final boss). 25 enemies including recolored tiers. Level cap 20. A journal tracks goals.
 
-## Visuals (all generated in code, no asset files)
-- **Battle stage** (`src/stage.js`): painted low-res backdrops (field, cavern, lava-lit boss lair), heroes right / foes left,
-  attack lunges, hit flashes, enemy dissolve and hero KO poses, per-element spell particles (fire, ice, bolt, holy, dark,
-  slash, heal), pixel-font damage numbers, status icons over sprites.
-- **Map**: smooth tile-to-tile walking, torch-lit darkness in the cavern, cloud shadows and flowers on the overworld,
-  shoreline foam, battle-start screen wipe. Animated title screen. FF-style window skin.
-- **Party & lighting**: the party trails behind the leader with a 4-frame walk cycle; cavern torches flicker and glow;
-  town has trees and lamp posts; a banner announces each new area; menus animate in; pixel icons for every gem;
-  HP bars shift green/yellow/red; spell orbs fly from caster to target.
-- **Boss**: a 32x32 Ashen Wyrm, authored as a half-sprite and mirrored in code.
-
-## Art and sound
-- `src/sprites.js`: 16x16 ASCII-grid pixel sprites (8 job heroes, 9 enemies, tiles, objects) plus seeded procedural textures.
-  Heroes are recolored from shared head/body templates, so a new job is a palette entry.
-- `src/audio.js`: Web Audio chiptune engine (square/triangle/saw/noise). Looping tracks for town, overworld, cavern,
-  battle and boss (with drums), jingles for victory/game over, and ~20 sound effects. Notation is a tiny string
-  format (`"E5:2 G5 -:2"` = note:length-in-steps, `-` = rest). Mute button in the HUD; audio starts on first click/key.
+## Visuals and sound (all generated in code)
+- `src/sprites.js`, `src/art2.js`: ASCII-grid pixel sprites (10 jobs, townsfolk, 25 enemies, three 32x32 bosses, furniture,
+  tile themes), recolor variants, gem icons.
+- `src/stage.js`: animated battle stage: painted backdrops per region, per-enemy attack animations (squash, swoop, pounce,
+  float, stomp), hit flashes, spell projectiles and per-element particles, floating damage numbers.
+- Map: smooth walking, party trail with walk cycle, torch lighting, weather per region, battle wipe, animated title screen.
+- `src/audio.js`: Web Audio chiptune: 11 looping tracks (town, Frostholm, overworld, snow, cavern, crypt, spire, battle, boss)
+  plus jingles and ~20 effects. Notation is a tiny string format (`"E5:2 G5 -:2"` = note:length-in-steps, `-` = rest).
 
 ## Layout
-- `src/data.js`: all content (jobs, skills, gems, gear, enemies, maps). Add content here.
+- `src/data.js`: content (jobs, skills, gems, gear, enemies, bosses, shops). Add content here.
+- `src/maps.js`: maps, portals, NPCs, chests, bosses. `src/mapgen.js` is generated by `tools/genmaps.py`.
 - `src/logic.js`: pure logic (stats, build rules, gem rewriting, battle engine). No DOM.
-- `src/game.js`: map, menus, build UI, battle UI.
-- `tools/sheet.html`: sprite contact sheet (open via the dev server); `tools/checksprites.mjs`: sprite size check.
-- `tools/sim.mjs`: headless balance sim. `tools/checkmaps.mjs`: map reachability check.
+- `src/game.js`: map/menus/build UI/battle flow.
+
+## Tests and tools
+    node tools/sim.mjs fast 100      # headless balance sim: every region and boss at expected levels
+    node tools/checkmaps.mjs         # every map valid; every portal/NPC/chest/boss reachable; gate verified
+    node tools/checksprites.mjs      # sprite sizes
+    node tools/regress.mjs           # browser regression (needs the dev server + Playwright)
+    python3 tools/genmaps.py         # regenerate the big world and dungeons (deterministic)
+    # tools/sheet.html: sprite contact sheet, open via the dev server

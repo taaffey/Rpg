@@ -1,6 +1,6 @@
 // ===== Chiptune audio: Web Audio synth, looping music sequencer, sound effects =====
 let ctx = null, master = null, musicBus = null, sfxBus = null;
-let muted = false; try { muted = localStorage.getItem('gemforge-muted') === '1'; } catch {}
+let musicVol = 1, sfxVol = 1, muted = false; try { muted = localStorage.getItem('gemforge-muted') === '1'; } catch {}
 let wanted = null, current = null, timer = null, nextTime = 0, stepIdx = 0, trackState = null;
 
 const NOTE = { C: 0, D: 2, E: 4, F: 5, G: 7, A: 9, B: 11 };
@@ -35,6 +35,20 @@ const TRACKS = {
     { wave: 'square', vol: 0.05, notes: mel(['D4:8', 'D4:8', 'Bb3:8', 'A3:8', 'D4:8', 'G3:8', 'F3:8', 'A3:8']) },
     { wave: 'triangle', vol: 0.22, notes: bass(['D2', 'D2', 'Bb1', 'A1', 'D2', 'G2', 'F2', 'A1']) }],
     drums: 'kkshkkss' },
+  snow: { step: 0.28, voices: [
+    { wave: 'triangle', vol: 0.14, notes: mel(['A4:2 D5 F5 A5:2 F5:2', 'G4:2 Bb4 D5 G5:2 D5:2', 'F4:2 A4 C5 F5:2 E5:2', 'D5:4 -:2 A4:2', 'A4:2 D5 F5 A5:2 G5:2', 'Bb4:2 D5 F5 Bb5:2 A5:2', 'G5:2 F5 E5 D5:2 E5:2', 'D5:6 -:2']) },
+    { wave: 'square', vol: 0.035, notes: mel(['D6:8', 'D6:8', 'C6:8', 'A5:8', 'D6:8', 'D6:8', 'Bb5:8', 'A5:8']) },
+    { wave: 'triangle', vol: 0.17, notes: bass(['D2', 'G2', 'F2', 'D2', 'D2', 'Bb1', 'G2', 'D2'], 'half') }] },
+  frosttown: { step: 0.32, voices: [
+    { wave: 'square', vol: 0.08, notes: mel(['F5:2 A5 F5 C5:2 F5:2', 'E5:2 G5 E5 C5:2 E5:2', 'D5:2 F5 A5 G5:2 F5:2', 'C5:4 E5:2 G5:2', 'A4:2 C5 F5 A5:2 G5:2', 'Bb4:2 D5 F5 E5:2 D5:2', 'C5:2 F5 E5 D5:2 E5:2', 'F5:6 -:2']) },
+    { wave: 'triangle', vol: 0.16, notes: bass(['F2', 'C2', 'D2', 'C2', 'F2', 'Bb1', 'C2', 'F2'], 'half') }] },
+  crypt: { step: 0.42, voices: [
+    { wave: 'triangle', vol: 0.13, notes: mel(['A4:3 -:1 Eb5:2 D5:2', 'C5:3 -:1 Ab4:4', 'A4:2 C5:2 Eb5:2 A5:2', 'G5:6 -:2', 'F4:3 -:1 B4:2 A4:2', 'E4:3 -:1 Ab4:4', 'A4:2 B4:2 C5:2 Eb5:2', 'A4:8']) },
+    { wave: 'square', vol: 0.04, notes: mel(['A3:8', 'Ab3:8', 'A3:8', 'A3:8', 'F3:8', 'E3:8', 'A3:8', 'A3:8']) },
+    { wave: 'triangle', vol: 0.2, notes: bass(['A2', 'Ab2', 'A2', 'A2', 'F2', 'E2', 'A2', 'A2'], 'half') }] },
+  spire: { step: 0.3, voices: [
+    { wave: 'square', vol: 0.075, notes: mel(['E5:2 B5 E6 B5:2 G5:2', 'D5:2 A5 D6 A5:2 F#5:2', 'C5:2 G5 C6 G5:2 E5:2', 'B4:4 F#5:2 B5:2', 'E5:2 B5 E6 B5:2 G5:2', 'F#5:2 C#6 F#6 C#6:2 A5:2', 'G5:2 B5 D6 B5:2 G5:2', 'E6:6 -:2']) },
+    { wave: 'triangle', vol: 0.18, notes: bass(['E2', 'D2', 'C2', 'B1', 'E2', 'F#2', 'G2', 'E2']) }] },
   victory: { once: true, step: 0.13, voices: [
     { wave: 'square', vol: 0.1, notes: parse('C5 C5 C5 C5:3 Ab4:3 Bb4:3 C5:2 Bb4 C5:6') }, { wave: 'triangle', vol: 0.18, notes: parse('C3:3 C3:3 Ab2:3 Bb2:3 C3:6') }] },
   gameover: { once: true, step: 0.28, voices: [
@@ -45,8 +59,8 @@ function ensure() {
   if (ctx) return true;
   const AC = window.AudioContext || window.webkitAudioContext; if (!AC) return false;
   ctx = new AC(); master = ctx.createGain(); master.gain.value = muted ? 0 : 0.8; master.connect(ctx.destination);
-  musicBus = ctx.createGain(); musicBus.gain.value = 0.55; musicBus.connect(master);
-  sfxBus = ctx.createGain(); sfxBus.gain.value = 0.9; sfxBus.connect(master);
+  musicBus = ctx.createGain(); musicBus.gain.value = 0.55 * musicVol; musicBus.connect(master);
+  sfxBus = ctx.createGain(); sfxBus.gain.value = 0.9 * sfxVol; sfxBus.connect(master);
   return true;
 }
 let noiseBuf = null;
@@ -105,6 +119,7 @@ export function unlock() {
   if (wanted && !current) startTrack(wanted);
 }
 export const isMuted = () => muted;
+export function setVolumes(m, s) { musicVol = m; sfxVol = s; if (musicBus) musicBus.gain.value = 0.55 * m; if (sfxBus) sfxBus.gain.value = 0.9 * s; }
 export function setMuted(m) { muted = m; try { localStorage.setItem('gemforge-muted', m ? '1' : '0'); } catch {} if (master) master.gain.value = m ? 0 : 0.8; }
 
 // ----- sound effects -----

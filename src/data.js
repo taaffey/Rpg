@@ -164,21 +164,111 @@ export const DROPS = { // enemy -> [chance, kind, id]
   skeleton: [0.1, 'gems', 'holy'], imp: [0.1, 'gems', 'overcharge'], golem: [0.2, 'gems', 'wide'], wraith: [0.15, 'gems', 'shadow'],
 };
 
-// ---- Maps. Legend: # wall . floor T tree ~ water M mountain H town D dungeon S shop I inn G guild E exit C chest X boss
-export const MAPS = {
-  world: { name: 'Greenmarch', enc: 'world', rate: 0.07, rows: [
-    '~~~~~~~~~~~~~~~~~~~~~~~~', '~~....TT........MM..~~~~', '~..TT.....TTT...MMM..~~~', '~..T...H......TT.MM..~~~',
-    '~.....TT..........M...~~', '~...~~~...TT...........~', '~..~~~~~.......TTT.....~', '~..~~~~~....T..........~',
-    '~...~~~.....TT.....D...~', '~.......TT.......MM....~', '~..TT.........T..MMM...~', '~..TTT...~~~..TT.......~',
-    '~.....~~~~~~...........~', '~~.....~~~~.........~~~~', '~~~~................~~~~', '~~~~~~~~~~~~~~~~~~~~~~~~'] },
-  town: { name: 'Haven Town', enc: null, rows: [
-    '##############', '#............#', '#..S...I..G..#', '#............#', '#............#', '#............#', '#............#', '######E#######'] },
-  dungeon: { name: 'Ashen Cavern', enc: 'dungeon', rate: 0.09, rows: [
-    '####################', '#E.................#', '#.####..####..####.#', '#.#C.....#..#....#.#', '#.#......#..#.C..#.#',
-    '#.####.###..###.##.#', '#......#......#....#', '#.####.#.####.#.##.#', '#.#C...#.#..#.#.#C.#', '#.#.####.#..#...#..#',
-    '#.#......#..#####..#', '#.######.#.........#', '#........#####X###.#', '####################'] },
+// =====================================================================
+// ===== Expansion content: new jobs, gems, gear, enemies, bosses, shops =====
+// =====================================================================
+export const BOSSES = {
+  wyrm: { name: 'Ashen Wyrm', intro: 'The Ashen Wyrm awakens!', loot: { weapons: ['dragonbane'], armors: ['dragon_mail'] }, unlock: 'The rockslide on the northern pass has been cleared by the Wyrm\'s fall. Frostholm lies beyond.' },
+  lich: { name: 'Lich King Morvath', intro: 'The Lich King rises from his sarcophagus...', loot: { weapons: ['lich_staff'], armors: ['lich_robes'], gems: ['siphon'] } },
+  titan: { name: 'Frost Titan', intro: 'The Frost Titan shakes the spire awake!', loot: { weapons: ['titan_axe'], armors: ['titan_plate'], gems: ['execute'] }, final: true },
 };
-export const CHESTS = {
-  'dungeon:3,3': { gems: ['echo'] }, 'dungeon:14,4': { weapons: ['shadow_edge'] }, 'dungeon:3,8': { weapons: ['archmage_staff'], gold: 200 },
-  'dungeon:17,8': { weapons: ['void_grimoire'], gems: ['chain'] },
+
+Object.assign(SKILLS, {
+  chop: S('Chop', 3, 'one', 'phys', 1.6, { pierce: 0.25 }),
+  // berserker
+  rage: S('Rage', 3, 'self', 'buff', 0, { fx: ['atkup'] }),
+  hew: S('Hew', 4, 'one', 'phys', 1.8, { pierce: 0.3 }),
+  whirlwind: S('Whirlwind', 8, 'all', 'phys', 1.0),
+  bloodlust: S('Bloodlust', 6, 'one', 'phys', 1.5, { fx: ['drain'] }),
+  execution: S('Execution', 16, 'one', 'phys', 3.6),
+  // alchemist
+  acidflask: S('Acid Flask', 4, 'one', 'mag', 1.4, { fx: ['poison'] }),
+  tonic: S('Tonic', 3, 'ally', 'heal', 1.4),
+  frostflask: S('Frost Flask', 6, 'one', 'mag', 1.7, { elem: 'ice', fx: ['slow'] }),
+  fireflask: S('Fire Flask', 9, 'all', 'mag', 1.0, { elem: 'fire' }),
+  panacea: S('Panacea', 10, 'allies', 'heal', 0.8, { fx: ['defup'] }),
+  philosopher: S('Philosopher\'s Fire', 18, 'all', 'mag', 1.9, { elem: 'fire' }),
+  // enemy-only
+  hexbolt: S('Hex Bolt', 0, 'one', 'mag', 1.3, { elem: 'dark', fx: ['slow'] }),
+  frostbite: S('Frostbite', 0, 'one', 'phys', 1.1, { elem: 'ice', fx: ['slow'] }),
+  blizzard: S('Blizzard', 0, 'all', 'mag', 1.0, { elem: 'ice' }),
+  icebolt: S('Ice Bolt', 0, 'one', 'mag', 1.5, { elem: 'ice' }),
+  titanfist: S('Titan Fist', 0, 'one', 'phys', 1.9),
+  icicle: S('Icicle Storm', 0, 'one', 'mag', 1.5, { elem: 'ice', fx: ['slow'] }),
+  soulstorm: S('Soul Storm', 0, 'all', 'mag', 0.9, { elem: 'dark', fx: ['slow'] }),
+  rot: S('Rotting Claw', 0, 'one', 'phys', 1.0, { fx: ['poison'] }),
+});
+WEAPON_TYPES.axe = { name: 'Axe', sig: 'chop' };
+Object.assign(JOBS, {
+  berserker: { name: 'Berserker', icon: '🪓', desc: 'Reckless axe fighter with huge damage and lifesteal.', mod: { hp: 1.5, mp: 0.45, atk: 1.45, def: 1.0, mag: 0.4, spd: 0.95 }, weapons: ['axe', 'sword'], skills: [['rage', 1], ['hew', 2], ['whirlwind', 4], ['bloodlust', 6], ['execution', 9]] },
+  alchemist: { name: 'Alchemist', icon: '⚗️', desc: 'Flasks, tonics and elemental concoctions.', mod: { hp: 0.85, mp: 1.4, atk: 0.7, def: 0.8, mag: 1.25, spd: 1.15 }, weapons: ['tome', 'dagger'], skills: [['acidflask', 1], ['tonic', 2], ['frostflask', 3], ['fireflask', 4], ['panacea', 6], ['philosopher', 9]] },
+});
+Object.assign(GEMS, {
+  stun: { name: 'Stun Gem', desc: '35% chance to stun foes (skip their next turn)', price: 600 },
+  execute: { name: 'Executioner Gem', desc: '+60% damage to foes below 35% HP', price: 700 },
+  berserk: { name: 'Berserk Gem', desc: '+40% power, but costs you 8% max HP', price: 450 },
+  siphon: { name: 'Siphon Gem', desc: 'Restore MP equal to 15% of damage dealt', price: 650 },
+  guard: { name: 'Guard Gem', desc: 'You gain a Guard buff after using the skill', price: 400 },
+  crit: { name: 'Crit Gem', desc: '25% chance to deal 180% damage', price: 550 },
+});
+const W2 = (name, type, atk, mag, sockets, price, innate) => ({ name, type, atk, mag, sockets, price, innate });
+Object.assign(WEAPONS, {
+  hand_axe: W2('Hand Axe', 'axe', 9, 0, 1, 90), battle_axe: W2('Battle Axe', 'axe', 16, 0, 2, 420, 'crit'), war_axe: W2('War Axe', 'axe', 24, 0, 2, 900, 'berserk'), titan_axe: W2('Titan Axe', 'axe', 36, 0, 3, 0, 'execute'),
+  mythril_sword: W2('Mythril Sword', 'sword', 19, 0, 2, 760), frostbrand: W2('Frostbrand', 'sword', 24, 0, 2, 1150, 'frost'),
+  stiletto: W2('Stiletto', 'dagger', 13, 0, 2, 680, 'pierce'), sage_staff: W2('Sage Staff', 'staff', 4, 18, 2, 740), lich_staff: W2('Lich Staff', 'staff', 5, 30, 3, 0, 'shadow'),
+  longbow: W2('Longbow', 'bow', 17, 0, 2, 740), frost_bow: W2('Frost Bow', 'bow', 22, 0, 2, 1050, 'frost'),
+  steel_fist: W2('Steel Fist', 'fists', 16, 0, 2, 700), thorn_whip: W2('Thorn Whip', 'whip', 14, 7, 2, 700), grave_scythe: W2('Grave Scythe', 'scythe', 19, 11, 2, 950, 'vamp'),
+  arcane_tome: W2('Arcane Tome', 'tome', 3, 19, 2, 800), blizzard_tome: W2('Blizzard Tome', 'tome', 3, 25, 2, 1150, 'frost'),
+});
+Object.assign(ARMORS, {
+  mythril_mail: { name: 'Mythril Mail', def: 22, hp: 25, sockets: 1, price: 820 }, frost_robe: { name: 'Frost Robe', def: 10, mp: 25, mag: 6, res: ['ice'], sockets: 1, price: 740 },
+  yeti_fur: { name: 'Yeti Fur', def: 14, hp: 30, res: ['ice'], sockets: 0, price: 620 }, lich_robes: { name: 'Lich Robes', def: 15, mp: 35, mag: 11, sockets: 2, res: ['dark'], price: 0 },
+  titan_plate: { name: 'Titan Plate', def: 36, hp: 55, spd: -2, sockets: 2, res: ['fire', 'ice'], price: 0 },
+});
+Object.assign(ACCS, {
+  sage_ring: { name: 'Sage Ring', mag: 8, mp: 20, sockets: 0, price: 760 }, berserk_ring: { name: 'Berserk Ring', atk: 9, def: -2, sockets: 0, price: 700 },
+  life_charm: { name: 'Life Charm', hp: 45, sockets: 0, price: 680 }, gem_crown: { name: 'Gem Crown', sockets: 3, price: 1600 },
+  lich_ring: { name: 'Lich Ring', mag: 6, spd: 3, res: ['dark'], sockets: 1, price: 900 },
+});
+Object.assign(ITEMS, { megaether: { name: 'Mega Ether', mpr: 80, price: 220, desc: 'Restore 80 MP' }, elixir: { name: 'Elixir', heal: 600, price: 400, desc: 'Restore 600 HP' } });
+
+// enemies (sprites for variants are recolors defined in sprites.js)
+Object.assign(ENEMIES, {
+  bog_slime: E('Bog Slime', '🟣', 130, 24, 6, 12, 6, 55, 30, [['tackle', 2], ['venombite', 1]], { weak: ['fire'] }),
+  mire_wolf: E('Mire Wolf', '🐺', 160, 31, 7, 5, 12, 62, 34, [['bite', 2], ['venombite', 2]], { weak: ['fire'] }),
+  zombie: E('Zombie', '🧟', 210, 32, 8, 5, 3, 68, 38, [['slam', 2], ['rot', 2]], { weak: ['fire', 'holy'], res: ['dark'] }),
+  skeleton_knight: E('Skeleton Knight', '💀', 330, 48, 20, 6, 9, 130, 72, [['slam', 2], ['tackle', 2]], { weak: ['holy', 'bolt'], res: ['dark'] }),
+  ghoul: E('Ghoul', '🧟', 300, 50, 11, 8, 11, 130, 70, [['rot', 2], ['bite', 2]], { weak: ['fire', 'holy'], res: ['dark'] }),
+  wraith_elder: E('Wraith Elder', '👻', 240, 12, 11, 52, 13, 140, 78, [['hexbolt', 2], ['draintouch', 2]], { weak: ['holy'], res: ['dark'] }),
+  bone_mage: E('Bone Mage', '💀', 210, 12, 9, 56, 11, 135, 76, [['hexbolt', 3], ['fireball', 1]], { weak: ['holy'], res: ['dark'] }),
+  lich: E('Lich King Morvath', '☠️', 2250, 43, 17, 56, 10, 1500, 1500, [['hexbolt', 3], ['draintouch', 2], ['soulstorm', 2], ['slam', 1]], { weak: ['holy', 'fire'], res: ['dark'], boss: true }),
+  ice_wolf: E('Ice Wolf', '🐺', 270, 52, 11, 6, 15, 150, 80, [['frostbite', 3], ['bite', 1]], { weak: ['fire'], res: ['ice'] }),
+  yeti: E('Yeti', '🦍', 440, 58, 16, 6, 7, 165, 90, [['slam', 2], ['claw', 2]], { weak: ['fire'], res: ['ice'] }),
+  frost_goblin: E('Frost Goblin', '👺', 250, 48, 10, 8, 10, 140, 76, [['tackle', 2], ['frostbite', 1]], { weak: ['fire'], res: ['ice'] }),
+  ice_golem: E('Ice Golem', '🗿', 680, 66, 30, 6, 4, 230, 120, [['slam', 3], ['icicle', 1]], { weak: ['fire', 'bolt'], res: ['ice'] }),
+  frost_wraith: E('Frost Wraith', '👻', 360, 14, 14, 66, 14, 230, 118, [['blizzard', 1], ['icebolt', 2], ['draintouch', 1]], { weak: ['fire', 'holy'], res: ['ice'] }),
+  ice_imp: E('Ice Imp', '👹', 330, 16, 12, 62, 12, 215, 112, [['icebolt', 3], ['tackle', 1]], { weak: ['fire'], res: ['ice'] }),
+  frozen_knight: E('Frozen Knight', '💀', 520, 70, 28, 8, 9, 245, 126, [['slam', 2], ['frostbite', 2]], { weak: ['fire', 'holy'], res: ['ice'] }),
+  titan: E('Frost Titan', '🧊', 3600, 68, 24, 62, 8, 3000, 2500, [['titanfist', 3], ['blizzard', 2], ['icicle', 2]], { weak: ['fire'], res: ['ice'], boss: true }),
+});
+// enemy ids that already exist keep BOSS flag
+ENEMIES.wyrm.boss = true;
+Object.assign(ENCOUNTERS, {
+  world: [['slime'], ['slime', 'slime'], ['goblin'], ['goblin', 'slime'], ['wolf'], ['wolf', 'wolf'], ['goblin', 'goblin', 'wolf']],
+  swamp: [['bog_slime', 'bog_slime'], ['zombie'], ['mire_wolf', 'mire_wolf'], ['zombie', 'bog_slime'], ['mire_wolf', 'zombie'], ['zombie', 'zombie', 'bog_slime']],
+  crypt: [['skeleton_knight'], ['ghoul', 'ghoul'], ['wraith_elder', 'bone_mage'], ['skeleton_knight', 'bone_mage'], ['ghoul', 'wraith_elder'], ['skeleton_knight', 'ghoul', 'bone_mage'], ['bone_mage', 'bone_mage']],
+  snow: [['ice_wolf', 'ice_wolf'], ['yeti'], ['frost_goblin', 'frost_goblin', 'ice_wolf'], ['yeti', 'ice_wolf'], ['frost_goblin', 'ice_wolf'], ['frost_goblin', 'frost_goblin', 'frost_goblin']],
+  spire: [['ice_golem'], ['frost_wraith', 'ice_imp'], ['frozen_knight', 'ice_imp'], ['ice_imp', 'ice_imp', 'frost_wraith'], ['frozen_knight', 'frost_wraith'], ['ice_golem', 'ice_imp']],
+});
+Object.assign(DROPS, {
+  bog_slime: [0.1, 'gems', 'venom'], mire_wolf: [0.08, 'gems', 'swift'], zombie: [0.1, 'gems', 'guard'], skeleton_knight: [0.1, 'gems', 'pierce'], ghoul: [0.1, 'gems', 'berserk'],
+  wraith_elder: [0.12, 'gems', 'shadow'], bone_mage: [0.1, 'gems', 'overcharge'], ice_wolf: [0.1, 'gems', 'crit'], yeti: [0.12, 'items', 'hipotion'], frost_goblin: [0.1, 'gems', 'frost'],
+  ice_golem: [0.2, 'gems', 'stun'], frost_wraith: [0.12, 'gems', 'echo'], ice_imp: [0.1, 'gems', 'siphon'], frozen_knight: [0.12, 'gems', 'execute'],
+});
+// shops: stock lists (ids in WEAPONS / ARMORS / ACCS / GEMS / ITEMS)
+export const SHOPS = {
+  haven_general: { title: '🛒 Haven General Store', stock: { items: ['potion', 'ether', 'phoenix'], gems: ['fire', 'frost', 'bolt', 'thrifty', 'venom', 'focusg', 'pierce'] } },
+  haven_smith: { title: '⚒️ Haven Smithy', stock: { weapons: ['iron_sword', 'bronze_dirk', 'oak_staff', 'short_bow', 'iron_knuckle', 'leather_whip', 'rusty_scythe', 'dusty_tome', 'hand_axe', 'flame_brand', 'viper_fang', 'storm_rod', 'hunter_bow', 'thunder_claw', 'serpent_lash', 'frost_codex', 'battle_axe'], armors: ['cloth', 'leather', 'chain', 'plate', 'mage_cloak'], accs: ['power_ring', 'ward_amulet', 'mana_charm', 'swift_boots', 'fire_pendant'] } },
+  frost_general: { title: '🛒 Frostholm Provisions', stock: { items: ['potion', 'hipotion', 'ether', 'megaether', 'phoenix', 'elixir'], gems: ['fire', 'frost', 'bolt', 'holy', 'shadow', 'chain', 'vamp', 'pierce', 'thrifty', 'overcharge', 'wide', 'venom', 'swift', 'focusg', 'guard', 'crit', 'berserk', 'echo', 'stun', 'siphon', 'execute'] } },
+  frost_smith: { title: '⚒️ Frostholm Forge', stock: { weapons: ['mythril_sword', 'frostbrand', 'stiletto', 'sage_staff', 'longbow', 'frost_bow', 'steel_fist', 'thorn_whip', 'grave_scythe', 'arcane_tome', 'blizzard_tome', 'war_axe'], armors: ['mythril_mail', 'frost_robe', 'yeti_fur'], accs: ['sage_ring', 'berserk_ring', 'life_charm', 'gem_crown', 'socket_jewel', 'frost_pendant', 'lich_ring'] } },
 };

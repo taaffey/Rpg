@@ -2,7 +2,7 @@
 import { JOBS, SKILLS, GEMS, WEAPONS, ARMORS, ACCS, WEAPON_TYPES, ENEMIES, ITEMS, DROPS, ELEMENTS } from './data.js';
 
 export const STAT_KEYS = ['hp', 'mp', 'atk', 'def', 'mag', 'spd'];
-export const MAX_LEVEL = 12;
+export const MAX_LEVEL = 20;
 const BASE = { hp: 40, mp: 12, atk: 6, def: 4, mag: 6, spd: 6 };
 const GROW = { hp: 9, mp: 3, atk: 1.6, def: 1.2, mag: 1.6, spd: 0.7 };
 export const expNeeded = (lv) => Math.round(25 * Math.pow(lv, 1.5));
@@ -57,7 +57,7 @@ export function sanitize(c, inv) {
 // ---------- Gem rewriting: base skill + gems => final skill ----------
 export function skillWithGems(id, gems = []) {
   const sk = SKILLS[id];
-  const m = { id, ...sk, fx: [...(sk.fx || [])], hits: sk.hits || 1, pierce: sk.pierce || 0, chain: false, echo: false, vamp: 0, swift: false, tags: [] };
+  const m = { id, ...sk, fx: [...(sk.fx || [])], hits: sk.hits || 1, pierce: sk.pierce || 0, chain: false, echo: false, vamp: 0, swift: false, stun: 0, execute: false, recoil: 0, siphon: 0, guard: false, crit: 0, tags: [] };
   let mpMul = 1;
   for (const gid of gems) {
     const g = GEMS[gid];
@@ -72,6 +72,12 @@ export function skillWithGems(id, gems = []) {
       case 'focusg': m.pow *= 1.25; m.tags.push('Focus'); break;
       case 'venom': if (!m.fx.includes('poison')) m.fx.push('poison'); m.tags.push('Venom'); break;
       case 'swift': m.swift = true; m.tags.push('Swift'); break;
+      case 'stun': m.stun = 0.35; m.tags.push('Stun'); break;
+      case 'execute': m.execute = true; m.tags.push('Execute'); break;
+      case 'berserk': m.pow *= 1.4; m.recoil = 0.08; m.tags.push('Berserk'); break;
+      case 'siphon': m.siphon = 0.15; m.tags.push('Siphon'); break;
+      case 'guard': m.guard = true; m.tags.push('Guard'); break;
+      case 'crit': m.crit = 0.25; m.tags.push('Crit'); break;
       case 'wide':
         if (m.tgt === 'one') { m.tgt = 'all'; m.pow *= 0.6; m.tags.push('Wide'); }
         else if (m.tgt === 'ally') { m.tgt = 'allies'; m.pow *= 0.6; m.tags.push('Wide'); }
@@ -89,6 +95,7 @@ export function describeSkill(m) {
   if (m.fx.length) bits.push(m.fx.join('/'));
   for (const f of ['chain', 'echo', 'swift']) if (m[f]) bits.push(f);
   if (m.vamp) bits.push('lifesteal');
+  if (m.stun) bits.push('stun 35%'); if (m.crit) bits.push('crit 25%'); if (m.execute) bits.push('execute'); if (m.siphon) bits.push('MP siphon'); if (m.guard) bits.push('self-guard'); if (m.recoil) bits.push('recoil');
   if (m.pierce) bits.push(`pierce ${Math.round(m.pierce * 100)}%`);
   return bits.join(' · ');
 }
@@ -146,6 +153,8 @@ export class Battle {
     return { kind: 'skill', skillId: id, gems: [], target: pick(this.p.filter(alive), this.rng) };
   }
   speed(x) { return x.spd * (x.st.slow > 0 ? 0.5 : 1) + this.rng() * 2; }
+  // approximate upcoming action order (no randomness), for the turn-order bar
+  order() { return [...this.p, ...this.e].filter(alive).sort((a, b) => b.spd * (b.st.slow > 0 ? 0.5 : 1) - a.spd * (a.st.slow > 0 ? 0.5 : 1)); }
 
   // Generator: yields an array of log lines after every action.
   *round(cmds) {
@@ -162,6 +171,7 @@ export class Battle {
     this.p.forEach((x) => (x.defending = false));
     for (const { x, cmd } of order) {
       if (!alive(x) || this.over) continue;
+      if (x.st.stun > 0) { x.st.stun = 0; this.fx.push({ t: 'poison' }); yield [`${x.name} is stunned and can't act!`]; continue; }
       const L = this.act(x, cmd);
       this.check();
       yield L;
@@ -171,7 +181,7 @@ export class Battle {
     for (const x of [...this.p, ...this.e]) {
       if (!alive(x)) continue;
       if (x.st.poison > 0) { const d = Math.max(1, Math.round(x.maxhp * 0.07)); this.hurt(x, d, L, `${x.name} suffers poison`); this.fx.push({ t: 'poison' }); }
-      for (const k of Object.keys(x.st)) if (x.st[k] > 0) x.st[k]--;
+      for (const k of Object.keys(x.st)) if (k !== 'stun' && x.st[k] > 0) x.st[k]--;
     }
     this.check();
     if (L.length) yield L;
@@ -231,6 +241,8 @@ export class Battle {
     const up = a.st.atkup > 0 ? 1.4 : 1, dup = t.st.defup > 0 ? 1.5 : 1;
     let raw = s.kind === 'phys' ? a.atk * up * s.pow - t.def * dup * 0.6 * (1 - s.pierce) : a.mag * up * s.pow - t.def * dup * 0.3 * (1 - s.pierce);
     raw *= (0.9 + this.rng() * 0.2) * elemMult(t, elem) * mult * (t.defending ? 0.5 : 1);
+    if (s.execute && t.hp < t.maxhp * 0.35) raw *= 1.6;
+    this.lastCrit = !!(s.crit && this.rng() < s.crit); if (this.lastCrit) raw *= 1.8;
     return Math.max(1, Math.round(raw));
   }
   cast(a, id, gems, target, L, free, noEcho) {
@@ -241,18 +253,20 @@ export class Battle {
     }
     const elem = s.elem === 'random' ? pick(['fire', 'ice', 'bolt'], this.rng) : s.elem;
     L.push(`${a.name} uses ${s.name}${s.tags.length ? ` [${s.tags.join(' + ')}]` : ''}!`);
+    let dealt = 0;
     const targets = this.resolveTargets(a, s, target);
     this.fx.push({ t: 'cast', actor: a.name, kind: s.kind, elem, hostile: !!s.hostile, side: a.side, targets: targets.map((x) => x.name) });
     for (const t of targets) {
       if (s.kind === 'phys' || s.kind === 'mag') {
         let total = 0;
         for (let h = 0; h < s.hits && alive(t); h++) {
-          const d = this.damage(a, t, s, 1, elem); total += d;
+          const d = this.damage(a, t, s, 1, elem), crit = this.lastCrit; total += d; dealt += d;
           const em = elemMult(t, elem);
-          this.hurt(t, d, L, `  ${t.name} takes ${d}${em > 1 ? ' — weakness!' : em < 1 ? ' — resisted' : ''}`, em > 1);
+          this.hurt(t, d, L, `  ${t.name} takes ${d}${crit ? ' — CRITICAL!' : em > 1 ? ' — weakness!' : em < 1 ? ' — resisted' : ''}`, em > 1 || crit);
         }
         if (s.vamp && total && alive(a)) { const h = Math.min(Math.round(total * s.vamp), a.maxhp - a.hp); if (h > 0) { a.hp += h; this.fx.push({ t: 'heal', name: a.name, amount: h }); L.push(`  ${a.name} siphons ${h} HP.`); } }
         this.applyFx(a, t, s, L, total);
+        if (s.stun && alive(t) && !t.def_?.boss && this.rng() < s.stun) { t.st.stun = 1; L.push(`  ${t.name} is stunned!`); }
         if (s.chain) {
           const others = this.foes(a).filter((x) => alive(x) && x !== t);
           if (others.length) { const o = pick(others, this.rng); const d = this.damage(a, o, s, 0.5, elem); this.hurt(o, d, L, `  Chain! ${o.name} takes ${d}`); }
@@ -268,6 +282,9 @@ export class Battle {
         if (alive(t) || s.fx.includes('revive')) this.applyFx(a, t, s, L, 0);
       }
     }
+    if (s.recoil && alive(a)) { const d = Math.min(a.hp - 1, Math.max(1, Math.round(a.maxhp * s.recoil))); if (d > 0) { a.hp -= d; this.fx.push({ t: 'hit', name: a.name, d, ko: false, weak: false }); L.push(`  ${a.name} strains (${d})`); } }
+    if (s.siphon && a.side === 'p' && dealt) { const m = Math.min(Math.round(dealt * s.siphon), a.maxmp - a.mp); if (m > 0) { a.mp += m; L.push(`  ${a.name} siphons ${m} MP.`); } }
+    if (s.guard && alive(a)) { a.st.defup = 4; L.push(`  ${a.name} guards.`); }
     if (s.echo && !noEcho && !free && alive(a) && this.e.some(alive) && this.p.some(alive) && this.rng() < 0.35) {
       L.push('  ✦ Echo!'); this.cast(a, id, gems, target, L, true, true);
     }
