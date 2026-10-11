@@ -6,6 +6,7 @@ import * as L from './logic.js';
 import * as SP from './sprites.js';
 import * as TR from './terrain.js';
 import * as TA from './townart.js';
+import * as RA from './roomart.js';
 import * as WK from './walkers.js';
 import { Stage, FX } from './stage.js';
 import { music, sfx, unlock, isMuted, setMuted, setVolumes, setBackgrounded } from './audio.js';
@@ -170,7 +171,7 @@ const plr = { x: 256, y: 192 };
 let face = 'down', vx = 0, vy = 0, trans = 0, lastT = 0, trail = [], fv = [];
 const snap = () => { vx = G.x; vy = G.y; trail = [{ x: G.x, y: G.y }]; fv = [0, 1, 2].map(() => ({ x: G.x, y: G.y, d: face, mv: false })); reveal(); };
 const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
-const LIGHT = { storm: { glow: '255,230,90', dark: 0.86, r: 170 }, cavern: { glow: '255,150,50', dark: 0.88, r: 175 }, crypt: { glow: '90,255,140', dark: 0.9, r: 165 }, spire: { glow: '130,210,255', dark: 0.5, r: 250 } };
+const LIGHT = { storm: { glow: '255,230,90', dark: 0.8, r: 180 }, cavern: { glow: '255,150,50', dark: 0.88, r: 175 }, crypt: { glow: '90,255,140', dark: 0.9, r: 165 }, spire: { glow: '130,210,255', dark: 0.5, r: 250 } };
 function draw(t = performance.now() / 1000) {
   if (!G) return;
   const m = mapDef(), W = m.rows[0].length, H = m.rows.length, frame = Math.floor(t / 0.6) % 2;
@@ -181,7 +182,8 @@ function draw(t = performance.now() / 1000) {
   const sx = (x) => Math.round((x - camX) * TS), sy = (y) => Math.round((y - camY) * TS);
   const x0 = Math.max(0, Math.floor(camX)), x1 = Math.min(W, Math.ceil(camX + VW) + 1), y0 = Math.max(0, Math.floor(camY)), y1 = Math.min(H, Math.ceil(camY + VH) + 1);
   const defeated = (id) => !!G.flags.bosses[id];
-  const R = TR.isTheme(m.theme) ? TR : TA.isTheme(m.theme) ? TA : null, items = []; // R = autotiled renderer (overworld / towns)
+  m.chestOpen = (x, y) => !!G.flags.chests[chestKey(x, y)];
+  const R = TR.isTheme(m.theme) ? TR : TA.isTheme(m.theme) ? TA : RA.isTheme(m.theme) ? RA : null, items = []; // R = autotiled renderer (overworld / towns)
   if (!R) { // rooms and dungeons: classic tiles; beyond the edge more wall, shaded, instead of black bars
     for (let y = Math.floor(camY) - 1; y <= Math.ceil(camY + VH) + 1; y++) for (let x = Math.floor(camX) - 1; x <= Math.ceil(camX + VW) + 1; x++) if (x < 0 || y < 0 || x >= W || y >= H) cx.drawImage(SP.tile(m.theme, '#', x, y, 0), sx(x), sy(y), TS, TS);
     cx.fillStyle = 'rgba(0,0,0,.55)'; cx.fillRect(0, 0, cv.width, cv.height);
