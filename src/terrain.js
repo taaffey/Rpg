@@ -580,4 +580,3 @@ export function mapObjects(m, t, out) {
     }, x: s.x - 0.75, y: s.y - 1.1 + bob, w: 1.5, h: 22 / 16, z: 1, sy: s.y + 0.4 });
   }
 }
-export const prof = () => BK && BK.PROF;

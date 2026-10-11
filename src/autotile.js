@@ -6,7 +6,7 @@ export function rng(seed) { let a = seed; return () => { a = (a + 0x6D2B79F5) | 
 export const hex = (h) => { const n = parseInt(h.slice(1), 16); return [n >> 16, (n >> 8) & 255, n & 255]; };
 
 // ---------- textures: 32x32 so repeats are less obvious; sampled by world position so neighbours line up ----------
-export function tex(draw) { const c = mk(32, 32), x = c.getContext('2d'); draw(x); return { c, d: x.getImageData(0, 0, 32, 32).data }; }
+export function tex(draw) { const c = mk(32, 32), x = c.getContext('2d', { willReadFrequently: true }); draw(x); return { c, d: x.getImageData(0, 0, 32, 32).data }; }
 export function flat(base, specks = [], density = 0, seed = 1) {
   return tex((x) => { const r = rng(seed); x.fillStyle = base; x.fillRect(0, 0, 32, 32); for (let i = 0; i < 1024 * density; i++) { x.fillStyle = specks[Math.floor(r() * specks.length)]; x.fillRect(Math.floor(r() * 32), Math.floor(r() * 32), specks.length > 2 && i % 3 === 0 ? 2 : 1, 1); } });
 }

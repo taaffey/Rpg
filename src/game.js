@@ -212,7 +212,7 @@ function draw(t = performance.now() / 1000) {
   // characters: standing on the bottom of their tile, sprites may be taller than one tile
   const stand = (img, X, Y, bob = 0) => { const h = img.height * (TS / 16); cx.fillStyle = 'rgba(0,0,0,.32)'; cx.beginPath(); cx.ellipse(X + TS / 2, Y + TS - 3, 10, 4, 0, 0, 7); cx.fill(); cx.drawImage(img, X, Y + TS - h - bob, TS, h); return h; };
   const sorted = items.filter((it) => it.z === 1).map((it) => ({ k: it.sy ?? it.y + (it.h ?? it.img.height / 16), f: () => put(it) }));
-  if (m.boss && !defeated(m.boss.id)) sorted.push({ k: m.boss.y + 1, f: () => { const bob = Math.round(Math.sin(t * 2) * 1.5); cx.drawImage(SP.enemy(m.boss.id), sx(m.boss.x), sy(m.boss.y) + bob, TS, TS); } });
+  if (m.boss && !defeated(m.boss.id)) sorted.push({ k: m.boss.y + 1, f: () => { const bob = Math.round(Math.sin(t * 2) * 1.5); const img = SP.enemy(m.boss.id), sc = Math.min(2 * TS / img.width, 2 * TS / img.height), w = img.width * sc, h = img.height * sc; cx.drawImage(img, sx(m.boss.x) + TS / 2 - w / 2, sy(m.boss.y) + TS - h + bob, w, h); } }); // bosses loom over their lair, up to 2x2 tiles
   for (const n of m.npcs || []) sorted.push({ k: n.y + 1, f: () => {
     const nx0 = sx(n.x), ny0 = sy(n.y), bob = Math.round(Math.abs(Math.sin(t * 2 + n.x)) * 0.8), fr = Math.floor(t * 1.6 + n.x) % 8 === 0 ? 1 : 0;
     const h = stand(WK.npcWalker(n.type, n.dir || 'down', fr), nx0, ny0, bob);
@@ -672,7 +672,8 @@ function stageKind(bossId) {
   if (bossId) return { wyrm: 'boss', lich: 'crypt', storm_drake: 'storm' }[bossId] || 'spire';
   const m = mapDef();
   if (m.kind === 'dungeon') return m.theme === 'cavern' ? 'dungeon' : m.theme;
-  const r = regionOf(); return r === 'snow' ? 'snow' : r === 'swamp' ? 'swamp' : 'world';
+  const r = regionOf(), woods = [[1, 0], [-1, 0], [0, 1], [0, -1]].some(([a, b2]) => tileAt(G.x + a, G.y + b2) === 'T'); // fighting at a forest's edge
+  return r === 'snow' ? 'snow' : r === 'swamp' ? 'swamp' : woods ? 'forest' : 'world';
 }
 async function battle(groupIds, bossId = null) {
   if (BT) return; // never run two battles at once
