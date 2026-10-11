@@ -119,8 +119,15 @@ export function music(name) {
 }
 export function unlock() {
   if (!ensure()) return;
-  if (ctx.state === 'suspended') ctx.resume();
+  if (ctx.state === 'suspended' || ctx.state === 'interrupted') ctx.resume();
+  if (!unlock.primed) { unlock.primed = true; try { const b = ctx.createBuffer(1, 1, 22050), src = ctx.createBufferSource(); src.buffer = b; src.connect(ctx.destination); src.start(0); } catch {} } // iOS: a silent blip inside the gesture fully unlocks audio
   if (wanted && !current) startTrack(wanted);
+}
+// iOS suspends audio when the app is backgrounded or the screen locks; pause music cleanly and resume on return
+export function setBackgrounded(bg) {
+  if (!ctx) return;
+  if (bg) { try { ctx.suspend(); } catch {} }
+  else if (!muted) { try { ctx.resume(); } catch {} if (wanted && !current) startTrack(wanted); }
 }
 export const isMuted = () => muted;
 export function setVolumes(m, s) { musicVol = m; sfxVol = s; if (musicBus) musicBus.gain.value = 0.55 * m; if (sfxBus) sfxBus.gain.value = 0.9 * s; }

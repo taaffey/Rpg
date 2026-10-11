@@ -2,18 +2,33 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Gemforge">
+<meta name="theme-color" content="#0b0e1c">
+<meta name="format-detection" content="telephone=no">
 <title>Gemforge Chronicles</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 16 16%27%3E%3Crect x=%274%27 y=%274%27 width=%278%27 height=%278%27 fill=%27%238c7bff%27/%3E%3C/svg%3E">
+<link rel="apple-touch-icon" href="assets/icon-180.png">
+<link rel="manifest" href="assets/manifest.webmanifest">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap">
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
 <div id="app">
-  <div id="hud"><span id="loc"></span><span id="gold"></span><button id="mute" title="Sound on/off">🔊</button><span class="hint">Move: Arrows/WASD · Menu: Esc/M</span></div>
-  <canvas id="map" width="512" height="384"></canvas>
-  <div id="banner"></div>
-  <div id="dpad"><button data-d="up">▲</button><button data-d="left">◀</button><button data-d="down">▼</button><button data-d="right">▶</button><button data-d="menu">☰</button></div>
+  <div id="hud">
+    <span id="loc"></span><span id="gold"></span><span class="grow"></span><span class="hint">Move: Arrows/WASD · Menu: Esc/M</span>
+    <button id="mute" title="Sound on/off" aria-label="Sound on or off">🔊</button><button id="hudmenu" title="Menu" aria-label="Menu">☰</button>
+  </div>
+  <div id="play">
+    <div id="padL" class="pad"><div class="cross">
+      <button data-d="up" aria-label="Up">▲</button><button data-d="left" aria-label="Left">◀</button><button data-d="right" aria-label="Right">▶</button><button data-d="down" aria-label="Down">▼</button>
+    </div></div>
+    <div id="view"><canvas id="map" width="512" height="384" aria-label="Game map"></canvas><div id="banner"></div></div>
+    <div id="padR" class="pad"><button data-d="map" class="round" aria-label="Map">🗺<small>Map</small></button><button data-d="menu" class="round" aria-label="Menu">☰<small>Menu</small></button></div>
+  </div>
   <div id="overlay"></div>
 </div>
 <script type="module" src="src/game.js"></script>

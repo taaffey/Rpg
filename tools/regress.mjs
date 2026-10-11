@@ -17,6 +17,7 @@ const overlayTitle = () => ev(() => document.querySelector('#overlay h2')?.textC
 // --- start, keyboard only
 ok('title focuses New Game', (await ev(() => document.activeElement?.dataset?.act)) === 'new');
 await key('Enter'); await key('Enter', 1, 400);
+await ev(() => { for (const m of Object.values(window.__game.MAPS)) m.rate = 0; }); // keep tests deterministic: battles are started explicitly
 ok('game started in Haven', (await ev(() => window.__game.G.map)) === 'haven');
 await pg.waitForTimeout(800); ok('music engine scheduled notes', (await ev(() => window.__osc)) >= 4);
 

@@ -5,13 +5,18 @@ import { MAPS, WALK } from './maps.js';
 import * as L from './logic.js';
 import * as SP from './sprites.js';
 import { Stage, FX } from './stage.js';
-import { music, sfx, unlock, isMuted, setMuted, setVolumes } from './audio.js';
+import { music, sfx, unlock, isMuted, setMuted, setVolumes, setBackgrounded } from './audio.js';
 const { stats, newChar, learnable, slotSkill, slotGems, gemCapacity, gemsUsed, sanitize, skillWithGems, describeSkill, gainExp, expNeeded, Battle, rewards, SIG, GEMS_PER_SLOT } = L;
 
 const $ = (s) => document.querySelector(s);
 const cv = $('#map'), cx = cv.getContext('2d'), ov = $('#overlay');
-const SAVE = 'gemforge-save-v2', SETTINGS = 'gemforge-settings-v2', TS = 32, VW = 16, VH = 12;
+const SAVE = 'gemforge-save-v2', SETTINGS = 'gemforge-settings-v2', TS = 32;
+let VW = 16, VH = 12; // tiles visible: adapts to the screen (phone portrait / landscape / desktop)
 let G = null;
+const root = document.documentElement;
+const IS_IOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+if (window.self !== window.top) root.classList.add('framed');
+if (navigator.standalone || matchMedia('(display-mode: standalone)').matches) root.classList.add('standalone');
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const esc = (s) => String(s).replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
 const DB = { weapons: WEAPONS, armors: ARMORS, accs: ACCS, gems: GEMS, items: ITEMS };
@@ -80,14 +85,26 @@ function reveal() { // fog of war
   for (let y = Math.max(0, G.y - r); y <= Math.min(m.rows.length - 1, G.y + r); y++) {
     let row = seen[y], ch = false;
     for (let x = Math.max(0, G.x - r); x <= Math.min(m.rows[0].length - 1, G.x + r); x++) if ((x - G.x) ** 2 + (y - G.y) ** 2 <= r * r + r && row[x] !== '1') { row = row.slice(0, x) + '1' + row.slice(x + 1); ch = true; }
-    if (ch) seen[y] = row;
+    if (ch) { seen[y] = row; miniDirty = true; }
   }
 }
 
+// ---------- adaptive view: choose how many tiles to show so tiles stay chunky on every screen ----------
+function layoutView() {
+  const box = $('#view').getBoundingClientRect(); if (box.width < 40 || box.height < 40) return;
+  const portrait = box.height > box.width * 1.1;
+  const T = portrait ? box.width / 12 : Math.min(box.width / 16, box.height / 12);
+  const cols = clamp(Math.round(box.width / T), 10, 26), rows = clamp(Math.round(box.height / T), 8, 20);
+  if (cols !== VW || rows !== VH) { VW = cols; VH = rows; cv.width = cols * TS; cv.height = rows * TS; miniDirty = true; }
+}
+new ResizeObserver(() => requestAnimationFrame(layoutView)).observe($('#view'));
+addEventListener('orientationchange', () => setTimeout(layoutView, 250));
+
 // ---------- minimap / map screen ----------
+let miniDirty = true; const miniCache = { id: null, canvas: document.createElement('canvas'), sc: 2 };
 const MINI = { '.': '#4f9a3f', ',': '#e6eef8', ':': '#3d5c3a', _: '#8a7040', '=': '#8a5a30', '~': '#2c5fa8', T: '#2a6a2c', t: '#9ab0c8', M: '#7b7468', B: '#c0a060', H: '#e8c060', D: '#c04040', E: '#f4d35e' };
 const MINI_FLOOR = { cavern: '#5a566a', crypt: '#4a5a50', spire: '#8aa8d0', storm: '#5a5c8a' }, MINI_WALL = { cavern: '#22202a', crypt: '#16221c', spire: '#2a4a78', storm: '#1c1e40' };
-function drawMini(c2, id, scale, ox, oy, t) {
+function drawMini(c2, id, scale, ox, oy, t, noPlayer = false) {
   const m = MAPS[id], seen = G.flags.seen[id]; if (!seen) return;
   for (let y = 0; y < m.rows.length; y++) for (let x = 0; x < m.rows[0].length; x++) {
     if (seen[y][x] !== '1') continue;
@@ -98,13 +115,18 @@ function drawMini(c2, id, scale, ox, oy, t) {
     if (ch === 'C' && !G.flags.chests[`${id}:${x},${y}`]) { c2.fillStyle = '#e0a050'; c2.fillRect(ox + x * scale, oy + y * scale, scale, scale); }
     if (m.boss && m.boss.x === x && m.boss.y === y && !G.flags.bosses[m.boss.id]) { c2.fillStyle = '#ff4a4a'; c2.fillRect(ox + x * scale - 1, oy + y * scale - 1, scale + 2, scale + 2); }
   }
-  if (G.map === id && Math.floor(t * 3) % 2 === 0) { c2.fillStyle = '#ffffff'; c2.fillRect(ox + G.x * scale - 1, oy + G.y * scale - 1, scale + 2, scale + 2); }
+  if (!noPlayer && G.map === id && Math.floor(t * 3) % 2 === 0) { c2.fillStyle = '#ffffff'; c2.fillRect(ox + G.x * scale - 1, oy + G.y * scale - 1, scale + 2, scale + 2); }
 }
 function miniOverlay(t) {
   const m = mapDef(); if (!OPT.minimap || !m.fog) return;
   const W = m.rows[0].length, H = m.rows.length, sc = Math.max(2, Math.min(Math.floor(104 / W), Math.floor(80 / H))), w = W * sc, h = H * sc, ox = cv.width - w - 8, oy = 8;
+  if (miniDirty || miniCache.id !== G.map) { // redraw the static layer only when something was revealed or changed
+    miniCache.id = G.map; miniCache.sc = sc; miniCache.canvas.width = w; miniCache.canvas.height = h; miniDirty = false;
+    drawMini(miniCache.canvas.getContext('2d'), G.map, sc, 0, 0, 0, true);
+  }
   cx.fillStyle = 'rgba(6,10,40,.72)'; cx.fillRect(ox - 3, oy - 3, w + 6, h + 6); cx.strokeStyle = '#e8ecf8'; cx.lineWidth = 1; cx.strokeRect(ox - 2.5, oy - 2.5, w + 5, h + 5);
-  drawMini(cx, G.map, sc, ox, oy, t);
+  cx.drawImage(miniCache.canvas, ox, oy);
+  if (Math.floor(t * 3) % 2 === 0) { cx.fillStyle = '#ffffff'; cx.fillRect(ox + G.x * sc - 1, oy + G.y * sc - 1, sc + 2, sc + 2); }
 }
 
 // ---------- map rendering ----------
@@ -179,27 +201,28 @@ function draw(t = performance.now() / 1000) {
   miniOverlay(t);
   if (trans > 0) { // battle-start wipe
     cx.fillStyle = '#000';
-    for (let r = 0; r < 12; r++) { const w = Math.min(1, trans * 1.5 - (r % 6) * 0.08) * cv.width; if (w > 0) cx.fillRect(r % 2 ? cv.width - w : 0, r * TS, w, TS); }
+    for (let r = 0; r < VH; r++) { const w = Math.min(1, trans * 1.5 - (r % 6) * 0.08) * cv.width; if (w > 0) cx.fillRect(r % 2 ? cv.width - w : 0, r * TS, w, TS); }
   }
   $('#loc').textContent = m.kind === 'outdoor' ? REGION_NAME[regionOf()] : m.name; $('#gold').textContent = `${G.gold} G`;
 }
 
 function drawTitle(t) {
-  const W = cv.width, H = cv.height; cx.imageSmoothingEnabled = false;
+  const W = cv.width, H = cv.height, u = Math.min(W / 512, H / 384), cxm = W / 2; cx.imageSmoothingEnabled = false;
   const g = cx.createLinearGradient(0, 0, 0, H); g.addColorStop(0, '#0a0c24'); g.addColorStop(0.6, '#2a2060'); g.addColorStop(1, '#6a3a78'); cx.fillStyle = g; cx.fillRect(0, 0, W, H);
-  for (let i = 0; i < 70; i++) { const x = (i * 97) % W, y = (i * 53) % 230, a = 0.4 + 0.6 * Math.abs(Math.sin(t * 1.5 + i)); cx.fillStyle = `rgba(255,255,255,${a})`; cx.fillRect(x, y, i % 5 ? 2 : 3, i % 5 ? 2 : 3); }
-  cx.fillStyle = '#f4ecc8'; cx.beginPath(); cx.arc(468, 52, 22, 0, 7); cx.fill(); cx.fillStyle = '#d8cfa0'; cx.beginPath(); cx.arc(461, 46, 5, 0, 7); cx.arc(475, 62, 4, 0, 7); cx.fill();
-  for (const [col, base, amp, f] of [['#2a1f58', 290, 50, 0.011], ['#1a1440', 320, 38, 0.02]]) { cx.fillStyle = col; cx.beginPath(); cx.moveTo(0, H); for (let x = 0; x <= W; x += 8) cx.lineTo(x, base - Math.abs(Math.sin(x * f + 1)) * amp - Math.sin(x * f * 3) * 8); cx.lineTo(W, H); cx.fill(); }
-  cx.fillStyle = '#0e0b24'; cx.fillRect(0, 336, W, 48);
-  const gemCols = ['#ff7a3a', '#7fd8f0', '#fff27a', '#ffffff', '#b07aff'];
-  for (let i = 0; i < 9; i++) { const x = 40 + i * 54, y = 190 + Math.sin(t * 1.4 + i * 1.7) * 14, c = gemCols[i % 5]; cx.fillStyle = c; cx.beginPath(); cx.moveTo(x, y - 7); cx.lineTo(x + 5, y); cx.lineTo(x, y + 7); cx.lineTo(x - 5, y); cx.fill(); cx.fillStyle = 'rgba(255,255,255,.6)'; cx.fillRect(x - 1, y - 4, 2, 3); }
-  ['knight', 'mage', 'cleric', 'rogue', 'ranger', 'monk'].forEach((j, i) => { const x = ((t * 34 + i * 96) % (W + 80)) - 56, y = 296 - Math.round(Math.abs(Math.sin(t * 9 + i)) * 4); cx.fillStyle = 'rgba(0,0,0,.4)'; cx.fillRect(x + 8, 340, 32, 4); cx.drawImage(SP.hero(j), x, y, 48, 48); });
+  for (let i = 0; i < 70; i++) { const x = (i * 97) % W, y = (i * 53) % (H * 0.6), a = 0.4 + 0.6 * Math.abs(Math.sin(t * 1.5 + i)); cx.fillStyle = `rgba(255,255,255,${a})`; cx.fillRect(x, y, i % 5 ? 2 : 3, i % 5 ? 2 : 3); }
+  cx.fillStyle = '#f4ecc8'; cx.beginPath(); cx.arc(W - 44 * u, H * 0.14, 22 * u, 0, 7); cx.fill(); cx.fillStyle = '#d8cfa0'; cx.beginPath(); cx.arc(W - 51 * u, H * 0.12, 5 * u, 0, 7); cx.arc(W - 37 * u, H * 0.16, 4 * u, 0, 7); cx.fill();
+  const base = H * 0.75, ground = H * 0.875;
+  for (const [col, off, amp, f] of [['#2a1f58', 0, 50, 0.011], ['#1a1440', 30, 38, 0.02]]) { cx.fillStyle = col; cx.beginPath(); cx.moveTo(0, H); for (let x = 0; x <= W; x += 8) cx.lineTo(x, base + off * u - Math.abs(Math.sin(x * f / u + 1)) * amp * u - Math.sin(x * f * 3 / u) * 8 * u); cx.lineTo(W, H); cx.fill(); }
+  cx.fillStyle = '#0e0b24'; cx.fillRect(0, ground, W, H - ground);
+  const gemCols = ['#ff7a3a', '#7fd8f0', '#fff27a', '#ffffff', '#b07aff'], n = Math.max(5, Math.round(W / 54));
+  for (let i = 0; i < n; i++) { const x = (i + 0.5) * W / n, y = H * 0.5 + Math.sin(t * 1.4 + i * 1.7) * 14 * u, c = gemCols[i % 5], q = u; cx.fillStyle = c; cx.beginPath(); cx.moveTo(x, y - 7 * q); cx.lineTo(x + 5 * q, y); cx.lineTo(x, y + 7 * q); cx.lineTo(x - 5 * q, y); cx.fill(); cx.fillStyle = 'rgba(255,255,255,.6)'; cx.fillRect(x - q, y - 4 * q, 2 * q, 3 * q); }
+  const sz = Math.round(48 * u / 8) * 8 || 24, heroes = ['knight', 'mage', 'cleric', 'rogue', 'ranger', 'monk', 'samurai', 'paladin'];
+  heroes.forEach((j, i) => { const x = ((t * 34 * u + i * 96 * u) % (W + 80 * u)) - 56 * u, y = ground - sz - Math.round(Math.abs(Math.sin(t * 9 + i)) * 4 * u) + 8 * u; cx.fillStyle = 'rgba(0,0,0,.4)'; cx.fillRect(x + sz * 0.16, ground + 4 * u, sz * 0.66, 4 * u); cx.drawImage(SP.hero(j, Math.floor(t * 8 + i) % 4 === 1 ? 1 : Math.floor(t * 8 + i) % 4 === 3 ? 2 : 0), x, y, sz, sz); });
   cx.textAlign = 'center'; cx.textBaseline = 'alphabetic'; cx.lineJoin = 'round';
-  const tg = cx.createLinearGradient(0, 70, 0, 120); tg.addColorStop(0, '#fff6c0'); tg.addColorStop(1, '#e89a30');
-  cx.font = '46px "Press Start 2P", ui-monospace, Menlo, monospace'; cx.lineWidth = 9; cx.strokeStyle = '#2a1050'; cx.strokeText('GEMFORGE', W / 2, 112); cx.fillStyle = tg; cx.fillText('GEMFORGE', W / 2, 112);
-  cx.font = '20px "Press Start 2P", ui-monospace, Menlo, monospace'; cx.lineWidth = 6; cx.strokeText('CHRONICLES', W / 2, 160); cx.fillStyle = '#c8b8ff'; cx.fillText('CHRONICLES', W / 2, 160);
+  const ty = H * 0.29, tg = cx.createLinearGradient(0, ty - 44 * u, 0, ty + 8 * u); tg.addColorStop(0, '#fff6c0'); tg.addColorStop(1, '#e89a30');
+  const f1 = Math.min(46 * u, (W - 24) / 8.6); cx.font = `${f1}px "Press Start 2P", ui-monospace, Menlo, monospace`; cx.lineWidth = Math.max(4, f1 * 0.2); cx.strokeStyle = '#2a1050'; cx.strokeText('GEMFORGE', cxm, ty); cx.fillStyle = tg; cx.fillText('GEMFORGE', cxm, ty);
+  const f2 = f1 * 0.43; cx.font = `${f2}px "Press Start 2P", ui-monospace, Menlo, monospace`; cx.lineWidth = Math.max(3, f2 * 0.3); cx.strokeText('CHRONICLES', cxm, ty + f1 * 0.9); cx.fillStyle = '#c8b8ff'; cx.fillText('CHRONICLES', cxm, ty + f1 * 0.9);
 }
-
 function tick(now) {
   requestAnimationFrame(tick);
   const dt = Math.min(0.05, (now - lastT) / 1000 || 0.016); lastT = now;
@@ -273,23 +296,26 @@ addEventListener('keydown', (e) => {
 let holdTimer = null;
 const stopHold = () => { clearInterval(holdTimer); holdTimer = null; };
 const startHold = (fn) => { stopHold(); fn(); holdTimer = setInterval(fn, 150); };
-document.querySelectorAll('#dpad button').forEach((b) => {
+const padBtns = () => document.querySelectorAll('.pad button[data-d]');
+padBtns().forEach((b) => {
   const d = b.dataset.d;
-  if (d === 'menu') return b.addEventListener('click', () => { if (!inOverlay()) mainMenu(); });
+  if (d === 'menu') return b.addEventListener('click', () => { if (G && !inOverlay() && !busy) mainMenu(); });
+  if (d === 'map') return b.addEventListener('click', () => { if (G && !inOverlay() && !busy) ACT.mapscreen(); });
   const v = { up: [0, -1], down: [0, 1], left: [-1, 0], right: [1, 0] }[d];
   b.addEventListener('pointerdown', (e) => { e.preventDefault(); startHold(() => step(...v)); });
 });
-['pointerup', 'pointercancel', 'pointerleave'].forEach((ev) => { document.querySelectorAll('#dpad button').forEach((b) => b.addEventListener(ev, stopHold)); cv.addEventListener(ev, stopHold); });
+$('#hudmenu').addEventListener('click', () => { if (G && !inOverlay() && !busy) mainMenu(); });
+['pointerup', 'pointercancel', 'pointerleave'].forEach((ev) => { padBtns().forEach((b) => b.addEventListener(ev, stopHold)); cv.addEventListener(ev, stopHold); });
 cv.addEventListener('pointerdown', (e) => {
   if (!G || inOverlay()) return;
-  const r = cv.getBoundingClientRect(), tx = ((e.clientX - r.left) * cv.width) / r.width, ty = ((e.clientY - r.top) * cv.height) / r.height;
+  const r = cv.getBoundingClientRect(), k = Math.min(r.width / cv.width, r.height / cv.height), tx = (e.clientX - (r.left + (r.width - cv.width * k) / 2)) / k, ty = (e.clientY - (r.top + (r.height - cv.height * k) / 2)) / k;
   const aim = () => { const dx = tx - plr.x, dy = ty - plr.y; if (Math.abs(dx) < TS * 0.45 && Math.abs(dy) < TS * 0.45) return; if (Math.abs(dx) > Math.abs(dy)) step(Math.sign(dx), 0); else step(0, Math.sign(dy)); };
   startHold(aim);
 });
 ACT.close = hide;
 
 function openChest(x, y) {
-  const c = mapDef().chests?.[`${x},${y}`] || { gold: 50 }; G.flags.chests[chestKey(x, y)] = true; sfx('chest');
+  const c = mapDef().chests?.[`${x},${y}`] || { gold: 50 }; G.flags.chests[chestKey(x, y)] = true; miniDirty = true; sfx('chest');
   const got = [];
   for (const k of ['weapons', 'armors', 'accs', 'gems']) for (const id of c[k] || []) { G.inv[k].push(id); got.push(DB[k][id].name); }
   for (const [id, n] of Object.entries(c.items || {})) { G.inv.items[id] = (G.inv.items[id] || 0) + n; got.push(`${ITEMS[id].name} ×${n}`); }
@@ -436,6 +462,7 @@ function optionsScreen() {
   <div class="opt"><label>Sound effects <b>${Math.round(OPT.sfx * 100)}%</b></label><input type="range" min="0" max="100" value="${Math.round(OPT.sfx * 100)}" data-in="sfx"></div>
   <div class="row">${btn('optspeed', `Battle speed: <b>${OPT.speed}</b>`)}${btn('optmini', `Minimap: <b>${onOff(OPT.minimap)}</b>`)}${btn('optshake', `Screen shake: <b>${onOff(OPT.shake)}</b>`)}${btn('optmute', `Sound: <b>${isMuted() ? 'Muted' : 'On'}</b>`)}</div>
   <h3>Controls</h3><div class="dim controls"><div><b>Arrows / WASD</b> move</div><div><b>Esc / M</b> menu</div><div><b>N</b> toggle minimap</div><div><b>Arrows</b> move menu focus</div><div><b>Enter / Space</b> select</div><div><b>Esc / Backspace</b> back</div></div>
+  ${IS_IOS && !root.classList.contains('standalone') && !root.classList.contains('framed') ? '<div class="card"><b>📱 Install on iPhone</b><div class="dim">In Safari tap Share, then <b>Add to Home Screen</b>. Gemforge then runs full-screen, works offline, and remembers your saves.</div></div>' : ''}
   <div class="row">${btn('optback', 'Back', '', '', 'primary')}</div>`);
 }
 ACT.opts = () => optionsScreen();
@@ -585,14 +612,14 @@ function renderBattle() {
   const { b, ask } = BT;
   const tgtFoes = ask?.stage === 'target' && ask.tside === 'e', tgtAllies = ask?.stage === 'target' && ask.tside === 'p';
   const order = b.order().map((x) => `<img class="px o-${x.side} ${ask?.p === x ? 'cur' : ''}" title="${esc(x.name)}" src="${x.side === 'p' ? SP.heroURL(x.ch.main) : SP.enemyURL(x.id)}" width="${x.side === 'e' && SP.isBig(x.id) ? 34 : 26}" height="${x.side === 'e' && SP.isBig(x.id) ? 34 : 26}" alt="${esc(x.name)}">`).join('');
-  ov.innerHTML = `<div class="win"><div class="order"><span class="dim">Turn order</span>${order}</div><div id="stagehost"></div><div class="foes">${b.e.map((e, i) => `<div data-n="${e.name}" class="foe ${e.hp <= 0 ? 'dead' : ''} ${tgtFoes && e.hp > 0 ? 'targetable' : ''}" ${tgtFoes && e.hp > 0 ? `data-act="tgt" data-a="e" data-b="${i}"` : ''}>
+  ov.innerHTML = `<div class="win battle"><div class="bl"><div class="order"><span class="dim">Turn order</span>${order}</div><div id="stagehost"></div><div class="foes">${b.e.map((e, i) => `<div data-n="${e.name}" class="foe ${e.hp <= 0 ? 'dead' : ''} ${tgtFoes && e.hp > 0 ? 'targetable' : ''}" ${tgtFoes && e.hp > 0 ? `data-act="tgt" data-a="e" data-b="${i}"` : ''}>
     <b>${e.name}</b>${bar(e.hp, e.maxhp, 'hp')}<small class="dim">${e.hp}/${e.maxhp}${e.st.poison > 0 ? ' ☠️' : ''}${e.st.slow > 0 ? ' 🐌' : ''}${e.st.stun > 0 ? ' 💫' : ''}</small>
     <div class="dim" style="font-size:11px">${e.weak.length ? 'weak ' + e.weak.map((w) => ELEM_ICON[w]).join('') : ''}${e.res.length ? ' res ' + e.res.map((w) => ELEM_ICON[w]).join('') : ''}</div></div>`).join('')}</div>
-  <div class="logwrap"><div class="log ${BT.logBig ? 'big' : ''}" id="log">${BT.log.map((l) => `<div>${esc(l)}</div>`).join('')}</div><button class="logtoggle" data-tap="logsize" tabindex="-1" title="Expand / collapse the battle log (L)">${BT.logBig ? '▾ Log' : '▴ Log'}</button></div>
-  <div class="party">${b.p.map((p, i) => `<div data-n="${p.name}" class="pm ${p.hp <= 0 ? 'dead' : ''} ${ask?.p === p ? 'active' : ''} ${tgtAllies ? 'targetable' : ''}" ${tgtAllies ? `data-act="tgt" data-a="p" data-b="${i}"` : ''}>
+  <div class="logwrap"><div class="log ${BT.logBig ? 'big' : ''}" id="log">${BT.log.map((l) => `<div>${esc(l)}</div>`).join('')}</div><button class="logtoggle" data-tap="logsize" tabindex="-1" title="Expand / collapse the battle log (L)">${BT.logBig ? '▾ Log' : '▴ Log'}</button></div></div>
+  <div class="br"><div class="party">${b.p.map((p, i) => `<div data-n="${p.name}" class="pm ${p.hp <= 0 ? 'dead' : ''} ${ask?.p === p ? 'active' : ''} ${tgtAllies ? 'targetable' : ''}" ${tgtAllies ? `data-act="tgt" data-a="p" data-b="${i}"` : ''}>
     <img class="px" src="${SP.heroURL(p.ch.main)}" width="28" height="28" style="vertical-align:middle"> <b>${esc(p.name)}</b> <small>${p.st.poison > 0 ? ' ☠️' : ''}${p.st.atkup > 0 ? ' ⬆️' : ''}${p.st.defup > 0 ? ' 🛡️' : ''}${p.st.slow > 0 ? ' 🐌' : ''}${p.st.stun > 0 ? ' 💫' : ''}</small>
     <div>HP ${p.hp}/${p.maxhp}${bar(p.hp, p.maxhp, 'hp')}MP ${p.mp}/${p.maxmp}${bar(p.mp, p.maxmp, 'mp')}</div></div>`).join('')}</div>
-  <div id="cmd">${ask ? cmdHtml(ask) : '<span class="dim">…</span>'}</div></div>`;
+  <div id="cmd">${ask ? cmdHtml(ask) : '<span class="dim">…</span>'}</div></div></div>`;
   ov.className = 'on';
   $('#stagehost').appendChild(BT.stage.canvas);
   const lg = $('#log'); if (lg) lg.scrollTop = lg.scrollHeight;
@@ -677,6 +704,7 @@ async function victory(b, bossId) {
     if (def.unlock) lines.push(`<i>${esc(def.unlock)}</i>`);
   }
   if (bossId) G.flags.bosses[bossId] = true;
+  miniDirty = true;
   questLog(lines);
   await new Promise((res) => {
     ov.innerHTML = `<div class="win"><h2>${def ? '🏆 ' + def.name + ' is slain!' : 'Victory!'}</h2><p>+${r.exp} EXP · +<span class="gold">${r.gold} G</span></p>${lines.map((l) => `<div>${l}</div>`).join('')}<div class="row">${btn('vdone', 'Continue', '', '', 'primary')}</div></div>`;
@@ -725,7 +753,12 @@ async function defeat() {
 }
 
 // audio controls: browsers need a user gesture before sound can start
-['pointerdown', 'keydown'].forEach((ev) => addEventListener(ev, unlock));
+['pointerdown', 'pointerup', 'touchend', 'click', 'keydown'].forEach((ev) => addEventListener(ev, unlock, { passive: true }));
+document.addEventListener('visibilitychange', () => setBackgrounded(document.hidden));
+addEventListener('pagehide', () => setBackgrounded(true));
+addEventListener('pageshow', () => setBackgrounded(false));
+// offline play + install support for the single-file build (only when served over https/localhost, never inside a host frame)
+if ('serviceWorker' in navigator && document.querySelector('meta[name=gemforge-bundled]') && window.self === window.top && /^(https:|http:\/\/localhost)/.test(location.href)) navigator.serviceWorker.register('sw.js').catch(() => {});
 const muteBtn = $('#mute'), syncMute = () => { muteBtn.textContent = isMuted() ? '🔇' : '🔊'; };
 muteBtn.addEventListener('click', () => { setMuted(!isMuted()); syncMute(); if (!isMuted()) sfx('click'); });
 syncMute();

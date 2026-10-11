@@ -1,14 +1,6 @@
 :root{--bg:#10131c;--panel:#1b2030;--panel2:#242b40;--line:#3a4466;--text:#e8ecf8;--dim:#8e98b8;--gold:#f4c95d;--hp:#5ed17a;--mp:#5aa0ff;--bad:#ff6b6b;--acc:#8c7bff}
 *{box-sizing:border-box}
-body{margin:0;background:var(--bg);color:var(--text);font:15px/1.4 system-ui,sans-serif;display:flex;justify-content:center}
-#app{position:relative;width:100%;max-width:640px;min-height:100vh;padding:8px}
-#hud{display:flex;gap:12px;align-items:center;padding:6px 10px;background:var(--panel);border:1px solid var(--line);border-radius:8px 8px 0 0}
-#hud .hint{margin-left:auto;color:var(--dim);font-size:12px}
-#gold{color:var(--gold)}
-canvas{width:100%;image-rendering:pixelated;background:#000;border:1px solid var(--line);border-top:0;display:block}
-#dpad{display:none;gap:6px;justify-content:center;margin-top:8px}
-@media (pointer:coarse){#dpad{display:flex}}
-#dpad button{width:56px;height:48px;font-size:20px}
+/* layout lives in the 'Layout v2' section at the end of this file */
 button{background:var(--panel2);color:var(--text);border:1px solid var(--line);border-radius:6px;padding:6px 10px;font:inherit;cursor:pointer}
 button:hover:not(:disabled){border-color:var(--acc);background:#2d3652}
 button:disabled{opacity:.45;cursor:default}
@@ -48,7 +40,7 @@ h2,h3{margin:4px 0 8px}h3{font-size:14px;color:var(--dim);text-transform:upperca
 .foe.flash,.pm.flash{animation:hit .35s}
 @keyframes hit{0%{transform:translateX(0);filter:brightness(2.2)}25%{transform:translateX(-6px)}50%{transform:translateX(6px)}100%{transform:translateX(0);filter:none}}
 
-body{font-family:system-ui,"Segoe UI",Roboto,sans-serif;background:radial-gradient(circle at 50% 0,#1a2150,#0b0e1c 60%)}
+
 .slot,.pm{background:rgba(6,10,40,.55)}
 canvas.stage{display:block;width:100%;image-rendering:pixelated;border:2px solid #060a28;border-radius:4px;background:#000;box-shadow:0 0 0 1px #8c9be0}
 #overlay.title{display:flex;align-items:flex-end;justify-content:center;background:linear-gradient(transparent 55%,rgba(5,7,20,.85))}
@@ -60,7 +52,6 @@ h2,h3,#loc{font-family:"Press Start 2P",ui-monospace,monospace}
 h2{font-size:15px;line-height:1.5}h3{font-size:10px}
 #hud{font-size:13px}#loc{font-size:11px}
 
-#app{position:relative}
 #banner{position:absolute;left:50%;top:76px;transform:translateX(-50%);font:12px "Press Start 2P",ui-monospace,monospace;color:#fff6c0;background:rgba(10,14,48,.8);border:2px solid #e8ecf8;border-radius:6px;padding:8px 14px;opacity:0;pointer-events:none;white-space:nowrap;text-shadow:2px 2px 0 #000}
 #banner.show{animation:banner 2.4s ease-out}
 @keyframes banner{0%{opacity:0;transform:translate(-50%,-10px)}12%{opacity:1;transform:translate(-50%,0)}80%{opacity:1}100%{opacity:0}}
@@ -88,12 +79,63 @@ button:focus-visible,.foe:focus,.pm:focus{box-shadow:0 0 10px #ffd25a}
 .card.done{border-color:#5ed17a}.card.done b{color:#7af0a0}
 
 /* polish: map shake, credits */
-canvas#map.shake{animation:mapshake .4s}
+#view canvas.shake{animation:mapshake .4s}
 @keyframes mapshake{0%,100%{transform:none}15%{transform:translate(-6px,3px)}30%{transform:translate(6px,-4px)}45%{transform:translate(-5px,-3px)}60%{transform:translate(4px,4px)}80%{transform:translate(-2px,1px)}}
 .credits{height:150px;overflow:hidden;margin:8px 0;text-align:center;mask-image:linear-gradient(transparent,#000 15%,#000 85%,transparent);-webkit-mask-image:linear-gradient(transparent,#000 15%,#000 85%,transparent)}
 .credits .roll{animation:roll 34s linear forwards;padding-top:150px}
 .credits .roll div{line-height:1.9}.credits .roll .h{font-family:"Press Start 2P",ui-monospace,monospace;font-size:11px;color:#ffd25a;margin-top:6px}
 @keyframes roll{from{transform:translateY(0)}to{transform:translateY(-120%)}}
 
-#gold{white-space:nowrap}
-@media (pointer:coarse),(max-width:560px){#hud .hint{display:none}#dpad{display:flex}#dpad button{touch-action:none;user-select:none;-webkit-user-select:none}canvas#map{touch-action:none}.win{padding:10px}button{min-height:38px}}
+
+/* ===== Layout v2: adaptive, iPhone-first ===== */
+html,body{height:100%}
+body{margin:0;background-color:#0b0e1c;background-image:radial-gradient(circle at 50% 0,#1a2150,#0b0e1c 60%);color:var(--text);font:15px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  overscroll-behavior:none;-webkit-text-size-adjust:100%;-webkit-tap-highlight-color:transparent;touch-action:manipulation;-webkit-touch-callout:none;-webkit-user-select:none;user-select:none}
+#app{position:relative;display:flex;flex-direction:column;gap:6px;height:100%;max-width:960px;margin:0 auto;
+  padding:max(6px,env(safe-area-inset-top)) max(8px,env(safe-area-inset-right)) max(6px,env(safe-area-inset-bottom)) max(8px,env(safe-area-inset-left))}
+.framed #app{padding-top:6px;padding-bottom:6px} /* the hosting page already pads for the safe area */
+#hud{display:flex;gap:10px;align-items:center;flex:none;padding:4px 10px;background:var(--panel);border:1px solid var(--line);border-radius:8px}
+#hud .hint{color:var(--dim);font-size:12px;white-space:nowrap}
+#hud button{padding:2px 9px;min-height:40px;min-width:44px}
+#loc{font-size:11px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+#gold{color:var(--gold);white-space:nowrap}
+#play{flex:1;min-height:0;display:grid;grid-template-columns:1fr 1fr;grid-template-rows:minmax(0,1fr) auto;grid-template-areas:"view view" "padL padR";gap:6px}
+#view{grid-area:view;position:relative;min-width:0;min-height:0;background:#000;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+#view canvas{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;image-rendering:pixelated;touch-action:none;display:block}
+#padL{grid-area:padL;justify-content:flex-start}#padR{grid-area:padR;justify-content:flex-end}
+.pad{display:none;align-items:center;padding:2px 6px 4px}
+.cross{display:grid;grid-template-columns:repeat(3,64px);grid-template-rows:repeat(3,64px);grid-template-areas:". up ." "left . right" ". down ."}
+.cross button{border-radius:14px;font-size:22px;padding:0;touch-action:none;background:rgba(30,40,100,.85);border:2px solid #8c9be0}
+.cross [data-d=up]{grid-area:up}.cross [data-d=left]{grid-area:left}.cross [data-d=right]{grid-area:right}.cross [data-d=down]{grid-area:down}
+#padR{flex-direction:column;gap:10px;align-items:flex-end;justify-content:center}
+#padR .round{width:76px;height:76px;border-radius:50%;font-size:24px;line-height:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;background:rgba(30,40,100,.85);border:2px solid #8c9be0;touch-action:none}
+#padR .round small{font-size:10px;letter-spacing:.04em;color:var(--dim)}
+.pad button:active{background:#4a3fb5;transform:scale(.96)}
+@media (pointer:coarse),(max-width:760px){.pad{display:flex}#hud .hint{display:none}button{min-height:44px}#hud button{min-height:40px;min-width:44px}}
+/* phones held sideways: pads flank the map */
+@media (orientation:landscape) and (max-height:520px){
+  #play{grid-template-columns:auto minmax(0,1fr) auto;grid-template-rows:minmax(0,1fr);grid-template-areas:"padL view padR"}
+  .cross{grid-template-columns:repeat(3,52px);grid-template-rows:repeat(3,52px)}
+  #padR .round{width:62px;height:62px}
+  #hud{padding:2px 8px}#hud button{min-height:36px;min-width:44px}
+  .win{padding:8px}
+}
+/* overlay windows */
+#overlay{position:fixed;inset:0;overflow:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;
+  padding:max(10px,env(safe-area-inset-top)) max(10px,env(safe-area-inset-right)) max(14px,env(safe-area-inset-bottom)) max(10px,env(safe-area-inset-left))}
+.framed #overlay{padding-top:10px;padding-bottom:14px}
+#banner{position:absolute;left:50%;top:10px}
+.win{touch-action:pan-y}
+.win button,.win .slot{touch-action:manipulation}
+@media (hover:hover) and (pointer:fine){#app{padding-top:10px;padding-bottom:10px}}
+
+/* battle: stacked on portrait/desktop, two columns on short landscape screens so commands never fall below the fold */
+@media (orientation:landscape) and (max-height:520px){
+  .win.battle{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);gap:10px;align-items:start}
+  .battle .bl,.battle .br{min-width:0}
+  .battle canvas.stage{width:auto;max-width:100%;max-height:calc(100vh - 150px);margin:0 auto}
+  .battle .foes{margin:4px 0}.battle .foe{min-width:0;padding:2px 6px}.battle .foe small,.battle .foe .dim{font-size:10px}
+  .battle .logwrap{display:none}.battle .logwrap:has(.log.big){display:block}
+  .battle .party{grid-template-columns:repeat(2,1fr);margin:0 0 6px}.battle .pm{padding:4px 6px}
+  .battle .order{margin-bottom:4px}
+}

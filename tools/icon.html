@@ -1,0 +1,22 @@
+<!doctype html><body style="margin:0;background:#000"><canvas id=c></canvas>
+<script type=module>
+import * as S from '../src/sprites.js';
+const size = +new URLSearchParams(location.search).get('s') || 512;
+const c = document.getElementById('c'); c.width = c.height = size; const x = c.getContext('2d'); x.imageSmoothingEnabled = false;
+const g = x.createRadialGradient(size * .5, size * .38, size * .05, size * .5, size * .5, size * .75);
+g.addColorStop(0, '#5a3fb8'); g.addColorStop(.55, '#2a1f66'); g.addColorStop(1, '#0b0e1c'); x.fillStyle = g; x.fillRect(0, 0, size, size);
+for (let i = 0; i < 40; i++) { x.fillStyle = `rgba(255,255,255,${.25 + ((i * 37) % 10) / 14})`; x.fillRect(((i * 97) % size), ((i * 53) % (size * .6)), size / 170 + 1, size / 170 + 1); }
+// big faceted gem behind the hero
+const cxm = size / 2, cym = size * .46, r = size * .34;
+const facet = (pts, col) => { x.fillStyle = col; x.beginPath(); pts.forEach(([a, b], i) => i ? x.lineTo(a, b) : x.moveTo(a, b)); x.fill(); };
+facet([[cxm, cym - r], [cxm + r * .8, cym - r * .2], [cxm, cym + r], [cxm - r * .8, cym - r * .2]], '#8c7bff');
+facet([[cxm, cym - r], [cxm + r * .8, cym - r * .2], [cxm, cym - r * .15]], '#c8b8ff');
+facet([[cxm, cym - r], [cxm - r * .8, cym - r * .2], [cxm, cym - r * .15]], '#a898ff');
+facet([[cxm + r * .8, cym - r * .2], [cxm, cym + r], [cxm, cym - r * .15]], '#5a48c8');
+facet([[cxm - r * .8, cym - r * .2], [cxm, cym + r], [cxm, cym - r * .15]], '#6d5cdc');
+x.strokeStyle = '#f4d35e'; x.lineWidth = size / 60; x.beginPath(); x.moveTo(cxm, cym - r); x.lineTo(cxm + r * .8, cym - r * .2); x.lineTo(cxm, cym + r); x.lineTo(cxm - r * .8, cym - r * .2); x.closePath(); x.stroke();
+const hs = Math.round(size * .52 / 16) * 16, hx = (size - hs) / 2, hy = size * .34;
+x.fillStyle = 'rgba(0,0,0,.35)'; x.fillRect(hx + hs * .2, hy + hs * .96, hs * .6, hs * .05);
+x.drawImage(S.hero('knight'), hx, hy, hs, hs);
+document.title = 'ready';
+</script>

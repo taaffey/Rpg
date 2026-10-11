@@ -1,8 +1,12 @@
-// Bundles the game into ONE self-contained page (no module loading, no extra files), for hosting or publishing.
+// Bundles the game into ONE self-contained page for hosting or publishing.
 //   ESBUILD=/path/to/esbuild node tools/build.mjs     (falls back to `npx esbuild`)
-// Outputs: dist/index.html (full standalone document) and dist/artifact.html (fragment for hosts that supply the document shell).
+// Outputs:
+//   dist/index.html      full standalone document (iPhone home-screen ready: manifest, icons, safe areas, offline service worker)
+//   dist/assets/*, sw.js icons + manifest + service worker (host dist/ as a folder to get install + offline)
+//   dist/artifact.html   the same page as a fragment for hosts that supply the document shell (no extra files needed)
 import { execFileSync } from 'child_process';
-import { readFileSync, writeFileSync, mkdirSync } from 'fs';
+import { readFileSync, writeFileSync, mkdirSync, cpSync } from 'fs';
+import { createHash } from 'crypto';
 const root = new URL('../', import.meta.url).pathname;
 mkdirSync(root + 'dist', { recursive: true });
 const es = process.env.ESBUILD;
@@ -17,7 +21,11 @@ const icon = html.match(/<link rel="icon"[^>]*>/)[0];
 const style = `<style>:root{color-scheme:dark}body{background-color:#0b0e1c}\n${css}</style>`;
 const fragment = `<title>Gemforge Chronicles</title>\n${icon}\n${fonts}\n${style}\n${body}\n<script>${js}</script>\n`;
 writeFileSync(root + 'dist/artifact.html', fragment);
-// standalone: move the body markup/script into <body>
-const standalone = `<!doctype html>\n<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">\n<title>Gemforge Chronicles</title>\n${icon}\n${fonts}\n${style}</head><body>\n${body}\n<script>${js}</script>\n</body></html>\n`;
+// standalone document keeps every <meta>/<link> from the dev page's head (viewport-fit, apple-web-app, manifest, touch icon)
+const head = html.match(/<head>([\s\S]*?)<\/head>/)[1].replace(/<link rel="stylesheet" href="style.css">/, '').replace(/<title>[\s\S]*?<\/title>/, '').trim();
+const standalone = `<!doctype html>\n<html lang="en"><head>\n${head}\n<meta name="gemforge-bundled" content="1">\n<title>Gemforge Chronicles</title>\n${style}</head><body>\n${body}\n<script>${js}</script>\n</body></html>\n`;
 writeFileSync(root + 'dist/index.html', standalone);
-console.log(`dist/index.html ${(standalone.length / 1024).toFixed(0)} KB, dist/artifact.html ${(fragment.length / 1024).toFixed(0)} KB`);
+cpSync(root + 'assets', root + 'dist/assets', { recursive: true });
+const build = createHash('sha1').update(standalone).digest('hex').slice(0, 8);
+writeFileSync(root + 'dist/sw.js', readFileSync(root + 'assets/sw.js', 'utf8').replace('__BUILD__', build));
+console.log(`dist/index.html ${(standalone.length / 1024).toFixed(0)} KB (build ${build}), dist/artifact.html ${(fragment.length / 1024).toFixed(0)} KB`);
