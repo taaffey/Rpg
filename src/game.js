@@ -605,7 +605,7 @@ function buildMain(c) {
   show(`<div class="row">${btn('bnav', '◀', -1)}<h2 class="grow"><img src="${SP.heroURL(c.main)}" width="36" height="36" class="px" style="vertical-align:middle"> ${esc(c.name)} · Lv${c.level}</h2>${btn('bnav', '▶', 1)}</div>
   <div class="dim">EXP ${c.exp}/${c.level < L.MAX_LEVEL ? expNeeded(c.level) : '—'}</div>
   <div class="card">
-    <div class="row"><b>Main:</b> ${m.icon} ${m.name} ${btn('bview', 'Change', 'jobMain', '', '', !jobs)}<b>Sub:</b> ${sj ? sj.icon + ' ' + sj.name : 'none'} ${btn('bview', 'Change', 'jobSub', '', '', !jobs)}</div>
+    <div class="row jobrow"><span><b>Main:</b> ${m.icon} ${m.name}</span>${btn('bview', 'Change', 'jobMain', '', '', !jobs)}</div><div class="row jobrow"><span><b>Sub:</b> ${sj ? sj.icon + ' ' + sj.name : 'none'}</span>${btn('bview', 'Change', 'jobSub', '', '', !jobs)}</div>
     ${jobs ? '' : '<div class="dim">Jobs can only be changed in town (visit the Guild ⚔️).</div>'}
     ${statLine(s)}<div class="dim">Sub job adds 40% of its stat modifiers and its skills (2 levels behind). Weapon types from either job can be equipped.</div>
   </div>

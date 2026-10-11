@@ -266,3 +266,6 @@ button.round::before,.cross button::before,#hud button::before{display:none}
 @media (pointer:coarse) and (orientation:portrait){#hud button{min-height:40px}.cmdlist button{min-height:40px}}
 @media (pointer:coarse) and (orientation:landscape){#hud button{min-height:36px}}
 @media (orientation:landscape) and (max-height:520px){.battle .cmdlist:not(:has(.two)){display:grid;grid-template-columns:1fr 1fr}.battle .cmdlist button{min-height:32px}.battle .partywin .pm{padding:2px 6px}}
+.jobrow{display:flex;justify-content:space-between;align-items:center;gap:8px;margin:2px 0}
+body:has(#overlay.on) #toast{top:auto;bottom:calc(env(safe-area-inset-bottom,0px) + 10px);z-index:9;position:fixed}
+button.sel:not(:focus):not(:hover)::before{visibility:hidden}
