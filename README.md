@@ -30,7 +30,10 @@ keyboard alone, or with the mouse. Options (volumes, battle speed, shake, minima
 ## How builds work (three layered systems)
 1. **Jobs** (12): every character has a *main job* and a *sub job*. The sub job contributes 40% of its stat modifiers,
    its skills (two levels behind) and its weapon types. Change jobs in any town building.
-2. **Weapons** (10 types, 39 weapons): each type grants a **signature skill**; many carry a free **innate gem**.
+2. **Weapons** (10 types, 47 weapons, tiers: Haven smithy -> Mirewood -> Frostholm forge -> chests, bosses and rare drops):
+   each type grants a **signature skill** (some legendary weapons replace it with their own, e.g. Mend, Raijin, Demon Cut),
+   many carry a free **innate gem**, and most have a trait: elemental attacks, extra crit, double blows, armor pierce,
+   on-hit Poison/Slow/Stun/drain, healing bonus, or stat bonuses and curses.
 3. **Gems** (21): socket gems into any skill slot to rewrite it: element swaps, Chain, Echo, Vampiric, Piercing, Thrifty,
    Overcharge, Wide, Venom, Swift, Focus, Stun, Crit, Execute, Berserk, Siphon, Guard. Capacity comes from sockets on
    weapon/armor/accessory (max 3 per skill).
@@ -38,6 +41,14 @@ keyboard alone, or with the mouse. Options (volumes, battle speed, shake, minima
 ## Final Fantasy 1 look & feel
 
 Blue gradient windows with white borders, the Press Start 2P pixel font and a pointing-hand cursor. Battles use the FF1 GBA layout: the scene on top with a message box over it, an enemy-name window bottom-left (the command menu replaces it on your turn) and the party HP window bottom-right. Shops show the keeper, Buy/Sell and a gold window; dialogue types out line by line.
+
+**An actual start:** like FF1, the party begins at level 1, **unarmed**, with 400 G: arming everyone at the Haven Smithy
+costs about 205 G and leaves room for potions. Monks (and other fist-wielding main jobs) punch hard bare-handed.
+
+**Loot and growth:** every monster has a common drop (potions, ethers, antidotes...) and a ★ RARE drop (a gem, accessory or a
+unique weapon, 4-8%); bosses always drop their treasure. The Bestiary lists each foe's drops once defeated (rares stay `???` until found).
+The EXP curve (`EXP_TABLE` in `src/logic.js`) gives a level every 1-4 fights near Haven and ~6-10 regional fights later; KO'd heroes
+get half EXP. `node tools/progress.mjs` simulates a full playthrough and checks the level reached at every stage and boss.
 
 **Gentle start:** safe zones around every town, an encounter ramp that unlocks tougher monsters the farther you walk from Haven, and a warning toast when you enter swamp or snow below the recommended level.
 
@@ -81,6 +92,9 @@ Produces `dist/index.html` (the whole game, about 150 KB, no other files, works 
 
 ## Tests and tools
     node tools/sim.mjs fast 100      # headless balance sim: every region and boss at expected levels
+    node tools/progress.mjs          # playthrough sim from an unarmed level-1 start: level per stage, boss win rates, economy
+    node tools/newbie.mjs            # first fights outside Haven with the cheapest weapons (levels 1-3) and unarmed
+    node tools/checkids.mjs          # every id used by shops, chests, drops, quests, bosses and the new game exists
     node tools/checkmaps.mjs         # every map valid; every portal/NPC/chest/boss reachable; gate verified
     node tools/checksprites.mjs      # sprite sizes
     node tools/fuzz.mjs 4 1500       # randomized playtest: a bot plays the real UI, checks invariants, soft-locks, page errors

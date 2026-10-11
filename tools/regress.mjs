@@ -33,6 +33,7 @@ ok('bought a potion', (await ev(() => window.__game.G.inv.items.potion)) === pot
 await closeAll();
 
 // --- build screen: socket gems, change job in a town
+await ev(() => window.__game.G.inv.gems.push('chain', 'thrifty')); // the new game starts with a single gem; hand the test two more
 await openMenu();
 await pg.click('[data-act=build][data-a="1"]'); await pg.click('[data-act=bslot][data-a="0"]'); await pg.click('[data-act=gem][data-b=chain]'); await pg.click('[data-act=gem][data-b=thrifty]');
 ok('gems socketed', JSON.stringify(await ev(() => window.__game.G.party[1].gems[0])) === '["chain","thrifty"]');
@@ -61,6 +62,7 @@ await ev(() => window.__game.goto('world', 29, 17)); await key('ArrowUp', 3, 150
 ok('northern pass blocked before the Wyrm falls', (await ev(() => window.__game.G.y)) === 17);
 await ev(() => { window.__game.G.flags.bosses.wyrm = true; }); await key('ArrowUp', 4, 170);
 ok('pass opens after the Wyrm', (await ev(() => window.__game.G.y)) <= 13);
+const xpKey = () => ev(() => window.__game.G.party.map((c) => c.level * 1e6 + c.exp).join()), xp0 = await xpKey();
 await ev(() => { window.__game.OPT.speed = 'instant'; window.__game.OPT.minimap = true; window.__game.battle(['frost_goblin', 'ice_wolf']); });
 await pg.waitForSelector('[data-act=c]', { timeout: 8000 });
 await ev(() => window.__game.BT.b.e.forEach((e) => { e.hp = 1; })); // balance is covered by tools/sim.mjs; this checks the flow
@@ -71,7 +73,7 @@ for (let i = 0; i < 120; i++) {
   if (st.act === 'c' || st.act === 'tgt') await key('Enter', 1, 120); else await pg.waitForTimeout(100);
 }
 await pg.waitForTimeout(300);
-ok('snow battle won via keyboard only', !(await ev(() => !!window.__game.BT)) && (await ev(() => window.__game.G.party[0].exp)) > 0);
+ok('snow battle won via keyboard only', !(await ev(() => !!window.__game.BT)) && (await xpKey()) !== xp0);
 
 // --- quests: accept, track kills through real battles, find a quest item, claim rewards
 const finishBattle = async () => { // click-driven: Attack the first foe until the battle ends (independent of which button holds focus)

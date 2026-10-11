@@ -97,9 +97,8 @@ for (let run = 0; run < RUNS; run++) {
     if (st.boss) {
       heal(party); A.bossLv += avgLv(party);
       A.bossWin += bossTrial(party, st.boss, 40, run * 31 + si);
-      const b = fight(party, [st.boss], rng, st.boss); // the real attempt; a loss means grinding a little and retrying
-      let tries = 0; while (b.over !== 'win' && tries++ < 0) {}
-      const r = rewards(b); heal(party); awardExp(party, r.exp); G.gold += r.gold; party.forEach(reslot);
+      const b = fight(party, [st.boss], rng, st.boss); // the real attempt (its EXP counts only on a win)
+      const r = b.over === 'win' ? rewards(b) : { exp: 0, gold: 0 }; heal(party); awardExp(party, r.exp); G.gold += r.gold; party.forEach(reslot);
       log.push(`  boss ${st.boss}: ${b.over}`);
     }
     A.end += avgLv(party); A.goldEnd += G.gold;
