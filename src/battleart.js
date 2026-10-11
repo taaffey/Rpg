@@ -165,7 +165,7 @@ export function rot90(src, ccw = true) { // pixel-exact quarter turn
 }
 export function bbox(src) { // tight box of opaque pixels: [x0,y0,x1,y1]
   if (BBOX.has(src)) return BBOX.get(src);
-  const d = src.getContext('2d').getImageData(0, 0, src.width, src.height).data; let x0 = src.width, y0 = src.height, x1 = -1, y1 = -1;
+  const tmp = mk(src.width, src.height), tx = tmp.getContext('2d', { willReadFrequently: true }); tx.drawImage(src, 0, 0); const d = tx.getImageData(0, 0, src.width, src.height).data; // fallback for canvases not made by render() let x0 = src.width, y0 = src.height, x1 = -1, y1 = -1;
   for (let y = 0; y < src.height; y++) for (let x = 0; x < src.width; x++) if (d[(y * src.width + x) * 4 + 3] > 0) { if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y; }
   const b = x1 < 0 ? [0, 0, src.width - 1, src.height - 1] : [x0, y0, x1, y1]; BBOX.set(src, b); return b;
 }
