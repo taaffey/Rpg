@@ -5,7 +5,7 @@ const b = await pw.chromium.launch({ executablePath: '/opt/pw-browsers/chromium-
 const D = process.env.OUT || '/tmp/look/'; (await import('fs')).mkdirSync(D, { recursive: true });
 const [vw,vh]=(process.argv[2]||'1280x800').split('x').map(Number);
 const spots=JSON.parse(process.argv[3]||'[["haven",12,10]]');
-const pg = await b.newPage({ viewport:{width:vw,height:vh}, hasTouch:vw<800, isMobile:vw<800 });
+const touch = !!process.env.TOUCH || vw < 800; const pg = await b.newPage({ viewport:{width:vw,height:vh}, hasTouch:touch, isMobile:touch });
 const errs=[]; pg.on('pageerror',e=>errs.push(e.message)); pg.on('console',m=>m.type()==='error'&&errs.push(m.text()));
 await pg.goto('http://localhost:8123/index.html'); await pg.waitForTimeout(400);
 await pg.evaluate(()=>{window.__game.ACT.diff(1,'normal');}); await pg.waitForTimeout(500);

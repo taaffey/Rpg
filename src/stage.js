@@ -64,6 +64,16 @@ export class Stage {
     this.loop = this.loop.bind(this); requestAnimationFrame(this.loop);
   }
   stop() { this.running = false; }
+  pick(clientX, clientY) { // which living sprite sits under a tap (smallest box wins), for touch targeting
+    const r = this.canvas.getBoundingClientRect(); if (!r.width) return null;
+    const x = (clientX - r.left) * W / r.width, y = (clientY - r.top) * H / r.height; let best = null, area = 1e9;
+    for (const v of this.v.values()) {
+      if (v.dead || v.c.hp <= 0) continue;
+      const x0 = v.x + v.bb[0] - 5, x1 = v.x + v.bb[2] + 5, y0 = v.y + v.bb[1] - 5, y1 = v.y + v.bb[3] + 5;
+      if (x >= x0 && x <= x1 && y >= y0 && y <= y1 && (x1 - x0) * (y1 - y0) < area) { area = (x1 - x0) * (y1 - y0); best = v; }
+    }
+    return best && { side: best.side, c: best.c };
+  }
   setActive(name) { this.active = name; }
   card(text, dur = 2.2) { this.cardText = text; this.cardT = 0; this.cardDur = dur; }
   victory() {

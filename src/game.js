@@ -126,8 +126,8 @@ function reveal() { // fog of war
 // ---------- adaptive view: choose how many tiles to show so tiles stay chunky on every screen ----------
 function layoutView() {
   const box = $('#view').getBoundingClientRect(); if (box.width < 40 || box.height < 40) return;
-  const portrait = box.height > box.width * 1.1;
-  const T = portrait ? box.width / 12 : Math.min(box.width / 16, box.height / 12);
+  const portrait = box.height > box.width * 1.1, big = Math.min(box.width, box.height) >= 560; // iPad / large windows: more of the world, not giant tiles
+  const T = portrait ? box.width / (big ? 16 : 12) : Math.min(box.width / (big ? 22 : 16), box.height / (big ? 15 : 12));
   let cols = clamp(Math.round(box.width / T), 10, 26), rows = clamp(Math.round(box.height / T), 8, 20);
   if (cols !== VW || rows !== VH) { VW = cols; VH = rows; cv.width = cols * TS; cv.height = rows * TS; miniDirty = true; }
   const pad = $('#padL'); root.style.setProperty('--padh', (pad && pad.offsetHeight ? pad.offsetHeight + 8 : 0) + 'px'); // dialogue boxes sit above the touch pads
@@ -179,7 +179,7 @@ function draw(t = performance.now() / 1000) {
   cx.fillStyle = '#000'; cx.fillRect(0, 0, cv.width, cv.height);
   const camX = W <= VW ? -(VW - W) / 2 : clamp(vx - VW / 2 + 0.5, 0, W - VW);
   const camY = H <= VH ? -(VH - H) / 2 : clamp(vy - VH / 2 + 0.5, 0, H - VH);
-  const sx = (x) => Math.round((x - camX) * TS), sy = (y) => Math.round((y - camY) * TS);
+  const sx = (x) => Math.round((x - camX) * TS), sy = (y) => Math.round((y - camY) * TS); camState.x = camX; camState.y = camY;
   const x0 = Math.max(0, Math.floor(camX)), x1 = Math.min(W, Math.ceil(camX + VW) + 1), y0 = Math.max(0, Math.floor(camY)), y1 = Math.min(H, Math.ceil(camY + VH) + 1);
   const defeated = (id) => !!G.flags.bosses[id];
   m.chestOpen = (x, y) => !!G.flags.chests[chestKey(x, y)];
@@ -213,14 +213,22 @@ function draw(t = performance.now() / 1000) {
   const torches = [], theme = m.theme;
   if (m.kind === 'dungeon') for (let y = Math.max(0, y0 - 1); y < y1 - 1; y++) for (let x = x0; x < x1; x++) if (tileAt(x, y) === '#' && tileAt(x, y + 1) === '.' && (x * 5 + y * 3) % 7 === 0) { cx.drawImage(SP.torch(Math.floor(t * 7 + x) % 2, theme), sx(x), sy(y), TS, TS); torches.push([sx(x) + TS / 2, sy(y) + TS * 0.4]); }
   if (!R?.drawsDecor?.(m)) for (const [dx, dy, k] of m.decor || []) cx.drawImage(SP.decor(k), sx(dx), sy(dy), TS, TS);
+  if (routeGoal && route.length) { // where a tap is taking the party: a pulsing ring
+    const gx = sx(routeGoal[0]) + TS / 2, gy = sy(routeGoal[1]) + TS - 6, pr = 7 + Math.sin(t * 8) * 2;
+    cx.strokeStyle = 'rgba(255,240,150,.9)'; cx.lineWidth = 2; cx.beginPath(); cx.ellipse(gx, gy, pr * 1.6, pr * 0.7, 0, 0, 7); cx.stroke();
+  }
   // characters: standing on the bottom of their tile, sprites may be taller than one tile
-  const stand = (img, X, Y, bob = 0) => { const h = img.height * (TS / 16); cx.fillStyle = 'rgba(0,0,0,.32)'; cx.beginPath(); cx.ellipse(X + TS / 2, Y + TS - 3, 10, 4, 0, 0, 7); cx.fill(); cx.drawImage(img, X, Y + TS - h - bob, TS, h); return h; };
+  // feet rest 2 art-px inside the tile on a soft two-layer contact shadow, so nobody hovers over cobbles or grass
+  const stand = (img, X, Y) => { const u = TS / 16, h = img.height * u, fy = Y + TS - 2 * u;
+    cx.fillStyle = 'rgba(10,8,24,.38)'; cx.beginPath(); cx.ellipse(X + TS / 2, fy, 7 * u, 2.6 * u, 0, 0, 7); cx.fill();
+    cx.fillStyle = 'rgba(10,8,24,.42)'; cx.beginPath(); cx.ellipse(X + TS / 2, fy, 5 * u, 1.7 * u, 0, 0, 7); cx.fill();
+    cx.drawImage(img, X, fy - h + u, TS, h); return h + u; };
   const sorted = items.filter((it) => it.z === 1).map((it) => ({ k: it.sy ?? it.y + (it.h ?? it.img.height / 16), f: () => put(it) }));
   if (m.boss && !defeated(m.boss.id)) sorted.push({ k: m.boss.y + 1, f: () => { const bob = Math.round(Math.sin(t * 2) * 1.5); const img = SP.enemy(m.boss.id), sc = Math.min(2 * TS / img.width, 2 * TS / img.height), w = img.width * sc, h = img.height * sc; cx.drawImage(img, sx(m.boss.x) + TS / 2 - w / 2, sy(m.boss.y) + TS - h + bob, w, h); } }); // bosses loom over their lair, up to 2x2 tiles
   for (const n of m.npcs || []) sorted.push({ k: n.y + 1, f: () => {
-    const nx0 = sx(n.x), ny0 = sy(n.y), bob = Math.round(Math.abs(Math.sin(t * 2 + n.x)) * 0.8), fr = Math.floor(t * 1.6 + n.x) % 8 === 0 ? 1 : 0;
-    const h = stand(WK.npcWalker(n.type, n.dir || 'down', fr), nx0, ny0, bob);
-    const mk = questMarker(n); if (mk) { const my = ny0 + TS - h - 4 - bob; cx.fillStyle = mk === '?' ? '#7af0a0' : '#ffd25a'; cx.font = 'bold 14px sans-serif'; cx.textAlign = 'center'; cx.strokeStyle = '#201000'; cx.lineWidth = 3; cx.strokeText(mk, nx0 + TS / 2, my); cx.fillText(mk, nx0 + TS / 2, my); }
+    const nx0 = sx(n.x), ny0 = sy(n.y), fr = Math.floor(t * 1.6 + n.x) % 8 === 0 ? 1 : 0, bob = Math.round(Math.sin(t * 4 + n.x) * 1.5); // only the '!' bobs
+    const h = stand(WK.npcWalker(n.type, n.dir || 'down', fr), nx0, ny0);
+    const mk = questMarker(n); if (mk) { const my = ny0 + TS - h - 4 + bob; cx.fillStyle = mk === '?' ? '#7af0a0' : '#ffd25a'; cx.font = 'bold 14px sans-serif'; cx.textAlign = 'center'; cx.strokeStyle = '#201000'; cx.lineWidth = 3; cx.strokeText(mk, nx0 + TS / 2, my); cx.fillText(mk, nx0 + TS / 2, my); }
   } });
   const px = sx(vx), py = sy(vy); plr.x = px + TS / 2; plr.y = py + TS / 2;
   const crew = [{ i: 0, x: vx, y: vy, d: face, mv: Math.abs(vx - G.x) + Math.abs(vy - G.y) > 0.05 }, ...fv.slice(0, G.party.length - 1).map((f, i) => ({ i: i + 1, ...f }))];
@@ -271,6 +279,7 @@ function tick(now) {
   G.playtime = (G.playtime || 0) + dt;
   const sp = 9 * dt; vx += clamp(G.x - vx, -sp, sp); vy += clamp(G.y - vy, -sp, sp);
   fv.forEach((f, i) => { const tg = trail[Math.max(0, trail.length - 2 - i)] || { x: G.x, y: G.y }, dx = tg.x - f.x, dy = tg.y - f.y; f.mv = Math.abs(dx) + Math.abs(dy) > 0.02; if (f.mv) f.d = Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? 'right' : 'left') : (dy > 0 ? 'down' : 'up'); f.x += clamp(dx, -sp, sp); f.y += clamp(dy, -sp, sp); });
+  driveMovement();
   if (!inOverlay()) draw(now / 1000);
 }
 requestAnimationFrame(tick);
@@ -294,7 +303,7 @@ async function step(dx, dy) {
   G.x = nx; G.y = ny; trail.push({ x: nx, y: ny }); if (trail.length > 8) trail.shift();
   const pt = m.portals?.[`${nx},${ny}`]; if (pt) return goto(pt.to, pt.x, pt.y);
   reveal(); draw();
-  tip('move', TOUCH ? 'Tap anywhere on the map or hold the pad to walk. ☰ opens your party menu.' : 'Arrows or WASD to walk. Esc opens your party menu. A yellow ! marks someone with news.');
+  tip('move', TOUCH ? 'Tap a spot to travel there, or press and slide on the pad. A talks/checks, B opens the menu.' : 'Arrows or WASD to walk. Esc opens your party menu. A yellow ! marks someone with news.');
   if (m.kind === 'outdoor') { const reg = regionOf(); if (reg !== G.region) { G.region = reg; banner(REGION_NAME[reg]); music(musicFor()); const need = { swamp: 7, snow: 11 }[reg]; const avg = G.party.reduce((a, c) => a + c.level, 0) / G.party.length; if (need && avg < need) toast(`⚠ Dangerous land! Monsters here suit level ${need}+.`, 4200); } }
   if (m.boss && t === 'X' && !G.flags.bosses[m.boss.id]) { busy = true; mapShake(); sfx('crit'); await sleep(350); busy = false; return battle([m.boss.id], m.boss.id); }
   const table = m.enc || m.encByTile?.[t];
@@ -335,30 +344,92 @@ function overlayKey(e) {
 addEventListener('keydown', (e) => {
   if (inOverlay()) { if (overlayKey(e)) e.preventDefault(); return; } // never move the map while a window is open
   if (!G) return;
-  if (KEYS[e.key]) { e.preventDefault(); step(...KEYS[e.key]); }
+  if (KEYS[e.key]) { e.preventDefault(); route = []; step(...KEYS[e.key]); }
+  else if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); interact(); }
   else if ((e.key === 'Escape' || e.key === 'm') && !inOverlay() && !busy) mainMenu();
   else if (e.key === 'n' && !inOverlay()) { OPT.minimap = !OPT.minimap; applyOptions(); }
 });
-// touch: hold the d-pad, or tap/hold anywhere on the map to walk toward that spot
-let holdTimer = null;
-const stopHold = () => { clearInterval(holdTimer); holdTimer = null; };
-const startHold = (fn) => { stopHold(); fn(); holdTimer = setInterval(fn, 150); };
-const padBtns = () => document.querySelectorAll('.pad button[data-d]');
-padBtns().forEach((b) => {
+// ---------- touch controls ----------
+// Slide d-pad: press anywhere on the cross and slide between directions without lifting; the party walks continuously.
+// A = talk/check the tile you face, B = menu. Tap (or drag) on the map: walk the whole way there along a real path;
+// tapping a townsperson or chest walks up to it and talks/opens it.
+let held = null, route = [], routeMap = null, routeGoal = null;
+const DIRV = { up: [0, -1], down: [0, 1], left: [-1, 0], right: [1, 0] };
+const cross = $('.cross');
+if (cross) {
+  const arms = { up: cross.querySelector('[data-d=up]'), down: cross.querySelector('[data-d=down]'), left: cross.querySelector('[data-d=left]'), right: cross.querySelector('[data-d=right]') };
+  let pid = null;
+  const aimPad = (e) => {
+    const r = cross.getBoundingClientRect(), dx = e.clientX - (r.left + r.width / 2), dy = e.clientY - (r.top + r.height / 2);
+    const d = Math.hypot(dx, dy) < r.width * 0.12 ? null : Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? 'right' : 'left') : (dy > 0 ? 'down' : 'up');
+    for (const [k, el] of Object.entries(arms)) el?.classList.toggle('on', k === d);
+    held = d && DIRV[d]; if (held) { route = []; routeGoal = null; }
+  };
+  const release = () => { pid = null; held = null; for (const el of Object.values(arms)) el?.classList.remove('on'); };
+  cross.addEventListener('pointerdown', (e) => { e.preventDefault(); pid = e.pointerId; cross.setPointerCapture?.(pid); aimPad(e); });
+  cross.addEventListener('pointermove', (e) => { if (e.pointerId === pid) aimPad(e); });
+  ['pointerup', 'pointercancel', 'lostpointercapture'].forEach((ev) => cross.addEventListener(ev, (e) => { if (e.pointerId === pid) release(); }));
+}
+const interact = () => { // A button / Enter on the map: talk to or open whatever you face
+  if (!G || inOverlay() || busy) return;
+  const [dx, dy] = DIRV[face] || [0, 1], nx = G.x + dx, ny = G.y + dy, npc = npcAt(nx, ny);
+  if (npc) { npc.dir = { up: 'down', down: 'up', left: 'right', right: 'left' }[face]; return talk(npc); }
+  if (tileAt(nx, ny) === 'C' && !G.flags.chests[chestKey(nx, ny)]) return openChest(nx, ny);
+  sfx('blip');
+};
+document.querySelectorAll('.pad button[data-d]').forEach((b) => {
   const d = b.dataset.d;
-  if (d === 'menu') return b.addEventListener('click', () => { if (G && !inOverlay() && !busy) mainMenu(); });
-  if (d === 'map') return b.addEventListener('click', () => { if (G && !inOverlay() && !busy) ACT.mapscreen(); });
-  const v = { up: [0, -1], down: [0, 1], left: [-1, 0], right: [1, 0] }[d];
-  b.addEventListener('pointerdown', (e) => { e.preventDefault(); startHold(() => step(...v)); });
+  if (d === 'menu') b.addEventListener('click', () => { if (G && !inOverlay() && !busy) { route = []; mainMenu(); } });
+  else if (d === 'map') b.addEventListener('click', () => { if (G && !inOverlay() && !busy) { route = []; ACT.mapscreen(); } });
+  else if (d === 'a') b.addEventListener('pointerdown', (e) => { e.preventDefault(); route = []; interact(); });
 });
 $('#hudmenu').addEventListener('click', () => { if (G && !inOverlay() && !busy) mainMenu(); });
-['pointerup', 'pointercancel', 'pointerleave'].forEach((ev) => { padBtns().forEach((b) => b.addEventListener(ev, stopHold)); cv.addEventListener(ev, stopHold); });
-cv.addEventListener('pointerdown', (e) => {
-  if (!G || inOverlay()) return;
-  const r = cv.getBoundingClientRect(), k = Math.min(r.width / cv.width, r.height / cv.height), tx = (e.clientX - (r.left + (r.width - cv.width * k) / 2)) / k, ty = (e.clientY - (r.top + (r.height - cv.height * k) / 2)) / k;
-  const aim = () => { const dx = tx - plr.x, dy = ty - plr.y; if (Math.abs(dx) < TS * 0.45 && Math.abs(dy) < TS * 0.45) return; if (Math.abs(dx) > Math.abs(dy)) step(Math.sign(dx), 0); else step(0, Math.sign(dy)); };
-  startHold(aim);
-});
+// path finding for tap-to-travel: breadth-first over walkable tiles; portals and the boss tile only as the final step
+const solidAt = (x, y) => { const m = mapDef(); return !walkable(tileAt(x, y)) || !!npcAt(x, y) || decorAt(x, y) || !!m.blocks?.has(`${x},${y}`); };
+function findPath(tx, ty) {
+  const m = mapDef(), W = m.rows[0].length, H = m.rows.length; if (tx < 0 || ty < 0 || tx >= W || ty >= H) return [];
+  const goalTalk = !!npcAt(tx, ty) || (tileAt(tx, ty) === 'C' && !G.flags.chests[chestKey(tx, ty)]);
+  const key = (x, y) => y * W + x, prev = new Map([[key(G.x, G.y), -1]]), q = [[G.x, G.y]]; let best = [G.x, G.y], bestD = Math.abs(tx - G.x) + Math.abs(ty - G.y);
+  while (q.length) {
+    const [x, y] = q.shift();
+    for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+      const nx = x + dx, ny = y + dy, k = key(nx, ny); if (nx < 0 || ny < 0 || nx >= W || ny >= H || prev.has(k)) continue;
+      const isGoal = nx === tx && ny === ty;
+      if (isGoal && goalTalk) { prev.set(k, key(x, y)); q.length = 0; best = [nx, ny]; bestD = 0; break; }
+      if (solidAt(nx, ny)) continue;
+      const special = m.portals?.[`${nx},${ny}`] || (m.boss && tileAt(nx, ny) === 'X');
+      if (special && !isGoal) continue;
+      prev.set(k, key(x, y)); const d = Math.abs(tx - nx) + Math.abs(ty - ny); if (d < bestD) { bestD = d; best = [nx, ny]; }
+      if (isGoal) { q.length = 0; break; }
+      q.push([nx, ny]);
+    }
+    if (prev.size > 4000) break;
+  }
+  const out = []; let k = key(best[0], best[1]); while (k !== -1 && k !== key(G.x, G.y)) { out.unshift([k % W, Math.floor(k / W)]); k = prev.get(k); }
+  return out;
+}
+const camState = { x: 0, y: 0 };
+const tileFromEvent = (e) => {
+  const r = cv.getBoundingClientRect(), k = Math.min(r.width / cv.width, r.height / cv.height), px = (e.clientX - (r.left + (r.width - cv.width * k) / 2)) / k, py = (e.clientY - (r.top + (r.height - cv.height * k) / 2)) / k;
+  return [Math.floor(px / TS + camState.x), Math.floor(py / TS + camState.y)];
+};
+let mapPid = null, lastTap = '';
+const travelTo = (e) => { const [tx, ty] = tileFromEvent(e), k = `${tx},${ty}`; if (k === lastTap && route.length) return; lastTap = k; held = null; route = findPath(tx, ty); routeMap = G.map; routeGoal = route.length ? [tx, ty] : null; };
+cv.addEventListener('pointerdown', (e) => { if (!G || inOverlay()) return; e.preventDefault(); mapPid = e.pointerId; lastTap = ''; travelTo(e); });
+cv.addEventListener('pointermove', (e) => { if (e.pointerId === mapPid && G && !inOverlay()) travelTo(e); });
+['pointerup', 'pointercancel'].forEach((ev) => cv.addEventListener(ev, (e) => { if (e.pointerId === mapPid) mapPid = null; }));
+function driveMovement() { // called every frame: follow the tapped route, else keep walking while the pad is held
+  if (!G || inOverlay() || busy) { if (inOverlay()) route = []; return; }
+  if (Math.abs(vx - G.x) + Math.abs(vy - G.y) > 0.12) return; // finish the current step first (keeps walking seamless)
+  if (route.length) {
+    if (routeMap !== G.map) { route = []; return; }
+    const [nx, ny] = route[0], dx = nx - G.x, dy = ny - G.y;
+    if (Math.abs(dx) + Math.abs(dy) !== 1) { route = []; return; }
+    route.shift(); const before = `${G.map}${G.x},${G.y}`; step(dx, dy);
+    if (`${G.map}${G.x},${G.y}` === before) route = []; // blocked, talked or opened something
+    if (!route.length) routeGoal = null;
+  } else if (held) step(...held);
+}
 ACT.close = hide;
 
 function openChest(x, y) {
@@ -703,6 +774,12 @@ async function battleInner(groupIds, bossId = null) {
   BT.last = new Map(); BT.auto = false;
   for (const e of b.e) G.flags.bestiary[e.id] = G.flags.bestiary[e.id] || { seen: 1, kills: 0 };
   BT.stage = new Stage(b, stageKind(bossId));
+  BT.stage.canvas.addEventListener('pointerdown', (e) => { // touch targeting: tap a foe to attack it, or tap the target you're choosing
+    const a = BT?.ask; if (!a) return; const hit = BT.stage.pick(e.clientX, e.clientY); if (!hit) return;
+    const i = (hit.side === 'e' ? BT.b.e : BT.b.p).indexOf(hit.c); if (i < 0) return; e.preventDefault();
+    if (a.stage === 'target' && a.tside === hit.side) ACT.tgt(hit.side, i);
+    else if (a.stage === 'root' && hit.side === 'e') { ACT.c('attack'); if (BT?.ask?.stage === 'target') ACT.tgt('e', i); }
+  });
   tip('battle', 'Pick Attack or Skills, then a target. Icons under an enemy show its weakness: hit it with that element for +50%. 🔁 Repeat reuses your last move.', 7000);
   if (bossId) BT.stage.card(BOSSES[bossId].name.toUpperCase(), 2.6);
   renderBattle();
@@ -914,5 +991,5 @@ muteBtn.addEventListener('click', () => { setMuted(!isMuted()); syncMute(); if (
 syncMute();
 
 // debug / test hook
-window.__game = { get G() { return G; }, get BT() { return BT; }, battle, step, goto, MAPS, snap, OPT, ACT, ui: { shop, inn, guild, socketer, title, slotScreen, diffScreen, talk, itemsMenu, mainMenu } };
+window.__game = { get G() { return G; }, get BT() { return BT; }, camState, TS, get route() { return route; }, battle, step, goto, MAPS, snap, OPT, ACT, ui: { shop, inn, guild, socketer, title, slotScreen, diffScreen, talk, itemsMenu, mainMenu } };
 title();
