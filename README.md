@@ -19,8 +19,16 @@ Controls: Arrows/WASD to move, Esc/M for the menu (on-screen pad on touch device
 ## Vertical slice content
 Town (shop, inn+save, guild) -> overworld -> Ashen Cavern (chests, 5 enemy types, boss: Ashen Wyrm). Level cap 12.
 
+## Art and sound (all generated in code, no asset files)
+- `src/sprites.js`: 16x16 ASCII-grid pixel sprites (8 job heroes, 9 enemies, tiles, objects) plus seeded procedural textures.
+  Heroes are recolored from shared head/body templates, so a new job is a palette entry.
+- `src/audio.js`: Web Audio chiptune engine (square/triangle/saw/noise). Looping tracks for town, overworld, cavern,
+  battle and boss (with drums), jingles for victory/game over, and ~20 sound effects. Notation is a tiny string
+  format (`"E5:2 G5 -:2"` = note:length-in-steps, `-` = rest). Mute button in the HUD; audio starts on first click/key.
+
 ## Layout
 - `src/data.js`: all content (jobs, skills, gems, gear, enemies, maps). Add content here.
 - `src/logic.js`: pure logic (stats, build rules, gem rewriting, battle engine). No DOM.
 - `src/game.js`: map, menus, build UI, battle UI.
+- `tools/sheet.html`: sprite contact sheet (open via the dev server); `tools/checksprites.mjs`: sprite size check.
 - `tools/sim.mjs`: headless balance sim. `tools/checkmaps.mjs`: map reachability check.

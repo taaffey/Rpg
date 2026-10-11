@@ -123,7 +123,7 @@ function elemMult(t, e) { if (!e) return 1; if (t.weak.includes(e)) return 1.5; 
 
 export class Battle {
   constructor(party, enemyIds, rng = Math.random, boss = false) {
-    this.rng = rng; this.boss = boss; this.over = null; this.turn = 0;
+    this.rng = rng; this.boss = boss; this.over = null; this.turn = 0; this.fx = [];
     this.p = party.map((c) => {
       const s = stats(c);
       return { side: 'p', ch: c, name: c.name, hp: c.hp, mp: c.mp, maxhp: s.hp, maxmp: s.mp, atk: s.atk, def: s.def, mag: s.mag, spd: s.spd, weak: [], res: resists(c), st: {}, defending: false };
@@ -170,7 +170,7 @@ export class Battle {
     const L = [];
     for (const x of [...this.p, ...this.e]) {
       if (!alive(x)) continue;
-      if (x.st.poison > 0) { const d = Math.max(1, Math.round(x.maxhp * 0.07)); this.hurt(x, d, L, `${x.name} suffers poison`); }
+      if (x.st.poison > 0) { const d = Math.max(1, Math.round(x.maxhp * 0.07)); this.hurt(x, d, L, `${x.name} suffers poison`); this.fx.push({ t: 'poison' }); }
       for (const k of Object.keys(x.st)) if (x.st[k] > 0) x.st[k]--;
     }
     this.check();
@@ -180,8 +180,9 @@ export class Battle {
     if (!this.e.some(alive)) this.over = 'win';
     else if (!this.p.some(alive)) this.over = 'lose';
   }
-  hurt(t, d, L, prefix) {
+  hurt(t, d, L, prefix, weak = false) {
     t.hp = Math.max(0, t.hp - d);
+    this.fx.push({ t: 'hit', name: t.name, ko: t.hp <= 0, weak });
     L.push(`${prefix} (${d})${t.hp <= 0 ? ` — ${t.name} falls!` : ''}`);
   }
   act(a, cmd) {
@@ -239,6 +240,7 @@ export class Battle {
       a.mp -= s.mp;
     }
     const elem = s.elem === 'random' ? pick(['fire', 'ice', 'bolt'], this.rng) : s.elem;
+    this.fx.push({ t: 'cast', kind: s.kind, elem, hostile: !!s.hostile, side: a.side });
     L.push(`${a.name} uses ${s.name}${s.tags.length ? ` [${s.tags.join(' + ')}]` : ''}!`);
     const targets = this.resolveTargets(a, s, target);
     for (const t of targets) {
@@ -247,7 +249,7 @@ export class Battle {
         for (let h = 0; h < s.hits && alive(t); h++) {
           const d = this.damage(a, t, s, 1, elem); total += d;
           const em = elemMult(t, elem);
-          this.hurt(t, d, L, `  ${t.name} takes ${d}${em > 1 ? ' — weakness!' : em < 1 ? ' — resisted' : ''}`);
+          this.hurt(t, d, L, `  ${t.name} takes ${d}${em > 1 ? ' — weakness!' : em < 1 ? ' — resisted' : ''}`, em > 1);
         }
         if (s.vamp && total && alive(a)) { const h = Math.min(Math.round(total * s.vamp), a.maxhp - a.hp); if (h > 0) { a.hp += h; L.push(`  ${a.name} siphons ${h} HP.`); } }
         this.applyFx(a, t, s, L, total);

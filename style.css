@@ -42,3 +42,8 @@ h2,h3{margin:4px 0 8px}h3{font-size:14px;color:var(--dim);text-transform:upperca
 .pm.active{border-color:var(--gold)}.pm.dead{opacity:.5}.pm.targetable{border-color:var(--acc);cursor:pointer}
 .pm small{color:var(--dim)}
 .flash{animation:fl .25s}@keyframes fl{50%{background:#5a2a2a}}
+.px{image-rendering:pixelated}
+#mute{padding:2px 8px}
+.foe img{display:block;margin:0 auto 4px}
+.foe.flash,.pm.flash{animation:hit .35s}
+@keyframes hit{0%{transform:translateX(0);filter:brightness(2.2)}25%{transform:translateX(-6px)}50%{transform:translateX(6px)}100%{transform:translateX(0);filter:none}}

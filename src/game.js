@@ -1,6 +1,8 @@
 // ===== Gemforge Chronicles: UI, map, menus, battle flow =====
 import { JOBS, SKILLS, GEMS, WEAPONS, ARMORS, ACCS, ITEMS, WEAPON_TYPES, ENEMIES, ENCOUNTERS, MAPS, CHESTS, ELEM_ICON } from './data.js';
 import * as L from './logic.js';
+import * as SP from './sprites.js';
+import { music, sfx, unlock, isMuted, setMuted } from './audio.js';
 const { stats, newChar, learnable, slotSkill, slotGems, gemCapacity, gemsUsed, sanitize, skillWithGems, describeSkill, gainExp, expNeeded, Battle, rewards, SIG, GEMS_PER_SLOT } = L;
 
 const $ = (s) => document.querySelector(s);
@@ -19,6 +21,7 @@ const inOverlay = () => ov.classList.contains('on');
 ov.addEventListener('click', (e) => {
   const b = e.target.closest('[data-act]');
   if (!b || b.disabled) return;
+  sfx(/^(close|bmain|leave|menu|ddone|vdone)$/.test(b.dataset.act) || b.dataset.a === 'root' ? 'back' : 'click');
   ACT[b.dataset.act]?.(b.dataset.a, b.dataset.b);
 });
 const btn = (act, label, a = '', b = '', cls = '', dis = false) => `<button class="${cls}" data-act="${act}" data-a="${a}" data-b="${b}" ${dis ? 'disabled' : ''}>${label}</button>`;
@@ -50,31 +53,29 @@ function autofill(c) {
 const mapDef = () => MAPS[G.map];
 const tileAt = (x, y) => (mapDef().rows[y] || '')[x] ?? '#';
 const chestKey = (x, y) => `${G.map}:${x},${y}`;
-const COL = { world: { '.': '#4f9a3f', T: '#2b6a2c', '~': '#2c5fa8', M: '#7b7468', H: '#c9a15a', D: '#3a2f45' }, town: { '.': '#9a8760', '#': '#4a4256', S: '#b07a3b', I: '#3b7ab0', G: '#8b3bb0', E: '#d9d0a0' }, dungeon: { '.': '#3b3744', '#': '#17141d', E: '#d9d0a0', C: '#3b3744', X: '#3b3744' } };
-const GLYPH = { T: '🌲', '~': '', M: '⛰️', H: '🏘️', D: '🕳️', S: '🛒', I: '🛏️', G: '⚔️', E: '⬇', C: '📦', X: '🐉' };
+const musicFor = () => (G.map === 'dungeon' ? 'dungeon' : G.map === 'town' ? 'town' : 'world');
+let face = 1, bob = 0;
 function draw() {
-  const m = mapDef(), W = m.rows[0].length, H = m.rows.length;
+  if (!G) return;
+  const m = mapDef(), W = m.rows[0].length, H = m.rows.length, frame = Math.floor(Date.now() / 600) % 2;
+  cx.imageSmoothingEnabled = false;
   cx.fillStyle = '#000'; cx.fillRect(0, 0, cv.width, cv.height);
   const camX = W <= VW ? -(VW - W) / 2 : Math.max(0, Math.min(W - VW, G.x - VW / 2));
   const camY = H <= VH ? -(VH - H) / 2 : Math.max(0, Math.min(H - VH, G.y - VH / 2));
-  cx.textAlign = 'center'; cx.textBaseline = 'middle'; cx.font = '22px sans-serif';
-  const pal = COL[G.map];
   for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
     let t = tileAt(x, y);
-    if ((t === 'C' && G.flags.chests[chestKey(x, y)]) || (t === 'X' && G.flags.boss)) t = '.';
-    const px = (x - camX) * TS, py = (y - camY) * TS;
-    cx.fillStyle = pal[t] || (G.map === 'world' ? pal['.'] : pal['.']); cx.fillRect(px, py, TS, TS);
-    if (G.map === 'world' && (t === 'T' || t === 'M')) { cx.fillStyle = pal['.']; cx.fillRect(px, py, TS, TS); }
-    if (GLYPH[t]) { cx.fillStyle = '#fff'; cx.fillText(GLYPH[t], px + TS / 2, py + TS / 2 + 1); }
-    if (t === '~') { cx.fillStyle = 'rgba(255,255,255,.07)'; cx.fillRect(px, py + (x % 2) * 8 + 4, TS, 3); }
+    if (t === 'C' && G.flags.chests[chestKey(x, y)]) t = 'c';
+    if (t === 'X' && G.flags.boss) t = '.';
+    cx.drawImage(SP.tile(G.map, t, x, y, frame), Math.round((x - camX) * TS), Math.round((y - camY) * TS), TS, TS);
   }
-  const px = (G.x - camX) * TS + TS / 2, py = (G.y - camY) * TS + TS / 2;
-  cx.fillStyle = '#f4c95d'; cx.beginPath(); cx.arc(px, py, 11, 0, 7); cx.fill();
-  cx.strokeStyle = '#20180a'; cx.lineWidth = 2; cx.stroke();
-  cx.fillStyle = '#20180a'; cx.font = 'bold 13px sans-serif'; cx.fillText(G.party[0].name[0], px, py + 1);
+  const px = Math.round((G.x - camX) * TS), py = Math.round((G.y - camY) * TS) - bob * 2;
+  cx.fillStyle = 'rgba(0,0,0,.35)'; cx.beginPath(); cx.ellipse(px + TS / 2, py + TS - 3 + bob * 2, 10, 4, 0, 0, 7); cx.fill();
+  cx.save(); cx.translate(face < 0 ? px + TS : px, py); cx.scale(face, 1);
+  cx.drawImage(SP.hero(G.party[0].main), 0, 0, TS, TS); cx.restore();
   $('#loc').textContent = m.name; $('#gold').textContent = `${G.gold} G`;
 }
-function goto(map, x, y) { G.map = map; G.x = x; G.y = y; draw(); }
+setInterval(() => { if (G && !inOverlay() && !busy) draw(); }, 600);
+function goto(map, x, y) { G.map = map; G.x = x; G.y = y; music(musicFor()); sfx('door'); draw(); }
 const BLOCK = new Set(['#', '~', 'M', 'T']);
 async function step(dx, dy) {
   if (inOverlay() || busy) return;
@@ -83,8 +84,9 @@ async function step(dx, dy) {
   if (t === 'S') return shop();
   if (t === 'I') return inn();
   if (t === 'G') return guild();
+  if (dx) face = dx;
   if (t === 'C') { if (!G.flags.chests[chestKey(nx, ny)]) openChest(nx, ny); return; }
-  G.x = nx; G.y = ny;
+  G.x = nx; G.y = ny; bob ^= 1; if (dx) face = dx;
   if (t === 'H') return goto('town', 6, 6);
   if (t === 'D') return goto('dungeon', 2, 1);
   if (t === 'E') return G.map === 'town' ? goto('world', 7, 4) : goto('world', 19, 9);
@@ -108,7 +110,7 @@ document.querySelectorAll('#dpad button').forEach((b) => b.addEventListener('cli
 ACT.close = hide;
 
 function openChest(x, y) {
-  const c = CHESTS[chestKey(x, y)] || { gold: 50 }; G.flags.chests[chestKey(x, y)] = true;
+  const c = CHESTS[chestKey(x, y)] || { gold: 50 }; G.flags.chests[chestKey(x, y)] = true; sfx('chest');
   const got = [];
   for (const k of ['weapons', 'armors', 'accs', 'gems']) for (const id of c[k] || []) { G.inv[k].push(id); got.push(DB[k][id].name); }
   if (c.gold) { G.gold += c.gold; got.push(`${c.gold} G`); }
@@ -119,20 +121,20 @@ function openChest(x, y) {
 // ---------- title / main menu ----------
 function title() {
   G = null;
-  show(`<h2 style="text-align:center">⚔️ Gemforge Chronicles</h2>
+  show(`<div class="row" style="justify-content:center">${Object.keys(JOBS).map((j) => `<img src="${SP.heroURL(j)}" width="48" height="48" class="px">`).join('')}</div><h2 style="text-align:center">⚔️ Gemforge Chronicles</h2>
   <p class="dim" style="text-align:center">Pick a main job and a sub job. Wield weapons that grant signature skills. Socket gems to rewrite every skill.</p>
   <div class="row" style="justify-content:center">${btn('new', 'New Game', '', '', 'primary')}${btn('cont', 'Continue', '', '', '', !hasSave())}</div>`);
-  mapPlaceholder();
+  mapPlaceholder(); music('town');
 }
 function mapPlaceholder() { cx.fillStyle = '#10131c'; cx.fillRect(0, 0, cv.width, cv.height); $('#loc').textContent = ''; $('#gold').textContent = ''; }
-ACT.new = () => { newGame(); hide(); intro(); };
-ACT.cont = () => { if (load()) hide(); };
+ACT.new = () => { newGame(); music(musicFor()); hide(); intro(); };
+ACT.cont = () => { if (load()) { music(musicFor()); hide(); } };
 function intro() {
   show(`<h2>Welcome to Haven Town</h2><p>The <b>Ashen Wyrm</b> sleeps beneath the cavern east of here. You and your three companions are the town's last hope.</p>
   <p>Before you leave, visit the <b>Guild (⚔️)</b> to choose jobs, and open the <b>Menu</b> to socket gems into skills. Experiment: the same skill can behave very differently with the right gems.</p>${btn('close', 'Begin', '', '', 'primary')}`);
 }
 function mainMenu() {
-  show(`<h2>Menu</h2><div class="grid">${G.party.map((c, i) => { const s = maxOf(c); return `<div class="pm">${btn('build', `<b>${esc(c.name)}</b> Lv${c.level}`, i)}<div class="dim">${JOBS[c.main].icon} ${JOBS[c.main].name}${c.sub ? ' / ' + JOBS[c.sub].name : ''}</div>HP ${c.hp}/${s.hp}${bar(c.hp, s.hp, 'hp')}MP ${c.mp}/${s.mp}${bar(c.mp, s.mp, 'mp')}</div>`; }).join('')}</div>
+  show(`<h2>Menu</h2><div class="grid">${G.party.map((c, i) => { const s = maxOf(c); return `<div class="pm"><img src="${SP.heroURL(c.main)}" width="32" height="32" class="px" style="float:right">${btn('build', `<b>${esc(c.name)}</b> Lv${c.level}`, i)}<div class="dim">${JOBS[c.main].icon} ${JOBS[c.main].name}${c.sub ? ' / ' + JOBS[c.sub].name : ''}</div>HP ${c.hp}/${s.hp}${bar(c.hp, s.hp, 'hp')}MP ${c.mp}/${s.mp}${bar(c.mp, s.mp, 'mp')}</div>`; }).join('')}</div>
   <div class="row">${btn('items', '🎒 Items')}${btn('save', '💾 Save')}${btn('title', 'Title')}${btn('close', 'Close', '', '', 'primary')}</div><div id="msg" class="dim"></div>`);
 }
 ACT.title = title;
@@ -178,7 +180,7 @@ function buildMain(c) {
     const m2 = sid ? skillWithGems(sid, gems) : null;
     return `<div class="slot"><div class="t"><b>${i === SIG ? '⭐ Weapon' : `Slot ${i + 1}`}:</b> ${sid ? `<b>${m2.name}</b> ${gems.map((g) => `<span class="chip">${GEMS[g].name.replace(' Gem', '')}</span>`).join('')}` : '<span class="dim">— empty —</span>'}<small>${m2 ? describeSkill(m2) : ''}</small></div>${btn('bslot', 'Edit', i)}</div>`;
   };
-  show(`<div class="row">${btn('bnav', '◀', -1)}<h2 class="grow">${esc(c.name)} · Lv${c.level}</h2>${btn('bnav', '▶', 1)}</div>
+  show(`<div class="row">${btn('bnav', '◀', -1)}<h2 class="grow"><img src="${SP.heroURL(c.main)}" width="36" height="36" class="px" style="vertical-align:middle"> ${esc(c.name)} · Lv${c.level}</h2>${btn('bnav', '▶', 1)}</div>
   <div class="dim">EXP ${c.exp}/${c.level < L.MAX_LEVEL ? expNeeded(c.level) : '—'}</div>
   <div class="card">
     <div class="row"><b>Main:</b> ${m.icon} ${m.name} ${btn('bview', 'Change', 'jobMain', '', '', !jobs)}<b>Sub:</b> ${sj ? sj.icon + ' ' + sj.name : 'none'} ${btn('bview', 'Change', 'jobSub', '', '', !jobs)}</div>
@@ -242,7 +244,7 @@ function inn() {
   const cost = 20;
   show(`<h2>🛏️ Haven Inn</h2><p>A night's rest restores everyone and saves your game. <span class="gold">${cost} G</span></p><p>You have <span class="gold">${G.gold} G</span>.</p>${btn('rest', 'Rest', '', '', 'primary', G.gold < cost)}${btn('close', 'Leave')}`);
 }
-ACT.rest = () => { G.gold -= 20; for (const c of G.party) { const s = maxOf(c); c.hp = s.hp; c.mp = s.mp; } save(); draw(); show(`<h2>🛏️ Rested</h2><p>HP and MP restored. Game saved.</p>${btn('close', 'OK', '', '', 'primary')}`); };
+ACT.rest = () => { sfx('rest'); G.gold -= 20; for (const c of G.party) { const s = maxOf(c); c.hp = s.hp; c.mp = s.mp; } save(); draw(); show(`<h2>🛏️ Rested</h2><p>HP and MP restored. Game saved.</p>${btn('close', 'OK', '', '', 'primary')}`); };
 
 let shopTab = 'buy';
 function catalog() {
@@ -256,11 +258,11 @@ function shop(msg = '') {
   show(`<h2>🛒 Shop</h2><div class="row"><span class="gold grow">${G.gold} G</span>${btn('tab', 'Buy', 'buy', '', shopTab === 'buy' ? 'sel' : '')}${btn('tab', 'Sell', 'sell', '', shopTab === 'sell' ? 'sel' : '')}</div>${msg ? `<p class="dim">${msg}</p>` : ''}${rows.join('') || '<p class="dim">Nothing to sell.</p>'}${btn('close', 'Leave', '', '', 'primary')}`);
 }
 ACT.tab = (t) => { shopTab = t; shop(); };
-ACT.buy = (k, id) => { const d = DB[k][id]; if (G.gold < d.price) return; G.gold -= d.price; if (k === 'items') G.inv.items[id] = (G.inv.items[id] || 0) + 1; else G.inv[k].push(id); shop(`Bought ${d.name}.`); };
+ACT.buy = (k, id) => { const d = DB[k][id]; if (G.gold < d.price) return; G.gold -= d.price; sfx('coin'); if (k === 'items') G.inv.items[id] = (G.inv.items[id] || 0) + 1; else G.inv[k].push(id); shop(`Bought ${d.name}.`); };
 ACT.sell = (k, id) => {
   const d = DB[k][id], p = Math.floor((d.price || 200) / 2);
   if (k === 'items') G.inv.items[id]--; else G.inv[k].splice(G.inv[k].indexOf(id), 1);
-  G.gold += p; shop(`Sold ${d.name}.`);
+  G.gold += p; sfx('coin'); shop(`Sold ${d.name}.`);
 };
 
 // ---------- battle ----------
@@ -269,6 +271,7 @@ async function bossFight() { await battle(['wyrm'], true); }
 async function battle(groupIds, boss = false) {
   busy = true;
   const b = new Battle(G.party, groupIds, Math.random, boss);
+  music(boss ? 'boss' : 'battle'); sfx('encounter');
   BT = { b, log: [boss ? 'The Ashen Wyrm awakens!' : `${b.e.map((e) => e.name).join(', ')} appear!`], ask: null };
   renderBattle();
   while (!b.over) {
@@ -278,28 +281,41 @@ async function battle(groupIds, boss = false) {
       cmds.set(p, cmd);
     }
     BT.ask = null;
-    for (const lines of b.round(cmds)) { BT.log.push(...lines); renderBattle(); await sleep(520); }
+    for (const lines of b.round(cmds)) { BT.log.push(...lines); renderBattle(); playFx(b.fx.splice(0)); await sleep(560); }
     renderBattle();
   }
   b.p.forEach((x) => { x.ch.hp = x.hp; x.ch.mp = x.mp; });
+  if (b.over === 'fled') sfx('flee');
   if (b.over === 'win') await victory(b, boss);
   else if (b.over === 'lose') await defeat();
   else { hide(); }
-  BT = null; busy = false; if (G) draw();
+  BT = null; busy = false; if (G) { if (b.over !== 'lose') music(musicFor()); draw(); }
 }
 function renderBattle() {
   const { b, ask } = BT;
   const tgtFoes = ask?.stage === 'target' && ask.tside === 'e', tgtAllies = ask?.stage === 'target' && ask.tside === 'p';
-  ov.innerHTML = `<div class="win"><div class="foes">${b.e.map((e, i) => `<div class="foe ${e.hp <= 0 ? 'dead' : ''} ${tgtFoes && e.hp > 0 ? 'targetable' : ''}" ${tgtFoes && e.hp > 0 ? `data-act="tgt" data-a="e" data-b="${i}"` : ''}>
-    <div class="ico">${e.icon}</div><b>${e.name}</b>${bar(e.hp, e.maxhp, 'hp')}<small class="dim">${e.hp}/${e.maxhp}${e.st.poison > 0 ? ' ☠️' : ''}${e.st.slow > 0 ? ' 🐌' : ''}</small>
+  ov.innerHTML = `<div class="win"><div class="foes">${b.e.map((e, i) => `<div data-n="${e.name}" class="foe ${e.hp <= 0 ? 'dead' : ''} ${tgtFoes && e.hp > 0 ? 'targetable' : ''}" ${tgtFoes && e.hp > 0 ? `data-act="tgt" data-a="e" data-b="${i}"` : ''}>
+    <img class="px" src="${SP.enemyURL(e.id)}" width="${e.id === 'wyrm' ? 128 : 64}" height="${e.id === 'wyrm' ? 128 : 64}" alt="${e.name}"><b>${e.name}</b>${bar(e.hp, e.maxhp, 'hp')}<small class="dim">${e.hp}/${e.maxhp}${e.st.poison > 0 ? ' ☠️' : ''}${e.st.slow > 0 ? ' 🐌' : ''}</small>
     <div class="dim" style="font-size:11px">${e.weak.length ? 'weak ' + e.weak.map((w) => ELEM_ICON[w]).join('') : ''}${e.res.length ? ' res ' + e.res.map((w) => ELEM_ICON[w]).join('') : ''}</div></div>`).join('')}</div>
   <div class="log" id="log">${BT.log.map((l) => `<div>${esc(l)}</div>`).join('')}</div>
-  <div class="party">${b.p.map((p, i) => `<div class="pm ${p.hp <= 0 ? 'dead' : ''} ${ask?.p === p ? 'active' : ''} ${tgtAllies ? 'targetable' : ''}" ${tgtAllies ? `data-act="tgt" data-a="p" data-b="${i}"` : ''}>
-    <b>${esc(p.name)}</b> <small>${JOBS[p.ch.main].icon}${p.st.poison > 0 ? ' ☠️' : ''}${p.st.atkup > 0 ? ' ⬆️' : ''}${p.st.defup > 0 ? ' 🛡️' : ''}${p.st.slow > 0 ? ' 🐌' : ''}</small>
+  <div class="party">${b.p.map((p, i) => `<div data-n="${p.name}" class="pm ${p.hp <= 0 ? 'dead' : ''} ${ask?.p === p ? 'active' : ''} ${tgtAllies ? 'targetable' : ''}" ${tgtAllies ? `data-act="tgt" data-a="p" data-b="${i}"` : ''}>
+    <img class="px" src="${SP.heroURL(p.ch.main)}" width="28" height="28" style="vertical-align:middle"> <b>${esc(p.name)}</b> <small>${p.st.poison > 0 ? ' ☠️' : ''}${p.st.atkup > 0 ? ' ⬆️' : ''}${p.st.defup > 0 ? ' 🛡️' : ''}${p.st.slow > 0 ? ' 🐌' : ''}</small>
     <div>HP ${p.hp}/${p.maxhp}${bar(p.hp, p.maxhp, 'hp')}MP ${p.mp}/${p.maxmp}${bar(p.mp, p.maxmp, 'mp')}</div></div>`).join('')}</div>
   <div id="cmd">${ask ? cmdHtml(ask) : '<span class="dim">…</span>'}</div></div>`;
   ov.classList.add('on');
   const lg = $('#log'); if (lg) lg.scrollTop = lg.scrollHeight;
+}
+function playFx(list) {
+  let delay = 0;
+  for (const e of list) {
+    if (e.t === 'cast') {
+      const k = e.kind === 'heal' ? 'heal' : e.kind === 'buff' ? (e.hostile ? 'debuff' : 'buff') : (e.elem && e.elem !== 'random' ? e.elem : 'swing');
+      setTimeout(() => sfx(k), delay); delay += 170;
+    } else if (e.t === 'hit') {
+      const el = ov.querySelector(`[data-n="${e.name}"]`); if (el) { el.classList.remove('flash'); void el.offsetWidth; el.classList.add('flash'); }
+      setTimeout(() => { sfx(e.weak ? 'crit' : 'hit'); if (e.ko) setTimeout(() => sfx('ko'), 140); }, delay); delay += 110;
+    } else if (e.t === 'poison') setTimeout(() => sfx('poison'), delay);
+  }
 }
 function cmdHtml(a) {
   const p = a.p, c = p.ch;
@@ -344,11 +360,12 @@ ACT.tgt = (side, i) => {
   BT.ask = null; a.resolve(cmd);
 };
 async function victory(b, boss) {
+  music('victory');
   const r = rewards(b); G.gold += r.gold;
   const lines = [];
   for (const c of G.party) if (c.hp > 0) {
     const ups = gainExp(c, r.exp);
-    if (ups.length) { lines.push(`🎉 ${esc(c.name)} reached level ${ups.at(-1)}!`); autofill(c); }
+    if (ups.length) { setTimeout(() => sfx('levelup'), 1400); lines.push(`🎉 ${esc(c.name)} reached level ${ups.at(-1)}!`); autofill(c); }
   }
   for (const d of r.drops) { if (d.kind === 'items') G.inv.items[d.id] = (G.inv.items[d.id] || 0) + 1; else G.inv[d.kind].push(d.id); lines.push(`Found ${DB[d.kind][d.id].name}`); }
   if (boss) {
@@ -362,11 +379,18 @@ async function victory(b, boss) {
   });
 }
 async function defeat() {
+  music('gameover');
   await new Promise((res) => {
     ov.innerHTML = `<div class="win"><h2 class="bad">Defeated…</h2><p>The party is carried back to Haven Town. You lose half your gold.</p>${btn('ddone', 'Wake up', '', '', 'primary')}</div>`;
     ACT.ddone = () => { G.gold = Math.floor(G.gold / 2); for (const c of G.party) { const s = maxOf(c); c.hp = s.hp; c.mp = s.mp; } goto('town', 6, 6); hide(); res(); };
   });
 }
+
+// audio controls: browsers need a user gesture before sound can start
+['pointerdown', 'keydown'].forEach((ev) => addEventListener(ev, unlock));
+const muteBtn = $('#mute'), syncMute = () => { muteBtn.textContent = isMuted() ? '🔇' : '🔊'; };
+muteBtn.addEventListener('click', () => { setMuted(!isMuted()); syncMute(); if (!isMuted()) sfx('click'); });
+syncMute();
 
 // debug / test hook
 window.__game = { get G() { return G; }, get BT() { return BT; }, battle, step };
