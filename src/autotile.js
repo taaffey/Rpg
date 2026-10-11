@@ -52,16 +52,18 @@ export function sand(base, dots, seed) { return flat(base, dots, 0.06, seed); }
 
 
 // ---------- region masks ----------
-const masks = new Map();
+const masks = new Map(), cellW = new Map();
+function cellWeights(r) { // for every pixel: how many disc samples land in each of the 3x3 cells (shared by all masks of radius r)
+  let w = cellW.get(r); if (w) return w;
+  const pts = []; for (let dy = -r; dy <= r; dy++) for (let dx = -r; dx <= r; dx++) if (dx * dx + dy * dy <= r * r + 0.5) pts.push([dx, dy]);
+  w = new Uint16Array(256 * 9); w.n = pts.length;
+  for (let py = 0; py < 16; py++) for (let px = 0; px < 16; px++) for (const [dx, dy] of pts) { const gx = Math.floor((px + 16.5 + dx) / 16), gy = Math.floor((py + 16.5 + dy) / 16); w[(py * 16 + px) * 9 + gy * 3 + gx]++; }
+  cellW.set(r, w); return w;
+}
 export function fracMask(bits, r) { // bits: 9-char '0'/'1', row-major 3x3, centre = this tile
   const key = bits + r; let m = masks.get(key); if (m) return m;
-  m = new Float32Array(256); const pts = [];
-  for (let dy = -r; dy <= r; dy++) for (let dx = -r; dx <= r; dx++) if (dx * dx + dy * dy <= r * r + 0.5) pts.push([dx, dy]);
-  for (let py = 0; py < 16; py++) for (let px = 0; px < 16; px++) {
-    let c = 0;
-    for (const [dx, dy] of pts) { const gx = Math.floor((px + 16.5 + dx) / 16), gy = Math.floor((py + 16.5 + dy) / 16); c += bits[gy * 3 + gx] === '1' ? 1 : 0; }
-    m[py * 16 + px] = c / pts.length;
-  }
+  const w = cellWeights(r), on = [...bits].map((b) => b === '1'); m = new Float32Array(256);
+  for (let p = 0; p < 256; p++) { let c = 0; for (let k = 0; k < 9; k++) if (on[k]) c += w[p * 9 + k]; m[p] = c / w.n; }
   masks.set(key, m); return m;
 }
 

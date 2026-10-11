@@ -1,11 +1,11 @@
 // ===== World definition: maps, portals, NPCs, chests, bosses =====
 // Tile legend (visual + rules):
-//   outdoor: . grass  , snow  : swamp  _ path  = bridge  ~ water  T/t tree  M mountain  B rockslide(gate)  H town  D dungeon
+//   outdoor: . grass  , snow  : swamp  d desert  _ path  = bridge  ~ water  r river  T/t tree  M mountain  B rockslide(gate)  H town  D dungeon
 //   town/interior: . floor  # wall  H door  E exit  C chest      dungeon: . floor  # wall  E exit  C chest  X boss
 // Anything not listed in WALK blocks movement. Portals/NPCs/decor/chests live in per-map lists keyed by coordinates.
 import { GEN } from './mapgen.js';
 
-export const WALK = new Set(['.', ',', ':', '_', '=', 'H', 'D', 'E', 'X']); // towns add: b building, F fountain, G grave (all solid)
+export const WALK = new Set(['.', ',', ':', 'd', '_', '=', 'H', 'D', 'E', 'X']); // d = overworld desert; towns add: b building, F fountain, G grave (all solid)
 export const MAPS = {};
 const portal = (to, x, y) => ({ to, x, y });
 const P = (x, y) => `${x},${y}`;
@@ -27,42 +27,128 @@ function interior(id, name, kind, back, opts = {}) {
   if (opts.chest) { const [cx, cy, loot] = opts.chest; const r = [...rows[cy]]; r[cx] = 'C'; rows[cy] = r.join(''); MAPS[id].chests[P(cx, cy)] = loot; }
 }
 
-// ---------------------------------------------------------------- FF1-style town builder
-// ops: ['_'|'~'|'#'|'.'|'T'|'=' , x, y, w, h] rect fills applied in order; buildings stamped last.
-// building: [x, y, w, h, kind, doorCol, interiorId]  roof rows y..y+h-2, wall row y+h-1, door at (x+doorCol, y+h-1)
-function town(W, H, ops, buildings, gates) {
-  const g = Array.from({ length: H }, () => Array(W).fill('.'));
-  for (let x = 0; x < W; x++) { g[0][x] = '#'; g[H - 1][x] = '#'; } for (let y = 0; y < H; y++) { g[y][0] = '#'; g[y][W - 1] = '#'; }
-  for (const [ch, x, y, w = 1, h = 1] of ops) for (let j = y; j < y + h; j++) for (let i = x; i < x + w; i++) g[j][i] = ch;
-  const doors = {};
-  for (const [x, y, w, h, kind, dc, to] of buildings) {
+// ---------------------------------------------------------------- 16-bit town builder (art in townart.js)
+// art: one string per row of ground / structure chars
+//   . grass (snow / moss)  _ street (boardwalk in Mirewood)  : plaza  , dirt  ~ water  = dock / bridge  # stone wall
+//   T tree  t pine  h hedge  f fence  w flower bed  F fountain / centrepiece  E exit to the world map
+// buildings: [x, y, w, h, kind, doorCol, interiorId]: footprint w x h tiles ('b'), door 'H' at (x+doorCol, y+h-1);
+//   the roof is drawn up to one tile above the footprint, so leave the row above it free of tall things.
+// props: [kind, x, y, opts?] decoration; kinds in PROP_FOOT also stamp solid 'p' tiles over their footprint.
+// The art (before stamping) is kept as `base` so the renderer knows what ground lies under buildings and props.
+const PROP_FOOT = { stall: [3, 2], lamp: [1, 1], barrel: [1, 1], barrels: [2, 1], crate: [1, 1], crates: [2, 1], sacks: [1, 1], bench: [2, 1], well: [2, 2], cart: [2, 1], snowman: [1, 1], logs: [2, 1], pot: [1, 1], board: [1, 1], hay: [1, 1], statue: [1, 1], totem: [1, 1], sled: [2, 1], reeds: [1, 1], nets: [2, 1] };
+function town(art, buildings, props = []) {
+  const g = art.map((r) => [...r]), doors = {};
+  for (const [x, y, w, h, , dc, to] of buildings) {
     for (let j = y; j < y + h; j++) for (let i = x; i < x + w; i++) g[j][i] = 'b';
     g[y + h - 1][x + dc] = 'H'; doors[to] = [x + dc, y + h - 1];
   }
-  for (const [x, y] of gates) g[y][x] = 'E';
-  return { rows: g.map((r) => r.join('')), doors, buildings: buildings.map(([x, y, w, h, kind, door, to]) => ({ x, y, w, h, kind, door, to })) };
+  for (const [k, x, y] of props) { const f = PROP_FOOT[k]; if (f) for (let j = y; j < y + f[1]; j++) for (let i = x; i < x + f[0]; i++) g[j][i] = 'p'; }
+  return { rows: g.map((r) => r.join('')), base: art, doors, props: props.map(([k, x, y, o = {}]) => ({ k, x, y, ...o })),
+    buildings: buildings.map(([x, y, w, h, kind, door, to]) => ({ x, y, w, h, kind, door, to })) };
 }
 const TOWNS = {
-  haven: town(26, 22, [
-    ['_', 12, 4, 2, 17], ['_', 2, 5, 22, 1], ['_', 2, 15, 22, 1], ['_', 8, 9, 10, 5],
-    ['_', 4, 4], ['_', 8, 4], ['_', 17, 4], ['_', 22, 4],
-    ['~', 19, 8, 6, 2], ['~', 1, 8, 4, 3], ['=', 21, 8, 1, 2], ['_', 21, 7], ['_', 21, 10, 1, 5],
-    ['T', 11, 17], ['T', 14, 17], ['T', 11, 19], ['T', 14, 19], ['T', 7, 8], ['T', 18, 12], ['T', 7, 13], ['T', 18, 13],
-    ['T', 1, 17], ['T', 2, 19], ['T', 24, 17], ['T', 23, 19], ['T', 6, 18], ['T', 19, 18], ['T', 1, 1], ['T', 24, 1],
-    ['F', 12, 11], ['F', 13, 11], ['G', 3, 17], ['G', 5, 17], ['G', 3, 19], ['G', 5, 19],
-  ], [[2, 1, 5, 3, 'inn', 2, 'haven_inn'], [7, 1, 4, 3, 'shop', 1, 'haven_shop'], [15, 1, 5, 3, 'smith', 2, 'haven_smith'], [20, 1, 5, 3, 'guild', 2, 'haven_guild'],
-    [2, 12, 4, 3, 'house', 1, 'haven_elder'], [19, 12, 5, 3, 'house', 2, 'haven_cottage']], [[12, 21], [13, 21]]),
-  frostholm: town(22, 18, [
-    ['_', 10, 1, 2, 16], ['_', 2, 5, 18, 1], ['_', 7, 9, 8, 4], ['_', 4, 4], ['_', 8, 4], ['_', 14, 4], ['_', 18, 4], ['_', 3, 12, 4, 1], ['_', 4, 11],
-    ['F', 10, 10], ['F', 11, 10], ['t', 1, 1], ['t', 20, 1], ['t', 2, 15], ['t', 19, 15], ['t', 9, 14], ['t', 12, 14], ['t', 6, 8], ['t', 15, 8], ['t', 17, 12], ['t', 18, 13],
-    ['~', 15, 14, 5, 2],
-  ], [[2, 1, 5, 3, 'inn', 2, 'frost_inn'], [7, 1, 3, 3, 'shop', 1, 'frost_shop'], [12, 1, 5, 3, 'smith', 2, 'frost_smith'], [17, 1, 4, 3, 'guild', 1, 'frost_guild'], [2, 8, 4, 3, 'house', 2, 'frost_house']], [[10, 17], [11, 17]]),
-  mirewood: town(22, 18, [
-    ['~', 1, 6, 20, 3], ['~', 1, 12, 6, 5], ['~', 15, 12, 6, 5],
-    ['_', 10, 1, 2, 16], ['_', 2, 5, 18, 1], ['_', 4, 4], ['_', 8, 4], ['_', 14, 4], ['_', 18, 4], ['_', 2, 10, 18, 1], ['_', 4, 9], ['_', 17, 9],
-    ['T', 1, 1], ['T', 20, 1], ['T', 8, 13], ['T', 13, 13], ['T', 8, 15], ['T', 13, 15], ['T', 1, 10], ['T', 20, 10],
-    ['F', 10, 11], ['F', 11, 11],
-  ], [[2, 1, 5, 3, 'inn', 2, 'mire_inn'], [7, 1, 3, 3, 'shop', 1, 'mire_shop'], [12, 1, 4, 3, 'guild', 2, 'mire_guild'], [16, 1, 5, 3, 'house', 2, 'mire_house'], [2, 7, 4, 3, 'house', 2, 'mire_hut']], [[10, 17], [11, 17]]),
+  haven: town([
+    '~~~~~~TTTTT#############TTTTTTTTTT',
+    '~~~~~~TTTTT#############TTTTTTTTTT',
+    '~~~~~~TTTTT#############TTTTTTTTTT',
+    '~~~~~~__T..#############T.......TT',
+    '~~~~~~_T.T.#############..T.T...TT',
+    '~~~~~~__......_______.........T.TT',
+    '~==~~~__......_______...........TT',
+    '~==~~~__........___.............TT',
+    '~=====__........___............TTT',
+    '~==~~~__........___.............TT',
+    '~==~~~__........___.............TT',
+    '~~~~~~__________________________TT',
+    '~~~~~~__________________________TT',
+    '~~~~~~__....:::::::::::________.TT',
+    '~~~~~~__....:::::::::::________.TT',
+    '~~~~~~__....:::::::::::________.TT',
+    '~~~~~~__....::::FFF::::.........TT',
+    '~~~~~~__....::::FFF::::.........TT',
+    '~~~~~~______::::FFF::::.........TT',
+    '~~====__....:::::::::::.........TT',
+    '~~====__....:::::::::::.........TT',
+    '~~~~~~__....:::::::::::_________TT',
+    '~~~~~~__________________________TT',
+    '~~~~~~__........___.......ffffffTT',
+    '~~~~~~__.....T..___.......f,,,,fTT',
+    '~~~~~~__.......T___T.....Tf,,,,fTT',
+    '~~~~~~__........___.......f,,,,fTT',
+    '~~~===__........___.......f,,,,fTT',
+    '~~~~~~____________________f,,,,fTT',
+    '~~~~~~__........___.......ffffffTT',
+    '~~~~~~__.T....T.___...T.T.......TT',
+    '~~~~~~__...T....___.............TT',
+    '~~~~~~##########___#############TT',
+    '~~~~~~##########EEE#############TT'],
+  [[8, 6, 7, 5, 'inn', 3, 'haven_inn'], [21, 6, 7, 5, 'guild', 3, 'haven_guild'], [8, 14, 4, 4, 'shop', 2, 'haven_shop'], [25, 16, 7, 5, 'smith', 2, 'haven_smith'],
+    [8, 24, 5, 4, 'house', 2, 'haven_cottage'], [20, 24, 5, 4, 'house', 2, 'haven_elder']],
+  [['castle', 11, 0], ['stall', 23, 13, { c: 'red' }], ['stall', 27, 13, { c: 'blue' }], ['lamp', 15, 9], ['lamp', 19, 9], ['lamp', 12, 13], ['lamp', 22, 13], ['lamp', 12, 21], ['lamp', 22, 21],
+    ['barrels', 7, 4], ['crates', 6, 14], ['barrel', 7, 21], ['bench', 13, 19], ['bench', 20, 19], ['pen', 27, 24, { w: 4, h: 5, n: 4 }], ['hay', 30, 24],
+    ['boat', 2, 13], ['boat', 1, 24], ['ship', 0, 14], ['arch', 16, 32, { w: 3 }]]),
+  frostholm: town([
+    'tttttttttttttttttttttttttttttt',
+    'tttttttttttttttttttttttttttttt',
+    'tt........t........t........tt',
+    'tt..........................tt',
+    'tt..................t.......tt',
+    'tt..........................tt',
+    'tt..........................tt',
+    'tt............._............tt',
+    'tt__________________________tt',
+    'tt__________________________tt',
+    'ttt...........__............tt',
+    'tt........::::::::::.......ttt',
+    'tt.......t::::::::::t.......tt',
+    'tt........:::FFF::::........tt',
+    'tt........:::FFF::::........tt',
+    'tt........:::FFF::::........tt',
+    'tt________::::::::::________tt',
+    'tt......t.::::::::::........tt',
+    'tt........::::::::::.t......tt',
+    'tt.~~~~~......__..........t.tt',
+    'tt.~~~~~______________......tt',
+    'tt.~~~~~......__............tt',
+    'tt.~~~~~......__........t...tt',
+    'tt.......t....__....t.......tt',
+    'tt.t.......t..__..t.........tt',
+    'tt............__............tt',
+    'tt############__############tt',
+    'tt############EE############tt'],
+  [[3, 3, 7, 5, 'inn', 3, 'frost_inn'], [12, 2, 7, 5, 'guild', 3, 'frost_guild'], [21, 3, 6, 5, 'smith', 2, 'frost_smith'], [3, 12, 5, 4, 'shop', 2, 'frost_shop'], [22, 12, 5, 4, 'house', 2, 'frost_house']],
+  [['lamp', 10, 11], ['lamp', 19, 11], ['lamp', 13, 25], ['lamp', 16, 25], ['snowman', 6, 18], ['logs', 8, 6], ['sled', 24, 17], ['barrel', 27, 9], ['arch', 14, 26, { w: 2 }]]),
+  mirewood: town([
+    'TTTTTTTTTTTTTTTTTTTTTTTTTTTTTT',
+    'TTTTTTTTTTTTTTTTTTTTTTTTTTTTTT',
+    'T............................T',
+    'T~~~~~~~~~~~~~~~~~~~~~~~~~~~~T',
+    'T~~~~~~~~~~~~~~~~~~~~~~~~~~~~T',
+    'T~~~~~~~~~~~~~~~~~~~~~~~~~~~~T',
+    'T~~~~~~~~~~~~~~~~~~~~~~~~~~~~T',
+    'T~~~~~~~~~~~~~_~~~~~~~~~~~~~~T',
+    'T~__________________________~T',
+    'T~~~~~~~~~~~~~__~~~~~~~~~~~T~T',
+    'T~~~~~~~~~~~~~__~~~~~~~~~~~~~T',
+    'T~~~~~~~~~.T......T.~~~~~~~~~T',
+    'TT~~~~~~~~..........~T~~~~~~~T',
+    'T~~~~~~~T~...FFF....~~~~~~~~~T',
+    'T~~~~~~~~~...FFF....~~~~~~~~~T',
+    'T~~~~~~~~~...FFF....~~~~~~~~~T',
+    'T~~~~~~~~~........T.~~~~~~~~~T',
+    'T~~~~~~~~~..........~~~~~~~~~T',
+    'T~~~~~~~~~~~~~__~~~~~~~~~~~~~T',
+    'T~~~~~~~~~~~~~__~~~~~~~_~~~~~T',
+    'T~~~~~~~~~~~~~__~~~~~~~_~~~~~T',
+    'T~~_______________________~~~T',
+    'T~~~~~~~~~~~~~__~~~~~~......~T',
+    'T......~~~~~~~__~~~~~~...T..~T',
+    'T.T....~~T~~~~__~~~T~~......~T',
+    'T......~~~~~~~__~~~~~~......~T',
+    'T......~~~~~~~__~~~~~~~~~~~~~T',
+    'T~~~~~~~~~~~~~EE~~~~~~~~~~~~~T'],
+  [[3, 3, 7, 5, 'inn', 3, 'mire_inn'], [12, 3, 5, 4, 'shop', 2, 'mire_shop'], [20, 3, 7, 5, 'guild', 3, 'mire_guild'], [21, 15, 5, 4, 'house', 2, 'mire_house'], [3, 17, 4, 4, 'house', 2, 'mire_hut']],
+  [['lamp', 10, 11], ['lamp', 19, 17], ['barrel', 12, 17], ['nets', 23, 22], ['boat', 8, 9], ['boat', 18, 25], ['reeds', 9, 16]]),
 };
 
 const back = (t, id, extra = {}) => { const [x, y] = TOWNS[t].doors[id]; return { map: t, x, y: y + 1, ...extra }; };
@@ -70,14 +156,16 @@ const doorPortals = (t) => Object.fromEntries(Object.entries(TOWNS[t].doors).map
 
 // ---------------------------------------------------------------- Haven Town
 MAPS.haven = {
-  name: 'Haven Town', kind: 'town', theme: 'town', music: 'town', rows: TOWNS.haven.rows, buildings: TOWNS.haven.buildings, spawn: { x: 12, y: 20 },
-  portals: { [P(12, 21)]: portal('world', 7, 21), [P(13, 21)]: portal('world', 7, 21), ...doorPortals('haven') },
+  name: 'Haven Town', kind: 'town', theme: 'town', music: 'town', rows: TOWNS.haven.rows, base: TOWNS.haven.base, buildings: TOWNS.haven.buildings, props: TOWNS.haven.props, spawn: { x: 17, y: 32 },
+  portals: { [P(16, 33)]: portal('world', 7, 21), [P(17, 33)]: portal('world', 7, 21), [P(18, 33)]: portal('world', 7, 21), ...doorPortals('haven') },
   decor: [],
   npcs: [
-    { x: 11, y: 20, type: 'guard', name: 'Guard', text: ['Welcome to Haven! Heading out empty-handed? The Smithy is the shop with the sword sign, up the main street.', 'The Ashen Wyrm sleeps in the Ashen Cavern, east of here.', 'It is weak to ice. Bring a mage, or socket a Frost Gem into a fire skill!'] },
-    { x: 6, y: 6, type: 'villager', name: 'Villager', quest: 'slimes', text: ['The road north is blocked by a rockslide. They say the Wyrm\'s roars shook the mountain loose.', 'Beat the beast and the pass should clear.'] },
-    { x: 16, y: 10, type: 'kid', name: 'Child', text: ['Mister! Did you know a Wide Gem makes a single-target skill hit everyone?', 'Put one in your Heal skill... but it only heals for 60% of the usual power.'] },
-    { x: 19, y: 6, type: 'villager2', name: 'Furrier', quest: 'wolves', text: ['Pro tip: the Guild lets you change jobs. A sub job lends you its skills (two levels behind) and its weapon types!'] },
+    { x: 19, y: 31, type: 'guard', name: 'Guard', text: ['Welcome to Haven! Heading out empty-handed? The Smithy is the shop with the sword sign, up the main street.', 'The Ashen Wyrm sleeps in the Ashen Cavern, east of here.', 'It is weak to ice. Bring a mage, or socket a Frost Gem into a fire skill!'] },
+    { x: 14, y: 15, type: 'villager', name: 'Villager', quest: 'slimes', text: ['The road north is blocked by a rockslide. They say the Wyrm\'s roars shook the mountain loose.', 'Beat the beast and the pass should clear.'] },
+    { x: 20, y: 18, type: 'kid', name: 'Child', text: ['Mister! Did you know a Wide Gem makes a single-target skill hit everyone?', 'Put one in your Heal skill... but it only heals for 60% of the usual power.'] },
+    { x: 15, y: 5, type: 'guard', name: 'Castle Guard', text: ['Halt! The castle is closed while the King holds council.', 'Come back once the Ashen Wyrm is dealt with.'] },
+    { x: 19, y: 5, type: 'guard', name: 'Castle Guard', text: ['Haven Castle has guarded this harbour for three hundred years.'] },
+    { x: 26, y: 12, type: 'villager2', name: 'Furrier', quest: 'wolves', text: ['Pro tip: the Guild lets you change jobs. A sub job lends you its skills (two levels behind) and its weapon types!'] },
   ],
 };
 interior('haven_inn', 'Haven Inn', 'inn', back('haven', 'haven_inn'), { cost: 25, npcs: [{ x: 8, y: 5, type: 'villager', name: 'Patron', text: ['*hic* The swamp south of town hides a Sunken Crypt. Undead everywhere. Bring holy magic!'] }] });
@@ -89,13 +177,13 @@ interior('haven_cottage', 'Fisher\'s Cottage', 'house', back('haven', 'haven_cot
 
 // ---------------------------------------------------------------- Frostholm
 MAPS.frostholm = {
-  name: 'Frostholm', kind: 'town', theme: 'snowtown', music: 'frosttown', rows: TOWNS.frostholm.rows, buildings: TOWNS.frostholm.buildings, spawn: { x: 10, y: 16 },
-  portals: { [P(10, 17)]: portal('world', 27, 9), [P(11, 17)]: portal('world', 27, 9), ...doorPortals('frostholm') },
+  name: 'Frostholm', kind: 'town', theme: 'snowtown', music: 'frosttown', rows: TOWNS.frostholm.rows, base: TOWNS.frostholm.base, buildings: TOWNS.frostholm.buildings, props: TOWNS.frostholm.props, spawn: { x: 14, y: 26 },
+  portals: { [P(14, 27)]: portal('world', 27, 9), [P(15, 27)]: portal('world', 27, 9), ...doorPortals('frostholm') },
   decor: [],
   npcs: [
-    { x: 12, y: 16, type: 'guard', name: 'Guard', text: ['You cleared the pass? Then you\'re the ones who slew the Wyrm! Frostholm owes you.', 'The Frost Spire lies northeast. The Frost Titan within is weak to fire. Ice magic will barely scratch it.'] },
-    { x: 16, y: 10, type: 'villager', name: 'Hunter', quest: 'yetis', text: ['Yetis and ice wolves roam the snow. Their hides are thick, but fire burns them well.', 'Fur armor from the forge resists ice, which helps a lot out there.'] },
-    { x: 5, y: 13, type: 'kid', name: 'Child', text: ['I tried a Stun Gem on my snowball throw. Worked great! ...Mom says not to tell.'] },
+    { x: 16, y: 25, type: 'guard', name: 'Guard', text: ['You cleared the pass? Then you\'re the ones who slew the Wyrm! Frostholm owes you.', 'The Frost Spire lies northeast. The Frost Titan within is weak to fire. Ice magic will barely scratch it.'] },
+    { x: 21, y: 9, type: 'villager', name: 'Hunter', quest: 'yetis', text: ['Yetis and ice wolves roam the snow. Their hides are thick, but fire burns them well.', 'Fur armor from the forge resists ice, which helps a lot out there.'] },
+    { x: 11, y: 17, type: 'kid', name: 'Child', text: ['I tried a Stun Gem on my snowball throw. Worked great! ...Mom says not to tell.'] },
   ],
 };
 interior('frost_inn', 'Frostholm Inn', 'inn', back('frostholm', 'frost_inn', { theme: 'interior', music: 'frosttown' }), { cost: 60, npcs: [{ x: 8, y: 5, type: 'fisher', name: 'Traveler', text: ['The Lich King\'s crypt is no joke. Bring Revive and a few Phoenix Downs.'] }] });
@@ -129,14 +217,14 @@ gen('storm', 'Storm Cavern', 'storm', GEN.stormInfo, 'storm', 'storm_drake',
 
 // ---------------------------------------------------------------- Mirewood
 MAPS.mirewood = {
-  name: 'Mirewood', kind: 'town', theme: 'swamptown', music: 'town', rows: TOWNS.mirewood.rows, buildings: TOWNS.mirewood.buildings, spawn: { x: 10, y: 16 },
-  portals: { [P(10, 17)]: portal('world', ...GEN.adj.mirewood), [P(11, 17)]: portal('world', ...GEN.adj.mirewood), ...doorPortals('mirewood') },
+  name: 'Mirewood', kind: 'town', theme: 'swamptown', music: 'town', rows: TOWNS.mirewood.rows, base: TOWNS.mirewood.base, buildings: TOWNS.mirewood.buildings, props: TOWNS.mirewood.props, spawn: { x: 14, y: 26 },
+  portals: { [P(14, 27)]: portal('world', ...GEN.adj.mirewood), [P(15, 27)]: portal('world', ...GEN.adj.mirewood), ...doorPortals('mirewood') },
   decor: [],
   npcs: [
-    { x: 12, y: 16, type: 'guard', name: 'Warden', quest: 'marsh', text: ['Welcome to Mirewood. Mind the bog after dark.'] },
-    { x: 15, y: 9, type: 'fisher', name: 'Boatwright', quest: 'lantern', text: ['These planks have seen a hundred floods.'] },
-    { x: 7, y: 11, type: 'kid', name: 'Child', text: ['The Sunken Crypt is full of skeletons! ...Allegedly. I\'m not allowed to go near it.'] },
-    { x: 14, y: 11, type: 'villager2', name: 'Villager', text: ['Holy magic and fire both work wonders on the undead. Pack Phoenix Downs for the Lich King.'] },
+    { x: 16, y: 24, type: 'guard', name: 'Warden', quest: 'marsh', text: ['Welcome to Mirewood. Mind the bog after dark.'] },
+    { x: 27, y: 8, type: 'fisher', name: 'Boatwright', quest: 'lantern', text: ['These planks have seen a hundred floods.'] },
+    { x: 12, y: 15, type: 'kid', name: 'Child', text: ['The Sunken Crypt is full of skeletons! ...Allegedly. I\'m not allowed to go near it.'] },
+    { x: 17, y: 12, type: 'villager2', name: 'Villager', text: ['Holy magic and fire both work wonders on the undead. Pack Phoenix Downs for the Lich King.'] },
   ],
 };
 interior('mire_inn', 'Mirewood Inn', 'inn', back('mirewood', 'mire_inn'), { cost: 40 });
@@ -149,7 +237,7 @@ interior('mire_hut', 'Hermit\'s Hut', 'house', back('mirewood', 'mire_hut'), { n
 const [mx, my] = GEN.pois.mirewood, [tx, ty] = GEN.pois.storm, [hx, hy] = GEN.pois.haven, [fx, fy] = GEN.pois.frost, [cx, cy] = GEN.pois.cavern, [rx, ry] = GEN.pois.crypt, [sx, sy] = GEN.pois.spire;
 MAPS.world = {
   name: 'Greenmarch', kind: 'outdoor', theme: 'world', music: 'world', rows: GEN.world, spawn: { x: hx, y: hy + 1 }, fog: 5, rate: 0.07,
-  encByTile: { '.': 'world', ',': 'snow', ':': 'swamp' },
+  encByTile: { '.': 'world', ',': 'snow', ':': 'swamp', d: 'world' },
   portals: {
     [P(hx, hy)]: portal('haven', 12, 20), [P(fx, fy)]: portal('frostholm', 10, 16), [P(cx, cy)]: portal('cavern', 2, 1),
     [P(rx, ry)]: portal('crypt', GEN.cryptInfo.spawn[0], GEN.cryptInfo.spawn[1]), [P(sx, sy)]: portal('spire', GEN.spireInfo.spawn[0], GEN.spireInfo.spawn[1]),

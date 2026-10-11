@@ -136,7 +136,7 @@ addEventListener('orientationchange', () => setTimeout(layoutView, 250));
 
 // ---------- minimap / map screen ----------
 let miniDirty = true; const miniCache = { id: null, canvas: document.createElement('canvas'), sc: 2 };
-const MINI = { '.': '#2aa83a', ',': '#eef4fc', ':': '#4a6a38', _: '#e0c070', '=': '#9a9a9a', '~': '#3c94f0', T: '#0c6a18', t: '#9ab0c8', M: '#a07848', B: '#c0a060', H: '#ffffff', D: '#c04040', E: '#f4d35e' };
+const MINI = { d: '#e0c070', r: '#3c94f0', '.': '#2aa83a', ',': '#eef4fc', ':': '#4a6a38', _: '#e0c070', '=': '#9a9a9a', '~': '#3c94f0', T: '#0c6a18', t: '#9ab0c8', M: '#a07848', B: '#c0a060', H: '#ffffff', D: '#c04040', E: '#f4d35e' };
 const MINI_FLOOR = { cavern: '#5a566a', crypt: '#4a5a50', spire: '#8aa8d0', storm: '#5a5c8a' }, MINI_WALL = { cavern: '#22202a', crypt: '#16221c', spire: '#2a4a78', storm: '#1c1e40' };
 function drawMini(c2, id, scale, ox, oy, t, noPlayer = false) {
   const m = MAPS[id], seen = G.flags.seen[id]; if (!seen) return;

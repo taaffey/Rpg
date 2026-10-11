@@ -23,6 +23,7 @@ function brick(base, line, seed) {
 }
 
 import { FURN, NPC_STYLE, ENEMY2, BIG2, VARIANT, BIGVAR } from './art2.js';
+import * as BA from './battleart.js';
 // ---------- object sprites (drawn over a floor tile) ----------
 const ART = {
   tree: ['................', '.....GGGGG......', '....GGgggGG.....', '...GGgggglGG....', '..GGggggggggG...', '..GgglgggggggG..', '...GGgggggglGG..', '..GGgggglggggGG.', '.GGggggggggggggG', '.GGGGgggggggGGGG', '..GGGGGGGGGGGG..', '.....NNnN.......', '.....NnnN.......', '.....NNnN.......', '................', '................'],
@@ -141,7 +142,9 @@ function buildTiles() {
   T.spire = dungeon('#6a86a8', ['#5a76a0', '#7a96b8', '#8aa6c8'], '#3a5a8a', '#24406a', 240);
 }
 const BIGALL = () => ({ ...BIG, lich: mirror(BIG2.lich), titan: mirror(BIG2.titan) });
+// Enemies: large shaded 16-bit art from battleart.js (normal ~32-50 px, bosses ~80-116 px); legacy 16x16/32x32 ASCII art is the fallback for unknown ids.
 export function enemy(id) {
+  if (BA.hasEnemyArt(id)) return BA.enemyArt(id);
   if (cache.has('e' + id)) return cache.get('e' + id);
   const big = BIGALL()[id]; let c;
   if (BIGVAR[id]) c = sprite(BIGALL()[BIGVAR[id][0]], { ...BIG_PAL, ...BIGVAR[id][1] });
@@ -172,8 +175,8 @@ export function gemIcon(id, scale = 2) {
   const out = u.toDataURL(); cache.set(k, out); return out;
 }
 export function url(canvas, scale = 4) { const c = mk(canvas.width * scale, canvas.height * scale), x = c.getContext('2d'); x.imageSmoothingEnabled = false; x.drawImage(canvas, 0, 0, c.width, c.height); return c.toDataURL(); }
-export const enemyURL = (id) => { const k = 'eu' + id; if (!cache.has(k)) cache.set(k, url(enemy(id), 4)); return cache.get(k); };
-export const heroURL = (job) => { const k = 'hu' + job; if (!cache.has(k)) cache.set(k, url(hero(job), 3)); return cache.get(k); };
+export const enemyURL = (id) => { const k = 'eu' + id; if (!cache.has(k)) { const c = enemy(id); cache.set(k, url(c, Math.max(1, Math.round(128 / Math.max(c.width, c.height))))); } return cache.get(k); };
+export const heroURL = (job) => { const k = 'hu' + job; if (!cache.has(k)) cache.set(k, url(HERO_STYLE[job] ? BA.heroPortrait(job) : hero(job), 3)); return cache.get(k); }; // square crop of the side-view battle sprite
 // tile lookup: variant picked by position so textures don't tile obviously
 export function tile(map, ch, x, y, frame = 0) {
   if (!T.world) buildTiles();
@@ -182,7 +185,7 @@ export function tile(map, ch, x, y, frame = 0) {
 }
 export const floorTile = (map, x, y) => tile(map, '.', x, y);
 export { ART, ENEMY_ART, heroRows };
-export const isBig = (id) => !!BIGALL()[id] || !!BIGVAR[id];
+export const isBig = (id) => (BA.hasEnemyArt(id) ? BA.isBigArt(id) : !!BIGALL()[id] || !!BIGVAR[id]);
 
 // FF1-style pointing hand used as the menu cursor (exposed to CSS as --hand)
 const HAND = ['................', '................', '...kkkk.........', '..kwwwwkkkkkkk..', '..kwwwwwwwwwwwk.', '..kwwwwwwwwwwwwk', '..kwwwwwwwwwwwk.', '..kwwwwkkkkkkk..', '..kwwwwk........', '...kwwwwkkkk....', '....kkkkwwwwk...', '.......kwwwwwk..', '........kkkkkk..', '................', '................', '................'];

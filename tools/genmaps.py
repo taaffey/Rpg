@@ -16,88 +16,117 @@ def bfs(g, start, passable):
     return seen
 
 # ------------------------------------------------------------------ world
+# 16-bit style overworld: organic coast, regions with ragged borders, coherent woods and ranges, rivers, desert, islands.
+# Legend: ~ ocean  r river  = bridge  . grass  , snow  : swamp  d desert  T tree  t snow tree  M mountain  B gate  H town  D dungeon
+import math
+
+def noise2(seed):
+    r = random.Random(seed); G = [[r.uniform(-1, 1) for _ in range(64)] for _ in range(64)]
+    def n(x, y):
+        xi, yi = math.floor(x), math.floor(y); fx, fy = x - xi, y - yi; u, v = fx*fx*(3-2*fx), fy*fy*(3-2*fy)
+        g = lambda a, b: G[b % 64][a % 64]
+        a, b, c, d = g(xi, yi), g(xi+1, yi), g(xi, yi+1), g(xi+1, yi+1)
+        return a + (b-a)*u + (c-a)*v + (a-b-c+d)*u*v
+    return lambda x, y: 0.6*n(x, y) + 0.3*n(x*2.1+5, y*2.1+3) + 0.1*n(x*4.3+9, y*4.3+1)
+
 def make_world(seed):
-    r = random.Random(seed); W, H = 40, 30
+    W, H = 40, 30
+    nC, nR, nF, nM = noise2(seed), noise2(seed+1), noise2(seed+2), noise2(seed+3)
+    pois = {'haven': (7, 20), 'cavern': (24, 19), 'crypt': (12, 25), 'frost': (27, 8), 'spire': (34, 4), 'mirewood': (19, 25), 'storm': (13, 8)}
+    spawn_adj = {'haven': (7, 21), 'cavern': (24, 20), 'crypt': (12, 26), 'frost': (27, 9), 'spire': (34, 5), 'mirewood': (19, 24), 'storm': (13, 9)}
+    roads = [((7, 21), (7, 22)), ((7, 22), (24, 22)), ((24, 22), (24, 20)), ((12, 22), (12, 26)), ((24, 22), (29, 22)), ((29, 22), (29, 17)),
+             ((29, 13), (29, 9)), ((29, 9), (13, 9)), ((34, 9), (34, 5)), ((29, 9), (34, 9)), ((19, 22), (19, 24)), ((27, 9), (27, 9)), ((7, 21), (12, 21))]
+    road_tiles = set()
+    for (x0, y0), (x1, y1) in roads:
+        for x in range(min(x0, x1), max(x0, x1)+1): road_tiles.add((x, y0))
+        for y in range(min(y0, y1), max(y0, y1)+1): road_tiles.add((x1, y))
+    near = lambda x, y, d: any(abs(x-px) <= d and abs(y-py) <= d for px, py in list(pois.values()) + list(spawn_adj.values()))
+    near_road = lambda x, y, d: any(abs(x-a) + abs(y-b) <= d for a, b in road_tiles)
     g = [['~']*W for _ in range(H)]
-    import math
-    ph = [r.uniform(0, 6.28) for _ in range(3)]
+    # --- land: a wobbly superellipse continent, never touching the map edge
+    for y in range(1, H-1):
+        for x in range(1, W-1):
+            dx, dy = (x-19.6)/18.7, (y-14.6)/13.2
+            v = abs(dx)**3.4 + abs(dy)**3.4 + nC(x/4.5, y/4.5)*0.4
+            if v < 0.86 or near(x, y, 1) or near_road(x, y, 0): g[y][x] = '.'
     for y in range(H):
         for x in range(W):
-            dx, dy = (x-19.5)/18.2, (y-14.5)/13.2
-            ang = math.atan2(dy, dx)  # low-frequency wobble: smooth bays and headlands instead of single-tile noise
-            wob = 0.13*math.sin(3*ang + ph[0]) + 0.08*math.sin(5*ang + ph[1]) + 0.05*math.sin(9*ang + ph[2])
-            if abs(dx)**4 + abs(dy)**4 < 1.0 + wob: g[y][x] = '.'
+            if x in (0, W-1) or y in (0, H-1): g[y][x] = '~'
+    # bays and sounds carved by hand
+    for x, y in [(2, 22), (2, 23), (3, 23), (2, 24), (3, 24), (4, 24), (3, 25), (4, 25), (2, 25), (3, 26), (4, 26), (2, 26), (5, 25),
+                 (16, 2), (17, 2), (18, 2), (19, 2), (18, 3), (17, 3), (37, 11), (36, 11), (37, 12), (36, 12),
+                 (25, 28), (26, 28), (27, 28), (26, 27), (37, 25), (37, 26), (36, 26), (38, 23), (38, 24)]:
+        g[y][x] = '~'
+    for x, y in [(1, 25), (1, 24)]: g[y][x] = '~'
+    # islands
+    for x, y in [(1, 26), (2, 27), (1, 27), (37, 28), (38, 28), (38, 27), (9, 28), (10, 28)]: g[y][x] = '.'
+    # --- regions with ragged borders
     for y in range(H):
         for x in range(W):
-            if g[y][x] == '.':
-                if y <= 13 and x >= 22: g[y][x] = ','
-                elif y >= 24 and x <= 26: g[y][x] = ':'
-    pois = {'haven': (7, 20), 'cavern': (24, 19), 'crypt': (12, 25), 'frost': (27, 8), 'spire': (34, 4)}
-    spawn_adj = {k: (x, y+1) for k, (x, y) in pois.items()}
-    def near_poi(x, y, d=3): return any(abs(x-px) <= d and abs(y-py) <= d for px, py in pois.values())
-    # mountain wall with a gated pass at x=29
+            if g[y][x] != '.': continue
+            if y <= 13 and (x - 22) + (13 - y) * -0.35 + nR(x/3.5, y/3.5)*3.2 > 0: g[y][x] = ','
+            elif y >= 22 and ((x-15)/9.5)**2 + ((y-26)/3.8)**2 + nR(x/3+7, y/3)*0.5 < 1: g[y][x] = ':'
+            elif y >= 21 and ((x-30)/5.6)**2 + ((y-25.3)/3.6)**2 + nR(x/3+3, y/3+9)*0.45 < 1: g[y][x] = 'd'
+    region = lambda x, y: g[y][x] if g[y][x] in '.,:d' else None
+    # --- the mountain wall with the gated pass at x=29 (rows 14-16), with ragged foothills on both sides
     for y in (14, 15, 16):
-        for x in range(1, 39):
+        for x in range(W):
             if g[y][x] != '~': g[y][x] = 'M'
+    for x in range(W):
+        for y, k in ((13, 0.15), (17, 0.1)):
+            if g[y][x] in '.,' and nM(x/2.2, y) > k and abs(x-29) > 1 and not near(x, y, 1) and not near_road(x, y, 0): g[y][x] = 'M'
     for y in (14, 15, 16): g[y][29] = 'B'
-    # more mountain clusters and lakes
-    for _ in range(7):
-        cx, cy, n = r.randint(3, 36), r.randint(3, 26), r.randint(3, 7)
-        for _ in range(n*2):
-            x, y = cx + r.randint(-2, 2), cy + r.randint(-1, 1)
-            if 0 <= x < W and 0 <= y < H and g[y][x] in '.,' and not near_poi(x, y, 4) and y not in (13, 14, 15, 16, 17): g[y][x] = 'M'
-    for _ in range(4):
-        cx, cy = r.randint(4, 35), r.randint(4, 25)
-        for _ in range(14):
-            x, y = cx + r.randint(-3, 3), cy + r.randint(-2, 2)
-            if 0 <= x < W and 0 <= y < H and g[y][x] in '.,:' and not near_poi(x, y, 4) and y not in (13, 14, 15, 16, 17): g[y][x] = '~'
-    # forests: big FF1-style woods grown from seeds, plus a sprinkle of lone trees
-    for _ in range(16):
-        cx, cy = r.randint(2, 37), r.randint(2, 27)
-        rx, ry = r.uniform(1.6, 4.2), r.uniform(1.2, 2.8)
-        for y in range(max(0, int(cy-ry-1)), min(H, int(cy+ry+2))):
-            for x in range(max(0, int(cx-rx-1)), min(W, int(cx+rx+2))):
-                d = ((x-cx)/rx)**2 + ((y-cy)/ry)**2
-                if d < 1.0 + r.uniform(-0.25, 0.25) and not near_poi(x, y, 2) and y not in (13, 14, 15, 16, 17):
-                    if g[y][x] in '.:': g[y][x] = 'T'
-                    elif g[y][x] == ',': g[y][x] = 't'
+    # --- mountain clusters (centre, radii) shaped by noise
+    for cx, cy, rx, ry in [(13, 6.4, 3.6, 2.2), (3.2, 9.5, 1.8, 2.2), (34, 2.8, 2.6, 1.8), (24, 17.6, 3.4, 1.6), (36.5, 19.5, 1.4, 1.8), (28.5, 24.2, 1.2, 0.7), (26.2, 26.3, 0.8, 0.7), (6.5, 4.5, 1.2, 0.9), (17, 18.4, 1.2, 0.8)]:
+        for y in range(H):
+            for x in range(W):
+                d = ((x-cx)/rx)**2 + ((y-cy)/ry)**2 + nM(x/2, y/2)*0.35
+                if d < 1 and g[y][x] in '.,:d' and not near_road(x, y, 0) and (x, y) not in spawn_adj.values(): g[y][x] = 'M'
+    # --- woods: noise blobs (snow woods are pines)
     for y in range(H):
         for x in range(W):
-            if g[y][x] in '.,' and r.random() < 0.025 and not near_poi(x, y, 1): g[y][x] = 'T' if g[y][x] == '.' else 't'
-    base = lambda x, y: ',' if (y <= 13 and x >= 22) else (':' if (y >= 24 and x <= 26) else '.')
-    def carve(a, b):  # L-shaped road clearing trees/water (bridges) but not mountains/barrier
-        (x0, y0), (x1, y1) = a, b
-        pts = [(x, y0) for x in range(min(x0, x1), max(x0, x1)+1)] + [(x1, y) for y in range(min(y0, y1), max(y0, y1)+1)]
-        for x, y in pts:
-            if g[y][x] in 'TMt~.,:' and g[y][x] != 'B':
-                if g[y][x] == 'M': continue
-                g[y][x] = '=' if g[y][x] == '~' else base(x, y)
-    for k, (x, y) in pois.items(): g[y][x] = 'H' if k in ('haven', 'frost') else 'D'
-    for k, (x, y) in spawn_adj.items(): g[y][x] = base(x, y)
-    carve(spawn_adj['haven'], (spawn_adj['haven'][0], 22)); carve((7, 22), (24, 22)); carve((24, 22), spawn_adj['cavern'])
-    carve((12, 22), (12, 24)); carve(spawn_adj['crypt'], (12, 24))
-    carve((24, 22), (29, 22)); carve((29, 22), (29, 17))
-    carve((29, 13), (29, 9)); carve((29, 9), (27, 9)); carve((27, 9), spawn_adj['frost'])
-    carve((29, 9), (34, 9)); carve((34, 9), spawn_adj['spire'])
-    for y in (14, 15, 16): g[y][29] = 'B'
-    for k, (x, y) in pois.items(): g[y][x] = 'H' if k in ('haven', 'frost') else 'D'
-    # content pack 3: extra POIs added after all random draws so the existing world is unchanged
-    extra = {'mirewood': (19, 25), 'storm': (13, 8)}; extra_adj = {'mirewood': (19, 24), 'storm': (13, 9)}
-    for k, (x, y) in extra.items(): g[y][x] = 'H' if k == 'mirewood' else 'D'
-    for k, (x, y) in extra_adj.items(): g[y][x] = base(x, y)
-    carve((19, 22), (19, 24)); carve((29, 9), (13, 9))
-    for k, (x, y) in extra.items(): g[y][x] = 'H' if k == 'mirewood' else 'D'
-    pois.update(extra); spawn_adj.update(extra_adj)
-    # reachability checks
-    walk = lambda c: c in '.,:T=' or c in 'HD'  # T never reached; kept for safety
-    pas = lambda c: c in '.,:=HD'
+            c = g[y][x]
+            if c not in '.,:': continue
+            if near(x, y, 1) or near_road(x, y, 0) or y in (13, 17) and abs(x-29) <= 2: continue
+            f = nF(x/3.4, y/3.4) + (0.12 if c == ',' else 0.06 if c == ':' else 0)
+            if f > 0.13: g[y][x] = 't' if c == ',' else 'T'
+    # --- rivers: meandering from the ranges to the sea (bridged where roads cross)
+    rivers = [
+        [(19, 13), (19, 12), (19, 11), (18, 11), (18, 10), (18, 9), (18, 8), (18, 7), (19, 7), (19, 6), (20, 6), (20, 5), (20, 4), (20, 3), (20, 2)],
+        [(16, 17), (16, 18), (16, 19), (15, 19), (15, 20), (15, 21), (16, 21), (16, 22), (16, 23), (17, 23), (17, 24), (17, 25), (16, 25), (16, 26), (16, 27), (16, 28)],
+        [(34, 17), (34, 18), (33, 18), (33, 19), (33, 20), (34, 20), (34, 21), (34, 22), (34, 23), (35, 23), (35, 24), (35, 25), (35, 26), (35, 27), (35, 28)],
+    ]
+    for path in rivers:
+        for x, y in path:
+            if g[y][x] == '~': break
+            g[y][x] = '=' if (x, y) in road_tiles else 'r'
+    # --- roads stay open (clear woods), POIs placed last
+    for x, y in road_tiles:
+        if g[y][x] in 'Tt': g[y][x] = ',' if g[y][x] == 't' else ('.' if y < 22 else ':' if 8 <= x <= 22 else '.')
+        if g[y][x] == '~': g[y][x] = '='
+    for k, (x, y) in spawn_adj.items():
+        if g[y][x] not in '.,:d': g[y][x] = ',' if y < 14 and x >= 22 else '.'
+    for k, (x, y) in pois.items(): g[y][x] = 'H' if k in ('haven', 'frost', 'mirewood') else 'D'
+    for x in range(H): pass
+    # --- checks
+    walk = lambda c: c in '.,:d=HD'
+    for (x, y) in road_tiles: assert walk(g[y][x]) or g[y][x] == 'B', ('road', x, y, g[y][x])
+    for y in (14, 15, 16):
+        assert g[y][29] == 'B' and all(c in 'MB~' for c in g[y]), y
+    for y in list(range(9, 14)) + list(range(17, 23)): assert walk(g[y][29]), (29, y)
+    for x in range(8, 13): assert walk(g[21][x])
+    pas = lambda c: c in '.,:d=HD'
     start = spawn_adj['haven']
     open_ = bfs(g, start, pas)
     for k in ('haven', 'cavern', 'crypt', 'mirewood'): assert pois[k] in open_, k
     for k in ('frost', 'spire', 'storm'): assert pois[k] not in open_, 'gate leaks ' + k
     opened = bfs(g, start, lambda c: pas(c) or c == 'B')
     for k in pois: assert pois[k] in opened, k
-    return [''.join(row) for row in g], pois, spawn_adj
+    deco = {'ruins': [31, 24], 'ship': [[2.6, 23.4], [4.2, 25.6], [6.0, 27.8], [13.0, 28.5], [22.0, 28.4], [14.0, 28.6], [5.0, 28.2], [2.4, 28.4], [0.5, 26.0], [0.6, 22.0], [1.2, 21.6]]}
+    rx, ry = deco['ruins']
+    for x in (rx, rx+1): g[ry][x] = 'M'
+    for x, y in deco['ship']: assert g[int(y)][int(x)] == '~', ('ship', x, y)
+    return [''.join(row) for row in g], pois, spawn_adj, deco
 
 # --------------------------------------------------------------- dungeons
 def make_dungeon(seed, W=26, H=18, rooms_n=7, chests_n=4):
@@ -147,11 +176,11 @@ def make_dungeon(seed, W=26, H=18, rooms_n=7, chests_n=4):
         return [''.join(row) for row in g], {'spawn': spawn, 'entrance': entrance, 'boss': boss, 'chests': chests}
     raise SystemExit('no dungeon')
 
-world, pois, adj = make_world(11)
+world, pois, adj, deco = make_world(11)
 crypt, cinfo = make_dungeon(100)
 spire, sinfo = make_dungeon(300, 28, 18, 8, 5)
 storm, stinfo = make_dungeon(500, 26, 18, 7, 4)
-out = {'world': world, 'pois': pois, 'adj': adj, 'crypt': crypt, 'cryptInfo': cinfo, 'spire': spire, 'spireInfo': sinfo, 'storm': storm, 'stormInfo': stinfo}
+out = {'world': world, 'pois': pois, 'adj': adj, 'deco': deco, 'crypt': crypt, 'cryptInfo': cinfo, 'spire': spire, 'spireInfo': sinfo, 'storm': storm, 'stormInfo': stinfo}
 js = '// GENERATED by tools/genmaps.py. Do not edit by hand.\nexport const GEN = ' + json.dumps(out, indent=1) + ';\n'
 open('src/mapgen.js', 'w').write(js)
 print('\n'.join(world)); print(); print('\n'.join(crypt)); print(cinfo); print(); print('\n'.join(spire)); print(sinfo); print(pois)

@@ -1,0 +1,19 @@
+<!doctype html><body style="background:#4a6a3a;margin:6px;font:12px sans-serif;color:#fff"><canvas id=c></canvas>
+<script type=module>
+// Field-sprite sheet: every job and npc, 4 directions (rows) x 4 frames (cols). ?z=zoom &only=a,b &cols=n
+import * as W from '../src/walkers.js';
+import * as S from '../src/sprites.js';
+import { JOBS } from '../src/data.js';
+import { NPC_STYLE } from '../src/art2.js';
+const q=new URLSearchParams(location.search), Z=+(q.get('z')||4), only=q.get('only'), COLS=+(q.get('cols')||4);
+let ids=[...Object.keys(JOBS).map(j=>['w',j]),...Object.keys(NPC_STYLE).map(n=>['n',n])];
+if(only) ids=ids.filter(([,i])=>only.split(',').includes(i));
+const dirs=['down','up','right','left'], cw=16*Z+2*Z, rh=28*Z, bw=cw*4+16*Z+20, bh=rh*4+20;
+const c=document.getElementById('c'); c.width=bw*Math.min(COLS,ids.length); c.height=bh*Math.ceil(ids.length/COLS); const x=c.getContext('2d'); x.imageSmoothingEnabled=false;
+ids.forEach(([k,id],n)=>{ const ox=(n%COLS)*bw, oy=Math.floor(n/COLS)*bh; x.fillStyle='rgba(0,0,0,.15)'; x.fillRect(ox+2,oy+2,bw-4,bh-4); x.fillStyle='#fff'; x.fillText(id,ox+6,oy+14);
+  const bs=k==='w'?S.hero(id):S.npc(id); x.drawImage(bs,ox+6,oy+20,16*Z,16*Z);
+  dirs.forEach((d,di)=>[0,1,2,3].forEach(f=>{ const s=k==='w'?W.walker(id,d,f):W.npcWalker(id,d,f); const X=ox+16*Z+14+f*cw, Y=oy+16+di*rh+(rh-s.height*Z);
+    x.fillStyle='rgba(0,0,0,.32)'; x.beginPath(); x.ellipse(X+8*Z,Y+s.height*Z-1.5*Z,5*Z,2*Z,0,0,7); x.fill(); x.drawImage(s,X,Y,16*Z,s.height*Z); }));
+});
+document.title='ready';
+</script>

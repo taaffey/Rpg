@@ -236,7 +236,7 @@ button.round::before,.cross button::before,#hud button::before{display:none}
 .partywin .pm.dead{opacity:.45}
 @media (orientation:landscape){
   .win.battle{max-width:1000px}
-  .battle canvas.stage{width:min(100%,calc((100vh - 150px) * 1.379));height:auto;aspect-ratio:160/116;max-width:100%;max-height:none}
+  .battle canvas.stage{width:min(100%,calc((100vh - 150px) * 1.4545));height:auto;aspect-ratio:256/176;max-width:100%;max-height:none}
   .win.battle{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);gap:8px;align-items:start;padding:6px}
   .battle .br{grid-template-columns:1fr}.battle .partywin{order:-1}
   .battle .log{height:calc(1.7em * 2 + 12px)}

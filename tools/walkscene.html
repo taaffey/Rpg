@@ -1,0 +1,15 @@
+<!doctype html><body style="background:#111;margin:0"><canvas id=c width=520 height=300></canvas>
+<script type=module>
+// Real-size check: every walker at the game's 2x scale on a grass/cobble strip, standing on tile bottoms with the game's shadow.
+import * as W from '../src/walkers.js';
+import { JOBS } from '../src/data.js';
+import { NPC_STYLE } from '../src/art2.js';
+const c=document.getElementById('c'),x=c.getContext('2d'); x.imageSmoothingEnabled=false; const TS=32;
+for(let y=0;y<10;y++)for(let X=0;X<17;X++){x.fillStyle=(y>4)?((X+y)%2?'#9a8a70':'#8e7e66'):((X*7+y*3)%5?'#4f9a3f':'#468a38');x.fillRect(X*TS,y*TS,TS,TS);}
+const stand=(img,X,Y)=>{const h=img.height*(TS/16);x.fillStyle='rgba(0,0,0,.32)';x.beginPath();x.ellipse(X+TS/2,Y+TS-3,10,4,0,0,7);x.fill();x.drawImage(img,X,Y+TS-h,TS,h);};
+const f=+(new URLSearchParams(location.search).get('f')||0);
+Object.keys(JOBS).forEach((j,i)=>stand(W.walker(j,['down','right','up','left'][Math.floor(i/12*4)%4]==='x'?'down':'down',f),8+i*40,40));
+Object.keys(JOBS).forEach((j,i)=>stand(W.walker(j,i%2?'right':'left',(i+f)%4),8+i*40,100));
+Object.keys(NPC_STYLE).forEach((n,i)=>stand(W.npcWalker(n,'down',0),8+i*48,200));
+document.title='ready';
+</script>
