@@ -37,9 +37,13 @@ keyboard alone, or with the mouse. Options (volumes, battle speed, shake, minima
 
 ## Final Fantasy 1 look & feel
 
-Blue gradient windows with white borders, the Press Start 2P pixel font, a pointing-hand cursor, FF1 battle layout (enemies left, party right on their own feet, command window + party HP window below or beside), typewriter dialogue, and a command-list main menu. Towns show colour-coded buildings with I/S/F/G/H plaques (Inn, Shop, Forge, Guild, House) and a fountain.
+Blue gradient windows with white borders, the Press Start 2P pixel font and a pointing-hand cursor. Battles use the FF1 GBA layout: the scene on top with a message box over it, an enemy-name window bottom-left (the command menu replaces it on your turn) and the party HP window bottom-right. Shops show the keeper, Buy/Sell and a gold window; dialogue types out line by line.
 
 **Gentle start:** safe zones around every town, an encounter ramp that unlocks tougher monsters the farther you walk from Haven, and a warning toast when you enter swamp or snow below the recommended level.
+
+**Towns** are laid out like Corneria: multi-tile buildings with slate roofs, a sign over the door (INN plaque, potion, sword, guild crest), white walls with windows and arched doors, solid drop shadows, cobbled streets with rounded corners, round trees, canals with bridges, a fountain plaza, graves and a low stone wall. Frostholm has snowy roofs and pines; Mirewood is thatch and boardwalks over the bog.
+
+**Overworld** (`src/terrain.js`): FF1-style autotiling. Each tile is composed from a ground texture plus region layers (swamp, snow, sand, forest, water). Region edges are found by sampling a disc around every pixel across the 3x3 neighbourhood, so coastlines, woods and paths come out rounded the way the NES map looks: patterned blue ocean with a pale shore band, flat bright grass, dense merged forests, walled-town and dungeon icons.
 
 ## The world
 - **Overworld** (40x30) with four regions: Greenmarch, Mire Marsh (swamp), Northern Plains and the Frostfields. Fog of war,
@@ -59,6 +63,7 @@ Blue gradient windows with white borders, the Press Start 2P pixel font, a point
 - `src/stage.js`: animated battle stage: painted backdrops per region, per-enemy attack animations (squash, swoop, pounce,
   float, stomp), hit flashes, spell projectiles and per-element particles, floating damage numbers, an arena slide-in, boss title cards,
   camera zoom on big hits and a victory pose.
+- `src/terrain.js`: autotiled outdoor/town terrain and whole-building images (see above).
 - Map: smooth walking, party trail with walk cycle, torch lighting, weather per region, battle wipe, animated title screen.
 - `src/audio.js`: Web Audio chiptune: 11 looping tracks (town, Frostholm, overworld, snow, cavern, crypt, spire, battle, boss)
   plus jingles and ~20 effects. Notation is a tiny string format (`"E5:2 G5 -:2"` = note:length-in-steps, `-` = rest).

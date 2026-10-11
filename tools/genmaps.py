@@ -19,10 +19,14 @@ def bfs(g, start, passable):
 def make_world(seed):
     r = random.Random(seed); W, H = 40, 30
     g = [['~']*W for _ in range(H)]
+    import math
+    ph = [r.uniform(0, 6.28) for _ in range(3)]
     for y in range(H):
         for x in range(W):
             dx, dy = (x-19.5)/18.2, (y-14.5)/13.2
-            if abs(dx)**4 + abs(dy)**4 < 1.0 + r.uniform(-0.08, 0.08): g[y][x] = '.'
+            ang = math.atan2(dy, dx)  # low-frequency wobble: smooth bays and headlands instead of single-tile noise
+            wob = 0.13*math.sin(3*ang + ph[0]) + 0.08*math.sin(5*ang + ph[1]) + 0.05*math.sin(9*ang + ph[2])
+            if abs(dx)**4 + abs(dy)**4 < 1.0 + wob: g[y][x] = '.'
     for y in range(H):
         for x in range(W):
             if g[y][x] == '.':
@@ -47,11 +51,19 @@ def make_world(seed):
         for _ in range(14):
             x, y = cx + r.randint(-3, 3), cy + r.randint(-2, 2)
             if 0 <= x < W and 0 <= y < H and g[y][x] in '.,:' and not near_poi(x, y, 4) and y not in (13, 14, 15, 16, 17): g[y][x] = '~'
+    # forests: big FF1-style woods grown from seeds, plus a sprinkle of lone trees
+    for _ in range(16):
+        cx, cy = r.randint(2, 37), r.randint(2, 27)
+        rx, ry = r.uniform(1.6, 4.2), r.uniform(1.2, 2.8)
+        for y in range(max(0, int(cy-ry-1)), min(H, int(cy+ry+2))):
+            for x in range(max(0, int(cx-rx-1)), min(W, int(cx+rx+2))):
+                d = ((x-cx)/rx)**2 + ((y-cy)/ry)**2
+                if d < 1.0 + r.uniform(-0.25, 0.25) and not near_poi(x, y, 2) and y not in (13, 14, 15, 16, 17):
+                    if g[y][x] in '.:': g[y][x] = 'T'
+                    elif g[y][x] == ',': g[y][x] = 't'
     for y in range(H):
         for x in range(W):
-            if g[y][x] == '.' and r.random() < 0.11: g[y][x] = 'T'
-            elif g[y][x] == ',' and r.random() < 0.11: g[y][x] = 't'
-            elif g[y][x] == ':' and r.random() < 0.05: g[y][x] = 'T'
+            if g[y][x] in '.,' and r.random() < 0.025 and not near_poi(x, y, 1): g[y][x] = 'T' if g[y][x] == '.' else 't'
     base = lambda x, y: ',' if (y <= 13 and x >= 22) else (':' if (y >= 24 and x <= 26) else '.')
     def carve(a, b):  # L-shaped road clearing trees/water (bridges) but not mountains/barrier
         (x0, y0), (x1, y1) = a, b

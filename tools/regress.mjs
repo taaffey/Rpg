@@ -22,12 +22,14 @@ ok('game started in Haven', (await ev(() => window.__game.G.map)) === 'haven');
 await pg.waitForTimeout(800); ok('music engine scheduled notes', (await ev(() => window.__osc)) >= 4);
 
 // --- walk into a building through its door, talk to the NPC to open the shop
-await ev(() => window.__game.goto('haven', 7, 3)); await key('ArrowUp', 1, 450);
+await ev(() => window.__game.goto('haven', 8, 4)); await key('ArrowUp', 1, 450);
 ok('entered the shop interior', (await ev(() => window.__game.G.map)) === 'haven_shop');
 await key('ArrowUp', 3, 160);
 ok('shop UI opened by bumping the merchant', /General Store/.test(await overlayTitle()));
+ok('new game: unarmed party, 400 G', (await ev(() => window.__game.G.party.every((c) => c.weapon === null && c.level === 1))) && (await ev(() => window.__game.G.gold)) === 400);
+const potBefore = await ev(() => window.__game.G.inv.items.potion || 0), goldBefore0 = await ev(() => window.__game.G.gold);
 await ev(() => document.querySelector('[data-act=buy][data-b=potion]').click()); await pg.waitForTimeout(100);
-ok('bought a potion', (await ev(() => window.__game.G.inv.items.potion)) === 5 && (await ev(() => window.__game.G.gold)) === 220);
+ok('bought a potion', (await ev(() => window.__game.G.inv.items.potion)) === potBefore + 1 && (await ev(() => window.__game.G.gold)) === goldBefore0 - 30);
 await closeAll();
 
 // --- build screen: socket gems, change job in a town
@@ -83,7 +85,7 @@ const finishBattle = async () => { // click-driven: Attack the first foe until t
   await pg.waitForTimeout(250);
 };
 const quickFight = async (grp, boss) => { await ev(([g, b2]) => { window.__game.battle(g, b2); }, [grp, boss]); await pg.waitForSelector('[data-act=c]', { timeout: 8000 }); await ev(() => window.__game.BT.b.e.forEach((e) => { e.hp = 1; })); await finishBattle(); };
-await ev(() => window.__game.goto('haven', 5, 7)); await key('ArrowLeft', 1, 200);
+await ev(() => window.__game.goto('haven', 7, 6)); await key('ArrowLeft', 1, 200);
 ok('quest giver offers a quest', /Villager/.test(await overlayTitle()));
 for (let i = 0; i < 12 && !(await pg.$('[data-act=qaccept]')); i++) await key('Enter', 1, 120);
 await pg.click('[data-act=qaccept]'); await pg.waitForTimeout(150);
@@ -91,7 +93,7 @@ ok('quest accepted', (await ev(() => window.__game.G.flags.quests.slimes)) === '
 await ev(() => { window.__game.OPT.speed = 'instant'; });
 await quickFight(['slime', 'slime', 'slime']); await quickFight(['slime', 'slime', 'slime']);
 ok('kills counted toward the quest', (await ev(() => window.__game.G.flags.qprog.slimes)) === 6);
-await ev(() => window.__game.goto('haven', 5, 7)); await key('ArrowLeft', 1, 200);
+await ev(() => window.__game.goto('haven', 7, 6)); await key('ArrowLeft', 1, 200);
 for (let i = 0; i < 4 && !(await pg.$('[data-act=qclaim]')); i++) await key('Enter', 1, 120);
 const goldBefore = await ev(() => window.__game.G.gold); await pg.click('[data-act=qclaim]'); await pg.waitForTimeout(150);
 ok('quest reward granted', (await ev(() => window.__game.G.gold)) === goldBefore + 150 && (await ev(() => window.__game.G.flags.quests.slimes)) === 'done');
@@ -100,7 +102,7 @@ await ev(() => window.__game.goto('cavern', 18, 11)); await key('ArrowDown', 1, 
 ok('hidden quest chest gives the heirloom', (await ev(() => window.__game.G.flags.qitems.heirloom)) === true);
 await closeAll();
 // --- new regions: Mirewood interior NPCs, Storm Cavern boss, ending cinematic
-await ev(() => { window.__game.G.flags.bosses.wyrm = true; window.__game.goto('mirewood', 8, 9); }); await pg.waitForTimeout(300);
+await ev(() => { window.__game.G.flags.bosses.wyrm = true; window.__game.goto('mirewood', 10, 12); }); await pg.waitForTimeout(300);
 ok('Mirewood loads', (await ev(() => window.__game.G.map)) === 'mirewood');
 await quickFight(['storm_drake'], 'storm_drake');
 ok('Storm Drake slain, loot and flag set', (await ev(() => window.__game.G.flags.bosses.storm_drake)) === true && (await ev(() => window.__game.G.inv.weapons.includes('storm_katana'))));
@@ -123,7 +125,7 @@ await closeAll();
 
 // --- saves: slots, confirmations, legacy import, autosave, difficulty
 await ev(() => { window.__game.G.gold = 777; });
-await ev(() => window.__game.goto('haven', 9, 11)); await pg.waitForTimeout(150); // entering a town autosaves
+await ev(() => window.__game.goto('haven', 12, 20)); await pg.waitForTimeout(150); // entering a town autosaves
 const slot1 = await ev(() => JSON.parse(localStorage.getItem('gemforge-save-v3-1')).G.gold);
 ok('entering a town autosaves into the active slot', slot1 === 777, String(slot1));
 await ev(() => { localStorage.setItem('gemforge-save-v2', JSON.stringify({ ...JSON.parse(localStorage.getItem('gemforge-save-v3-1')).G, gold: 4242, flags: { chests: {}, bosses: {}, seen: {}, talked: {} } })); localStorage.removeItem('gemforge-save-v3-1'); window.__game.G.slot = null; /* stop the pagehide autosave from re-creating slot 1 */ });

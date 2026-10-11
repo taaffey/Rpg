@@ -269,3 +269,23 @@ button.round::before,.cross button::before,#hud button::before{display:none}
 .jobrow{display:flex;justify-content:space-between;align-items:center;gap:8px;margin:2px 0}
 body:has(#overlay.on) #toast{top:auto;bottom:calc(env(safe-area-inset-bottom,0px) + 10px);z-index:9;position:fixed}
 button.sel:not(:focus):not(:hover)::before{visibility:hidden}
+/* FF1 GBA battle: message box over the scene, enemy-name window that the command menu replaces on your turn */
+.battle .stagewrap{position:relative}
+.battle .bmsg{position:absolute;left:8px;right:8px;top:8px;padding:6px 10px;font-size:9px;line-height:1.7;background:linear-gradient(180deg,var(--ff-blue-top),var(--ff-blue-bot));border:2px solid var(--ff-white);border-radius:6px;box-shadow:0 0 0 2px #000;pointer-events:none;max-height:calc(1.7em * 2 + 16px);overflow:hidden}
+.battle .bmsg div{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.battle .bmsg div:only-child,.battle .bmsg div:last-child{white-space:normal}
+.battle .stagewrap .logtoggle{position:absolute;right:8px;bottom:8px;top:auto;font-size:8px;min-height:24px;padding:2px 6px}
+.battle .logwrap{margin:6px 0}
+.battle .elist{display:flex;flex-direction:column;gap:6px;font-size:10px;padding:2px 2px}
+.battle .er{display:grid;grid-template-columns:1fr auto;align-items:baseline;gap:2px 8px}
+.battle .er .en{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.battle .er .ec{color:var(--ff-white);text-align:right}
+.battle .er .ew{grid-column:1 / -1;font-size:8px;color:var(--ff-gold)}
+.battle .er.flash{animation:hit .35s}
+.cmdlist .tw{font-size:9px}
+.battle .cmdwin{min-height:120px}
+/* shops: keeper portrait, buy/sell tabs and a gold window, FF1 style */
+.shophead{display:flex;align-items:center;gap:10px;margin:0 0 8px}
+.shophead .shoptabs{display:flex;gap:2px;flex:1}
+.shophead .gilbox{margin:0;border:2px solid var(--ff-white);border-radius:6px;padding:6px 10px;gap:12px;min-width:96px;box-shadow:0 0 0 2px #000}
+.slot .t b{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block}
+.slot .t{min-width:0}

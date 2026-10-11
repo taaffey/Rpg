@@ -22,7 +22,7 @@ for (const [name, w, h, touch, dpr] of DEVICES) {
     const cv = document.getElementById('map');
     return { tiles: `${cv.width / 32}x${cv.height / 32}`, view: r('#view'), padL: r('#padL'), padR: r('#padR'), hud: r('#hud'), scrollW: document.documentElement.scrollWidth, scrollH: document.documentElement.scrollHeight, bodyScroll: document.body.scrollHeight };
   });
-  await pg.evaluate(() => window.__game.goto('haven', 9, 11)); await pg.waitForTimeout(600); await snap('3-town');
+  await pg.evaluate(() => window.__game.goto('haven', 12, 20)); await pg.waitForTimeout(600); await snap('3-town');
   pg.evaluate(() => { window.__game.battle(['goblin', 'wolf', 'slime']); }); await pg.waitForSelector('[data-act=c]', { timeout: 8000 }); await pg.waitForTimeout(900); await snap('4-battle');
   const bm = await pg.evaluate(() => { const o = document.getElementById('overlay'); return { overlayScrollable: o.scrollHeight > o.clientHeight, scrollW: o.scrollWidth, clientW: o.clientWidth }; });
   const touchOk = !touch || (m.padL && m.padL[2] > 0);

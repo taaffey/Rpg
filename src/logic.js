@@ -5,7 +5,10 @@ export const STAT_KEYS = ['hp', 'mp', 'atk', 'def', 'mag', 'spd'];
 export const MAX_LEVEL = 20;
 const BASE = { hp: 40, mp: 12, atk: 6, def: 4, mag: 6, spd: 6 };
 const GROW = { hp: 9, mp: 3, atk: 1.6, def: 1.2, mag: 1.6, spd: 0.7 };
-export const expNeeded = (lv) => Math.round(25 * Math.pow(lv, 1.5));
+// EXP to go from level lv to lv+1. Early levels come every 1-4 fights near Haven; each later level needs roughly
+// 6-10 fights of the region you are meant to be in (see tools/progress.mjs). Total to the cap: ~26,700.
+export const EXP_TABLE = [20, 40, 70, 110, 170, 280, 440, 630, 840, 1050, 1300, 1600, 1900, 2200, 2500, 2850, 3200, 3600, 4000];
+export const expNeeded = (lv) => EXP_TABLE[Math.max(1, Math.min(lv, EXP_TABLE.length)) - 1];
 
 // ---------- Character build ----------
 export function stats(c) {
@@ -15,15 +18,21 @@ export function stats(c) {
     s[k] = Math.round((BASE[k] + GROW[k] * (c.level - 1)) * m);
   }
   for (const g of gear(c)) for (const k of STAT_KEYS) s[k] += g[k] || 0;
+  if (!c.weapon && fistJob(c)) s.atk += unarmedBonus(c.level); // martial artists fight well bare-handed
+  s.hp = Math.max(1, s.hp);
   return s;
 }
+// Monks (and any main job that can wield fists) hit hard bare-handed; the bonus grows with level, but real fist weapons stay better.
+const fistJob = (c) => JOBS[c.main].weapons.includes('fists'); // main job only
+export const unarmedBonus = (level) => 2 + Math.floor(level * 0.6);
 export const gear = (c) => [WEAPONS[c.weapon], ARMORS[c.armor], ACCS[c.acc]].filter(Boolean);
 export const resists = (c) => gear(c).flatMap((g) => g.res || []);
 export function weaponOk(c, wid) {
+  if (!WEAPONS[wid]) return false;
   const t = WEAPONS[wid].type;
   return JOBS[c.main].weapons.includes(t) || (!!c.sub && JOBS[c.sub].weapons.includes(t));
 }
-export const sigSkill = (c) => (c.weapon ? WEAPON_TYPES[WEAPONS[c.weapon].type].sig : 'punch');
+export const sigSkill = (c) => { const w = c.weapon && WEAPONS[c.weapon]; return w ? w.sig || WEAPON_TYPES[w.type].sig : 'punch'; };
 // skills a character may slot: whole main-job list by level; sub-job skills lag 2 levels behind
 export function learnable(c) {
   const out = [];
@@ -37,7 +46,7 @@ export const SLOT_COUNT = 4, SIG = 4, GEMS_PER_SLOT = 3;
 export const slotSkill = (c, i) => (i === SIG ? sigSkill(c) : c.slots[i]);
 export function slotGems(c, i) {
   const g = [...c.gems[i]];
-  if (i === SIG && c.weapon && WEAPONS[c.weapon].innate) g.unshift(WEAPONS[c.weapon].innate);
+  if (i === SIG && c.weapon && WEAPONS[c.weapon]?.innate) g.unshift(WEAPONS[c.weapon].innate);
   return g;
 }
 // After any job/gear change, return anything that no longer fits to the inventory.
@@ -87,6 +96,20 @@ export function skillWithGems(id, gems = []) {
   m.mp = Math.round(m.mp * mpMul);
   return m;
 }
+// Weapon traits layered onto a hero's skill: crit on all physical skills, healing bonus on heals,
+// element / extra hits / pierce on the plain Attack, on-hit status on Attack and the signature skill.
+export function withWeapon(m, w, isAttack, isSig) {
+  if (!w) return m;
+  if (m.kind === 'phys' && w.crit) m.crit = Math.min(0.9, (m.crit || 0) + w.crit);
+  if (m.kind === 'heal' && w.heal) m.healMul = 1 + w.heal;
+  if (isAttack) {
+    if (w.hits > 1) { m.hits = w.hits; m.pow *= 0.6; }
+    if (w.elem && !m.elem) m.elem = w.elem;
+    if (w.pierce) m.pierce = Math.min(1, m.pierce + w.pierce);
+  }
+  if ((isAttack || isSig) && w.proc && (m.kind === 'phys' || m.kind === 'mag')) m.proc = w.proc;
+  return m;
+}
 export function describeSkill(m) {
   const t = { one: 'one foe', all: 'all foes', ally: 'one ally', allies: 'all allies', self: 'self' }[m.tgt];
   const bits = [`${m.mp} MP`, t];
@@ -95,13 +118,15 @@ export function describeSkill(m) {
   if (m.fx.length) bits.push(m.fx.join('/'));
   for (const f of ['chain', 'echo', 'swift']) if (m[f]) bits.push(f);
   if (m.vamp) bits.push('lifesteal');
-  if (m.stun) bits.push('stun 35%'); if (m.crit) bits.push('crit 25%'); if (m.execute) bits.push('execute'); if (m.siphon) bits.push('MP siphon'); if (m.guard) bits.push('self-guard'); if (m.recoil) bits.push('recoil');
+  if (m.stun) bits.push('stun 35%'); if (m.crit) bits.push(`crit ${Math.round(m.crit * 100)}%`); if (m.execute) bits.push('execute'); if (m.siphon) bits.push('MP siphon'); if (m.guard) bits.push('self-guard'); if (m.recoil) bits.push('recoil');
+  if (m.proc) bits.push(`${Math.round(m.proc[1] * 100)}% ${m.proc[0]} on hit`);
+  if (m.healMul > 1) bits.push(`heal +${Math.round((m.healMul - 1) * 100)}%`);
   if (m.pierce) bits.push(`pierce ${Math.round(m.pierce * 100)}%`);
   return bits.join(' · ');
 }
 
 // ---------- Characters ----------
-export function newChar(name, main, sub, weapon, armor, level = 3) {
+export function newChar(name, main, sub, weapon = null, armor = null, level = 1) {
   const c = { name, level, exp: 0, main, sub, weapon, armor, acc: null, hp: 1, mp: 1, slots: [null, null, null, null], gems: [[], [], [], [], []] };
   const ok = learnable(c);
   const fill = [...JOBS[main].skills.map((s) => s[0]), ...(sub ? JOBS[sub].skills.map((s) => s[0]) : [])].filter((s) => ok.includes(s));
@@ -109,18 +134,32 @@ export function newChar(name, main, sub, weapon, armor, level = 3) {
   const st = stats(c); c.hp = st.hp; c.mp = st.mp;
   return c;
 }
+// EXP: c.exp is progress inside the current level; expNeeded(lv) is the cost of lv -> lv+1.
+// Multi-level-ups are handled in one call; the cap clears leftover EXP. A KO'd hero stays KO'd (no free revive on level-up).
 export function gainExp(c, amount) {
   const ups = [];
-  c.exp += amount;
+  if (c.level >= MAX_LEVEL) { c.exp = 0; return ups; }
+  c.exp += Math.max(0, Math.round(amount));
   while (c.level < MAX_LEVEL && c.exp >= expNeeded(c.level)) {
     c.exp -= expNeeded(c.level);
     const before = stats(c); c.level++;
     const after = stats(c);
-    c.hp += after.hp - before.hp; c.mp += after.mp - before.mp;
+    if (c.hp > 0) c.hp = Math.min(after.hp, c.hp + after.hp - before.hp);
+    c.mp = Math.min(after.mp, c.mp + after.mp - before.mp);
     ups.push(c.level);
   }
   if (c.level >= MAX_LEVEL) c.exp = 0;
   return ups;
+}
+// KO'd heroes earn half EXP: a penalty, but nobody falls hopelessly behind after one bad fight.
+export const KO_EXP_SHARE = 0.5;
+// Award a battle's EXP to the whole party. Returns one entry per hero: { c, exp, ups, learned }.
+export function awardExp(party, exp) {
+  return party.map((c) => {
+    const share = Math.round(exp * (c.hp > 0 ? 1 : KO_EXP_SHARE)), before = learnable(c);
+    const ups = gainExp(c, share);
+    return { c, exp: share, ups, learned: learnable(c).filter((id) => !before.includes(id)) };
+  });
 }
 
 // ---------- Battle ----------
@@ -134,7 +173,7 @@ export class Battle {
     this.rng = rng; this.boss = boss; this.over = null; this.turn = 0; this.fx = [];
     this.p = party.map((c) => {
       const s = stats(c);
-      return { side: 'p', ch: c, name: c.name, hp: c.hp, mp: c.mp, maxhp: s.hp, maxmp: s.mp, atk: s.atk, def: s.def, mag: s.mag, spd: s.spd, weak: [], res: resists(c), st: {}, defending: false };
+      return { side: 'p', ch: c, wpn: WEAPONS[c.weapon] || null, sig: sigSkill(c), name: c.name, hp: c.hp, mp: c.mp, maxhp: s.hp, maxmp: s.mp, atk: s.atk, def: s.def, mag: s.mag, spd: s.spd, weak: [], res: resists(c), st: {}, defending: false };
     });
     const counts = {}; enemyIds.forEach((id) => (counts[id] = (counts[id] || 0) + 1));
     const seen = {};
@@ -240,6 +279,14 @@ export class Battle {
       if (f === 'revive' && !alive(t)) { t.hp = Math.round(t.maxhp * 0.4); this.fx.push({ t: 'heal', name: t.name, amount: t.hp, revived: true }); L.push(`  ${t.name} is revived!`); }
     }
   }
+  proc(a, t, [f, chance], dealt, L) { // weapon on-hit effect
+    if (this.rng() >= chance) return;
+    if (f === 'drain') { if (!alive(a)) return; const h = Math.min(Math.round(dealt * 0.5), a.maxhp - a.hp); if (h > 0) { a.hp += h; this.fx.push({ t: 'heal', name: a.name, amount: h }); L.push(`  ${a.name}'s weapon drains ${h} HP.`); } return; }
+    if (!alive(t)) return;
+    if (f === 'poison' && !(t.st.poison > 0)) { t.st.poison = 4; L.push(`  ${t.name} is poisoned.`); }
+    else if (f === 'slow' && !(t.st.slow > 0)) { t.st.slow = 3; L.push(`  ${t.name} is slowed.`); }
+    else if (f === 'stun' && !t.def_?.boss) { t.st.stun = 1; L.push(`  ${t.name} is stunned!`); }
+  }
   damage(a, t, s, mult = 1, elem = s.elem) {
     const up = a.st.atkup > 0 ? 1.4 : 1, dup = t.st.defup > 0 ? 1.5 : 1;
     let raw = s.kind === 'phys' ? a.atk * up * s.pow - t.def * dup * 0.6 * (1 - s.pierce) : a.mag * up * s.pow - t.def * dup * 0.3 * (1 - s.pierce);
@@ -249,7 +296,7 @@ export class Battle {
     return Math.max(1, Math.round(raw));
   }
   cast(a, id, gems, target, L, free, noEcho) {
-    const s = skillWithGems(id, gems);
+    const s = a.side === 'p' ? withWeapon(skillWithGems(id, gems), a.wpn, id === 'attack', id === a.sig) : skillWithGems(id, gems);
     if (!free && a.side === 'p') {
       if (a.mp < s.mp) { L.push(`${a.name} lacks the MP!`); return; }
       a.mp -= s.mp;
@@ -267,6 +314,7 @@ export class Battle {
           const em = elemMult(t, elem);
           this.hurt(t, d, L, `  ${t.name} takes ${d} damage${crit ? ' CRITICAL!' : em > 1 ? ' WEAK!' : em < 1 ? ' resisted' : ''}`, em > 1 || crit);
         }
+        if (s.proc && total) this.proc(a, t, s.proc, total, L);
         if (s.vamp && total && alive(a)) { const h = Math.min(Math.round(total * s.vamp), a.maxhp - a.hp); if (h > 0) { a.hp += h; this.fx.push({ t: 'heal', name: a.name, amount: h }); L.push(`  ${a.name} siphons ${h} HP.`); } }
         this.applyFx(a, t, s, L, total);
         if (s.stun && alive(t) && !t.def_?.boss && this.rng() < s.stun) { t.st.stun = 1; L.push(`  ${t.name} is stunned!`); }
@@ -277,7 +325,7 @@ export class Battle {
       } else if (s.kind === 'heal') {
         if (s.pow) {
           if (!alive(t)) continue;
-          const h = Math.min(Math.round((a.mag * s.pow + 8) * (0.9 + this.rng() * 0.2)), t.maxhp - t.hp);
+          const h = Math.min(Math.round((a.mag * s.pow + 8) * (s.healMul || 1) * (0.9 + this.rng() * 0.2)), t.maxhp - t.hp);
           t.hp += h; this.fx.push({ t: 'heal', name: t.name, amount: h }); L.push(`  ${t.name} recovers ${h} HP.`);
         }
         this.applyFx(a, t, s, L, 0);
@@ -299,7 +347,13 @@ export function rewards(battle) {
   for (const e of battle.e) {
     r.exp += Math.round(e.def_.exp * battle.mod.reward); r.gold += Math.round(e.def_.gold * battle.mod.reward);
     const d = DROPS[e.id];
-    if (d && battle.rng() < d[0]) r.drops.push({ kind: d[1], id: d[2] });
+    if (!d) continue;
+    if (Array.isArray(d)) { if (battle.rng() < d[0]) r.drops.push({ kind: d[1], id: d[2], rare: false, from: e.id }); continue; } // legacy [chance, kind, id]
+    // one roll per enemy: the rare drop is checked first, otherwise the common one
+    // (a guaranteed common drop, chance 1, e.g. a boss's, is given on top)
+    const rare = !!d.rare && battle.rng() < d.rare[2];
+    if (rare) r.drops.push({ kind: d.rare[0], id: d.rare[1], rare: true, from: e.id });
+    if (d.common && (d.common[2] >= 1 || (!rare && battle.rng() < d.common[2]))) r.drops.push({ kind: d.common[0], id: d.common[1], rare: false, from: e.id });
   }
   return r;
 }

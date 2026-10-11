@@ -16,6 +16,13 @@ export const SKILLS = {
   reap: S('Reap', 3, 'one', 'phys', 1.2, { fx: ['drain'] }),
   grimoire: S('Grimoire', 3, 'one', 'mag', 1.3, { elem: 'random' }),
   punch: S('Punch', 0, 'one', 'phys', 1.0),
+  // weapon-specific signature skills (WEAPONS[id].sig overrides the type's)
+  mend: S('Mend', 3, 'ally', 'heal', 1.6),
+  sunstrike: S('Sunstrike', 6, 'all', 'phys', 0.85, { elem: 'holy' }),
+  dragonrush: S('Dragon Rush', 6, 'one', 'phys', 0.55, { hits: 4, elem: 'fire' }),
+  harvest: S('Harvest', 8, 'all', 'phys', 0.8, { elem: 'dark', fx: ['drain'] }),
+  raijin: S('Raijin', 8, 'all', 'phys', 1.0, { elem: 'bolt' }),
+  demoncut: S('Demon Cut', 6, 'one', 'phys', 2.1, { fx: ['drain'], crit: 0.2 }),
   // knight
   bulwark: S('Bulwark', 3, 'ally', 'buff', 0, { fx: ['defup'] }),
   shieldbash: S('Shield Bash', 4, 'one', 'phys', 1.2, { fx: ['slow'] }),
@@ -114,17 +121,71 @@ export const GEMS = {
   focusg: { name: 'Focus Gem', desc: '+25% power', price: 250 },
 };
 
-// ---- Gear. Stat keys (hp mp atk def mag spd) add directly. innate = free gem on signature skill.
-const W = (name, type, atk, mag, sockets, price, innate) => ({ name, type, atk, mag, sockets, price, innate });
+// ---- Gear. Stat keys (hp mp atk def mag spd) add directly. innate = free gem on the signature skill.
+// Weapon traits (applied in battle by logic.js):
+//   crit: extra crit chance on every physical hit   elem: element of the plain Attack   hits: Attack strikes N times (each at 60%)
+//   pierce: Attack ignores this share of defense    proc: [status, chance] on Attack + signature hits (poison|slow|stun|drain)
+//   heal: +x healing power on every heal             sig: replaces the weapon type's signature skill
+// tier: 1 Haven smithy · 2 Haven/Mirewood · 3 Frostholm forge & deep chests · 4 boss loot and rare drops
+const W = (name, type, atk, mag, sockets, price, innate, tier, desc, x = {}) => ({ name, type, atk, mag, sockets, price, innate, tier, desc, ...x });
 export const WEAPONS = {
-  iron_sword: W('Iron Sword', 'sword', 8, 0, 1, 80), flame_brand: W('Flame Brand', 'sword', 14, 0, 2, 320, 'fire'), dragonbane: W('Dragonbane', 'sword', 26, 0, 3, 0, 'pierce'),
-  bronze_dirk: W('Bronze Dirk', 'dagger', 5, 0, 1, 60), viper_fang: W('Viper Fang', 'dagger', 9, 0, 2, 260, 'venom'), shadow_edge: W('Shadow Edge', 'dagger', 17, 0, 3, 0, 'swift'),
-  oak_staff: W('Oak Staff', 'staff', 2, 6, 1, 70), storm_rod: W('Storm Rod', 'staff', 3, 12, 2, 300, 'bolt'), archmage_staff: W('Archmage Staff', 'staff', 4, 21, 3, 0, 'echo'),
-  short_bow: W('Short Bow', 'bow', 7, 0, 1, 80), hunter_bow: W('Hunter Bow', 'bow', 12, 0, 2, 300, 'chain'),
-  iron_knuckle: W('Iron Knuckle', 'fists', 7, 0, 1, 70), thunder_claw: W('Thunder Claw', 'fists', 13, 0, 2, 300, 'bolt'),
-  leather_whip: W('Leather Whip', 'whip', 6, 2, 1, 70), serpent_lash: W('Serpent Lash', 'whip', 11, 4, 2, 280, 'venom'),
-  rusty_scythe: W('Rusty Scythe', 'scythe', 8, 3, 1, 90), soul_reaper: W('Soul Reaper', 'scythe', 15, 8, 2, 0, 'vamp'),
-  dusty_tome: W('Dusty Tome', 'tome', 1, 7, 1, 80), frost_codex: W('Frost Codex', 'tome', 2, 13, 2, 300, 'frost'), void_grimoire: W('Void Grimoire', 'tome', 3, 21, 3, 0, 'shadow'),
+  // ---- swords: steady damage, the widest choice of elements
+  iron_sword: W('Iron Sword', 'sword', 8, 0, 1, 80, undefined, 1, 'Plain, honest steel. Every knight starts somewhere.'),
+  flame_brand: W('Flame Brand', 'sword', 13, 0, 2, 320, 'fire', 2, 'The blade never cools. Attacks deal fire damage.', { elem: 'fire' }),
+  mythril_sword: W('Mythril Sword', 'sword', 19, 0, 2, 760, undefined, 3, 'Feather-light and razor keen: +10% crits.', { crit: 0.1 }),
+  frostbrand: W('Frostbrand', 'sword', 23, 0, 2, 1150, 'frost', 3, 'Rimed steel. Attacks deal ice damage and may Slow.', { elem: 'ice', proc: ['slow', 0.2] }),
+  dragonbane: W('Dragonbane', 'sword', 25, 0, 3, 0, 'pierce', 4, 'Forged from the Wyrm\'s own fang. Attacks ignore 30% of armor.', { pierce: 0.3, hp: 20 }),
+  sun_blade: W('Sun Blade', 'sword', 27, 4, 2, 0, undefined, 4, 'A paladin\'s relic. Holy Attacks; signature becomes Sunstrike (all foes).', { elem: 'holy', hp: 15, sig: 'sunstrike' }),
+  // ---- daggers: fast, critical, poisonous
+  bronze_dirk: W('Bronze Dirk', 'dagger', 5, 0, 1, 45, undefined, 1, 'Quick to draw: +2 SPD and 10% crits.', { spd: 2, crit: 0.1 }),
+  viper_fang: W('Viper Fang', 'dagger', 9, 0, 2, 260, 'venom', 2, 'Hollow fang full of venom: 30% to Poison on hit.', { spd: 2, proc: ['poison', 0.3] }),
+  shadow_edge: W('Shadow Edge', 'dagger', 14, 0, 2, 0, 'swift', 2, 'Drinks the light. +3 SPD, 15% crits, its signature strikes first.', { spd: 3, crit: 0.15 }),
+  stiletto: W('Stiletto', 'dagger', 13, 0, 2, 680, 'pierce', 3, 'Slips between plates: Attacks ignore half of armor, 20% crits.', { spd: 3, crit: 0.2, pierce: 0.5 }),
+  nightfang: W('Nightfang', 'dagger', 21, 0, 2, 0, undefined, 4, 'Stolen by a ghoul from a dead assassin. +5 SPD, 25% crits, may Stun.', { spd: 5, crit: 0.25, proc: ['stun', 0.12] }),
+  // ---- staves: magic, healing, utility
+  oak_staff: W('Oak Staff', 'staff', 2, 6, 1, 40, undefined, 1, 'A walking stick humming with mana. Healing +10%.', { heal: 0.1 }),
+  healing_staff: W('Healing Staff', 'staff', 2, 9, 2, 280, undefined, 2, 'Healing +30%, +10 MP. Signature becomes Mend (heal one ally).', { heal: 0.3, mp: 10, sig: 'mend' }),
+  storm_rod: W('Storm Rod', 'staff', 3, 12, 2, 300, 'bolt', 2, 'Crackles in the rain. Attacks and Arcane Bolt are lightning.', { elem: 'bolt' }),
+  archmage_staff: W('Archmage Staff', 'staff', 3, 17, 2, 0, 'echo', 2, 'Its spells repeat themselves. +15 MP.', { mp: 15 }),
+  sage_staff: W('Sage Staff', 'staff', 4, 18, 2, 740, undefined, 3, 'Carved by the sages of Frostholm. +20 MP, healing +20%.', { mp: 20, heal: 0.2 }),
+  lich_staff: W('Lich Staff', 'staff', 5, 30, 3, 0, 'shadow', 4, 'Morvath\'s focus. +25 MP; Attacks deal dark damage.', { mp: 25, elem: 'dark' }),
+  // ---- bows: armor-piercing arrows, hit groups with Volley
+  short_bow: W('Short Bow', 'bow', 7, 0, 1, 60, undefined, 1, 'Light hunting bow. Arrows ignore 20% of armor.', { pierce: 0.2 }),
+  hunter_bow: W('Hunter Bow', 'bow', 12, 0, 2, 300, 'chain', 2, 'Volleys ricochet between foes. Arrows ignore 20% of armor.', { pierce: 0.2, crit: 0.05 }),
+  longbow: W('Longbow', 'bow', 17, 0, 2, 740, undefined, 3, 'Long draw, long reach: 25% pierce, 10% crits.', { pierce: 0.25, crit: 0.1 }),
+  frost_bow: W('Frost Bow', 'bow', 22, 0, 2, 1050, 'frost', 3, 'Frost-tipped arrows: 25% to Slow, 20% pierce. Volley turns to ice.', { pierce: 0.2, proc: ['slow', 0.25] }),
+  gale_bow: W('Gale Bow', 'bow', 25, 0, 3, 0, 'swift', 4, 'Strung with a storm wraith\'s sigh. Lightning arrows, +4 SPD, 15% crits.', { pierce: 0.25, elem: 'bolt', spd: 4, crit: 0.15 }),
+  // ---- fists: two blows per Attack, crushing combos
+  iron_knuckle: W('Iron Knuckle', 'fists', 6, 0, 1, 50, undefined, 1, 'Attack strikes twice (60% each): great against soft foes.', { hits: 2 }),
+  thunder_claw: W('Thunder Claw', 'fists', 11, 0, 2, 320, 'bolt', 2, 'Two lightning blows per Attack.', { hits: 2, elem: 'bolt' }),
+  steel_fist: W('Steel Fist', 'fists', 15, 0, 2, 700, undefined, 3, 'Gauntlets that double as armor (+5 DEF). Two blows per Attack.', { hits: 2, def: 5 }),
+  dragon_claw: W('Dragon Claw', 'fists', 20, 0, 2, 0, 'focusg', 4, 'Torn from a yeti\'s trophy pile. Fiery double blows; signature Dragon Rush.', { hits: 2, elem: 'fire', sig: 'dragonrush' }),
+  // ---- whips: magic-tinged control
+  leather_whip: W('Leather Whip', 'whip', 5, 2, 1, 50, undefined, 1, 'A sharp crack that may Slow (20%).', { proc: ['slow', 0.2] }),
+  serpent_lash: W('Serpent Lash', 'whip', 10, 4, 2, 280, 'venom', 2, 'Barbed with fangs: 30% to Poison.', { proc: ['poison', 0.3] }),
+  thorn_whip: W('Thorn Whip', 'whip', 14, 7, 2, 700, 'vamp', 3, 'Briar-wound: 30% to Slow, drinks blood through its thorns.', { proc: ['slow', 0.3], crit: 0.1 }),
+  // ---- scythes: slow, life-draining, dark
+  rusty_scythe: W('Rusty Scythe', 'scythe', 8, 3, 1, 65, undefined, 1, 'Rusty but hungry: 25% to drain HP on hit. -1 SPD.', { spd: -1, proc: ['drain', 0.25] }),
+  bone_scythe: W('Bone Scythe', 'scythe', 13, 6, 2, 360, undefined, 2, 'Dark Attacks, 30% to drain HP. -1 SPD.', { spd: -1, elem: 'dark', proc: ['drain', 0.3] }),
+  grave_scythe: W('Grave Scythe', 'scythe', 19, 11, 2, 950, 'vamp', 3, 'Gravedigger\'s blade: 35% to drain HP on hit.', { spd: -1, proc: ['drain', 0.35] }),
+  soul_reaper: W('Soul Reaper', 'scythe', 25, 15, 3, 0, 'vamp', 4, 'Hums with stolen souls. Signature becomes Harvest (drains all foes).', { elem: 'dark', proc: ['drain', 0.4], sig: 'harvest' }),
+  // ---- tomes: pure magic, random elements
+  dusty_tome: W('Dusty Tome', 'tome', 1, 7, 1, 45, undefined, 1, 'Faded spells scribbled in the margins. +8 MP.', { mp: 8 }),
+  frost_codex: W('Frost Codex', 'tome', 2, 13, 2, 300, 'frost', 2, 'Pages cold to the touch. Ice Attacks.', { elem: 'ice' }),
+  void_grimoire: W('Void Grimoire', 'tome', 2, 17, 2, 0, 'shadow', 2, 'Whispers from the dark between stars. Dark Attacks, +10 MP.', { elem: 'dark', mp: 10 }),
+  arcane_tome: W('Arcane Tome', 'tome', 3, 19, 2, 800, undefined, 3, 'A scholar\'s life work. +15 MP, +2 SPD.', { mp: 15, spd: 2 }),
+  blizzard_tome: W('Blizzard Tome', 'tome', 3, 25, 2, 1150, 'frost', 3, 'A winter bound in leather. Ice Attacks that may Slow.', { elem: 'ice', proc: ['slow', 0.2] }),
+  // ---- axes: huge hits, slow, critical
+  hand_axe: W('Hand Axe', 'axe', 10, 0, 1, 75, undefined, 1, 'Heavy and slow, bites deep. 5% crits, -1 SPD.', { spd: -1, crit: 0.05 }),
+  battle_axe: W('Battle Axe', 'axe', 16, 0, 2, 420, 'crit', 2, 'Double-bitted. 10% crits, -1 SPD.', { spd: -1, crit: 0.1 }),
+  war_axe: W('War Axe', 'axe', 24, 0, 2, 900, 'berserk', 3, 'Too heavy for the timid. 10% crits, -2 SPD.', { spd: -2, crit: 0.1 }),
+  titan_axe: W('Titan Axe', 'axe', 36, 0, 3, 0, 'execute', 4, 'Hewn from the Titan\'s glacier heart. 15% crits, +30 HP, -2 SPD.', { spd: -2, crit: 0.15, hp: 30 }),
+  // ---- katanas: crits and speed
+  wakizashi: W('Wakizashi', 'katana', 8, 0, 1, 90, undefined, 1, 'Short companion blade. +1 SPD, 12% crits.', { spd: 1, crit: 0.12 }),
+  iron_katana: W('Iron Katana', 'katana', 13, 0, 1, 380, undefined, 2, 'Folded a thousand times. 15% crits.', { crit: 0.15 }),
+  moonblade: W('Moonblade', 'katana', 23, 0, 2, 1000, 'crit', 3, 'Shines silver at night. +2 SPD, 20% crits.', { spd: 2, crit: 0.2 }),
+  storm_katana: W('Storm Katana', 'katana', 32, 0, 3, 0, 'bolt', 4, 'Lightning given an edge. Bolt Attacks, 20% crits; signature Raijin (all foes).', { elem: 'bolt', crit: 0.2, spd: 3, sig: 'raijin' }),
+  muramasa: W('Muramasa', 'katana', 35, 0, 2, 0, undefined, 4, 'A cursed blade that thirsts: 25% crits but -30 max HP. Signature Demon Cut.', { crit: 0.25, hp: -30, sig: 'demoncut' }),
 };
 export const ARMORS = {
   cloth: { name: 'Cloth Robe', def: 3, sockets: 0, price: 40 }, leather: { name: 'Leather Vest', def: 6, hp: 5, sockets: 0, price: 90 },
@@ -145,24 +206,21 @@ export const ITEMS = {
 // ---- Enemies. skills: [[skillId, weight]]
 const E = (name, icon, hp, atk, def, mag, spd, exp, gold, skills, x = {}) => ({ name, icon, hp, atk, def, mag, spd, exp, gold, skills, weak: [], res: [], ...x });
 export const ENEMIES = {
-  slime: E('Slime', '🟢', 42, 9, 1, 4, 4, 9, 8, [['tackle', 1]], { weak: ['fire'] }),
-  goblin: E('Goblin', '👺', 58, 13, 3, 4, 7, 14, 14, [['tackle', 2], ['bite', 1]]),
-  wolf: E('Wolf', '🐺', 62, 15, 2, 3, 11, 18, 12, [['bite', 2], ['venombite', 1]], { weak: ['fire'] }),
-  bat: E('Cave Bat', '🦇', 110, 24, 4, 6, 14, 42, 28, [['bite', 2], ['venombite', 1]], { weak: ['bolt'] }),
-  skeleton: E('Skeleton', '💀', 175, 30, 9, 5, 8, 58, 40, [['tackle', 2], ['slam', 1]], { weak: ['holy', 'fire'], res: ['dark'] }),
-  imp: E('Fire Imp', '👹', 140, 14, 5, 30, 10, 60, 45, [['fireball', 3], ['tackle', 1]], { weak: ['ice'], res: ['fire'] }),
-  golem: E('Stone Golem', '🗿', 340, 42, 20, 4, 3, 100, 70, [['slam', 3], ['tackle', 1]], { weak: ['bolt'], res: ['fire', 'ice'] }),
-  wraith: E('Wraith', '👻', 210, 12, 8, 34, 12, 90, 65, [['draintouch', 2], ['fireball', 1]], { weak: ['holy'], res: ['dark'] }),
+  slime: E('Slime', '🟢', 42, 9, 1, 4, 4, 10, 8, [['tackle', 1]], { weak: ['fire'] }),
+  goblin: E('Goblin', '👺', 58, 13, 3, 4, 7, 16, 14, [['tackle', 2], ['bite', 1]]),
+  wolf: E('Wolf', '🐺', 62, 15, 2, 3, 11, 21, 13, [['bite', 2], ['venombite', 1]], { weak: ['fire'] }),
+  bat: E('Cave Bat', '🦇', 110, 24, 4, 6, 14, 38, 26, [['bite', 2], ['venombite', 1]], { weak: ['bolt'] }),
+  skeleton: E('Skeleton', '💀', 175, 30, 9, 5, 8, 52, 38, [['tackle', 2], ['slam', 1]], { weak: ['holy', 'fire'], res: ['dark'] }),
+  imp: E('Fire Imp', '👹', 140, 14, 5, 30, 10, 54, 42, [['fireball', 3], ['tackle', 1]], { weak: ['ice'], res: ['fire'] }),
+  golem: E('Stone Golem', '🗿', 340, 42, 20, 4, 3, 90, 66, [['slam', 3], ['tackle', 1]], { weak: ['bolt'], res: ['fire', 'ice'] }),
+  wraith: E('Wraith', '👻', 210, 12, 8, 34, 12, 82, 60, [['draintouch', 2], ['fireball', 1]], { weak: ['holy'], res: ['dark'] }),
   wyrm: E('Ashen Wyrm', '🐉', 1100, 40, 14, 38, 9, 600, 800, [['claw', 3], ['flamebreath', 2], ['tailsweep', 2]], { weak: ['ice'], res: ['fire'], boss: true }),
 };
 export const ENCOUNTERS = {
   world: [['slime'], ['slime', 'slime'], ['goblin'], ['goblin', 'slime'], ['wolf'], ['wolf', 'wolf'], ['goblin', 'goblin', 'wolf']],
   dungeon: [['bat', 'bat'], ['skeleton'], ['skeleton', 'bat'], ['imp', 'imp'], ['golem'], ['wraith', 'bat'], ['skeleton', 'imp', 'wraith'], ['imp', 'wraith']],
 };
-export const DROPS = { // enemy -> [chance, kind, id]
-  slime: [0.08, 'items', 'potion'], goblin: [0.08, 'gems', 'thrifty'], wolf: [0.08, 'gems', 'venom'], bat: [0.1, 'gems', 'swift'],
-  skeleton: [0.1, 'gems', 'holy'], imp: [0.1, 'gems', 'overcharge'], golem: [0.2, 'gems', 'wide'], wraith: [0.15, 'gems', 'shadow'],
-};
+export const DROPS = {}; // filled at the end of this file (every enemy has a table)
 
 // =====================================================================
 // ===== Expansion content: new jobs, gems, gear, enemies, bosses, shops =====
@@ -211,15 +269,6 @@ Object.assign(GEMS, {
   guard: { name: 'Guard Gem', desc: 'You gain a Guard buff after using the skill', price: 400 },
   crit: { name: 'Crit Gem', desc: '25% chance to deal 180% damage', price: 550 },
 });
-const W2 = (name, type, atk, mag, sockets, price, innate) => ({ name, type, atk, mag, sockets, price, innate });
-Object.assign(WEAPONS, {
-  hand_axe: W2('Hand Axe', 'axe', 9, 0, 1, 90), battle_axe: W2('Battle Axe', 'axe', 16, 0, 2, 420, 'crit'), war_axe: W2('War Axe', 'axe', 24, 0, 2, 900, 'berserk'), titan_axe: W2('Titan Axe', 'axe', 36, 0, 3, 0, 'execute'),
-  mythril_sword: W2('Mythril Sword', 'sword', 19, 0, 2, 760), frostbrand: W2('Frostbrand', 'sword', 24, 0, 2, 1150, 'frost'),
-  stiletto: W2('Stiletto', 'dagger', 13, 0, 2, 680, 'pierce'), sage_staff: W2('Sage Staff', 'staff', 4, 18, 2, 740), lich_staff: W2('Lich Staff', 'staff', 5, 30, 3, 0, 'shadow'),
-  longbow: W2('Longbow', 'bow', 17, 0, 2, 740), frost_bow: W2('Frost Bow', 'bow', 22, 0, 2, 1050, 'frost'),
-  steel_fist: W2('Steel Fist', 'fists', 16, 0, 2, 700), thorn_whip: W2('Thorn Whip', 'whip', 14, 7, 2, 700), grave_scythe: W2('Grave Scythe', 'scythe', 19, 11, 2, 950, 'vamp'),
-  arcane_tome: W2('Arcane Tome', 'tome', 3, 19, 2, 800), blizzard_tome: W2('Blizzard Tome', 'tome', 3, 25, 2, 1150, 'frost'),
-});
 Object.assign(ARMORS, {
   mythril_mail: { name: 'Mythril Mail', def: 22, hp: 25, sockets: 1, price: 820 }, frost_robe: { name: 'Frost Robe', def: 10, mp: 25, mag: 6, res: ['ice'], sockets: 1, price: 740 },
   yeti_fur: { name: 'Yeti Fur', def: 14, hp: 30, res: ['ice'], sockets: 0, price: 620 }, lich_robes: { name: 'Lich Robes', def: 15, mp: 35, mag: 11, sockets: 2, res: ['dark'], price: 0 },
@@ -234,21 +283,21 @@ Object.assign(ITEMS, { megaether: { name: 'Mega Ether', mpr: 80, price: 220, des
 
 // enemies (sprites for variants are recolors defined in sprites.js)
 Object.assign(ENEMIES, {
-  bog_slime: E('Bog Slime', '🟣', 130, 24, 6, 12, 6, 55, 30, [['tackle', 2], ['venombite', 1]], { weak: ['fire'] }),
-  mire_wolf: E('Mire Wolf', '🐺', 160, 31, 7, 5, 12, 62, 34, [['bite', 2], ['venombite', 2]], { weak: ['fire'] }),
-  zombie: E('Zombie', '🧟', 210, 32, 8, 5, 3, 68, 38, [['slam', 2], ['rot', 2]], { weak: ['fire', 'holy'], res: ['dark'] }),
-  skeleton_knight: E('Skeleton Knight', '💀', 330, 48, 20, 6, 9, 130, 72, [['slam', 2], ['tackle', 2]], { weak: ['holy', 'bolt'], res: ['dark'] }),
-  ghoul: E('Ghoul', '🧟', 300, 50, 11, 8, 11, 130, 70, [['rot', 2], ['bite', 2]], { weak: ['fire', 'holy'], res: ['dark'] }),
-  wraith_elder: E('Wraith Elder', '👻', 240, 12, 11, 52, 13, 140, 78, [['hexbolt', 2], ['draintouch', 2]], { weak: ['holy'], res: ['dark'] }),
-  bone_mage: E('Bone Mage', '💀', 210, 12, 9, 56, 11, 135, 76, [['hexbolt', 3], ['fireball', 1]], { weak: ['holy'], res: ['dark'] }),
+  bog_slime: E('Bog Slime', '🟣', 130, 24, 6, 12, 6, 46, 30, [['tackle', 2], ['venombite', 1]], { weak: ['fire'] }),
+  mire_wolf: E('Mire Wolf', '🐺', 160, 31, 7, 5, 12, 52, 34, [['bite', 2], ['venombite', 2]], { weak: ['fire'] }),
+  zombie: E('Zombie', '🧟', 210, 32, 8, 5, 3, 58, 38, [['slam', 2], ['rot', 2]], { weak: ['fire', 'holy'], res: ['dark'] }),
+  skeleton_knight: E('Skeleton Knight', '💀', 330, 48, 20, 6, 9, 118, 60, [['slam', 2], ['tackle', 2]], { weak: ['holy', 'bolt'], res: ['dark'] }),
+  ghoul: E('Ghoul', '🧟', 300, 50, 11, 8, 11, 118, 58, [['rot', 2], ['bite', 2]], { weak: ['fire', 'holy'], res: ['dark'] }),
+  wraith_elder: E('Wraith Elder', '👻', 240, 12, 11, 52, 13, 126, 64, [['hexbolt', 2], ['draintouch', 2]], { weak: ['holy'], res: ['dark'] }),
+  bone_mage: E('Bone Mage', '💀', 210, 12, 9, 56, 11, 122, 62, [['hexbolt', 3], ['fireball', 1]], { weak: ['holy'], res: ['dark'] }),
   lich: E('Lich King Morvath', '☠️', 2250, 43, 17, 56, 10, 1500, 1500, [['hexbolt', 3], ['draintouch', 2], ['soulstorm', 2], ['slam', 1]], { weak: ['holy', 'fire'], res: ['dark'], boss: true }),
-  ice_wolf: E('Ice Wolf', '🐺', 270, 52, 11, 6, 15, 150, 80, [['frostbite', 3], ['bite', 1]], { weak: ['fire'], res: ['ice'] }),
-  yeti: E('Yeti', '🦍', 440, 58, 16, 6, 7, 165, 90, [['slam', 2], ['claw', 2]], { weak: ['fire'], res: ['ice'] }),
-  frost_goblin: E('Frost Goblin', '👺', 250, 48, 10, 8, 10, 140, 76, [['tackle', 2], ['frostbite', 1]], { weak: ['fire'], res: ['ice'] }),
-  ice_golem: E('Ice Golem', '🗿', 680, 66, 30, 6, 4, 230, 120, [['slam', 3], ['icicle', 1]], { weak: ['fire', 'bolt'], res: ['ice'] }),
-  frost_wraith: E('Frost Wraith', '👻', 360, 14, 14, 66, 14, 230, 118, [['blizzard', 1], ['icebolt', 2], ['draintouch', 1]], { weak: ['fire', 'holy'], res: ['ice'] }),
-  ice_imp: E('Ice Imp', '👹', 330, 16, 12, 62, 12, 215, 112, [['icebolt', 3], ['tackle', 1]], { weak: ['fire'], res: ['ice'] }),
-  frozen_knight: E('Frozen Knight', '💀', 520, 70, 28, 8, 9, 245, 126, [['slam', 2], ['frostbite', 2]], { weak: ['fire', 'holy'], res: ['ice'] }),
+  ice_wolf: E('Ice Wolf', '🐺', 270, 52, 11, 6, 15, 124, 66, [['frostbite', 3], ['bite', 1]], { weak: ['fire'], res: ['ice'] }),
+  yeti: E('Yeti', '🦍', 440, 58, 16, 6, 7, 140, 74, [['slam', 2], ['claw', 2]], { weak: ['fire'], res: ['ice'] }),
+  frost_goblin: E('Frost Goblin', '👺', 250, 48, 10, 8, 10, 116, 62, [['tackle', 2], ['frostbite', 1]], { weak: ['fire'], res: ['ice'] }),
+  ice_golem: E('Ice Golem', '🗿', 680, 66, 30, 6, 4, 210, 98, [['slam', 3], ['icicle', 1]], { weak: ['fire', 'bolt'], res: ['ice'] }),
+  frost_wraith: E('Frost Wraith', '👻', 360, 14, 14, 66, 14, 210, 96, [['blizzard', 1], ['icebolt', 2], ['draintouch', 1]], { weak: ['fire', 'holy'], res: ['ice'] }),
+  ice_imp: E('Ice Imp', '👹', 330, 16, 12, 62, 12, 196, 92, [['icebolt', 3], ['tackle', 1]], { weak: ['fire'], res: ['ice'] }),
+  frozen_knight: E('Frozen Knight', '💀', 520, 70, 28, 8, 9, 224, 104, [['slam', 2], ['frostbite', 2]], { weak: ['fire', 'holy'], res: ['ice'] }),
   titan: E('Frost Titan', '🧊', 3600, 68, 24, 62, 8, 3000, 2500, [['titanfist', 3], ['blizzard', 2], ['icicle', 2]], { weak: ['fire'], res: ['ice'], boss: true }),
 });
 // enemy ids that already exist keep BOSS flag
@@ -260,17 +309,12 @@ Object.assign(ENCOUNTERS, {
   snow: [['ice_wolf', 'ice_wolf'], ['yeti'], ['frost_goblin', 'frost_goblin', 'ice_wolf'], ['yeti', 'ice_wolf'], ['frost_goblin', 'ice_wolf'], ['frost_goblin', 'frost_goblin', 'frost_goblin']],
   spire: [['ice_golem'], ['frost_wraith', 'ice_imp'], ['frozen_knight', 'ice_imp'], ['ice_imp', 'ice_imp', 'frost_wraith'], ['frozen_knight', 'frost_wraith'], ['ice_golem', 'ice_imp']],
 });
-Object.assign(DROPS, {
-  bog_slime: [0.1, 'gems', 'venom'], mire_wolf: [0.08, 'gems', 'swift'], zombie: [0.1, 'gems', 'guard'], skeleton_knight: [0.1, 'gems', 'pierce'], ghoul: [0.1, 'gems', 'berserk'],
-  wraith_elder: [0.12, 'gems', 'shadow'], bone_mage: [0.1, 'gems', 'overcharge'], ice_wolf: [0.1, 'gems', 'crit'], yeti: [0.12, 'items', 'hipotion'], frost_goblin: [0.1, 'gems', 'frost'],
-  ice_golem: [0.2, 'gems', 'stun'], frost_wraith: [0.12, 'gems', 'echo'], ice_imp: [0.1, 'gems', 'siphon'], frozen_knight: [0.12, 'gems', 'execute'],
-});
 // shops: stock lists (ids in WEAPONS / ARMORS / ACCS / GEMS / ITEMS)
 export const SHOPS = {
   haven_general: { title: '🛒 Haven General Store', stock: { items: ['potion', 'ether', 'phoenix'], gems: ['fire', 'frost', 'bolt', 'thrifty', 'venom', 'focusg', 'pierce'] } },
-  haven_smith: { title: '⚒️ Haven Smithy', stock: { weapons: ['iron_sword', 'bronze_dirk', 'oak_staff', 'short_bow', 'iron_knuckle', 'leather_whip', 'rusty_scythe', 'dusty_tome', 'hand_axe', 'flame_brand', 'viper_fang', 'storm_rod', 'hunter_bow', 'thunder_claw', 'serpent_lash', 'frost_codex', 'battle_axe'], armors: ['cloth', 'leather', 'chain', 'plate', 'mage_cloak'], accs: ['power_ring', 'ward_amulet', 'mana_charm', 'swift_boots', 'fire_pendant'] } },
+  haven_smith: { title: '⚒️ Haven Smithy', stock: { weapons: ['oak_staff', 'bronze_dirk', 'dusty_tome', 'iron_knuckle', 'leather_whip', 'short_bow', 'rusty_scythe', 'hand_axe', 'iron_sword', 'wakizashi', 'viper_fang', 'storm_rod', 'frost_codex', 'hunter_bow', 'flame_brand'], armors: ['cloth', 'leather', 'chain', 'plate', 'mage_cloak'], accs: ['power_ring', 'ward_amulet', 'mana_charm', 'swift_boots', 'fire_pendant'] } },
   frost_general: { title: '🛒 Frostholm Provisions', stock: { items: ['potion', 'hipotion', 'ether', 'megaether', 'phoenix', 'elixir'], gems: ['fire', 'frost', 'bolt', 'holy', 'shadow', 'chain', 'vamp', 'pierce', 'thrifty', 'overcharge', 'wide', 'venom', 'swift', 'focusg', 'guard', 'crit', 'berserk', 'echo', 'stun', 'siphon', 'execute'] } },
-  frost_smith: { title: '⚒️ Frostholm Forge', stock: { weapons: ['mythril_sword', 'frostbrand', 'stiletto', 'sage_staff', 'longbow', 'frost_bow', 'steel_fist', 'thorn_whip', 'grave_scythe', 'arcane_tome', 'blizzard_tome', 'war_axe'], armors: ['mythril_mail', 'frost_robe', 'yeti_fur'], accs: ['sage_ring', 'berserk_ring', 'life_charm', 'gem_crown', 'socket_jewel', 'frost_pendant', 'lich_ring'] } },
+  frost_smith: { title: '⚒️ Frostholm Forge', stock: { weapons: ['mythril_sword', 'frostbrand', 'stiletto', 'sage_staff', 'longbow', 'frost_bow', 'steel_fist', 'thorn_whip', 'grave_scythe', 'arcane_tome', 'blizzard_tome', 'war_axe', 'moonblade'], armors: ['mythril_mail', 'frost_robe', 'yeti_fur'], accs: ['sage_ring', 'berserk_ring', 'life_charm', 'gem_crown', 'socket_jewel', 'frost_pendant', 'lich_ring'] } },
 };
 
 // =====================================================================
@@ -301,26 +345,20 @@ Object.assign(JOBS, {
   samurai: { name: 'Samurai', icon: '🗾', desc: 'Swift blade master with crits and multi-hit strikes.', mod: { hp: 1.1, mp: 0.7, atk: 1.4, def: 0.95, mag: 0.6, spd: 1.3 }, weapons: ['katana', 'bow'], skills: [['kiai', 1], ['flashcut', 2], ['windblade', 4], ['bladestorm', 6], ['zanshin', 9]] },
   paladin: { name: 'Paladin', icon: '⚜️', desc: 'Holy warrior who fights, heals and guards.', mod: { hp: 1.3, mp: 1.0, atk: 1.0, def: 1.4, mag: 1.0, spd: 0.8 }, weapons: ['sword', 'staff'], skills: [['holylight', 1], ['layhands', 2], ['divineshield', 4], ['crusade', 6], ['sacredblade', 8], ['divinegrace', 10]] },
 });
-Object.assign(WEAPONS, {
-  iron_katana: W2('Iron Katana', 'katana', 13, 0, 1, 380), moonblade: W2('Moonblade', 'katana', 23, 0, 2, 1000, 'crit'), storm_katana: W2('Storm Katana', 'katana', 32, 0, 3, 0, 'bolt'),
-});
 Object.assign(ARMORS, { storm_cloak: { name: 'Storm Cloak', def: 18, mp: 28, mag: 8, spd: 3, res: ['bolt'], sockets: 2, price: 0 } });
 Object.assign(ACCS, {
   family_ring: { name: 'Family Ring', hp: 30, def: 3, sockets: 1, price: 0 }, wolf_fang: { name: 'Wolf Fang', atk: 6, spd: 4, sockets: 0, price: 0 },
   swamp_lantern: { name: 'Swamp Lantern', mag: 6, mp: 15, sockets: 1, price: 0 }, frost_amulet: { name: 'Frost Amulet', def: 6, hp: 30, res: ['ice'], sockets: 1, price: 0 },
 });
 Object.assign(ENEMIES, {
-  storm_bat: E('Storm Bat', '🦇', 250, 44, 10, 10, 16, 120, 66, [['bite', 2], ['sparkbolt', 1]], { weak: ['ice'], res: ['bolt'] }),
-  thunder_imp: E('Thunder Imp', '👹', 270, 14, 11, 54, 12, 128, 70, [['sparkbolt', 3], ['tackle', 1]], { weak: ['ice'], res: ['bolt'] }),
-  gale_wraith: E('Gale Wraith', '👻', 310, 14, 13, 58, 15, 140, 76, [['sparkbolt', 2], ['draintouch', 1], ['hexbolt', 1]], { weak: ['holy', 'ice'], res: ['bolt'] }),
+  storm_bat: E('Storm Bat', '🦇', 250, 44, 10, 10, 16, 120, 56, [['bite', 2], ['sparkbolt', 1]], { weak: ['ice'], res: ['bolt'] }),
+  thunder_imp: E('Thunder Imp', '👹', 270, 14, 11, 54, 12, 128, 60, [['sparkbolt', 3], ['tackle', 1]], { weak: ['ice'], res: ['bolt'] }),
+  gale_wraith: E('Gale Wraith', '👻', 310, 14, 13, 58, 15, 140, 64, [['sparkbolt', 2], ['draintouch', 1], ['hexbolt', 1]], { weak: ['holy', 'ice'], res: ['bolt'] }),
   storm_drake: E('Storm Drake', '🐲', 2500, 48, 18, 52, 12, 2000, 1800, [['stormclaw', 3], ['thunderbreath', 2], ['claw', 1]], { weak: ['ice'], res: ['bolt'], boss: true }),
 });
 Object.assign(ENCOUNTERS, { storm: [['storm_bat', 'storm_bat'], ['thunder_imp', 'thunder_imp'], ['gale_wraith'], ['storm_bat', 'thunder_imp'], ['gale_wraith', 'storm_bat'], ['thunder_imp', 'gale_wraith', 'storm_bat']] });
-Object.assign(DROPS, { storm_bat: [0.1, 'gems', 'swift'], thunder_imp: [0.1, 'gems', 'bolt'], gale_wraith: [0.12, 'gems', 'echo'] });
 BOSSES.storm_drake = { name: 'Storm Drake', intro: 'Thunder splits the cavern as the Storm Drake descends!', optional: true, loot: { weapons: ['storm_katana'], armors: ['storm_cloak'], gems: ['siphon', 'crit'] } };
-SHOPS.haven_smith.stock.weapons.push('iron_katana');
-SHOPS.frost_smith.stock.weapons.push('moonblade');
-SHOPS.mire_general = { title: '🛒 Mirewood Trading Post', stock: { items: ['potion', 'hipotion', 'ether', 'phoenix'], gems: ['fire', 'frost', 'bolt', 'holy', 'shadow', 'chain', 'vamp', 'thrifty', 'venom', 'guard', 'crit'], weapons: ['iron_katana', 'hand_axe', 'battle_axe', 'viper_fang', 'serpent_lash'], armors: ['chain', 'mage_cloak', 'yeti_fur'], accs: ['ward_amulet', 'fire_pendant', 'swift_boots'] } };
+SHOPS.mire_general = { title: '🛒 Mirewood Trading Post', stock: { items: ['potion', 'hipotion', 'ether', 'phoenix'], gems: ['fire', 'frost', 'bolt', 'holy', 'shadow', 'chain', 'vamp', 'thrifty', 'venom', 'guard', 'crit'], weapons: ['healing_staff', 'viper_fang', 'serpent_lash', 'thunder_claw', 'bone_scythe', 'battle_axe', 'iron_katana', 'hunter_bow', 'flame_brand'], armors: ['chain', 'mage_cloak', 'yeti_fur'], accs: ['ward_amulet', 'fire_pendant', 'swift_boots'] } };
 
 // ---- side quests. goal: {type:'kill', ids, n} | {type:'find', item} | {type:'boss', id}
 export const QUESTS = {
@@ -357,3 +395,30 @@ Object.assign(ITEMS, {
 for (const id of ['haven_general', 'mire_general']) SHOPS[id].stock.items.push('antidote');
 SHOPS.frost_general.stock.items.push('antidote', 'remedy');
 SHOPS.mire_general.stock.items.push('remedy');
+
+// ---- Enemy drops. common: everyday spoils (~20-35%); rare: a gem or a piece of gear (~3-8%, shown as ★ RARE).
+// Bosses always drop their common item, on top of their guaranteed BOSSES[id].loot. rewards() in logic.js rolls rare first.
+const D = (ck, cid, cp, rk, rid, rp) => ({ common: [ck, cid, cp], rare: [rk, rid, rp] });
+Object.assign(DROPS, {
+  // Greenmarch
+  slime: D('items', 'potion', 0.3, 'gems', 'fire', 0.05), goblin: D('items', 'antidote', 0.25, 'weapons', 'wakizashi', 0.05), wolf: D('items', 'potion', 0.25, 'gems', 'venom', 0.06),
+  // Ashen Cavern
+  bat: D('items', 'antidote', 0.3, 'gems', 'swift', 0.05), skeleton: D('items', 'potion', 0.3, 'gems', 'holy', 0.06), imp: D('items', 'ether', 0.25, 'weapons', 'flame_brand', 0.05),
+  golem: D('items', 'hipotion', 0.3, 'gems', 'wide', 0.08), wraith: D('items', 'ether', 0.3, 'gems', 'shadow', 0.06),
+  wyrm: D('items', 'elixir', 1, 'accs', 'fire_pendant', 0.5),
+  // Mire Marsh
+  bog_slime: D('items', 'antidote', 0.35, 'gems', 'venom', 0.06), mire_wolf: D('items', 'potion', 0.3, 'accs', 'swift_boots', 0.04), zombie: D('items', 'remedy', 0.2, 'gems', 'guard', 0.06),
+  // Sunken Crypt
+  skeleton_knight: D('items', 'hipotion', 0.25, 'weapons', 'sun_blade', 0.04), ghoul: D('items', 'remedy', 0.25, 'weapons', 'nightfang', 0.04),
+  wraith_elder: D('items', 'ether', 0.3, 'weapons', 'soul_reaper', 0.04), bone_mage: D('items', 'ether', 0.3, 'gems', 'siphon', 0.05),
+  lich: D('items', 'megaether', 1, 'accs', 'lich_ring', 0.5),
+  // Frostfields
+  ice_wolf: D('items', 'hipotion', 0.25, 'gems', 'crit', 0.06), yeti: D('items', 'hipotion', 0.3, 'weapons', 'dragon_claw', 0.04), frost_goblin: D('items', 'antidote', 0.25, 'gems', 'frost', 0.07),
+  // Frost Spire
+  ice_golem: D('items', 'hipotion', 0.3, 'gems', 'stun', 0.08), frost_wraith: D('items', 'megaether', 0.2, 'gems', 'echo', 0.06), ice_imp: D('items', 'ether', 0.3, 'accs', 'sage_ring', 0.04),
+  frozen_knight: D('items', 'hipotion', 0.25, 'weapons', 'muramasa', 0.04),
+  titan: D('items', 'elixir', 1, 'gems', 'crit', 0.5),
+  // Storm Cavern
+  storm_bat: D('items', 'ether', 0.25, 'gems', 'swift', 0.06), thunder_imp: D('items', 'ether', 0.3, 'gems', 'bolt', 0.07), gale_wraith: D('items', 'megaether', 0.2, 'weapons', 'gale_bow', 0.05),
+  storm_drake: D('items', 'elixir', 1, 'gems', 'echo', 0.5),
+});

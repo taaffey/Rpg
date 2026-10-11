@@ -1,9 +1,10 @@
 // ===== Gemforge Chronicles: UI, map, menus, battle flow =====
-import { SOCKET_COST, DIFFICULTY } from './data.js';
+import { SOCKET_COST, DIFFICULTY, DROPS } from './data.js';
 import { JOBS, SKILLS, GEMS, WEAPONS, ARMORS, ACCS, ITEMS, WEAPON_TYPES, ENEMIES, ENCOUNTERS, ELEM_ICON, BOSSES, SHOPS, QUESTS } from './data.js';
 import { MAPS, WALK } from './maps.js';
 import * as L from './logic.js';
 import * as SP from './sprites.js';
+import * as TR from './terrain.js';
 import { Stage, FX } from './stage.js';
 import { music, sfx, unlock, isMuted, setMuted, setVolumes, setBackgrounded } from './audio.js';
 const { stats, newChar, learnable, slotSkill, slotGems, gemCapacity, gemsUsed, sanitize, skillWithGems, describeSkill, gainExp, expNeeded, Battle, rewards, SIG, GEMS_PER_SLOT } = L;
@@ -31,7 +32,7 @@ applyOptions();
 
 // ---------- overlay plumbing ----------
 const ACT = {}, ACTIN = {};
-function show(html, cls = '', winCls = '') { ov.innerHTML = `<div class="win anim ${winCls}">${html}</div>`; ov.className = 'on ' + cls; }
+function show(html, cls = '', winCls = '') { html = html.replace(/<h2>(?:\s*[\p{Extended_Pictographic}\u2600-\u27BF]\uFE0F?)+\s*/gu, '<h2>'); ov.innerHTML = `<div class="win anim ${winCls}">${html}</div>`; ov.className = 'on ' + cls; }
 function hide() { ov.className = ''; ov.innerHTML = ''; draw(); }
 const inOverlay = () => ov.classList.contains('on');
 ov.addEventListener('click', (e) => {
@@ -46,17 +47,22 @@ const bar = (v, m, cls) => { const r = v / m, lvl = cls === 'hp' ? (r < 0.25 ? '
 const gemImg = (g) => `<img class="gi" src="${SP.gemIcon(g)}" width="20" height="20" alt="">`;
 const gemChip = (g, short = false) => `<span class="chip" title="${GEMS[g].desc}">${gemImg(g)}${short ? GEMS[g].name.replace(' Gem', '') : GEMS[g].name}</span>`;
 const statLine = (s) => `<div class="stats">${['hp', 'mp', 'atk', 'def', 'mag', 'spd'].map((k) => `<span>${k.toUpperCase()} <b>${s[k]}</b></span>`).join('')}</div>`;
-const gearLine = (g) => ['atk', 'mag', 'def', 'hp', 'mp', 'spd'].filter((k) => g[k]).map((k) => `${g[k] > 0 ? '+' : ''}${g[k]} ${k}`).concat(g.res ? g.res.map((r) => `resist ${r}`) : [], g.sockets ? [`${g.sockets}◇`] : [], g.innate ? [`innate ${GEMS[g.innate].name}`] : []).join(', ');
+const gearLine = (g) => ['atk', 'mag', 'def', 'hp', 'mp', 'spd'].filter((k) => g[k]).map((k) => `${g[k] > 0 ? '+' : ''}${g[k]} ${k}`).concat(g.res ? g.res.map((r) => `resist ${r}`) : [], g.sockets ? [`${g.sockets}◇`] : [], g.innate ? [`innate ${GEMS[g.innate].name}`] : [], weaponTraits(g)).join(', ');
+// weapon traits (see WEAPONS in data.js) as short tags, plus the flavour line for shop / equip lists
+const weaponTraits = (g) => [g.elem ? `${ELEM_ICON[g.elem]} ${g.elem} attacks` : '', g.hits > 1 ? `${g.hits} hits/attack` : '', g.crit ? `crit +${Math.round(g.crit * 100)}%` : '', g.pierce ? `pierce ${Math.round(g.pierce * 100)}%` : '',
+  g.proc ? `${Math.round(g.proc[1] * 100)}% ${g.proc[0]} on hit` : '', g.heal ? `heal +${Math.round(g.heal * 100)}%` : '', g.sig ? `skill: ${SKILLS[g.sig].name}` : ''].filter(Boolean);
+const gearDesc = (k, d) => (k === 'weapons' ? `${WEAPON_TYPES[d.type].name} · ${gearLine(d)}${d.desc ? `<br><i class="dim">${d.desc}</i>` : ''}` : d.desc || gearLine(d));
 const npcImg = (type, px = 48) => `<img class="px" src="${SP.url(SP.npc(type), px / 16)}" width="${px}" height="${px}" alt="">`;
 
 // ---------- state ----------
 function newGame() {
   G = {
-    party: [newChar('Aldric', 'knight', 'rogue', 'iron_sword', 'leather'), newChar('Lyra', 'mage', 'cleric', 'oak_staff', 'cloth'),
-      newChar('Mira', 'cleric', 'bard', 'oak_staff', 'cloth'), newChar('Kael', 'rogue', 'ranger', 'bronze_dirk', 'leather')],
-    gold: 250, difficulty: 'normal', slot: 1,
-    inv: { weapons: ['iron_knuckle', 'short_bow', 'dusty_tome', 'leather_whip'], armors: ['cloth'], accs: [], gems: ['fire', 'chain', 'vamp', 'thrifty', 'pierce'], items: { potion: 4, ether: 2, phoenix: 1 } },
-    map: 'haven', x: 9, y: 11, flags: { chests: {}, bosses: {}, seen: {}, talked: {}, visited: {}, quests: {}, qprog: {}, qitems: {}, tips: {}, bestiary: {} }, playtime: 0,
+    // like FF1: the party starts at level 1, unarmed, with 400 G to arm itself at the Haven Smithy (~205 G for the cheap weapons)
+    party: [newChar('Aldric', 'knight', 'rogue', null, 'leather'), newChar('Lyra', 'mage', 'cleric', null, 'cloth'),
+      newChar('Mira', 'cleric', 'bard', null, 'cloth'), newChar('Kael', 'rogue', 'ranger', null, 'leather')],
+    gold: 400, difficulty: 'normal', slot: 1,
+    inv: { weapons: [], armors: [], accs: [], gems: ['fire'], items: { potion: 3 } },
+    map: 'haven', x: 12, y: 20, flags: { chests: {}, bosses: {}, seen: {}, talked: {}, visited: {}, quests: {}, qprog: {}, qitems: {}, tips: {}, bestiary: {} }, playtime: 0,
   };
 }
 // ---------- saves: 3 slots, autosave, migration ----------
@@ -66,8 +72,12 @@ function migrate(g) {
   for (const k of ['chests', 'bosses', 'seen', 'talked', 'visited', 'quests', 'qprog', 'qitems', 'tips', 'bestiary']) g.flags[k] ||= {};
   g.playtime ||= 0; g.stats ||= { wins: 0 }; g.difficulty = DIFFICULTY[g.difficulty] ? g.difficulty : 'normal';
   for (const c of g.party) { c.extra ||= 0; c.gems ||= []; while (c.gems.length < 5) c.gems.push([]); }
+  // old saves keep their gear; only ids that no longer exist are dropped (never a crash on load)
+  g.inv ||= {}; for (const k of ['weapons', 'armors', 'accs', 'gems']) g.inv[k] = (g.inv[k] || []).filter((id) => DB[k][id]); g.inv.items ||= {};
+  for (const id of Object.keys(g.inv.items)) if (!ITEMS[id]) delete g.inv.items[id];
+  for (const c of g.party) { if (c.weapon && !WEAPONS[c.weapon]) c.weapon = null; if (c.armor && !ARMORS[c.armor]) c.armor = null; if (c.acc && !ACCS[c.acc]) c.acc = null; c.exp = Math.max(0, c.exp || 0); c.level = Math.min(L.MAX_LEVEL, c.level || 1); gainExp(c, 0); } // gainExp(0) settles EXP banked under an older curve
   const m = MAPS[g.map];
-  if (!m) { g.map = 'haven'; g.x = 9; g.y = 11; } else if (!WALK.has(m.rows[g.y]?.[g.x] ?? '#') && m.rows[g.y]?.[g.x] !== 'B') { g.x = m.spawn.x; g.y = m.spawn.y; }
+  if (!m) { g.map = 'haven'; g.x = 12; g.y = 20; } else if (!WALK.has(m.rows[g.y]?.[g.x] ?? '#') && m.rows[g.y]?.[g.x] !== 'B') { g.x = m.spawn.x; g.y = m.spawn.y; }
   return g;
 }
 const readSlot = (i) => { try { const raw = localStorage.getItem(SLOT_KEY(i)); return raw ? JSON.parse(raw) : null; } catch { return null; } };
@@ -124,7 +134,7 @@ addEventListener('orientationchange', () => setTimeout(layoutView, 250));
 
 // ---------- minimap / map screen ----------
 let miniDirty = true; const miniCache = { id: null, canvas: document.createElement('canvas'), sc: 2 };
-const MINI = { '.': '#4f9a3f', ',': '#e6eef8', ':': '#3d5c3a', _: '#8a7040', '=': '#8a5a30', '~': '#2c5fa8', T: '#2a6a2c', t: '#9ab0c8', M: '#7b7468', B: '#c0a060', H: '#e8c060', D: '#c04040', E: '#f4d35e' };
+const MINI = { '.': '#2aa83a', ',': '#eef4fc', ':': '#4a6a38', _: '#e0c070', '=': '#9a9a9a', '~': '#3c94f0', T: '#0c6a18', t: '#9ab0c8', M: '#a07848', B: '#c0a060', H: '#ffffff', D: '#c04040', E: '#f4d35e' };
 const MINI_FLOOR = { cavern: '#5a566a', crypt: '#4a5a50', spire: '#8aa8d0', storm: '#5a5c8a' }, MINI_WALL = { cavern: '#22202a', crypt: '#16221c', spire: '#2a4a78', storm: '#1c1e40' };
 function drawMini(c2, id, scale, ox, oy, t, noPlayer = false) {
   const m = MAPS[id], seen = G.flags.seen[id]; if (!seen) return;
@@ -167,40 +177,48 @@ function draw(t = performance.now() / 1000) {
   const sx = (x) => Math.round((x - camX) * TS), sy = (y) => Math.round((y - camY) * TS);
   const x0 = Math.max(0, Math.floor(camX)), x1 = Math.min(W, Math.ceil(camX + VW) + 1), y0 = Math.max(0, Math.floor(camY)), y1 = Math.min(H, Math.ceil(camY + VH) + 1);
   const defeated = (id) => !!G.flags.bosses[id];
-  if (m.kind !== 'outdoor') { // beyond the edge of a town/room/dungeon: more wall, shaded, instead of black bars
+  const auto = TR.isAutoTheme(m.theme);
+  if (!auto) { // beyond the edge of a room/dungeon: more wall, shaded, instead of black bars
     for (let y = Math.floor(camY) - 1; y <= Math.ceil(camY + VH) + 1; y++) for (let x = Math.floor(camX) - 1; x <= Math.ceil(camX + VW) + 1; x++) if (x < 0 || y < 0 || x >= W || y >= H) cx.drawImage(SP.tile(m.theme, '#', x, y, 0), sx(x), sy(y), TS, TS);
     cx.fillStyle = 'rgba(0,0,0,.55)'; cx.fillRect(0, 0, cv.width, cv.height);
-  }
-  for (let y = y0; y < y1; y++) for (let x = x0; x < x1; x++) {
-    let ch = tileAt(x, y);
-    if (ch === 'C' && G.flags.chests[chestKey(x, y)]) ch = 'c';
-    if (ch === 'X') ch = '.';
-    if (ch === 'B' && gateOpen()) ch = '_';
-    cx.drawImage(SP.tile(m.theme, ch, x, y, frame), sx(x), sy(y), TS, TS);
-    if (ch === '~') { // shoreline foam where water meets land
-      cx.fillStyle = 'rgba(255,255,255,.55)';
-      const land = (a, b) => { const c = tileAt(a, b); return c !== '~' && c !== '=' && a >= 0 && b >= 0 && a < W && b < H; };
-      if (land(x, y - 1)) cx.fillRect(sx(x), sy(y), TS, 2);
-      if (land(x, y + 1)) cx.fillRect(sx(x), sy(y) + TS - 2, TS, 2);
-      if (land(x - 1, y)) cx.fillRect(sx(x), sy(y), 2, TS);
-      if (land(x + 1, y)) cx.fillRect(sx(x) + TS - 2, sy(y), 2, TS);
+    for (let y = y0; y < y1; y++) for (let x = x0; x < x1; x++) {
+      let ch = tileAt(x, y);
+      if (ch === 'C' && G.flags.chests[chestKey(x, y)]) ch = 'c';
+      if (ch === 'X') ch = '.';
+      cx.drawImage(SP.tile(m.theme, ch, x, y, frame), sx(x), sy(y), TS, TS);
+    }
+  } else { // FF1-style autotiled terrain: rounded coasts, merged forests, cobbled streets
+    const outside = m.kind === 'outdoor' ? () => '~' : (x, y) => ((x * 7 + y * 5) % 3 === 0 ? (m.theme === 'snowtown' ? 't' : 'T') : '.');
+    const get = (x, y) => { if (x < 0 || y < 0 || x >= W || y >= H) return outside(x, y); const ch = tileAt(x, y); return ch === 'X' ? '.' : ch === 'B' && gateOpen() ? '_' : ch; };
+    const wf = Math.floor(t * 2.2) % 4, ax0 = Math.floor(camX) - 1, ax1 = Math.ceil(camX + VW) + 1, ay0 = Math.floor(camY) - 1, ay1 = Math.ceil(camY + VH) + 1;
+    const snowy = (x, y) => [[0, 0], [1, 0], [-1, 0], [0, 1], [0, -1]].some(([a, b]) => ',t'.includes(get(x + a, y + b)));
+    const place = (x, y) => { const p = m.portals?.[`${x},${y}`]?.to; return p; };
+    for (let y = ay0; y <= ay1; y++) for (let x = ax0; x <= ax1; x++) {
+      const ch = get(x, y), X = sx(x), Y = sy(y);
+      cx.drawImage(TR.autoTile(m.theme, get, x, y, wf), X, Y, TS, TS);
+      let o = null;
+      if (ch === '=') o = TR.bridge(get(x - 1, y) === '~' && get(x + 1, y) === '~'); // water on both sides = the deck runs north-south
+      else if (m.kind === 'outdoor') {
+        if (ch === 'M') o = TR.mountain(snowy(x, y));
+        else if (ch === 'B') o = SP.decor('rockslide');
+        else if (ch === 'H') { const p = place(x, y); o = TR.townIcon(p === 'frostholm' ? 'snow' : p === 'mirewood' ? 'village' : 'town'); }
+        else if (ch === 'D') o = TR.placeIcon(place(x, y));
+      } else {
+        if (ch === 'T' || ch === 't') o = TR.townTree(ch === 't' ? 'snow' : m.theme === 'swamptown' ? 'swamp' : 'tree');
+        else if (ch === 'F') o = TR.fountain(Math.floor(t * 4) % 2, get(x - 1, y) === 'F' ? 1 : get(x + 1, y) === 'F' ? 0 : -1);
+        else if (ch === 'G') o = TR.grave();
+      }
+      if (o) cx.drawImage(o, X, Y, TS, TS);
+    }
+    for (const b of m.buildings || []) { // solid FF1 drop shadow to the right, then the building itself
+      const bx = sx(b.x), by = sy(b.y), rx = bx + b.w * TS, sh = Math.round(TS * 0.45);
+      cx.fillStyle = 'rgba(0,0,0,.82)'; cx.beginPath(); cx.moveTo(rx, by + sh); cx.lineTo(rx + sh, by + sh * 2); cx.lineTo(rx + sh, by + b.h * TS); cx.lineTo(rx, by + b.h * TS); cx.fill();
+      cx.drawImage(TR.building(m.theme, b.kind, b.w, b.h, b.door), bx, by, b.w * TS, b.h * TS);
     }
   }
   const torches = [], theme = m.theme;
   if (m.kind === 'dungeon') for (let y = Math.max(0, y0 - 1); y < y1 - 1; y++) for (let x = x0; x < x1; x++) if (tileAt(x, y) === '#' && tileAt(x, y + 1) === '.' && (x * 5 + y * 3) % 7 === 0) { cx.drawImage(SP.torch(Math.floor(t * 7 + x) % 2, theme), sx(x), sy(y), TS, TS); torches.push([sx(x) + TS / 2, sy(y) + TS * 0.4]); }
   for (const [dx, dy, k] of m.decor || []) cx.drawImage(SP.decor(k), sx(dx), sy(dy), TS, TS);
-  if (m.kind === 'town') { // colour-coded buildings with a classic letter plaque over each door
-    cx.font = '9px "Press Start 2P", ui-monospace, monospace'; cx.textAlign = 'center'; cx.textBaseline = 'middle';
-    for (const [k, p] of Object.entries(m.portals)) {
-      const to = p.to, kind = /inn/.test(to) ? 'inn' : /shop/.test(to) ? 'shop' : /smith/.test(to) ? 'smith' : /guild/.test(to) ? 'guild' : /hut/.test(to) ? 'hut' : /elder|house|cottage/.test(to) ? 'house' : null; if (!kind) continue;
-      const [px2, py2] = k.split(',').map(Number), bx = sx(px2), by = sy(py2);
-      cx.drawImage(SP.building(kind), bx, by, TS, TS);
-      const letter = { inn: 'I', shop: 'S', smith: 'F', guild: 'G', hut: 'H', house: 'H' }[kind];
-      cx.fillStyle = '#000'; cx.fillRect(bx + 7, by - 12, 18, 14); cx.fillStyle = '#fff'; cx.fillRect(bx + 8, by - 11, 16, 12); cx.fillStyle = { inn: '#2a50d8', shop: '#2a9a3a', smith: '#6a7084', guild: '#7a3ab8', hut: '#a08428', house: '#a83a3a' }[kind]; cx.fillRect(bx + 9, by - 10, 14, 10);
-      cx.fillStyle = '#fff'; cx.fillText(letter, bx + 16, by - 4);
-    }
-    cx.textBaseline = 'alphabetic';
-  }
   if (m.boss && !defeated(m.boss.id)) { const bob = Math.round(Math.sin(t * 2) * 1.5); cx.drawImage(SP.enemy(m.boss.id), sx(m.boss.x), sy(m.boss.y) + bob, TS, TS); }
   for (const n of m.npcs || []) {
     const nx0 = sx(n.x), ny0 = sy(n.y), bob = Math.round(Math.sin(t * 2 + n.x) * 0.8);
@@ -218,9 +236,6 @@ function draw(t = performance.now() / 1000) {
   }
   if (m.kind === 'outdoor') {
     const reg = regionOf();
-    cx.fillStyle = 'rgba(10,20,40,.13)'; // drifting cloud shadows
-    for (let i = 0; i < 3; i++) { const cxp = ((t * 14 + i * 230) % (cv.width + 240)) - 120; cx.beginPath(); cx.ellipse(cxp, 70 + i * 120, 80, 26, 0, 0, 7); cx.fill(); }
-    if (reg === 'swamp') { cx.fillStyle = 'rgba(40,70,40,.14)'; cx.fillRect(0, 0, cv.width, cv.height); }
     if (reg === 'snow') { cx.fillStyle = 'rgba(210,225,255,.07)'; cx.fillRect(0, 0, cv.width, cv.height); cx.fillStyle = 'rgba(255,255,255,.9)'; for (let i = 0; i < 46; i++) cx.fillRect(Math.round((i * 47 + Math.sin(t * 0.9 + i) * 14 + t * 10) % cv.width), Math.round((t * (30 + (i % 5) * 9) + i * 53) % cv.height), 2, 2); }
   } else if (m.kind === 'dungeon') { // torch-lit darkness around the party
     const lt = LIGHT[theme], fl = Math.sin(t * 9) * 4 + Math.sin(t * 23) * 2, gx = px + TS / 2, gy = py + TS / 2;
@@ -230,7 +245,7 @@ function draw(t = performance.now() / 1000) {
     cx.globalCompositeOperation = 'lighter'; // torch glow on top of the darkness
     for (const [tx, ty] of torches) { const r = 52 + Math.sin(t * 11 + tx) * 4, tg = cx.createRadialGradient(tx, ty, 2, tx, ty, r); tg.addColorStop(0, `rgba(${lt.glow},.38)`); tg.addColorStop(1, `rgba(${lt.glow},0)`); cx.fillStyle = tg; cx.fillRect(tx - r, ty - r, r * 2, r * 2); }
     cx.globalCompositeOperation = 'source-over';
-  } else { cx.fillStyle = 'rgba(255,170,80,.06)'; cx.fillRect(0, 0, cv.width, cv.height); }
+  } else if (m.kind !== 'town') { cx.fillStyle = 'rgba(255,170,80,.06)'; cx.fillRect(0, 0, cv.width, cv.height); }
   miniOverlay(t);
   if (trans > 0) { // battle-start wipe
     cx.fillStyle = '#000';
@@ -426,7 +441,7 @@ function questLog(lines = []) { // progress notes appended to the victory panel
   }
   return lines;
 }
-function guild() { B.guild = true; show(`<h2>⚔️ ${esc(mapDef().name)}</h2><div class="npc">${npcImg('guildmaster', 64)}<p>Reassign jobs, gear and skills for free. Sub jobs lend their skills two levels behind your main job.</p></div><div class="grid">${G.party.map((c, i) => btn('build', `${esc(c.name)} — ${JOBS[c.main].name}${c.sub ? ' / ' + JOBS[c.sub].name : ''}`, i)).join('')}</div>${btn('leave', 'Leave', '', '', 'primary')}`); }
+function guild() { B.guild = true; show(`<h2>⚔️ ${esc(mapDef().name)}</h2><div class="npc">${npcImg('guildmaster', 64)}<p>Reassign jobs, gear and skills for free. Sub jobs lend their skills two levels behind your main job.</p></div><div class="pane menuparty">${G.party.map((c, i) => btn('build', `<img src="${SP.heroURL(c.main)}" width="36" height="36" class="px" alt=""><span class="hinfo"><span class="hn">${esc(c.name)}</span><span class="hj">${JOBS[c.main].name}${c.sub ? '/' + JOBS[c.sub].name : ''}</span><span class="hl">LV ${c.level}</span></span>`, i, '', 'hero')).join('')}</div>${btn('leave', 'Leave', '', '', 'primary')}`); }
 ACT.leave = () => { B.guild = false; hide(); };
 function inn(npc) {
   const cost = npc.cost || 25;
@@ -444,9 +459,9 @@ let shopTab = 'buy', curShop = null;
 function shop(id, msg = '') {
   if (id) curShop = id;
   const def = SHOPS[curShop];
-  const buyRows = Object.entries(def.stock).flatMap(([k, ids]) => ids.map((id2) => { const d = DB[k][id2]; return `<div class="slot"><div class="t"><b>${k === 'gems' ? gemImg(id2) + ' ' : ''}${d.name}</b><small>${d.desc || (k === 'weapons' ? WEAPON_TYPES[d.type].name + ' · ' : '') + gearLine(d)}</small></div>${btn('buy', `${d.price} G`, k, id2, '', G.gold < d.price)}</div>`; }));
+  const buyRows = Object.entries(def.stock).flatMap(([k, ids]) => ids.map((id2) => { const d = DB[k][id2]; return `<div class="slot"><div class="t"><b>${k === 'gems' ? gemImg(id2) + ' ' : ''}${d.name}</b><small>${gearDesc(k, d)}${k === 'weapons' ? `<br>${G.party.filter((c) => L.weaponOk(c, id2)).map((c) => esc(c.name)).join(', ') || '<span class="bad">no one in the party can use it</span>'}` : ''}</small></div>${btn('buy', `${d.price} G`, k, id2, '', G.gold < d.price)}</div>`; }));
   const sellRows = ['weapons', 'armors', 'accs', 'gems'].flatMap((k) => [...new Set(G.inv[k])].map((id2) => { const d = DB[k][id2], p = Math.floor((d.price || 200) / 2); return `<div class="slot"><div class="t"><b>${k === 'gems' ? gemImg(id2) + ' ' : ''}${d.name}</b> ×${G.inv[k].filter((x) => x === id2).length}</div>${btn('sell', `Sell ${p} G`, k, id2)}</div>`; })).concat(Object.entries(G.inv.items).filter(([, n]) => n > 0).map(([id2, n]) => `<div class="slot"><div class="t"><b>${ITEMS[id2].name}</b> ×${n}</div>${btn('sell', `Sell ${Math.floor(ITEMS[id2].price / 2)} G`, 'items', id2)}</div>`));
-  show(`<h2>${def.title}</h2><div class="row"><span class="gold grow">${G.gold} G</span>${btn('tab', 'Buy', 'buy', '', shopTab === 'buy' ? 'sel' : '')}${btn('tab', 'Sell', 'sell', '', shopTab === 'sell' ? 'sel' : '')}</div>${msg ? `<p class="dim">${msg}</p>` : ''}${(shopTab === 'buy' ? buyRows : sellRows).join('') || '<p class="dim">Nothing to sell.</p>'}${btn('close', 'Leave', '', '', 'primary')}`);
+  show(`<h2>${def.title}</h2><div class="shophead">${npcImg(/smith/.test(curShop) ? 'smith' : 'merchant', 48)}<div class="shoptabs">${btn('tab', 'Buy', 'buy', '', shopTab === 'buy' ? 'sel' : '')}${btn('tab', 'Sell', 'sell', '', shopTab === 'sell' ? 'sel' : '')}</div><div class="gilbox"><span>G</span>${G.gold}</div></div>${msg ? `<p class="dim">${msg}</p>` : ''}${(shopTab === 'buy' ? buyRows : sellRows).join('') || '<p class="dim">Nothing to sell.</p>'}${btn('close', 'Leave', '', '', 'primary')}`);
 }
 ACT.tab = (t) => { shopTab = t; shop(); };
 ACT.buy = (k, id) => { const d = DB[k][id]; if (G.gold < d.price) return; G.gold -= d.price; sfx('coin'); if (k === 'items') G.inv.items[id] = (G.inv.items[id] || 0) + 1; else G.inv[k].push(id); shop(null, `Bought ${d.name}.`); };
@@ -493,6 +508,7 @@ function loadSlot(i) {
 }
 function intro() {
   show(`<h2>Welcome to Haven Town</h2><div class="npc">${npcImg('elder', 64)}<p>Three great evils stir: the <b>Ashen Wyrm</b> in the cavern east of town, a <b>Lich King</b> in the swamp crypt, and a <b>Frost Titan</b> in a spire far to the north.</p></div>
+  <p>Your party sets out <b>unarmed</b> with <span class="gold">400 G</span>: arm everyone at the <b>Smithy</b> first (a sword, two staves and a dagger cost about 205 G), then buy a few potions.</p>
   <p>Visit the <b>Guild</b> to choose jobs, the <b>Smithy</b> for gear, and open the <b>Menu</b> (Esc) to socket gems into skills. Talk to townsfolk: a <span class="gold">!</span> marks someone with news. Check your <b>Journal</b> if you get lost.</p>${btn('close', 'Begin', '', '', 'primary')}`);
 }
 function mainMenu() {
@@ -508,7 +524,7 @@ ACT.bestiary = () => {
   show(`<h2>📖 Bestiary</h2><p class="dim">Foes discovered: <b class="gold">${seen.length}/${ids.length}</b>. Defeat a creature to learn its weaknesses.</p><div class="grid">${ids.map((id) => {
     const r = G.flags.bestiary[id], d = ENEMIES[id];
     if (!r) return '';
-    return `<div class="card"><img class="px" src="${SP.enemyURL(id)}" width="${SP.isBig(id) ? 64 : 48}" height="${SP.isBig(id) ? 64 : 48}" alt="" style="float:right"><b>${d.name}</b>${d.boss ? ' <span class="chip">Boss</span>' : ''}<div class="dim">Defeated ${r.kills}</div><div>HP ${d.hp} · ATK ${d.atk} · MAG ${d.mag}</div><div>${r.kills ? `weak ${d.weak.map((w) => ELEM_ICON[w]).join('') || '—'} · resists ${d.res.map((w) => ELEM_ICON[w]).join('') || '—'}` : '<span class="dim">weaknesses unknown</span>'}</div></div>`;
+    return `<div class="card"><img class="px" src="${SP.enemyURL(id)}" width="${SP.isBig(id) ? 64 : 48}" height="${SP.isBig(id) ? 64 : 48}" alt="" style="float:right"><b>${d.name}</b>${d.boss ? ' <span class="chip">Boss</span>' : ''}<div class="dim">Defeated ${r.kills}</div><div>HP ${d.hp} · ATK ${d.atk} · MAG ${d.mag}</div><div>${r.kills ? `weak ${d.weak.map((w) => ELEM_ICON[w]).join('') || '—'} · resists ${d.res.map((w) => ELEM_ICON[w]).join('') || '—'}` : '<span class="dim">weaknesses unknown</span>'}</div>${r.kills && DROPS[id]?.common ? `<div>Drops: ${[DROPS[id].common, DROPS[id].rare].filter(Boolean).map(([k, did], j) => (j ? (r.got?.[did] ? `<span class="gold">★ ${DB[k][did].name}</span>` : '<span class="dim">★ ???</span>') : DB[k][did].name)).join(' · ')}</div>` : ''}</div>`;
   }).join('')}</div>${ids.length - seen.length ? `<div class="card dim" style="text-align:center">❔ ${ids.length - seen.length} more creatures are still undiscovered</div>` : ''}${btn('menu', 'Back', '', '', 'primary')}`);
 };
 ACT.title = title;
@@ -596,14 +612,14 @@ ACT.bclose = () => (B.guild ? guild() : mainMenu());
 function buildMain(c) {
   const s = stats(c), m = JOBS[c.main], sj = c.sub ? JOBS[c.sub] : null, cap = gemCapacity(c), used = gemsUsed(c);
   const jobs = inTown();
-  const gearRow = (label, view, id, kind) => `<div class="slot"><div class="t"><b>${label}:</b> ${id ? DB[kind][id].name : '<span class="dim">— none —</span>'}<small>${id ? (kind === 'weapons' ? WEAPON_TYPES[WEAPONS[id].type].name + ' · ' : '') + gearLine(DB[kind][id]) : ''}</small></div>${btn('bview', 'Change', view)}</div>`;
+  const gearRow = (label, view, id, kind) => `<div class="slot"><div class="t"><b>${label}:</b> ${id ? DB[kind][id].name : `<span class="dim">— ${kind === 'weapons' ? 'unarmed' : 'none'} —</span>`}<small>${id ? gearDesc(kind, DB[kind][id]) : kind === 'weapons' ? 'Fighting bare-handed. Buy a weapon at a Smithy.' : ''}</small></div>${btn('bview', 'Change', view)}</div>`;
   const slotRow = (i) => {
     const sid = slotSkill(c, i), gems = slotGems(c, i);
     const m2 = sid ? skillWithGems(sid, gems) : null;
     return `<div class="slot"><div class="t"><b>${i === SIG ? '⭐ Weapon' : `Slot ${i + 1}`}:</b> ${sid ? `<b>${m2.name}</b> ${gems.map((g) => gemChip(g, true)).join('')}` : '<span class="dim">— empty —</span>'}<small>${m2 ? describeSkill(m2) : ''}</small></div>${btn('bslot', 'Edit', i)}</div>`;
   };
   show(`<div class="row">${btn('bnav', '◀', -1)}<h2 class="grow"><img src="${SP.heroURL(c.main)}" width="36" height="36" class="px" style="vertical-align:middle"> ${esc(c.name)} · Lv${c.level}</h2>${btn('bnav', '▶', 1)}</div>
-  <div class="dim">EXP ${c.exp}/${c.level < L.MAX_LEVEL ? expNeeded(c.level) : '—'}</div>
+  <div class="dim">${c.level < L.MAX_LEVEL ? `EXP ${c.exp}/${expNeeded(c.level)} · next level in ${expNeeded(c.level) - c.exp}` : 'EXP — · max level'}</div>
   <div class="card">
     <div class="row jobrow"><span><b>Main:</b> ${m.icon} ${m.name}</span>${btn('bview', 'Change', 'jobMain', '', '', !jobs)}</div><div class="row jobrow"><span><b>Sub:</b> ${sj ? sj.icon + ' ' + sj.name : 'none'}</span>${btn('bview', 'Change', 'jobSub', '', '', !jobs)}</div>
     ${jobs ? '' : '<div class="dim">Jobs can only be changed in town (visit the Guild ⚔️).</div>'}
@@ -632,7 +648,7 @@ function gearPick(kind) {
   show(`<h2>${esc(c.name)}: ${field}</h2>${c[field] ? btn('equip', 'Unequip', kind, '') : ''}${uniq.map((id) => {
     const g = DB[kind][id], ok = kind !== 'weapons' || L.weaponOk(c, id);
     const now = stats(c), after = stats({ ...c, [field]: id }), delta = ok ? ['atk', 'mag', 'def', 'hp', 'mp', 'spd'].filter((k) => after[k] !== now[k]).map((k) => `<span class="${after[k] > now[k] ? 'up' : 'down'}">${after[k] > now[k] ? '▲' : '▼'}${Math.abs(after[k] - now[k])} ${k}</span>`).join(' ') : '';
-    return `<div class="slot"><div class="t"><b>${g.name}</b> ×${G.inv[kind].filter((x) => x === id).length}<small>${kind === 'weapons' ? WEAPON_TYPES[g.type].name + ' · ' : ''}${gearLine(g)}${ok ? '' : ' · <span class="bad">job can\'t use</span>'}</small>${delta ? `<div class="delta">${delta}</div>` : ''}</div>${btn('equip', 'Equip', kind, id, '', !ok)}</div>`;
+    return `<div class="slot"><div class="t"><b>${g.name}</b> ×${G.inv[kind].filter((x) => x === id).length}<small>${gearDesc(kind, g)}${ok ? '' : ' · <span class="bad">job can\'t use</span>'}</small>${delta ? `<div class="delta">${delta}</div>` : ''}</div>${btn('equip', 'Equip', kind, id, '', !ok)}</div>`;
   }).join('') || '<p class="dim">Nothing in inventory.</p>'}${btn('bmain', 'Back')}`);
 }
 ACT.equip = (kind, id) => {
@@ -710,11 +726,14 @@ function renderBattle() {
   const { b, ask } = BT;
   const order = b.order().map((x) => `<img class="px o-${x.side} ${ask?.p === x ? 'cur' : ''}" title="${esc(x.name)}" src="${x.side === 'p' ? SP.heroURL(x.ch.main) : SP.enemyURL(x.id)}" width="${x.side === 'e' && SP.isBig(x.id) ? 34 : 26}" height="${x.side === 'e' && SP.isBig(x.id) ? 34 : 26}" alt="${esc(x.name)}">`).join('');
   const sts = (x) => `${x.st.poison > 0 ? '☠' : ''}${x.st.slow > 0 ? '🐌' : ''}${x.st.stun > 0 ? '💫' : ''}${x.st.atkup > 0 ? '⬆' : ''}${x.st.defup > 0 ? '🛡' : ''}`;
-  ov.innerHTML = `<div class="win battle"><div class="bl"><div class="order"><span class="dim">ORDER</span>${order}${BT.auto ? '<button class="autobtn on" data-tap="autotoggle" tabindex="-1">AUTO ON</button>' : ''}</div><div id="stagehost"></div><div class="foes">${b.e.map((e) => `<div data-n="${e.name}" class="foe ${e.hp <= 0 ? 'dead' : ''}">
-    <span class="fn">${e.name}</span> <span class="fh">${e.hp}</span> <span class="fs">${sts(e)}</span>${bar(e.hp, e.maxhp, 'hp')}
-    <span class="fw">${e.weak.length ? 'WEAK ' + e.weak.map((w) => ELEM_ICON[w]).join('') : ''}${e.res.length ? ' RES ' + e.res.map((w) => ELEM_ICON[w]).join('') : ''}</span></div>`).join('')}</div>
-  <div class="logwrap"><div class="log ${BT.logBig ? 'big' : ''}" id="log">${BT.log.map((l) => `<div>${esc(l)}</div>`).join('')}</div><button class="logtoggle" data-tap="logsize" tabindex="-1" title="Expand / collapse the battle messages (L)">${BT.logBig ? '▾' : '▴'}</button></div></div>
-  <div class="br"><div class="pane cmdwin"><div id="cmd">${ask ? cmdHtml(ask) : '<span class="dim">...</span>'}</div></div>
+  const icons = (list) => list.map((w) => ELEM_ICON[w]).join('');
+  const groups = []; for (const e of b.e) { if (e.hp <= 0) continue; const g = groups.find((x) => x.name === e.name); if (g) g.n++; else groups.push({ name: e.name, n: 1, e }); }
+  const enemyWin = `<div class="elist">${groups.map(({ name, n, e }) => `<div class="er" data-n="${esc(name)}"><span class="en">${esc(name)}</span><span class="ec">${n}</span>${e.weak.length || e.res.length ? `<span class="ew">${e.weak.length ? 'WEAK ' + icons(e.weak) : ''}${e.res.length ? ' RES ' + icons(e.res) : ''}</span>` : ''}</div>`).join('')}</div>`;
+  const msg = BT.log.slice(-2).map((l) => `<div>${esc(l)}</div>`).join('');
+  ov.innerHTML = `<div class="win battle"><div class="bl"><div class="order"><span class="dim">ORDER</span>${order}${BT.auto ? '<button class="autobtn on" data-tap="autotoggle" tabindex="-1">AUTO ON</button>' : ''}</div>
+  <div class="stagewrap"><div id="stagehost"></div>${msg && !BT.logBig ? `<div class="bmsg">${msg}</div>` : ''}<button class="logtoggle" data-tap="logsize" tabindex="-1" title="Battle log (L)">${BT.logBig ? '✕' : 'LOG'}</button></div>
+  ${BT.logBig ? `<div class="logwrap"><div class="log big" id="log">${BT.log.map((l) => `<div>${esc(l)}</div>`).join('')}</div></div>` : ''}</div>
+  <div class="br"><div class="pane cmdwin"><div id="cmd">${ask ? cmdHtml(ask) : enemyWin}</div></div>
   <div class="pane partywin">${b.p.map((p) => { const r = p.hp / p.maxhp; return `<div data-n="${p.name}" class="pm ${p.hp <= 0 ? 'dead' : ''} ${ask?.p === p ? 'active' : ''}"><span class="pn">${esc(p.name)}</span><span class="ph ${r < 0.25 ? 'low' : r < 0.5 ? 'mid' : ''}">${p.hp}/${p.maxhp}</span><span class="pmp">MP ${p.mp}</span><span class="pst">${sts(p)}</span></div>`; }).join('')}</div></div></div>`;
   ov.className = 'on';
   $('#stagehost').appendChild(BT.stage.canvas);
@@ -754,7 +773,7 @@ function cmdHtml(a) {
     return `${head}<div class="cmdlist">` + (its.map(([id, n]) => btn('c', `<span class="sk"><b>${ITEMS[id].name}</b><i>x${n}</i></span><small>${ITEMS[id].desc}</small>`, 'useitem', id, 'two')).join('') || '<div class="dim">No items.</div>') + `${back}</div>`;
   }
   // target: pick from a list of names, like the original
-  const list = a.tside === 'e' ? BT.b.e.map((e, i) => (e.hp > 0 ? btn('tgt', `${e.name}<i>${e.hp}</i>`, 'e', i) : '')) : BT.b.p.map((x, i) => btn('tgt', `${esc(x.name)}<i>${x.hp > 0 ? x.hp : 'KO'}</i>`, 'p', i));
+  const list = a.tside === 'e' ? BT.b.e.map((e, i) => (e.hp > 0 ? btn('tgt', `${e.name}${e.weak.length ? ` <span class="tw">${e.weak.map((w) => ELEM_ICON[w]).join('')}</span>` : ''}<i>${e.hp}</i>`, 'e', i) : '')) : BT.b.p.map((x, i) => btn('tgt', `${esc(x.name)}<i>${x.hp > 0 ? x.hp : 'KO'}</i>`, 'p', i));
   return `${head}<div class="cmdlist"><div class="dim">${a.tside === 'e' ? 'ATTACK WHICH?' : 'WHO?'}</div>${list.join('')}${back}</div>`;
 }
 function autoCommand(p) { // reuse the hero's last move with sensible targets; fall back to a basic attack
@@ -802,11 +821,22 @@ async function victory(b, bossId) {
   music('victory');
   const r = rewards(b); G.gold += r.gold; (G.stats ||= { wins: 0 }).wins++;
   const lines = [];
-  for (const c of G.party) if (c.hp > 0) {
-    const ups = gainExp(c, r.exp);
-    if (ups.length) { if (tipOnce('levelup')) lines.push('💡 New skills unlock as heroes level up. Check the build screen for empty skill slots.'); setTimeout(() => sfx('levelup'), 1400); lines.push(`🎉 ${esc(c.name)} reached level ${ups.at(-1)}!`); autofill(c); }
+  let lvSfx = false;
+  for (const { c, exp, ups, learned } of L.awardExp(G.party, r.exp)) { // KO'd heroes get a half share (L.KO_EXP_SHARE)
+    if (c.hp <= 0 && exp) lines.push(`<span class="dim">${esc(c.name)} (KO) gains half EXP: +${exp}</span>`);
+    if (!ups.length) continue;
+    if (tipOnce('levelup')) lines.push('💡 New skills unlock as heroes level up. Check the build screen for empty skill slots.');
+    lvSfx = true; autofill(c);
+    lines.push(`🎉 ${esc(c.name)} reached level ${ups.at(-1)}!${ups.length > 1 ? ` (+${ups.length} levels)` : ''}${learned.length ? ` Learned <b>${learned.map((id) => SKILLS[id].name).join(', ')}</b>.` : ''}`);
   }
-  for (const d of r.drops) { if (d.kind === 'items') G.inv.items[d.id] = (G.inv.items[d.id] || 0) + 1; else G.inv[d.kind].push(d.id); lines.push(`Found ${DB[d.kind][d.id].name}`); }
+  if (lvSfx) setTimeout(() => sfx('levelup'), 1400);
+  for (const d of r.drops) {
+    if (d.kind === 'items') G.inv.items[d.id] = (G.inv.items[d.id] || 0) + 1; else G.inv[d.kind].push(d.id);
+    const name = DB[d.kind][d.id].name, from = ENEMIES[d.from]?.name;
+    lines.push(d.rare ? `<b class="gold">★ RARE: ${name}!</b>${from ? ` <span class="dim">(${esc(from)})</span>` : ''}` : `Got ${name}!`);
+    if (d.from) ((G.flags.bestiary[d.from] ||= { seen: 1, kills: 0 }).got ||= {})[d.id] = true;
+  }
+  if (r.drops.some((d) => d.rare)) setTimeout(() => sfx('chest'), 900);
   for (const e of b.e) for (const [id, q] of Object.entries(QUESTS)) if (qstate(id) === 'active' && q.goal.type === 'kill' && q.goal.ids.includes(e.id)) G.flags.qprog[id] = Math.min(q.goal.n, (G.flags.qprog[id] || 0) + 1);
   const def = bossId ? BOSSES[bossId] : null;
   if (def) {
@@ -880,5 +910,5 @@ muteBtn.addEventListener('click', () => { setMuted(!isMuted()); syncMute(); if (
 syncMute();
 
 // debug / test hook
-window.__game = { get G() { return G; }, get BT() { return BT; }, battle, step, goto, MAPS, snap, OPT };
+window.__game = { get G() { return G; }, get BT() { return BT; }, battle, step, goto, MAPS, snap, OPT, ACT, ui: { shop, inn, guild, socketer, title, slotScreen, diffScreen, talk, itemsMenu, mainMenu } };
 title();
