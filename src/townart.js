@@ -168,12 +168,12 @@ const MAT = {
   },
 };
 function plazaPx(x, y, cx, cy) { // radial paving rings around the centrepiece
-  const dx = x + 0.5 - cx, dy = (y + 0.5 - cy) * 1.25, r = Math.hypot(dx, dy), RW = 5.2, ri = Math.floor(r / RW), fr = r / RW - ri;
-  const circ = 2 * Math.PI * Math.max(r, 1), n = Math.max(6, Math.round(circ / 7.5)), arc = circ / n, a = (Math.atan2(dy, dx) / (2 * Math.PI) + 1) * n + ri * 0.5, ai = Math.floor(a), fa = a - ai;
+  const dx = x + 0.5 - cx, dy = (y + 0.5 - cy) * 1.25, r = Math.hypot(dx, dy), RW = 6.2, ri = Math.floor(r / RW), fr = r / RW - ri;
+  const circ = 2 * Math.PI * Math.max(r, 1), n = Math.max(6, Math.round(circ / 9)), arc = circ / n, a = (Math.atan2(dy, dx) / (2 * Math.PI) + 1) * n + ri * 0.5, ai = Math.floor(a), fa = a - ai;
   const ed = Math.min(Math.min(fr, 1 - fr) * RW, Math.min(fa, 1 - fa) * arc), N = fbm(x, y, 12);
   if (ed < 0.8) return pick(PAL.plaza, 0.06 + N * 0.12, x, y);
   const ux = dx / Math.max(r, 1), uy = dy / Math.max(r, 1), ox = ux * (fr - 0.5) * RW - uy * (fa - 0.5) * arc, oy = uy * (fr - 0.5) * RW + ux * (fa - 0.5) * arc, lit = -(ox + oy);
-  let s = 0.5 + (hash(ri, ai % n, 5) - 0.5) * 0.28 + (N - 0.5) * 0.16; if (ed < 1.9) s += lit > 0.4 ? 0.2 : lit < -0.4 ? -0.18 : 0; else s += 0.04;
+  let s = 0.52 + (hash(ri, ai % n, 5) - 0.5) * 0.2 + (N - 0.5) * 0.1; if (ed < 1.9) s += lit > 0.4 ? 0.2 : lit < -0.4 ? -0.18 : 0; else s += 0.04;
   return pick(PAL.plaza, cl(s, 0.14, 1), x, y);
 }
 
@@ -713,7 +713,7 @@ function snowmanPix() {
     for (let y = 0; y < 3; y++) for (let x = 6; x < 12; x++) p.set(x, y, pick(PAL.iron, 0.4, x, y)); for (let x = 5; x < 13; x++) p.set(x, 3, pick(PAL.iron, 0.2, x, 3));
     outline(p, 0.4); return canv(p); });
 }
-function puffPix(k) { return once('puff' + k, () => { const r = 1.5 + k, p = new Pix(12, 12); for (let y = 0; y < 12; y++) for (let x = 0; x < 12; x++) { const d = Math.hypot(x + 0.5 - 6, y + 0.5 - 6) / r; if (d > 1 || (k > 2 && bay(x, y) < (k - 2) * 0.3)) continue; p.set(x, y, pk(d > 0.7 ? '#a8acb8' : x + y < 11 ? '#f0f2f6' : '#d0d4dc')); } return canv(p); }); }
+function puffPix(k) { return once('puff' + k, () => { const r = 1.6 + k * 0.6, p = new Pix(12, 12); for (let y = 0; y < 12; y++) for (let x = 0; x < 12; x++) { const d = Math.hypot(x + 0.5 - 6, y + 0.5 - 6) / r; if (d > 1) continue; p.set(x, y, pk(k > 3 ? '#c8ccd480' : d > 0.7 ? '#b8bcc8' : x + y < 11 ? '#f4f6fa' : '#d8dce4')); } return canv(p); }); }
 function gullPix(f) { return once('gull' + f, () => { const r = f ? ['.k.....k.', '.ww...ww.', '..wwwww..', '....k....'] : ['.........', 'ww.....ww', '.wwwwwww.', '....k....']; const p = new Pix(11, 6); r.forEach((s, j) => [...s].forEach((c, i) => c !== '.' && p.set(i + 1, j + 1, pk(c === 'k' ? '#404048' : '#ffffff')))); outline(p, 0.5); return canv(p); }); }
 
 // ---------------------------------------------------------------- per-map cache and the draw hooks used by game.js

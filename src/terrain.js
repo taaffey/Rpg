@@ -59,8 +59,7 @@ const STONE = pal('#24201c #3a342c #524a3e #6a6052 #847a68 #9e9480 #b8ae9a #d2ca
 
 // ---------- the bake ----------
 let BK = null;
-function bake() {
-  if (BK) return BK;
+function* bakeGen() { // generator: yields often so the bake can run in idle slices before the player reaches the world
   const PROF = [], T0 = performance.now(), mark = (n) => PROF.push(n + ':' + Math.round(performance.now() - T0));
   const ROWS = GEN.world, W = ROWS[0].length, H = ROWS.length, TW = W + PAD * 2, TH = H + PAD * 2, PW = TW * 16, PH = TH * 16, N = PW * PH;
   const ch = (tx, ty) => { const x = tx - PAD, y = ty - PAD; return x < 0 || y < 0 || x >= W || y >= H ? '~' : ROWS[y][x]; };
@@ -82,10 +81,11 @@ function bake() {
   const ONE = new Float32Array(256).fill(1), ZERO = new Float32Array(256);
   const mask = (b, r) => (b === '000000000' ? ZERO : b === '111111111' ? ONE : fracMask(b, r));
 
-  mark('// ---- 1. c');
+  mark('// ---- 1. c'); yield;
   // ---- 1. classify pixels: 0 ocean, 1 river, 2 land, 3 forest floor, 4 mountain, 5 canyon; plus region per pixel
   const cls = new Uint8Array(N), rpx = new Uint8Array(N), fmask = new Float32Array(N);
   for (let ty = 0; ty < TH; ty++) for (let tx = 0; tx < TW; tx++) {
+    if (!tx && !(ty & 1)) yield;
     const wb = bits(tx, ty, isWater);
     if (wb === '111111111' && !isRiver(ch(tx, ty))) continue; // open ocean: cls 0 already
     const mW = mask(wb, 6), mR = mask(bits(tx, ty, isRiver), 6), mO = mask(bits(tx, ty, (c) => c === '~'), 6);
@@ -115,12 +115,12 @@ function bake() {
   const put = (i, c) => { const j = i * 4; S[j] = c[0]; S[j + 1] = c[1]; S[j + 2] = c[2]; S[j + 3] = 255; };
   const shade = (i, k) => { const j = i * 4; S[j] = S[j] * k; S[j + 1] = S[j + 1] * k; S[j + 2] = S[j + 2] * k; };
 
-  mark('// ---- 2. g');
+  mark('// ---- 2. g'); yield;
   // ---- 2. ground textures
   const groundCol = (X, Y, r, i) => {
     const n1 = fbm(X / 30, Y / 30, 31), n2 = vn(X / 5, Y / 5, 33), d = bay(X, Y) - 0.5, hh = h2(X, Y, 35);
     if (r === 1) { // snow: soft blue drifts and wind lines
-      const rl = (fbm((X - 2) / 14, (Y - 2) / 14, 38) - fbm((X + 2) / 14, (Y + 2) / 14, 38)) * 9;
+      const rl = (fbm((X - 2) / 14, (Y - 2) / 14, 38) - fbm((X + 2) / 14, (Y + 2) / 14, 38)) * 4.5;
       let v = 4.9 + n1 * 0.7 + rl + n2 * 0.3 + d * 0.9; const q = frac((Y + vn(X / 16, Y / 16, 36) * 7 + X * 0.15) / 7);
       if (q < 0.1 && vn(X / 6, Y / 3, 37) > -0.1) v -= 1; else if (q < 0.2) v += 0.5; if (hh > 0.99) v = 7;
       return SNOW[clamp(Math.round(v), 2, 7)];
@@ -141,7 +141,7 @@ function bake() {
     if (hh < 0.07) v -= 1.7; else if (hh > 0.955) v += 1.3;
     return GRASS[clamp(Math.round(v), 1, 8)];
   };
-  for (let i = 0; i < N; i++) if (cls[i] >= 2) { put(i, groundCol(i % PW, (i / PW) | 0, rpx[i], i)); kind[i] = 1; }
+  for (let i = 0; i < N; i++) { if (!(i & 32767)) yield; if (cls[i] >= 2) { put(i, groundCol(i % PW, (i / PW) | 0, rpx[i], i)); kind[i] = 1; } }
   // grass tufts, reeds, snow sparkle (little multi-pixel marks)
   for (let i = 0; i < N; i++) {
     if (cls[i] !== 2) continue; const X = i % PW, Y = (i / PW) | 0, r = rpx[i], hh = h2(X, Y, 37);
@@ -149,10 +149,11 @@ function bake() {
     if (r === 2 && hh < 0.006 && Y > 3) { const c = hh < 0.015 ? SWAMP[7] : SWAMP[6]; put(i, SWAMP[2]); put(i - PW, c); put(i - 2 * PW, c); put(i - 3 * PW, SWAMP[8]); }
   }
 
-  mark('// ---- 3. w');
+  mark('// ---- 3. w'); yield;
   // ---- 3. water pixels: cliffs (land falls into the sea), banks (rivers), waterfalls (river over a sea cliff)
   const wT = new Uint8Array(N), wD = new Uint8Array(N), wF = new Uint8Array(N); // type 1 ocean 2 river 3 fall; dist; fall depth
   for (let X = 0; X < PW; X++) {
+    if (!(X & 63)) yield;
     let above = -1, run = 0, upRegion = 0; // what lies above the current run of water: -1 none, 2 land, 1 river
     const ch0 = 6.4 + vn(X / 7, 3, 70) * 2;
     for (let Y = 0; Y < PH; Y++) {
@@ -196,7 +197,7 @@ function bake() {
     else if ((cls[i - 1] === 0 && !kind[i - 1]) || (cls[i + 1] === 0 && !kind[i + 1])) { put(i, CLIFF[rpx[i]][6]); }
   }
 
-  mark('// ---- 4. f');
+  mark('// ---- 4. f'); yield;
   // ---- 4. forests: hundreds of overlapping crowns, light from the top-left, trunks and shadows on the open edge
   const crown = new Uint8Array(N);
   const crownAt = (cx, cy, r, P, seed) => {
@@ -229,6 +230,7 @@ function bake() {
   };
   for (let i = 0; i < N; i++) if (cls[i] === 3) { const r = rpx[i]; put(i, r === 1 ? SNOW[h2(i, 1, 82) < 0.5 ? 2 : 3] : FOREST[r === 2 ? 2 : 0][2 + (h2(i, 1, 82) < 0.3 ? 1 : 0)]); kind[i] = 4; }
   for (let j = 0, Y = 1; Y < PH; j++, Y += 6) {
+    if (!(j & 3)) yield;
     for (let X = (j & 1) * 4; X < PW; X += 8) {
       const cx = X + (h2(X, Y, 83) - 0.5) * 2.6, cy = Y + (h2(X, Y, 84) - 0.5) * 1.6, i = Math.round(cy) * PW + Math.round(cx);
       if (i < 0 || i >= N || cls[i] !== 3) continue;
@@ -245,7 +247,7 @@ function bake() {
     else if (crown[i - PW * 3 - 2] || crown[i - 2]) shade(i, 0.8);
   }
 
-  mark('// ---- 5. m');
+  mark('// ---- 5. m'); yield;
   // ---- 5. mountains: rows of overlapping peaks, painted back to front
   const peak = (bx, by, hgt, hw, skew, desert, snowFrac, seed) => {
     const tx = bx + skew, ty = by - hgt;
@@ -258,7 +260,7 @@ function bake() {
         const lit = x < ridge, u = lit ? (ridge - x) / (ridge - L + 0.01) : (x - ridge) / (R - ridge + 0.01), dith = (bay(x, y) - 0.5) * 0.35;
         const g = frac(((x - tx) * (lit ? 0.9 : -0.9) + (y - ty) * 0.75) / 5.5 + vn(x / 5, y / 5, seed + 5) * 0.35);
         const snowLine = 1 - snowFrac + vn(x / 3, 0, seed + 4) * 0.07 + (lit ? 0 : 0.03);
-        const snow = snowFrac > 0 && (rel > snowLine || (rel > snowLine - 0.13 && g < 0.24));
+        const snow = snowFrac > 0 && (rel > snowLine || (rel > snowLine - 0.1 && g < 0.2));
         const eL = x - L < 0.9, eR = R - x < 0.9, onRidge = Math.abs(x - ridge) < 0.6;
         let col;
         if (snow) col = ICE[clamp(Math.round((lit ? 4.4 - u * 0.8 : 1.8 - u * 0.4) + dith * 0.5 + (g < 0.12 ? -0.8 : 0) + (onRidge ? 1 : 0) - (eR ? 1 : 0)), 0, 5)];
@@ -281,10 +283,10 @@ function bake() {
     if (near) continue;
     const r = rpx[bi], deep = cls[Math.max(0, bi - 14 * PW)] === 4 && cls[Math.min(N - 1, bi + 7 * PW)] === 4;
     const desert = r === 3, hgt = desert ? 10 + h2(X, Y, 94) * 5 : 15 + h2(X, Y, 94) * 8 + (deep ? 6 : 0);
-    peaks.push([by, bx, hgt, hgt * (desert ? 1.1 : 0.8 + h2(X, Y, 95) * 0.2), (h2(X, Y, 96) - 0.5) * 4, desert, desert ? 0 : r === 1 ? 0.42 : r === 2 ? 0.2 : deep ? 0.32 : 0.24, (X * 7 + Y * 13) | 0]);
+    peaks.push([by, bx, hgt, hgt * (desert ? 1.1 : 0.8 + h2(X, Y, 95) * 0.2), (h2(X, Y, 96) - 0.5) * 4, desert, desert ? 0 : r === 1 ? 0.36 : r === 2 ? 0.18 : deep ? 0.26 : 0.2, (X * 7 + Y * 13) | 0]);
   }
   peaks.sort((a, b) => a[0] - b[0]);
-  for (const [by, bx, hgt, hw, sk, de, sf, sd] of peaks) peak(bx, by, hgt, hw, sk, de, sf, sd);
+  let pk = 0; for (const [by, bx, hgt, hw, sk, de, sf, sd] of peaks) { peak(bx, by, hgt, hw, sk, de, sf, sd); if (!(++pk % 12)) yield; }
   // the canyon pass: a dirt floor with rock walls cut through the range
   for (const [tx, ty] of gate) for (let Y = ty * 16 - 4; Y < ty * 16 + 20; Y++) for (let X = tx * 16 - 4; X < tx * 16 + 20; X++) {
     const i = Y * PW + X, dx = X - (tx * 16 + 7.5), wv = 5 + vn(Y / 4, tx, 61) * 0.8, ad = Math.abs(dx);
@@ -292,7 +294,7 @@ function bake() {
     else if (Y >= ty * 16 - 2 && Y < ty * 16 + 18 && ad <= wv + 2.5 && kind[i] === 5) put(i, dx < 0 ? SHADE[1] : ROCK[ad <= wv + 1.2 ? 6 : 4]);
   }
 
-  mark('// ---- 6. b');
+  mark('// ---- 6. b'); yield;
   // ---- 6. bridges: stone decks with rails over the river
   ROWS.forEach((row, y) => [...row].forEach((c, x) => {
     if (c !== '=') return; const tx = x + PAD, ty = y + PAD, horiz = !isWater(ch(tx - 1, ty)) || !isWater(ch(tx + 1, ty));
@@ -309,12 +311,12 @@ function bake() {
     for (let px = 0; px < 16; px++) for (const dy of [14, 15]) { const X = tx * 16 + (horiz ? px : dy), Y = ty * 16 + (horiz ? dy : px), i = Y * PW + X; if (!kind[i]) { put(i, OCEAN[1]); kind[i] = 2; } }
   }));
 
-  mark('// ---- 7. w');
+  mark('// ---- 7. w'); yield;
   // ---- 7. water distance (to anything static) for depth shading and surf
   const dist = new Float32Array(N).fill(99);
   for (let i = 0; i < N; i++) if (kind[i]) dist[i] = 0;
-  for (let Y = 0; Y < PH; Y++) for (let X = 0; X < PW; X++) { const i = Y * PW + X; if (!dist[i]) continue; let d = dist[i]; if (X > 0) d = Math.min(d, dist[i - 1] + 1); if (Y > 0) { d = Math.min(d, dist[i - PW] + 1); if (X > 0) d = Math.min(d, dist[i - PW - 1] + 1.414); if (X < PW - 1) d = Math.min(d, dist[i - PW + 1] + 1.414); } dist[i] = d; }
-  for (let Y = PH - 1; Y >= 0; Y--) for (let X = PW - 1; X >= 0; X--) { const i = Y * PW + X; if (!dist[i]) continue; let d = dist[i]; if (X < PW - 1) d = Math.min(d, dist[i + 1] + 1); if (Y < PH - 1) { d = Math.min(d, dist[i + PW] + 1); if (X < PW - 1) d = Math.min(d, dist[i + PW + 1] + 1.414); if (X > 0) d = Math.min(d, dist[i + PW - 1] + 1.414); } dist[i] = d; }
+  yield; for (let Y = 0; Y < PH; Y++) for (let X = 0; X < PW; X++) { const i = Y * PW + X; if (!dist[i]) continue; let d = dist[i]; if (X > 0) d = Math.min(d, dist[i - 1] + 1); if (Y > 0) { d = Math.min(d, dist[i - PW] + 1); if (X > 0) d = Math.min(d, dist[i - PW - 1] + 1.414); if (X < PW - 1) d = Math.min(d, dist[i - PW + 1] + 1.414); } dist[i] = d; }
+  yield; for (let Y = PH - 1; Y >= 0; Y--) for (let X = PW - 1; X >= 0; X--) { const i = Y * PW + X; if (!dist[i]) continue; let d = dist[i]; if (X < PW - 1) d = Math.min(d, dist[i + 1] + 1); if (Y < PH - 1) { d = Math.min(d, dist[i + PW] + 1); if (X < PW - 1) d = Math.min(d, dist[i + PW + 1] + 1.414); if (X > 0) d = Math.min(d, dist[i + PW - 1] + 1.414); } dist[i] = d; }
   for (let i = 0; i < N; i++) { if (kind[i]) { wT[i] = 0; continue; } wD[i] = Math.min(31, Math.round(dist[i])); if (!wT[i]) wT[i] = 1; }
   // per tile: 0 = static only, 1 = has water near land, 2 = open ocean (shared animated tiles)
   const tt = new Uint8Array(TW * TH);
@@ -323,10 +325,19 @@ function bake() {
     for (let p = 0; p < 256; p++) { const i = (ty * 16 + (p >> 4)) * PW + tx * 16 + (p & 15); if (wT[i]) { anyW = true; if (wT[i] !== 1 || wD[i] < 24) deep = false; } else deep = false; }
     tt[ty * TW + tx] = !anyW ? 0 : deep ? 2 : 1;
   }
-  mark('BK = { S,');
+  mark('BK = { S,'); yield;
   BK = { S, wT, wD, wF, tt, TW, TH, PW, PH, W, H, tiles: new Map(), PROF };
-  return BK;
 }
+let GENR = null;
+function bake() { // finish (or run) the bake right now
+  if (BK) return BK; GENR = GENR || bakeGen(); while (!GENR.next().done); return BK;
+}
+export function prebake() { // run the bake in ~6 ms slices while the player is still in town / on the title screen
+  if (BK) return; GENR = GENR || bakeGen();
+  const step = () => { if (BK) return; const t0 = performance.now(); while (performance.now() - t0 < 6) if (GENR.next().done) return; setTimeout(step, 16); };
+  step();
+}
+if (typeof window !== 'undefined') setTimeout(prebake, 400);
 
 // ---------- animated water ----------
 let RIP = null;
@@ -444,7 +455,7 @@ const castle = () => memo('castle', () => {
 });
 // Frostholm: snowbound walled town, white stone and teal roofs (3 x 2.5 tiles)
 const frostTown = () => memo('frost', () => {
-  const p = new Pix(48, 40), P = pal('#2a3248 #424c68 #5e6a88 #7e8aa8 #a0aac6 #c4cce2 #e4eaf6');
+  const p = new Pix(48, 40), P = pal('#1e2438 #343c56 #4c5674 #66708e #808aa8 #9ea8c2 #c0c8dc');
   p.rect(3, 12, 42, 24, (i, j) => SNOW[5 + ((i * 5 + j * 3) % 7 === 0 ? 1 : 0) - ((i * 3 + j) % 11 === 0 ? 1 : 0)]);
   wallBlock(p, 3, 11, 42, 3, P);
   for (const [x, y, w] of [[7, 16, 9], [31, 16, 10], [6, 25, 8], [33, 25, 8], [18, 24, 6]]) { roofBlock(p, x, y, w, 5, TEAL, true); houseFront(p, x, y + 5, w, P); }
@@ -519,7 +530,7 @@ const rockslide = () => memo('slide', () => {
   const p = new Pix(16, 16);
   for (const [cx, cy, r] of [[4, 6, 3.6], [11, 5, 3.4], [8, 9, 4], [3, 12, 3], [12, 12, 3.4], [8, 3, 2.6]]) for (let y = 0; y < 16; y++) for (let x = 0; x < 16; x++) {
     const dx = x - cx, dy = y - cy, d = Math.hypot(dx, dy); if (d > r) continue; const l = (-dx * 0.6 - dy * 0.7) / r;
-    p.set(x, y, ROCK[clamp(Math.round(4.5 + l * 3 + (bay(x, y) - 0.5) - (d > r - 1 ? 1.5 : 0)), 0, 9)]);
+    p.set(x, y, STONE[clamp(Math.round(4 + l * 3 + (bay(x, y) - 0.5) - (d > r - 1 ? 1.5 : 0)), 0, 8)]);
   }
   return p.outline(K, 220).canvas();
 });
