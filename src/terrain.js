@@ -91,10 +91,11 @@ function* bakeGen() { // generator: yields often so the bake can run in idle sli
     const mW = mask(wb, 6), mR = mask(bits(tx, ty, isRiver), 6), mO = mask(bits(tx, ty, (c) => c === '~'), 6);
     const mM = mask(bits(tx, ty, isMount), 5), mF = mask(bits(tx, ty, isForest), 6);
     const mRg = [1, 2, 3].map((k) => mask(bits(tx, ty, (c, x, y, r) => r === k), 8));
+    const ownRiver = isRiver(ch(tx, ty));
     const rgOne = mRg.findIndex((m) => m === ONE), rgFlat = mRg.every((m) => m === ZERO || m === ONE);
     for (let p = 0; p < 256; p++) {
       const X = tx * 16 + (p & 15), Y = ty * 16 + (p >> 4), i = Y * PW + X;
-      const riverish = mR[p] > 0.01 && mR[p] >= mO[p];
+      const riverish = ownRiver || (mR[p] > 0.01 && mR[p] >= mO[p]);
       const w = mW === ZERO ? 0 : mW[p] + (riverish ? vn(X / 5, Y / 5, 2) * 0.12 : fbm(X / 11, Y / 11, 1) * 0.26);
       // region: argmax with noisy, dithered borders
       let r = rgOne + 1;
@@ -163,7 +164,7 @@ function* bakeGen() { // generator: yields often so the bake can run in idle sli
       if (c === 1) { // river
         wT[i] = 2;
         if (above === 2 && run <= 2) { const C = CLIFF[upRegion]; put(i, run === 1 ? C[5] : C[2]); kind[i] = 2; }
-        else if (above === 2 || above === 1) above = 1;
+        else if (above === 2 || above === 1) { above = 1; run = 0; }
         continue;
       }
       wT[i] = 1;

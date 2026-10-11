@@ -64,7 +64,7 @@ function newGame() {
       newChar('Mira', 'cleric', 'bard', null, 'cloth'), newChar('Kael', 'rogue', 'ranger', null, 'leather')],
     gold: 400, difficulty: 'normal', slot: 1,
     inv: { weapons: [], armors: [], accs: [], gems: ['fire'], items: { potion: 3 } },
-    map: 'haven', x: 12, y: 20, flags: { chests: {}, bosses: {}, seen: {}, talked: {}, visited: {}, quests: {}, qprog: {}, qitems: {}, tips: {}, bestiary: {} }, playtime: 0,
+    map: 'haven', x: 17, y: 30, flags: { chests: {}, bosses: {}, seen: {}, talked: {}, visited: {}, quests: {}, qprog: {}, qitems: {}, tips: {}, bestiary: {} }, playtime: 0,
   };
 }
 // ---------- saves: 3 slots, autosave, migration ----------
@@ -79,7 +79,7 @@ function migrate(g) {
   for (const id of Object.keys(g.inv.items)) if (!ITEMS[id]) delete g.inv.items[id];
   for (const c of g.party) { if (c.weapon && !WEAPONS[c.weapon]) c.weapon = null; if (c.armor && !ARMORS[c.armor]) c.armor = null; if (c.acc && !ACCS[c.acc]) c.acc = null; c.exp = Math.max(0, c.exp || 0); c.level = Math.min(L.MAX_LEVEL, c.level || 1); gainExp(c, 0); } // gainExp(0) settles EXP banked under an older curve
   const m = MAPS[g.map];
-  if (!m) { g.map = 'haven'; g.x = 12; g.y = 20; } else if (!WALK.has(m.rows[g.y]?.[g.x] ?? '#') && m.rows[g.y]?.[g.x] !== 'B') { g.x = m.spawn.x; g.y = m.spawn.y; }
+  if (!m) { g.map = 'haven'; g.x = 17; g.y = 30; } else if (!WALK.has(m.rows[g.y]?.[g.x] ?? '#') && m.rows[g.y]?.[g.x] !== 'B') { g.x = m.spawn.x; g.y = m.spawn.y; }
   return g;
 }
 const readSlot = (i) => { try { const raw = localStorage.getItem(SLOT_KEY(i)); return raw ? JSON.parse(raw) : null; } catch { return null; } };

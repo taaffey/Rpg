@@ -250,4 +250,4 @@ MAPS.world.safe = [[hx, hy, 6], [fx, fy, 4], [mx, my, 4], [cx, cy, 2], [rx, ry, 
 MAPS.world.ramp = [hx, hy];
 // the northern pass is gated until the Ashen Wyrm falls
 MAPS.world.gate = { tile: 'B', flag: 'wyrm' };
-export const START = { map: 'haven', x: 12, y: 20 };
+export const START = { map: 'haven', x: 17, y: 30 };

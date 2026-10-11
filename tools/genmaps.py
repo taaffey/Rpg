@@ -88,7 +88,7 @@ def make_world(seed):
             c = g[y][x]
             if c not in '.,:': continue
             if near(x, y, 1) or near_road(x, y, 0) or y in (13, 17) and abs(x-29) <= 2: continue
-            f = nF(x/3.4, y/3.4) + (0.12 if c == ',' else 0.06 if c == ':' else 0)
+            f = nF(x/3.4, y/3.4) + (-0.02 if c == ',' else 0.06 if c == ':' else 0)
             if f > 0.13: g[y][x] = 't' if c == ',' else 'T'
     # --- rivers: meandering from the ranges to the sea (bridged where roads cross)
     rivers = [
@@ -100,6 +100,7 @@ def make_world(seed):
         for x, y in path:
             if g[y][x] == '~': break
             g[y][x] = '=' if (x, y) in road_tiles else 'r'
+    for x, y in [(14, 27), (15, 27), (13, 27)]: g[y][x] = ':'  # the south river ends on a sea cliff -> waterfall
     # --- roads stay open (clear woods), POIs placed last
     for x, y in road_tiles:
         if g[y][x] in 'Tt': g[y][x] = ',' if g[y][x] == 't' else ('.' if y < 22 else ':' if 8 <= x <= 22 else '.')

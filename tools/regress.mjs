@@ -22,7 +22,7 @@ ok('game started in Haven', (await ev(() => window.__game.G.map)) === 'haven');
 await pg.waitForTimeout(800); ok('music engine scheduled notes', (await ev(() => window.__osc)) >= 4);
 
 // --- walk into a building through its door, talk to the NPC to open the shop
-await ev(() => window.__game.goto('haven', 8, 4)); await key('ArrowUp', 1, 450);
+await ev(() => window.__game.goto('haven', 10, 18)); await key('ArrowUp', 1, 450);
 ok('entered the shop interior', (await ev(() => window.__game.G.map)) === 'haven_shop');
 await key('ArrowUp', 3, 160);
 ok('shop UI opened by bumping the merchant', /General Store/.test(await overlayTitle()));
@@ -87,7 +87,7 @@ const finishBattle = async () => { // click-driven: Attack the first foe until t
   await pg.waitForTimeout(250);
 };
 const quickFight = async (grp, boss) => { await ev(([g, b2]) => { window.__game.battle(g, b2); }, [grp, boss]); await pg.waitForSelector('[data-act=c]', { timeout: 8000 }); await ev(() => window.__game.BT.b.e.forEach((e) => { e.hp = 1; })); await finishBattle(); };
-await ev(() => window.__game.goto('haven', 7, 6)); await key('ArrowLeft', 1, 200);
+await ev(() => window.__game.goto('haven', 15, 15)); await key('ArrowLeft', 1, 200);
 ok('quest giver offers a quest', /Villager/.test(await overlayTitle()));
 for (let i = 0; i < 12 && !(await pg.$('[data-act=qaccept]')); i++) await key('Enter', 1, 120);
 await pg.click('[data-act=qaccept]'); await pg.waitForTimeout(150);
@@ -95,7 +95,7 @@ ok('quest accepted', (await ev(() => window.__game.G.flags.quests.slimes)) === '
 await ev(() => { window.__game.OPT.speed = 'instant'; });
 await quickFight(['slime', 'slime', 'slime']); await quickFight(['slime', 'slime', 'slime']);
 ok('kills counted toward the quest', (await ev(() => window.__game.G.flags.qprog.slimes)) === 6);
-await ev(() => window.__game.goto('haven', 7, 6)); await key('ArrowLeft', 1, 200);
+await ev(() => window.__game.goto('haven', 15, 15)); await key('ArrowLeft', 1, 200);
 for (let i = 0; i < 4 && !(await pg.$('[data-act=qclaim]')); i++) await key('Enter', 1, 120);
 const goldBefore = await ev(() => window.__game.G.gold); await pg.click('[data-act=qclaim]'); await pg.waitForTimeout(150);
 ok('quest reward granted', (await ev(() => window.__game.G.gold)) === goldBefore + 150 && (await ev(() => window.__game.G.flags.quests.slimes)) === 'done');

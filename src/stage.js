@@ -207,6 +207,7 @@ export class Stage {
   }
   drawHero(x, v, t, dt) {
     v.t += dt; v.flash = Math.max(0, v.flash - dt); v.cast = Math.max(0, v.cast - dt); v.atk = Math.max(0, v.atk - dt); if (v.dead) v.deadT += dt;
+    if (v.c.hp <= 0 && !v.dead && v.flash <= 0) { v.dead = true; v.deadT = 0; } else if (v.c.hp > 0 && v.dead) v.dead = false; // stay in sync with the engine even without fx events
     if (this.won) this.wonT = (this.wonT || 0) + dt / Math.max(1, [...this.v.values()].filter((u) => u.side === 'p').length);
     const pose = this.heroPose(v, t), spr = v.frames[pose];
     // step forward when acting (FF style), run in/out for physical attacks

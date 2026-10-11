@@ -81,7 +81,7 @@ const PAL = {
   ice: ramp('#4a7aa8 #5e92bc #78aace #96c2dc #b4d8ea #d4ecf6 #f2fbff'),
   moss: ramp('#16200e #1c2a12 #243616 #2e441a #3a531f #476226 #56722e #688538 #7e9a44'),
   mud: ramp('#1e160c #2a1f12 #382a18 #46351e #554226 #66522e'),
-  swamp: ramp('#0a1612 #0e1e18 #12281e #183224 #1e3c2a #264832 #30563a #446a48 #6a8a64'),
+  swamp: ramp('#0a1a1c #0e2428 #142e32 #1a383a #204444 #28504e #325e58 #487466 #78987e'),
   leaf: ramp('#0a2210 #0f3016 #15421c #1c5622 #256c28 #30822e #3e9a36 #52b040 #6cc64e #92dc6a'),
   leafD: ramp('#081c10 #0c2816 #11381c #174a22 #1e5c28 #286e30 #34823a #449648'),
   pine: ramp('#051a16 #092620 #0f342a #164434 #1e5440 #28664c #36785a #488c68'),
@@ -120,11 +120,11 @@ function waterTex(theme, f) { // 64x64 tileable frame
     const p = new Pix(64, 64), sw = theme === 'swamptown', R = sw ? PAL.swamp : PAL.water, ph = (f / WF) * 64;
     for (let y = 0; y < 64; y++) for (let x = 0; x < 64; x++) {
       const a = vnoise(x + ph, y * 2.2, 16, 3, 64), b = vnoise(x - ph, y * 2.2 + 9, 16, 5, 64), c = vnoise(x, y, 32, 7, 64);
-      let v = (sw ? 0.32 : 0.42) + (a + b - 1) * 0.42 + (c - 0.5) * 0.25;
+      let v = (sw ? 0.4 : 0.42) + (a + b - 1) * 0.42 + (c - 0.5) * 0.25;
       const crest = Math.abs(a - b);
       if (crest < 0.035 && a > 0.55) v += sw ? 0.18 : 0.34; // bright ripple crests
       else if (crest < 0.06 && a < 0.4) v -= 0.1;
-      p.set(x, y, pick(R, cl(v, 0, sw ? 0.62 : 0.86), x, y));
+      p.set(x, y, pick(R, cl(v, 0, sw ? 0.8 : 0.86), x, y));
     }
     // sparkles that blink on and off between frames
     for (let i = 0; i < (sw ? 4 : 10); i++) { const x = Math.floor(hash(i, f >> 1, 77) * 62), y = Math.floor(hash(i, f >> 1, 78) * 62); if (hash(i, f, 79) < 0.6) { p.set(x, y, R[R.length - 1]); p.set(x + 1, y, R[R.length - 2]); p.set(x - 1, y, R[R.length - 3]); } }
@@ -218,10 +218,10 @@ function buildGround(m) {
       const hz = DH[ty * TW + tx], u = hz ? x : y, v = hz ? y : x, bi = Math.floor(u / 4), bu = ((u % 4) + 4) % 4, seg = Math.floor((v + hash(bi, 0, 3) * 40) / 37);
       const up = cAt(tx, ty - 1), dn = cAt(tx, ty + 1), lf = cAt(tx - 1, ty), rt = cAt(tx + 1, ty);
       let s = 0.5 + (hash(bi, seg, 9) - 0.5) * 0.3 + (vnoise(hz ? u * 4 : v, hz ? v : u * 4, 6, 2) - 0.5) * 0.25;
-      if (bu === 0) s = 0.08; else if (bu === 1) s += 0.12;
+      if (bu === 0) s = swamp ? 0.2 : 0.1; else if (bu === 1) s += 0.1;
       if (((v + Math.floor(hash(bi, 0, 3) * 40)) % 37 + 37) % 37 === 0) s = 0.1;
       if (bu === 2 && hash(bi, Math.floor(v / 8), 4) < 0.1) s += 0.25; // nail heads
-      if (swamp && bu === 0 && hash(bi, seg, 6) < 0.7) { col = 0; } else col = pick(swamp ? PAL.plank : PAL.wood, cl(s, 0.05, 0.95), px, py);
+      if (swamp && bu === 0 && hash(bi, seg, 6) < 0.18) { col = 0; } else col = pick(swamp ? PAL.plank : PAL.wood, cl(s, 0.05, 0.95), px, py);
       if (dn === G_WAT && ly >= 13) col = ly === 13 ? pick(PAL.wood, 0.75, px, py) : pick(PAL.wood, ly === 14 ? 0.3 : 0.15, px, py);
       if (up === G_WAT && ly === 0) col = pick(PAL.wood, 0.2, px, py);
       if (lf === G_WAT && lx === 0) col = pick(PAL.wood, 0.18, px, py); if (rt === G_WAT && lx === 15) col = pick(PAL.wood, 0.15, px, py);

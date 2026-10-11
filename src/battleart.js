@@ -94,6 +94,7 @@ export const cut = (p) => ((p.mode = 'cut'), p);
 export const paint = (p) => ((p.mode = 'paint'), p);
 
 // ---------- renderer ----------
+const BBOX = new WeakMap(); // tight opaque boxes recorded at render time (no canvas readbacks)
 const LDIR = (() => { const l = Math.hypot(-0.52, -0.62, 0.58); return [-0.52 / l, -0.62 / l, 0.58 / l]; })();
 // spec: { w, h, mats: { name: { r: ramp[], tex?(x,y,hit)->dv, spec?:hex, glow?:bool } }, parts: [], post?(api), outline?: false|hex, rim?: bool, light?: [x,y,z] }
 export function render(spec) {
@@ -151,15 +152,17 @@ export function render(spec) {
       img.set([base[0] * k + 6, base[1] * k + 4, base[2] * k + 10, 255], i * 4);
     }
   }
-  const c = mk(w, h); c.getContext('2d').putImageData(new ImageData(img, w, h), 0, 0); return c;
+  if (spec.tint) for (let i = 0; i < N * 4; i += 4) { const g = img[i] * 0.3 + img[i + 1] * 0.59 + img[i + 2] * 0.11; img[i] = lerp(img[i], g, spec.tint) * 0.86; img[i + 1] = lerp(img[i + 1], g, spec.tint) * 0.86; img[i + 2] = lerp(img[i + 2], g, spec.tint) * 0.95; }
+  const c = mk(w, h); c.getContext('2d').putImageData(new ImageData(img, w, h), 0, 0);
+  let x0 = w, y0 = h, x1 = -1, y1 = -1; for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) if (img[(y * w + x) * 4 + 3]) { if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y; }
+  BBOX.set(c, x1 < 0 ? [0, 0, w - 1, h - 1] : [x0, y0, x1, y1]); return c;
 }
 
 // ---------- canvas helpers ----------
 export function flipX(src) { const c = mk(src.width, src.height), x = c.getContext('2d'); x.translate(src.width, 0); x.scale(-1, 1); x.drawImage(src, 0, 0); return c; }
 export function rot90(src, ccw = true) { // pixel-exact quarter turn
-  const c = mk(src.height, src.width), x = c.getContext('2d'); x.translate(c.width / 2, c.height / 2); x.rotate(ccw ? -Math.PI / 2 : Math.PI / 2); x.drawImage(src, -src.width / 2, -src.height / 2); return c;
+  const c = mk(src.height, src.width), x = c.getContext('2d'); x.setTransform(0, ccw ? -1 : 1, ccw ? 1 : -1, 0, ccw ? 0 : c.width, ccw ? c.height : 0); x.drawImage(src, 0, 0); return c;
 }
-const BBOX = new WeakMap();
 export function bbox(src) { // tight box of opaque pixels: [x0,y0,x1,y1]
   if (BBOX.has(src)) return BBOX.get(src);
   const d = src.getContext('2d').getImageData(0, 0, src.width, src.height).data; let x0 = src.width, y0 = src.height, x1 = -1, y1 = -1;
@@ -318,12 +321,9 @@ const HCACHE = new Map();
 export function heroFrame(job, pose = 'idle', weapon = null) {
   if (weapon === 'staff' && job === 'cleric') weapon = 'rod';
   const k = job + ':' + pose + ':' + (weapon || ''); if (HCACHE.has(k)) return HCACHE.get(k);
-  let c = render(heroSpec(HERO_STYLE[job] ? job : 'knight', pose, weapon));
-  if (pose === 'ko') { // lie on the back, head toward the party side: quarter turn of the slumped frame, desaturated a little
-    const r = rot90(c, false), x = r.getContext('2d'), d = x.getImageData(0, 0, r.width, r.height);
-    for (let i = 0; i < d.data.length; i += 4) { const g = (d.data[i] * 0.3 + d.data[i + 1] * 0.59 + d.data[i + 2] * 0.11); d.data[i] = lerp(d.data[i], g, 0.45) * 0.86; d.data[i + 1] = lerp(d.data[i + 1], g, 0.45) * 0.86; d.data[i + 2] = lerp(d.data[i + 2], g, 0.45) * 0.95; }
-    x.putImageData(d, 0, 0); c = r;
-  }
+  const spec = heroSpec(HERO_STYLE[job] ? job : 'knight', pose, weapon); if (pose === 'ko') spec.tint = 0.45;
+  let c = render(spec);
+  if (pose === 'ko') { const [x0, y0, x1, y1] = bbox(c); c = rot90(c, false); BBOX.set(c, [c.width - 1 - y1, x0, c.width - 1 - y0, x1]); } // lie on the back: pixel-exact quarter turn
   HCACHE.set(k, c); return c;
 }
 export function heroPortrait(job) { // square idle frame cropped around the body, for menus and the turn-order bar
@@ -558,7 +558,10 @@ const MODELS = {
       t([[60, 26], [78, 20], [84, 32], [72, 40], [62, 38]], 'armor', [0.25, -0.3], 24), t([[76, 22], [86, 6], [84, 26]], 'ice', [0.3, -0.1], 25, 1.5), t([[70, 22], [74, 6], [79, 21]], 'ice', [0, -0.3], 25, 1.5),
       cap(76, 38, 82, 54, 6.5, 6, 'skin', { z: 13 }), cap(82, 54, 86, 64, 6, 5.5, 'skin', { z: 13 }),
       cap(88, 104, 90, 14, 2.2, 2.2, 'axe', { z: 14 }), t([[90, 12], [99, 4], [99, 32], [90, 26]], 'steel', [0.2, -0.1], 15), t([[90, 14], [82, 8], [82, 24], [90, 22]], 'steel', [-0.2, 0], 15), ell(86, 66, 6, 5.5, 'armor', { z: 16 }),
-    ], post(a) { a.rect(44, 20, 4, 2, P.eye); a.rect(53, 20, 4, 2, P.eye); a.px(46, 20, '#5ad0ff'); a.px(55, 20, '#5ad0ff'); a.line(42, 18, 48, 19, a.ramp('armor', 0)); a.line(53, 19, 59, 18, a.ramp('armor', 0)); a.rect(46, 26, 8, 2, '#1a2a48'); } };
+    ], post(a) { a.rect(44, 20, 4, 2, P.eye); a.rect(53, 20, 4, 2, P.eye); a.px(46, 20, '#5ad0ff'); a.px(55, 20, '#5ad0ff'); a.line(42, 18, 48, 19, a.ramp('armor', 0)); a.line(53, 19, 59, 18, a.ramp('armor', 0)); a.rect(46, 26, 8, 2, '#1a2a48'); // plate seams, rivets, frost runes
+      a.line(31, 31, 40, 38, a.ramp('armor', 1)); a.line(65, 30, 58, 37, a.ramp('armor', 1)); a.line(38, 57, 47, 62, a.ramp('armor', 1)); a.line(60, 57, 49, 62, a.ramp('armor', 1));
+      for (const [x, y] of [[33, 34], [63, 33], [30, 50], [67, 50], [36, 62], [61, 62]]) { a.px(x, y, a.ramp('armor', 5)); a.px(x + 1, y + 1, a.ramp('armor', 0)); }
+      for (const [x, y] of [[44, 42], [52, 42], [48, 54]]) { a.px(x, y, P.ice); a.px(x, y + 1, P.ice); a.px(x + 1, y + 2, '#ffffff'); } } };
   } },
 };
 const ENEMY_VARIANTS = {

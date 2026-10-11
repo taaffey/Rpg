@@ -9,3 +9,8 @@ for (const m of src.matchAll(/(\w+): \[((?:'[^']*',? ?)+)\]/g)) {
   if (!ok || (rows[0].length !== 16 || ![16, 7, 9, 32].includes(rows.length))) { bad++; console.log('BAD', m[1], rows.length, rows.map((r) => r.length).join(',')); }
 }
 console.log(bad ? bad + ' bad sprites' : 'all sprites 16 wide');
+// battleart.js: hero head stamps must be rectangular (every row the same width); enemies/bodies are modelled in code, not ASCII
+const ba = readFileSync(new URL('../src/battleart.js', import.meta.url), 'utf8');
+let badH = 0;
+for (const m of ba.matchAll(/(\w+): \{ ax: \d+, rows: \[((?:'[^']*',? ?)+)\]/g)) { const rows = [...m[2].matchAll(/'([^']*)'/g)].map((r) => r[1]); if (!rows.every((r) => r.length === rows[0].length)) { badH++; console.log('BAD head', m[1], rows.map((r) => r.length).join(',')); } }
+console.log(badH ? badH + ' bad head stamps' : 'battleart head stamps ok');
