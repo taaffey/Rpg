@@ -277,9 +277,7 @@ function tick(now) {
   const dt = Math.min(0.05, (now - lastT) / 1000 || 0.016); lastT = now;
   if (!G) return drawTitle(now / 1000);
   G.playtime = (G.playtime || 0) + dt;
-  const sp = 9 * dt; vx += clamp(G.x - vx, -sp, sp); vy += clamp(G.y - vy, -sp, sp);
-  fv.forEach((f, i) => { const tg = trail[Math.max(0, trail.length - 2 - i)] || { x: G.x, y: G.y }, dx = tg.x - f.x, dy = tg.y - f.y; f.mv = Math.abs(dx) + Math.abs(dy) > 0.02; if (f.mv) f.d = Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? 'right' : 'left') : (dy > 0 ? 'down' : 'up'); f.x += clamp(dx, -sp, sp); f.y += clamp(dy, -sp, sp); });
-  driveMovement();
+  moveTick(dt);
   if (!inOverlay()) draw(now / 1000);
 }
 requestAnimationFrame(tick);
@@ -344,7 +342,7 @@ function overlayKey(e) {
 addEventListener('keydown', (e) => {
   if (inOverlay()) { if (overlayKey(e)) e.preventDefault(); return; } // never move the map while a window is open
   if (!G) return;
-  if (KEYS[e.key]) { e.preventDefault(); route = []; step(...KEYS[e.key]); }
+  if (KEYS[e.key]) { e.preventDefault(); route = []; if (!keysDown.includes(e.key)) keysDown.push(e.key); if (!e.repeat) step(...KEYS[e.key]); }
   else if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); interact(); }
   else if ((e.key === 'Escape' || e.key === 'm') && !inOverlay() && !busy) mainMenu();
   else if (e.key === 'n' && !inOverlay()) { OPT.minimap = !OPT.minimap; applyOptions(); }
@@ -366,7 +364,7 @@ if (cross) {
     held = d && DIRV[d]; if (held) { route = []; routeGoal = null; }
   };
   const release = () => { pid = null; held = null; for (const el of Object.values(arms)) el?.classList.remove('on'); };
-  cross.addEventListener('pointerdown', (e) => { e.preventDefault(); pid = e.pointerId; cross.setPointerCapture?.(pid); aimPad(e); });
+  cross.addEventListener('pointerdown', (e) => { e.preventDefault(); pid = e.pointerId; cross.setPointerCapture?.(pid); aimPad(e); if (held && G && !inOverlay()) step(...held); }); // a quick tap still moves one tile
   cross.addEventListener('pointermove', (e) => { if (e.pointerId === pid) aimPad(e); });
   ['pointerup', 'pointercancel', 'lostpointercapture'].forEach((ev) => cross.addEventListener(ev, (e) => { if (e.pointerId === pid) release(); }));
 }
@@ -418,18 +416,42 @@ const travelTo = (e) => { const [tx, ty] = tileFromEvent(e), k = `${tx},${ty}`; 
 cv.addEventListener('pointerdown', (e) => { if (!G || inOverlay()) return; e.preventDefault(); mapPid = e.pointerId; lastTap = ''; travelTo(e); });
 cv.addEventListener('pointermove', (e) => { if (e.pointerId === mapPid && G && !inOverlay()) travelTo(e); });
 ['pointerup', 'pointercancel'].forEach((ev) => cv.addEventListener(ev, (e) => { if (e.pointerId === mapPid) mapPid = null; }));
-function driveMovement() { // called every frame: follow the tapped route, else keep walking while the pad is held
-  if (!G || inOverlay() || busy) { if (inOverlay()) route = []; return; }
-  if (Math.abs(vx - G.x) + Math.abs(vy - G.y) > 0.12) return; // finish the current step first (keeps walking seamless)
+const WALK_SPEED = 6.5; // tiles per second
+function nextMove() { // at a tile boundary: take the next tapped-route step, or keep going in the held direction
   if (route.length) {
-    if (routeMap !== G.map) { route = []; return; }
+    if (routeMap !== G.map) { route = []; return false; }
     const [nx, ny] = route[0], dx = nx - G.x, dy = ny - G.y;
-    if (Math.abs(dx) + Math.abs(dy) !== 1) { route = []; return; }
+    if (Math.abs(dx) + Math.abs(dy) !== 1) { route = []; return false; }
     route.shift(); const before = `${G.map}${G.x},${G.y}`; step(dx, dy);
     if (`${G.map}${G.x},${G.y}` === before) route = []; // blocked, talked or opened something
     if (!route.length) routeGoal = null;
-  } else if (held) step(...held);
+    return true;
+  }
+  const d = heldKeyDir() || held; if (d) { step(...d); return true; }
+  return false;
 }
+function moveTick(dt) { // glide at constant speed; when a step lands and input continues, chain the next step in the same frame
+  let budget = WALK_SPEED * dt;
+  for (let guard = 0; guard < 4 && budget > 1e-6; guard++) {
+    const rx = G.x - vx, ry = G.y - vy, rem = Math.abs(rx) + Math.abs(ry);
+    if (rem > 1e-6) {
+      if (rem > 2) { vx = G.x; vy = G.y; break; } // teleported (door, map change): no sliding across the map
+      const d = Math.min(budget, rem); budget -= d;
+      if (Math.abs(rx) > 1e-6) vx += Math.sign(rx) * Math.min(d, Math.abs(rx)); else vy += Math.sign(ry) * Math.min(d, Math.abs(ry));
+      continue;
+    }
+    if (!G || inOverlay() || busy) { if (inOverlay()) route = []; break; }
+    const map0 = G.map, at = `${G.x},${G.y}`;
+    if (!nextMove() || G.map !== map0 || `${G.x},${G.y}` === at) break;
+  }
+  const fs = WALK_SPEED * 1.05 * dt; // followers trail the leader's footsteps at the same pace
+  fv.forEach((f, i) => { const tg = trail[Math.max(0, trail.length - 2 - i)] || { x: G.x, y: G.y }, dx = tg.x - f.x, dy = tg.y - f.y; f.mv = Math.abs(dx) + Math.abs(dy) > 0.02; if (f.mv) f.d = Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? 'right' : 'left') : (dy > 0 ? 'down' : 'up'); if (Math.abs(dx) > 2 || Math.abs(dy) > 2) { f.x = tg.x; f.y = tg.y; } else { f.x += clamp(dx, -fs, fs); f.y += clamp(dy, -fs, fs); } });
+}
+// keyboard: track held arrow/WASD keys so holding walks smoothly (no OS key-repeat delay); the newest key wins
+const keysDown = [];
+const heldKeyDir = () => (keysDown.length ? KEYS[keysDown[keysDown.length - 1]] : null);
+addEventListener('keyup', (e) => { const i = keysDown.indexOf(e.key); if (i >= 0) keysDown.splice(i, 1); });
+addEventListener('blur', () => { keysDown.length = 0; held = null; });
 ACT.close = hide;
 
 function openChest(x, y) {
@@ -991,5 +1013,5 @@ muteBtn.addEventListener('click', () => { setMuted(!isMuted()); syncMute(); if (
 syncMute();
 
 // debug / test hook
-window.__game = { get G() { return G; }, get BT() { return BT; }, camState, TS, get route() { return route; }, battle, step, goto, MAPS, snap, OPT, ACT, ui: { shop, inn, guild, socketer, title, slotScreen, diffScreen, talk, itemsMenu, mainMenu } };
+window.__game = { get G() { return G; }, get BT() { return BT; }, get v() { return [vx, vy]; }, camState, TS, get route() { return route; }, battle, step, goto, MAPS, snap, OPT, ACT, ui: { shop, inn, guild, socketer, title, slotScreen, diffScreen, talk, itemsMenu, mainMenu } };
 title();

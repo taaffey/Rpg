@@ -13,7 +13,7 @@ for (const [name, w, h] of [['iPhone 14 portrait', 390, 844], ['iPhone 14 landsc
   await pg.tap('[data-act=new]'); await pg.tap('[data-act=slotpick][data-a="1"]'); await pg.tap('[data-act=diff][data-b=normal]'); await pg.waitForTimeout(200); await pg.tap('[data-act=close]'); await pg.waitForTimeout(400);
   await ev(() => { for (const m of Object.values(window.__game.MAPS)) m.rate = 0; }); await ev(() => window.__game.goto('world', 7, 21)); await pg.waitForTimeout(500);
   const p0 = await ev(() => [window.__game.G.x, window.__game.G.y]);
-  await pg.tap('.cross [data-d=right]'); await pg.waitForTimeout(350);
+  { const bb = await (await pg.$('.cross [data-d=right]')).boundingBox(); await pg.touchscreen.tap(bb.x + bb.width / 2, bb.y + bb.height / 2); } await pg.waitForTimeout(350); // taps go to the slide pad under the arm
   const p1 = await ev(() => [window.__game.G.x, window.__game.G.y]);
   ok(`${name}: D-pad tap moves`, p1[0] === p0[0] + 1, JSON.stringify([p0, p1]));
   const box = await (await pg.$('#map')).boundingBox();
