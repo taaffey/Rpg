@@ -37,7 +37,7 @@ MAPS.haven = {
     [P(9, 12)]: portal('world', 7, 21), [P(3, 2)]: portal('haven_inn', 5, 6), [P(7, 2)]: portal('haven_shop', 5, 6), [P(11, 2)]: portal('haven_smith', 5, 6),
     [P(15, 2)]: portal('haven_guild', 5, 6), [P(6, 5)]: portal('haven_elder', 5, 6), [P(14, 5)]: portal('haven_cottage', 5, 6),
   },
-  decor: [[1, 1, 'tree'], [18, 1, 'tree'], [1, 11, 'tree'], [18, 11, 'tree'], [3, 9, 'tree'], [16, 9, 'tree'], [5, 4, 'lamp'], [13, 4, 'lamp'], [8, 7, 'lamp'], [10, 7, 'lamp']],
+  decor: [[1, 1, 'tree'], [18, 1, 'tree'], [1, 11, 'tree'], [18, 11, 'tree'], [3, 9, 'tree'], [16, 9, 'tree'], [5, 4, 'lamp'], [13, 4, 'lamp'], [8, 7, 'lamp'], [10, 7, 'lamp'], [9, 7, 'fountain']],
   npcs: [
     { x: 11, y: 10, type: 'guard', name: 'Guard', text: ['Welcome to Haven! The Ashen Wyrm sleeps in the Ashen Cavern, east of here.', 'It is weak to ice. Bring a mage, or socket a Frost Gem into a fire skill!'] },
     { x: 4, y: 7, type: 'villager', name: 'Villager', quest: 'slimes', text: ['The road north is blocked by a rockslide. They say the Wyrm\'s roars shook the mountain loose.', 'Beat the beast and the pass should clear.'] },
@@ -62,7 +62,7 @@ MAPS.frostholm = {
     [P(8, 11)]: portal('world', 27, 9), [P(3, 2)]: portal('frost_inn', 5, 6), [P(7, 2)]: portal('frost_shop', 5, 6), [P(11, 2)]: portal('frost_smith', 5, 6),
     [P(14, 2)]: portal('frost_guild', 5, 6), [P(5, 5)]: portal('frost_house', 5, 6),
   },
-  decor: [[1, 1, 'snowtree'], [16, 1, 'snowtree'], [1, 10, 'snowtree'], [16, 10, 'snowtree'], [3, 8, 'snowtree'], [14, 8, 'snowtree'], [4, 4, 'lamp'], [12, 4, 'lamp'], [7, 8, 'lamp'], [10, 8, 'lamp']],
+  decor: [[1, 1, 'snowtree'], [16, 1, 'snowtree'], [1, 10, 'snowtree'], [16, 10, 'snowtree'], [3, 8, 'snowtree'], [14, 8, 'snowtree'], [4, 4, 'lamp'], [12, 4, 'lamp'], [7, 8, 'lamp'], [10, 8, 'lamp'], [8, 6, 'fountain']],
   npcs: [
     { x: 10, y: 9, type: 'guard', name: 'Guard', text: ['You cleared the pass? Then you\'re the ones who slew the Wyrm! Frostholm owes you.', 'The Frost Spire lies northeast. The Frost Titan within is weak to fire. Ice magic will barely scratch it.'] },
     { x: 13, y: 6, type: 'villager', name: 'Hunter', quest: 'yetis', text: ['Yetis and ice wolves roam the snow. Their hides are thick, but fire burns them well.', 'Fur armor from the forge resists ice, which helps a lot out there.'] },
@@ -108,7 +108,7 @@ MAPS.mirewood = {
     [P(8, 10)]: portal('world', ...GEN.adj.mirewood), [P(3, 2)]: portal('mire_inn', 5, 6), [P(7, 2)]: portal('mire_shop', 5, 6), [P(11, 2)]: portal('mire_guild', 5, 6),
     [P(14, 2)]: portal('mire_house', 5, 6), [P(6, 5)]: portal('mire_hut', 5, 6),
   },
-  decor: [[1, 1, 'tree'], [16, 1, 'tree'], [1, 9, 'tree'], [16, 9, 'tree'], [4, 8, 'barrel'], [13, 8, 'barrel'], [4, 4, 'lamp'], [12, 4, 'lamp'], [7, 7, 'lamp'], [10, 7, 'lamp']],
+  decor: [[1, 1, 'tree'], [16, 1, 'tree'], [1, 9, 'tree'], [16, 9, 'tree'], [4, 8, 'barrel'], [13, 8, 'barrel'], [4, 4, 'lamp'], [12, 4, 'lamp'], [7, 7, 'lamp'], [10, 7, 'lamp'], [8, 5, 'fountain']],
   npcs: [
     { x: 10, y: 8, type: 'guard', name: 'Warden', quest: 'marsh', text: ['Welcome to Mirewood. Mind the bog after dark.'] },
     { x: 14, y: 6, type: 'fisher', name: 'Boatwright', quest: 'lantern', text: ['These planks have seen a hundred floods.'] },
@@ -134,6 +134,9 @@ MAPS.world = {
   },
   places: [[hx, hy, 'Haven Town'], [fx, fy, 'Frostholm'], [cx, cy, 'Ashen Cavern'], [rx, ry, 'Sunken Crypt'], [sx, sy, 'Frost Spire'], [mx, my, 'Mirewood'], [tx, ty, 'Storm Cavern']],
 };
+// no random fights close to towns, and grassland fights ramp up with distance from Haven (gentle first steps)
+MAPS.world.safe = [[hx, hy, 6], [fx, fy, 4], [mx, my, 4], [cx, cy, 2], [rx, ry, 2], [sx, sy, 2], [tx, ty, 2]];
+MAPS.world.ramp = [hx, hy];
 // the northern pass is gated until the Ashen Wyrm falls
 MAPS.world.gate = { tile: 'B', flag: 'wyrm' };
 export const START = { map: 'haven', x: 9, y: 11 };

@@ -27,7 +27,7 @@ def make_world(seed):
         for x in range(W):
             if g[y][x] == '.':
                 if y <= 13 and x >= 22: g[y][x] = ','
-                elif y >= 22 and x <= 26: g[y][x] = ':'
+                elif y >= 24 and x <= 26: g[y][x] = ':'
     pois = {'haven': (7, 20), 'cavern': (24, 19), 'crypt': (12, 25), 'frost': (27, 8), 'spire': (34, 4)}
     spawn_adj = {k: (x, y+1) for k, (x, y) in pois.items()}
     def near_poi(x, y, d=3): return any(abs(x-px) <= d and abs(y-py) <= d for px, py in pois.values())
@@ -52,7 +52,7 @@ def make_world(seed):
             if g[y][x] == '.' and r.random() < 0.11: g[y][x] = 'T'
             elif g[y][x] == ',' and r.random() < 0.11: g[y][x] = 't'
             elif g[y][x] == ':' and r.random() < 0.05: g[y][x] = 'T'
-    base = lambda x, y: ',' if (y <= 13 and x >= 22) else (':' if (y >= 22 and x <= 26) else '.')
+    base = lambda x, y: ',' if (y <= 13 and x >= 22) else (':' if (y >= 24 and x <= 26) else '.')
     def carve(a, b):  # L-shaped road clearing trees/water (bridges) but not mountains/barrier
         (x0, y0), (x1, y1) = a, b
         pts = [(x, y0) for x in range(min(x0, x1), max(x0, x1)+1)] + [(x1, y) for y in range(min(y0, y1), max(y0, y1)+1)]

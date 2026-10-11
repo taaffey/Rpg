@@ -12,7 +12,7 @@ const ev = (f, a) => pg.evaluate(f, a);
 const key = async (k, n = 1, d = 90) => { for (let i = 0; i < n; i++) { await pg.keyboard.press(k); await pg.waitForTimeout(d); } };
 const closeAll = async () => { for (let i = 0; i < 8 && (await ev(() => document.getElementById('overlay').classList.contains('on'))); i++) await key('Escape', 1, 70); };
 const openMenu = async () => { await closeAll(); await key('Escape', 1, 120); };
-const overlayTitle = () => ev(() => document.querySelector('#overlay h2')?.textContent || '');
+const overlayTitle = () => ev(() => (document.querySelector('#overlay h2') || document.querySelector('#overlay .sayname'))?.textContent || '');
 
 // --- start, keyboard only
 ok('title focuses New Game', (await ev(() => document.activeElement?.dataset?.act)) === 'new');
@@ -66,7 +66,7 @@ for (let i = 0; i < 120; i++) {
   const st = await ev(() => ({ bt: !!window.__game.BT, act: document.activeElement?.dataset?.act }));
   if (!st.bt) break;
   if (await pg.$('[data-act=vdone]')) { await key('Enter', 1, 100); break; }
-  if (st.act === 'c' || st.act === 'tgt') await key('Enter', 1, 60); else await pg.waitForTimeout(100);
+  if (st.act === 'c' || st.act === 'tgt') await key('Enter', 1, 120); else await pg.waitForTimeout(100);
 }
 await pg.waitForTimeout(300);
 ok('snow battle won via keyboard only', !(await ev(() => !!window.__game.BT)) && (await ev(() => window.__game.G.party[0].exp)) > 0);
@@ -85,7 +85,7 @@ const finishBattle = async () => { // click-driven: Attack the first foe until t
 const quickFight = async (grp, boss) => { await ev(([g, b2]) => { window.__game.battle(g, b2); }, [grp, boss]); await pg.waitForSelector('[data-act=c]', { timeout: 8000 }); await ev(() => window.__game.BT.b.e.forEach((e) => { e.hp = 1; })); await finishBattle(); };
 await ev(() => window.__game.goto('haven', 5, 7)); await key('ArrowLeft', 1, 200);
 ok('quest giver offers a quest', /Villager/.test(await overlayTitle()));
-for (let i = 0; i < 4 && !(await pg.$('[data-act=qaccept]')); i++) await key('Enter', 1, 120);
+for (let i = 0; i < 12 && !(await pg.$('[data-act=qaccept]')); i++) await key('Enter', 1, 120);
 await pg.click('[data-act=qaccept]'); await pg.waitForTimeout(150);
 ok('quest accepted', (await ev(() => window.__game.G.flags.quests.slimes)) === 'active');
 await ev(() => { window.__game.OPT.speed = 'instant'; });

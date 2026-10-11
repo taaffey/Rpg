@@ -2,7 +2,8 @@
 import * as SP from './sprites.js';
 
 export const FX = { shake: true };
-const W = 160, H = 90;
+const W = 160, H = 116;
+const ELEM_COL = { fire: ['#ff9a2a', '#ffd25a', '#e04a20'], ice: ['#c8f4ff', '#7fd8f0', '#ffffff'], bolt: ['#fff27a', '#ffffff', '#ffd25a'], holy: ['#ffffff', '#fff2a0', '#d0f0ff'], dark: ['#9a62e0', '#4a2a80', '#d0a0ff'], slash: ['#ffffff', '#d8e4ff'], heal: ['#7af0a0', '#c8ffd8', '#ffffff'], mp: ['#7ab0ff', '#c8e0ff'] };
 const STYLE = { slime: 'squash', bat: 'swoop', wolf: 'pounce', wraith: 'float', zombie: 'sway', golem: 'stomp', yeti: 'stomp', wyrm: 'swoop', lich: 'float', titan: 'stomp', imp: 'pounce' };
 const FONT = { 0: '111101101101111', 1: '010110010010111', 2: '111001111100111', 3: '111001111001111', 4: '101101111001001', 5: '111100111001111', 6: '111100111101111', 7: '111001001001001', 8: '111101111101111', 9: '111101111001111' };
 const mk = (w, h) => { const c = document.createElement('canvas'); c.width = w; c.height = h; return c; };
@@ -57,18 +58,23 @@ function backdrop(kind) {
   return c;
 }
 
-const POS = { 1: [[44, 46]], 2: [[30, 40], [54, 56]], 3: [[20, 36], [46, 50], [24, 62]], 4: [[14, 34], [40, 44], [18, 58], [44, 68]], 5: [[12, 32], [36, 40], [60, 48], [18, 58], [42, 68]] };
-const HERO_POS = [[122, 18], [116, 35], [122, 52], [116, 69]];
-const ELEM_COL = { fire: ['#ff9a2a', '#ffd25a', '#e04a20'], ice: ['#c8f4ff', '#7fd8f0', '#ffffff'], bolt: ['#fff27a', '#ffffff', '#ffd25a'], holy: ['#ffffff', '#fff2a0', '#d0f0ff'], dark: ['#9a62e0', '#4a2a80', '#d0a0ff'], slash: ['#ffffff', '#d8e4ff'], heal: ['#7af0a0', '#c8ffd8', '#ffffff'], mp: ['#7ab0ff', '#c8e0ff'] };
-
+// Formations are given as [x, feetY]: the row the sprite's feet touch. Everything stands on the ground band (below the horizon).
+const POS = { 1: [[44, 98]], 2: [[30, 86], [54, 106]], 3: [[18, 82], [44, 96], [26, 111]], 4: [[14, 76], [40, 90], [18, 103], [46, 113]], 5: [[12, 72], [36, 82], [60, 94], [18, 104], [44, 113]] };
+const HERO_POS = [[124, 66], [114, 82], [124, 98], [114, 113]];
+const HOVER = new Set(['bat', 'wraith', 'lich', 'storm_bat', 'gale_wraith']); // real flyers drift above their own shadow
+const feetCache = new Map();
+function feetRow(src) { // last row that actually has pixels: sprites have empty rows at the bottom, which made them look like they floated
+  if (!feetCache.has(src)) { const d = src.getContext('2d').getImageData(0, 0, src.width, src.height).data; let fy = src.height - 1; outer: for (; fy > 0; fy--) for (let xx = 0; xx < src.width; xx++) if (d[(fy * src.width + xx) * 4 + 3] > 0) break outer; feetCache.set(src, fy); }
+  return feetCache.get(src);
+}
 export class Stage {
   constructor(battle, kind) {
     this.b = battle; this.canvas = mk(W, H); this.canvas.className = 'stage'; this.ctx = this.canvas.getContext('2d');
     this.bg = backdrop(kind); this.kind = kind; this.parts = []; this.floats = []; this.proj = []; this.running = true; this.last = performance.now(); this.lastElem = null; this.active = null; this.shake = 0;
     const epos = POS[Math.min(5, battle.e.length)] || POS[5];
     this.v = new Map();
-    battle.e.forEach((e, i) => { const big = SP.isBig(e.id), spr = SP.enemy(e.id), [px, py] = big ? [46, 36] : epos[i]; this.v.set(e.name, { c: e, side: 'e', style: STYLE[SP.baseOf(e.id)] || STYLE[e.id] || 'lunge', spr, x: px, y: py, w: spr.width, h: spr.height, dead: false, t: 0, flash: 0, lunge: 0, cast: 0, seed: i * 1.7 }); });
-    battle.p.forEach((p, i) => { const spr = SP.hero(p.ch.main), [px, py] = HERO_POS[i]; this.v.set(p.name, { c: p, side: 'p', style: 'lunge', spr, x: px, y: py, w: 16, h: 16, dead: p.hp <= 0, deadT: p.hp <= 0 ? 9 : 0, t: 0, flash: 0, lunge: 0, cast: 0, seed: i * 1.3 }); });
+    battle.e.forEach((e, i) => { const big = SP.isBig(e.id), spr = SP.enemy(e.id), [px, feet] = big ? [46, 104] : epos[i], fy = feetRow(spr); this.v.set(e.name, { c: e, side: 'e', style: STYLE[SP.baseOf(e.id)] || STYLE[e.id] || 'lunge', spr, x: px, y: feet - fy - 1, feet, fy, hover: HOVER.has(SP.baseOf(e.id)) || HOVER.has(e.id) ? 3 : 0, w: spr.width, h: spr.height, dead: false, t: 0, flash: 0, lunge: 0, cast: 0, seed: i * 1.7 }); });
+    battle.p.forEach((p, i) => { const spr = SP.hero(p.ch.main), [px, feet] = HERO_POS[i], fy = feetRow(spr); this.v.set(p.name, { c: p, side: 'p', style: 'lunge', spr, x: px, y: feet - fy - 1, feet, fy, hover: 0, w: 16, h: 16, dead: p.hp <= 0, deadT: p.hp <= 0 ? 9 : 0, t: 0, flash: 0, lunge: 0, cast: 0, seed: i * 1.3 }); });
     this.born = performance.now(); this.zoom = 0; this.cardT = -1; this.cardText = ''; this.cardDur = 2; this.won = false; this.ease = 0;
     this.loop = this.loop.bind(this); requestAnimationFrame(this.loop);
   }
@@ -176,17 +182,19 @@ export class Stage {
     if (v.side === 'p' && this.active === v.c.name && !v.dead) ox += -7;
     ox += v.side === 'e' ? -(1 - this.ease) * 90 : (1 - this.ease) * 70; // slide in at battle start
     if (this.won && v.side === 'p' && !v.dead) oy -= Math.abs(Math.sin(t * 9 + v.seed)) * 5;
-    if (!v.dead || v.side === 'p') oy += Math.round(Math.sin(t * 3 + v.seed) * 0.8);
+    if (!v.dead && v.hover) oy -= v.hover + Math.round(Math.sin(t * 3 + v.seed) * 1.5); // only genuine flyers leave the ground
     if (v.flash > 0 && !v.dead) ox += (Math.random() - 0.5) * 3;
     const px = Math.round(v.x + ox), py = Math.round(v.y + oy), sw = v.w;
     // shadow
-    x.fillStyle = 'rgba(0,0,0,.35)'; const shw = sw >= 32 ? 26 : 12; x.fillRect(Math.round(v.x + sw / 2 - shw / 2), Math.round(v.y + v.h - 1), shw, 2); x.fillRect(Math.round(v.x + sw / 2 - shw / 2 + 2), Math.round(v.y + v.h + 1), shw - 4, 1);
+    if (!(v.dead && v.side === 'e' && v.deadT > 0.4)) { // contact shadow directly under the feet (stays on the ground while the unit lunges/hovers)
+      const shw = sw >= 32 ? 26 : 11, sxm = Math.round(v.x + ox * 0.6 + sw / 2 - shw / 2), fyy = v.feet + 1; x.fillStyle = 'rgba(0,0,0,.4)'; x.fillRect(sxm + 1, fyy - 1, shw - 2, 1); x.fillRect(sxm, fyy, shw, 1); x.fillRect(sxm + 1, fyy + 1, shw - 2, 1);
+    }
     if (v.dead && v.side === 'e') { // dissolve upward
       const k = Math.min(1, v.deadT / 0.6); if (k >= 1) return;
       x.globalAlpha = 1 - k; x.drawImage(k < 0.25 ? silhouette(v.spr) : v.spr, px, py - Math.round(k * 6), sw, Math.round(v.h * (1 - k * 0.3))); x.globalAlpha = 1; return;
     }
     if (v.dead) { // fallen hero: lies down, greyed
-      x.save(); x.translate(px + 8, py + 14); x.rotate(-Math.PI / 2); x.globalAlpha = 0.55; x.drawImage(v.spr, -8, -8); x.restore(); x.globalAlpha = 1; return;
+      x.save(); x.translate(px + 8, v.feet - 5); x.rotate(-Math.PI / 2); x.globalAlpha = 0.6; x.drawImage(v.spr, -8, -8); x.restore(); x.globalAlpha = 1; return;
     }
     if (sx !== 1 || sy !== 1 || alpha !== 1) { // squash/stretch about the feet, ghost fade
       x.save(); x.globalAlpha = alpha; x.translate(px + sw / 2, py + v.h); x.scale(sx, sy); x.drawImage(v.spr, -sw / 2, -v.h); x.restore();

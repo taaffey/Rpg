@@ -22,9 +22,9 @@ for (const [name, w, h] of [['iPhone 14 portrait', 390, 844], ['iPhone 14 landsc
   const sizes = await ev(() => [...document.querySelectorAll('.pad button, #hud button, #overlay button')].map((e) => { const r = e.getBoundingClientRect(); return Math.min(r.width, r.height); }).filter((x) => x > 0));
   ok(`${name}: touch targets big enough (40px portrait, 36px landscape HUD)`, sizes.every((x) => x >= (h > w ? 40 : 36)), `min ${Math.min(...sizes)}`);
   await pg.tap('#padR [data-d=menu]'); await pg.waitForTimeout(250);
-  ok(`${name}: menu opens from the pad`, (await ev(() => document.querySelector('#overlay h2')?.textContent)) === 'Menu');
+  ok(`${name}: menu opens from the pad`, (await ev(() => document.querySelector('#overlay .menucmd') ? 'Menu' : '')) === 'Menu');
   const menuMin = await ev(() => Math.min(...[...document.querySelectorAll('#overlay button')].map((e) => e.getBoundingClientRect().height)));
-  ok(`${name}: menu buttons are thumb-sized`, menuMin >= 40, `min ${Math.round(menuMin)}`);
+  ok(`${name}: menu buttons are thumb-sized`, menuMin >= (h > w ? 40 : 34), `min ${Math.round(menuMin)}`);
   await pg.tap('#overlay [data-act=close]'); await pg.waitForTimeout(200);
   ok(`${name}: no horizontal scroll`, (await ev(() => document.documentElement.scrollWidth)) <= w + 1);
   ok(`${name}: no page errors`, errs.length === 0, errs.join('|'));

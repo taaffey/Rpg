@@ -136,6 +136,7 @@ export function setMuted(m) { muted = m; try { localStorage.setItem('gemforge-mu
 // ----- sound effects -----
 const arp = (notes, step = 0.07, wave = 'square', vol = 0.12) => { const t = ctx.currentTime; notes.forEach((n, i) => tone(sfxBus, wave, hz(midi(n)), t + i * step, step * 1.6, vol)); };
 const SFX = {
+  blip: () => tone(sfxBus, 'square', 1500, ctx.currentTime, 0.025, 0.035),
   click: () => tone(sfxBus, 'square', 880, ctx.currentTime, 0.05, 0.08),
   back: () => tone(sfxBus, 'square', 440, ctx.currentTime, 0.06, 0.08),
   hit: () => { const t = ctx.currentTime; burst(sfxBus, t, 0.12, 0.4, 1500, 300); tone(sfxBus, 'square', 200, t, 0.1, 0.15, 60); },

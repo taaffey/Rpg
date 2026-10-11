@@ -35,6 +35,12 @@ keyboard alone, or with the mouse. Options (volumes, battle speed, shake, minima
    Overcharge, Wide, Venom, Swift, Focus, Stun, Crit, Execute, Berserk, Siphon, Guard. Capacity comes from sockets on
    weapon/armor/accessory (max 3 per skill).
 
+## Final Fantasy 1 look & feel
+
+Blue gradient windows with white borders, the Press Start 2P pixel font, a pointing-hand cursor, FF1 battle layout (enemies left, party right on their own feet, command window + party HP window below or beside), typewriter dialogue, and a command-list main menu. Towns show colour-coded buildings with I/S/F/G/H plaques (Inn, Shop, Forge, Guild, House) and a fountain.
+
+**Gentle start:** safe zones around every town, an encounter ramp that unlocks tougher monsters the farther you walk from Haven, and a warning toast when you enter swamp or snow below the recommended level.
+
 ## The world
 - **Overworld** (40x30) with four regions: Greenmarch, Mire Marsh (swamp), Northern Plains and the Frostfields. Fog of war,
   a minimap and a full map screen. A rockslide gates the north until the Ashen Wyrm falls.

@@ -183,3 +183,11 @@ export function tile(map, ch, x, y, frame = 0) {
 export const floorTile = (map, x, y) => tile(map, '.', x, y);
 export { ART, ENEMY_ART, heroRows };
 export const isBig = (id) => !!BIGALL()[id] || !!BIGVAR[id];
+
+// FF1-style pointing hand used as the menu cursor (exposed to CSS as --hand)
+const HAND = ['................', '................', '...kkkk.........', '..kwwwwkkkkkkk..', '..kwwwwwwwwwwwk.', '..kwwwwwwwwwwwwk', '..kwwwwwwwwwwwk.', '..kwwwwkkkkkkk..', '..kwwwwk........', '...kwwwwkkkk....', '....kkkkwwwwk...', '.......kwwwwwk..', '........kkkkkk..', '................', '................', '................'];
+export function handURL() { if (!cache.has('hand')) cache.set('hand', url(sprite(HAND, { w: '#f8f8f8', k: '#000000' }), 3)); return cache.get('hand'); }
+
+// town buildings: same house, different roof/wall colours so each trade is recognisable at a glance
+const BUILDING_PAL = { inn: { r: '#4a7ae0', R: '#27428a' }, shop: { r: '#4cb85a', R: '#2a7a34' }, smith: { r: '#8a90a0', R: '#555b6e', t: '#c8b8a0' }, guild: { r: '#9a5ad0', R: '#5a2a90' }, house: {}, hut: { r: '#c8a848', R: '#806828' } };
+export function building(kind) { const k = 'b' + kind; if (!cache.has(k)) cache.set(k, sprite(ART.house, BUILDING_PAL[kind] || {})); return cache.get(k); }

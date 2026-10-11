@@ -192,9 +192,10 @@ export class Battle {
     else if (!this.p.some(alive)) this.over = 'lose';
   }
   hurt(t, d, L, prefix, weak = false) {
+    prefix = /\d/.test(prefix) ? prefix : `${prefix} (${d})`;
     t.hp = Math.max(0, t.hp - d);
     this.fx.push({ t: 'hit', name: t.name, d, ko: t.hp <= 0, weak });
-    L.push(`${prefix} (${d})${t.hp <= 0 ? ` — ${t.name} falls!` : ''}`);
+    L.push(`${prefix}${t.hp <= 0 ? `  ${t.name} falls!` : ''}`);
   }
   act(a, cmd) {
     const L = [];
@@ -254,7 +255,7 @@ export class Battle {
       a.mp -= s.mp;
     }
     const elem = s.elem === 'random' ? pick(['fire', 'ice', 'bolt'], this.rng) : s.elem;
-    L.push(`${a.name} uses ${s.name}${s.tags.length ? ` [${s.tags.join(' + ')}]` : ''}!`);
+    L.push(id === 'attack' ? `${a.name} attacks!` : `${a.name} uses ${s.name}${s.tags.length ? ` [${s.tags.join(' + ')}]` : ''}!`);
     let dealt = 0;
     const targets = this.resolveTargets(a, s, target);
     this.fx.push({ t: 'cast', actor: a.name, kind: s.kind, elem, hostile: !!s.hostile, side: a.side, targets: targets.map((x) => x.name) });
@@ -264,7 +265,7 @@ export class Battle {
         for (let h = 0; h < s.hits && alive(t); h++) {
           const d = this.damage(a, t, s, 1, elem), crit = this.lastCrit; total += d; dealt += d;
           const em = elemMult(t, elem);
-          this.hurt(t, d, L, `  ${t.name} takes ${d}${crit ? ' — CRITICAL!' : em > 1 ? ' — weakness!' : em < 1 ? ' — resisted' : ''}`, em > 1 || crit);
+          this.hurt(t, d, L, `  ${t.name} takes ${d} damage${crit ? ' CRITICAL!' : em > 1 ? ' WEAK!' : em < 1 ? ' resisted' : ''}`, em > 1 || crit);
         }
         if (s.vamp && total && alive(a)) { const h = Math.min(Math.round(total * s.vamp), a.maxhp - a.hp); if (h > 0) { a.hp += h; this.fx.push({ t: 'heal', name: a.name, amount: h }); L.push(`  ${a.name} siphons ${h} HP.`); } }
         this.applyFx(a, t, s, L, total);
