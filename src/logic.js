@@ -129,7 +129,8 @@ const pick = (arr, rng) => arr[Math.floor(rng() * arr.length)];
 function elemMult(t, e) { if (!e) return 1; if (t.weak.includes(e)) return 1.5; if (t.res.includes(e)) return 0.5; return 1; }
 
 export class Battle {
-  constructor(party, enemyIds, rng = Math.random, boss = false) {
+  constructor(party, enemyIds, rng = Math.random, boss = false, mod = {}) {
+    this.mod = { hp: 1, atk: 1, mag: 1, def: 1, reward: 1, ...mod };
     this.rng = rng; this.boss = boss; this.over = null; this.turn = 0; this.fx = [];
     this.p = party.map((c) => {
       const s = stats(c);
@@ -140,7 +141,7 @@ export class Battle {
     this.e = enemyIds.map((id) => {
       const d = ENEMIES[id]; seen[id] = (seen[id] || 0) + 1;
       const name = counts[id] > 1 ? `${d.name} ${String.fromCharCode(64 + seen[id])}` : d.name;
-      return { side: 'e', id, def_: d, name, icon: d.icon, hp: d.hp, mp: Infinity, maxhp: d.hp, maxmp: 0, atk: d.atk, def: d.def, mag: d.mag, spd: d.spd, weak: d.weak, res: d.res, st: {}, defending: false };
+      return { side: 'e', id, def_: d, name, icon: d.icon, hp: Math.round(d.hp * this.mod.hp), mp: Infinity, maxhp: Math.round(d.hp * this.mod.hp), maxmp: 0, atk: Math.round(d.atk * this.mod.atk), def: Math.round(d.def * this.mod.def), mag: Math.round(d.mag * this.mod.mag), spd: d.spd, weak: d.weak, res: d.res, st: {}, defending: false };
     });
   }
   side(x) { return x.side === 'p' ? this.p : this.e; }
@@ -294,7 +295,7 @@ export class Battle {
 export function rewards(battle) {
   const r = { exp: 0, gold: 0, drops: [] };
   for (const e of battle.e) {
-    r.exp += e.def_.exp; r.gold += e.def_.gold;
+    r.exp += Math.round(e.def_.exp * battle.mod.reward); r.gold += Math.round(e.def_.gold * battle.mod.reward);
     const d = DROPS[e.id];
     if (d && battle.rng() < d[0]) r.drops.push({ kind: d[1], id: d[2] });
   }

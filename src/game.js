@@ -1,5 +1,5 @@
 // ===== Gemforge Chronicles: UI, map, menus, battle flow =====
-import { SOCKET_COST } from './data.js';
+import { SOCKET_COST, DIFFICULTY } from './data.js';
 import { JOBS, SKILLS, GEMS, WEAPONS, ARMORS, ACCS, ITEMS, WEAPON_TYPES, ENEMIES, ENCOUNTERS, ELEM_ICON, BOSSES, SHOPS, QUESTS } from './data.js';
 import { MAPS, WALK } from './maps.js';
 import * as L from './logic.js';
@@ -10,7 +10,7 @@ const { stats, newChar, learnable, slotSkill, slotGems, gemCapacity, gemsUsed, s
 
 const $ = (s) => document.querySelector(s);
 const cv = $('#map'), cx = cv.getContext('2d'), ov = $('#overlay');
-const SAVE = 'gemforge-save-v2', SETTINGS = 'gemforge-settings-v2', TS = 32;
+const SETTINGS = 'gemforge-settings-v2', TS = 32;
 let VW = 16, VH = 12; // tiles visible: adapts to the screen (phone portrait / landscape / desktop)
 let G = null;
 const root = document.documentElement;
@@ -53,14 +53,31 @@ function newGame() {
   G = {
     party: [newChar('Aldric', 'knight', 'rogue', 'iron_sword', 'leather'), newChar('Lyra', 'mage', 'cleric', 'oak_staff', 'cloth'),
       newChar('Mira', 'cleric', 'bard', 'oak_staff', 'cloth'), newChar('Kael', 'rogue', 'ranger', 'bronze_dirk', 'leather')],
-    gold: 250,
+    gold: 250, difficulty: 'normal', slot: 1,
     inv: { weapons: ['iron_knuckle', 'short_bow', 'dusty_tome', 'leather_whip'], armors: ['cloth'], accs: [], gems: ['fire', 'chain', 'vamp', 'thrifty', 'pierce'], items: { potion: 4, ether: 2, phoenix: 1 } },
     map: 'haven', x: 9, y: 11, flags: { chests: {}, bosses: {}, seen: {}, talked: {}, visited: {}, quests: {}, qprog: {}, qitems: {} }, playtime: 0,
   };
 }
-const save = () => { try { localStorage.setItem(SAVE, JSON.stringify(G)); return true; } catch { return false; } };
-const hasSave = () => { try { return !!localStorage.getItem(SAVE); } catch { return false; } };
-const load = () => { try { G = JSON.parse(localStorage.getItem(SAVE)); return !!G; } catch { return false; } };
+// ---------- saves: 3 slots, autosave, migration ----------
+const VERSION = '1.0.0', LEGACY_SAVE = 'gemforge-save-v2', SLOT_KEY = (i) => `gemforge-save-v3-${i}`, SLOT_IDS = [1, 2, 3];
+function migrate(g) {
+  g.v = 3; g.flags ||= {};
+  for (const k of ['chests', 'bosses', 'seen', 'talked', 'visited', 'quests', 'qprog', 'qitems', 'tips', 'bestiary']) g.flags[k] ||= {};
+  g.playtime ||= 0; g.stats ||= { wins: 0 }; g.difficulty = DIFFICULTY[g.difficulty] ? g.difficulty : 'normal';
+  for (const c of g.party) { c.extra ||= 0; c.gems ||= []; while (c.gems.length < 5) c.gems.push([]); }
+  const m = MAPS[g.map];
+  if (!m) { g.map = 'haven'; g.x = 9; g.y = 11; } else if (!WALK.has(m.rows[g.y]?.[g.x] ?? '#') && m.rows[g.y]?.[g.x] !== 'B') { g.x = m.spawn.x; g.y = m.spawn.y; }
+  return g;
+}
+const readSlot = (i) => { try { const raw = localStorage.getItem(SLOT_KEY(i)); return raw ? JSON.parse(raw) : null; } catch { return null; } };
+const anySave = () => SLOT_IDS.some((i) => readSlot(i));
+const save = () => { if (!G || !G.slot) return false; try { localStorage.setItem(SLOT_KEY(G.slot), JSON.stringify({ v: 3, savedAt: Date.now(), G })); return true; } catch { return false; } };
+(function importLegacy() { // a v2 single-slot save becomes slot 1 the first time this version runs
+  try { const old = localStorage.getItem(LEGACY_SAVE); if (old && !readSlot(1)) { const g = migrate(JSON.parse(old)); g.slot = 1; localStorage.setItem(SLOT_KEY(1), JSON.stringify({ v: 3, savedAt: Date.now(), G: g })); localStorage.removeItem(LEGACY_SAVE); } } catch {}
+})();
+let toastT = null;
+function toast(msg, ms = 2200) { const t = $('#toast'); if (!t) return; t.textContent = msg; t.classList.add('on'); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('on'), ms); }
+function autosave() { if (!G || !G.slot || BT) return; if (save()) toast('💾 Autosaved', 1400); }
 const mapDef = () => MAPS[G.map];
 const inTown = () => ['town', 'interior'].includes(mapDef().kind);
 const maxOf = (c) => stats(c);
@@ -238,7 +255,7 @@ async function transition() { sfx('encounter'); for (trans = 0.02; trans < 1.2; 
 function banner(text) { const b = $('#banner'); b.textContent = text; b.classList.remove('show'); void b.offsetWidth; b.classList.add('show'); }
 function goto(id, x, y) {
   G.map = id; G.x = x; G.y = y; G.flags.visited[id] = true; snap(); music(musicFor()); sfx('door');
-  banner(id === 'world' ? REGION_NAME[regionOf()] : MAPS[id].name); G.region = regionOf(); draw();
+  banner(id === 'world' ? REGION_NAME[regionOf()] : MAPS[id].name); G.region = regionOf(); draw(); autosave();
 }
 let busy = false;
 function mapShake() { if (!OPT.shake) return; cv.classList.remove('shake'); void cv.offsetWidth; cv.classList.add('shake'); }
@@ -365,7 +382,7 @@ function giveReward(r) {
 }
 ACT.qclaim = (id) => {
   if (G.flags.quests[id] !== 'active' || !questDone(id)) return;
-  G.flags.quests[id] = 'done'; sfx('levelup'); sfx('coin'); const got = giveReward(QUESTS[id].reward);
+  G.flags.quests[id] = 'done'; sfx('levelup'); sfx('coin'); const got = giveReward(QUESTS[id].reward); autosave();
   show(`<h2>✔ Quest complete!</h2><p><b>${esc(QUESTS[id].title)}</b></p><p>Reward: <b class="gold">${got.join(', ')}</b></p>${btn('close', 'Wonderful', '', '', 'primary')}`);
 };
 function questLog(lines = []) { // progress notes appended to the victory panel
@@ -411,11 +428,37 @@ ACT.sell = (k, id) => {
 function title() {
   G = null; optBack = 'title';
   show(`<p class="dim" style="text-align:center">Pick a main job and a sub job. Wield weapons that grant signature skills. Socket gems to rewrite every skill.</p>
-  <div class="row" style="justify-content:center">${btn('new', 'New Game', '', '', 'primary')}${btn('cont', 'Continue', '', '', '', !hasSave())}${btn('opts', '⚙ Options')}</div>`, 'title');
+  <div class="row" style="justify-content:center">${btn('new', 'New Game', '', '', 'primary')}${btn('cont', 'Continue', '', '', '', !anySave())}${btn('opts', '⚙ Options')}</div><div class="dim" style="text-align:center;font-size:11px">v${VERSION}</div>`, 'title');
   $('#loc').textContent = ''; $('#gold').textContent = ''; music('town');
 }
-ACT.new = () => { newGame(); G.flags.visited.haven = true; snap(); music(musicFor()); hide(); banner(mapDef().name); intro(); };
-ACT.cont = () => { if (load()) { for (const k of ['visited', 'quests', 'qprog', 'qitems']) G.flags[k] ||= {}; G.playtime ||= 0; snap(); music(musicFor()); hide(); banner(mapDef().name); } };
+let slotMode = 'new', pendingSlot = null, pendingDel = null;
+function slotScreen(mode) {
+  slotMode = mode; const fmt = (ms) => new Date(ms).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+  show(`<h2>${mode === 'new' ? 'New Game: pick a slot' : 'Continue'}</h2>${SLOT_IDS.map((i) => {
+    const d = readSlot(i), g = d?.G;
+    if (!g) return `<div class="slot"><div class="t"><b>Slot ${i}</b><small>Empty</small></div>${mode === 'new' ? btn('slotpick', 'Start here', i, '', 'primary') : '<span class="dim">—</span>'}</div>`;
+    const where = g.map === 'world' ? 'Overworld' : MAPS[g.map]?.name || '?', bosses = ['wyrm', 'lich', 'titan'].filter((k) => g.flags?.bosses?.[k]).length;
+    return `<div class="slot"><div class="t"><b>Slot ${i}</b> <span class="chip">${DIFFICULTY[g.difficulty]?.name || 'Normal'}</span><small>${esc(where)} · ${fmtTime(g.playtime)} · ${bosses}/3 evils slain<br>${g.party.map((c) => `${esc(c.name)} ${c.level}`).join(' · ')}<br>${fmt(d.savedAt)}</small></div>
+      <div class="col">${btn('slotpick', mode === 'new' ? (pendingSlot === i ? 'Tap to overwrite' : 'Overwrite') : 'Load', i, '', mode === 'new' && pendingSlot !== i ? '' : 'primary')}${btn('slotdel', pendingDel === i ? 'Tap to delete' : 'Delete', i, '', pendingDel === i ? 'danger' : '')}</div></div>`;
+  }).join('')}${btn('title', 'Back')}`);
+}
+ACT.new = () => { pendingSlot = pendingDel = null; slotScreen('new'); };
+ACT.cont = () => { pendingSlot = pendingDel = null; slotScreen('load'); };
+ACT.slotpick = (i) => {
+  i = +i; pendingDel = null;
+  if (slotMode === 'load') return loadSlot(i);
+  if (readSlot(i) && pendingSlot !== i) { pendingSlot = i; return slotScreen('new'); } // overwriting needs a second tap
+  pendingSlot = null; diffScreen(i);
+};
+ACT.slotdel = (i) => { i = +i; pendingSlot = null; if (pendingDel !== i) { pendingDel = i; return slotScreen(slotMode); } pendingDel = null; try { localStorage.removeItem(SLOT_KEY(i)); } catch {} if (!anySave() && slotMode === 'load') return title(); slotScreen(slotMode); };
+function diffScreen(slot) {
+  show(`<h2>Choose difficulty</h2>${['normal', 'easy', 'hard'].map((k) => `<div class="slot"><div class="t"><b>${DIFFICULTY[k].name}</b><small>${DIFFICULTY[k].desc}</small></div>${btn('diff', 'Select', slot, k, k === 'normal' ? 'primary' : '')}</div>`).join('')}<div class="dim">You can change this later in Options.</div>${btn('new', 'Back')}`);
+}
+ACT.diff = (slot, d) => { newGame(); G.slot = +slot; G.difficulty = d; G.flags.visited.haven = true; save(); snap(); music(musicFor()); hide(); banner(mapDef().name); intro(); };
+function loadSlot(i) {
+  const d = readSlot(i); if (!d?.G) return;
+  G = migrate(d.G); G.slot = i; snap(); music(musicFor()); hide(); banner(mapDef().name); toast(`Loaded slot ${i}`);
+}
 function intro() {
   show(`<h2>Welcome to Haven Town</h2><div class="npc">${npcImg('elder', 64)}<p>Three great evils stir: the <b>Ashen Wyrm</b> in the cavern east of town, a <b>Lich King</b> in the swamp crypt, and a <b>Frost Titan</b> in a spire far to the north.</p></div>
   <p>Visit the <b>Guild</b> to choose jobs, the <b>Smithy</b> for gear, and open the <b>Menu</b> (Esc) to socket gems into skills. Talk to townsfolk: a <span class="gold">!</span> marks someone with news. Check your <b>Journal</b> if you get lost.</p>${btn('close', 'Begin', '', '', 'primary')}`);
@@ -426,7 +469,7 @@ function mainMenu() {
 }
 const fmtTime = (sec = 0) => { sec = Math.floor(sec); const h = Math.floor(sec / 3600), m = Math.floor((sec % 3600) / 60), s2 = sec % 60; return `${h}:${String(m).padStart(2, '0')}:${String(s2).padStart(2, '0')}`; };
 ACT.title = title;
-ACT.save = () => { $('#msg').textContent = save() ? 'Game saved.' : 'Could not save.'; };
+ACT.save = () => { $('#msg').textContent = save() ? `Game saved to slot ${G.slot}.` : 'Could not save (storage may be full or blocked).'; };
 
 // ---------- map screen, journal, options ----------
 ACT.mapscreen = () => {
@@ -460,15 +503,16 @@ function optionsScreen() {
   show(`<h2>⚙ Options</h2>
   <div class="opt"><label>Music volume <b>${Math.round(OPT.music * 100)}%</b></label><input type="range" min="0" max="100" value="${Math.round(OPT.music * 100)}" data-in="music"></div>
   <div class="opt"><label>Sound effects <b>${Math.round(OPT.sfx * 100)}%</b></label><input type="range" min="0" max="100" value="${Math.round(OPT.sfx * 100)}" data-in="sfx"></div>
-  <div class="row">${btn('optspeed', `Battle speed: <b>${OPT.speed}</b>`)}${btn('optmini', `Minimap: <b>${onOff(OPT.minimap)}</b>`)}${btn('optshake', `Screen shake: <b>${onOff(OPT.shake)}</b>`)}${btn('optmute', `Sound: <b>${isMuted() ? 'Muted' : 'On'}</b>`)}</div>
+  <div class="row">${G ? btn('optdiff', `Difficulty: <b>${DIFFICULTY[G.difficulty].name}</b>`) : ''}${btn('optspeed', `Battle speed: <b>${OPT.speed}</b>`)}${btn('optmini', `Minimap: <b>${onOff(OPT.minimap)}</b>`)}${btn('optshake', `Screen shake: <b>${onOff(OPT.shake)}</b>`)}${btn('optmute', `Sound: <b>${isMuted() ? 'Muted' : 'On'}</b>`)}</div>
   <h3>Controls</h3><div class="dim controls"><div><b>Arrows / WASD</b> move</div><div><b>Esc / M</b> menu</div><div><b>N</b> toggle minimap</div><div><b>Arrows</b> move menu focus</div><div><b>Enter / Space</b> select</div><div><b>Esc / Backspace</b> back</div></div>
   ${IS_IOS && !root.classList.contains('standalone') && !root.classList.contains('framed') ? '<div class="card"><b>📱 Install on iPhone</b><div class="dim">In Safari tap Share, then <b>Add to Home Screen</b>. Gemforge then runs full-screen, works offline, and remembers your saves.</div></div>' : ''}
-  <div class="row">${btn('optback', 'Back', '', '', 'primary')}</div>`);
+  <div class="dim" style="font-size:11px">Gemforge Chronicles v${VERSION}</div><div class="row">${btn('optback', 'Back', '', '', 'primary')}</div>`);
 }
 ACT.opts = () => optionsScreen();
 ACT.optback = () => (optBack === 'title' && !G ? title() : mainMenu());
 ACTIN.music = (v) => { OPT.music = v / 100; applyOptions(); ov.querySelector('[data-in=music]').previousElementSibling.querySelector('b').textContent = `${v}%`; };
 ACTIN.sfx = (v) => { OPT.sfx = v / 100; applyOptions(); ov.querySelector('[data-in=sfx]').previousElementSibling.querySelector('b').textContent = `${v}%`; sfx('click'); };
+ACT.optdiff = () => { const k = Object.keys(DIFFICULTY); G.difficulty = k[(k.indexOf(G.difficulty) + 1) % k.length]; optionsScreen(); };
 ACT.optspeed = () => { const k = Object.keys(SPEEDS); OPT.speed = k[(k.indexOf(OPT.speed) + 1) % k.length]; applyOptions(); optionsScreen(); };
 ACT.optmini = () => { OPT.minimap = !OPT.minimap; applyOptions(); optionsScreen(); };
 ACT.optshake = () => { OPT.shake = !OPT.shake; applyOptions(); optionsScreen(); };
@@ -582,8 +626,13 @@ function stageKind(bossId) {
   const r = regionOf(); return r === 'snow' ? 'snow' : r === 'swamp' ? 'swamp' : 'world';
 }
 async function battle(groupIds, bossId = null) {
+  try { await battleInner(groupIds, bossId); } catch (err) { // never leave the player stuck in a broken battle
+    console.error(err); try { BT?.stage?.stop(); } catch {} BT = null; busy = false; trans = 0; hide(); music(musicFor()); toast('⚠ Battle error: back to the map', 3500);
+  }
+}
+async function battleInner(groupIds, bossId = null) {
   busy = true;
-  const b = new Battle(G.party, groupIds, Math.random, !!bossId);
+  const b = new Battle(G.party, groupIds, Math.random, !!bossId, DIFFICULTY[G.difficulty || 'normal'].mod);
   await transition(); music(bossId ? 'boss' : 'battle');
   BT = { b, boss: bossId, logBig: false, log: [bossId ? BOSSES[bossId].intro : `${b.e.map((e) => e.name).join(', ')} appear!`], ask: null };
   BT.stage = new Stage(b, stageKind(bossId));
@@ -606,7 +655,7 @@ async function battle(groupIds, bossId = null) {
   if (b.over === 'win') await victory(b, bossId);
   else if (b.over === 'lose') await defeat();
   else { hide(); }
-  BT = null; busy = false; if (G) { if (b.over !== 'lose') music(musicFor()); draw(); }
+  BT = null; busy = false; if (G) { if (b.over !== 'lose') music(musicFor()); draw(); if (b.over === 'win') autosave(); }
 }
 function renderBattle() {
   const { b, ask } = BT;
@@ -754,8 +803,10 @@ async function defeat() {
 
 // audio controls: browsers need a user gesture before sound can start
 ['pointerdown', 'pointerup', 'touchend', 'click', 'keydown'].forEach((ev) => addEventListener(ev, unlock, { passive: true }));
-document.addEventListener('visibilitychange', () => setBackgrounded(document.hidden));
-addEventListener('pagehide', () => setBackgrounded(true));
+document.addEventListener('visibilitychange', () => { setBackgrounded(document.hidden); if (document.hidden) autosave(); });
+addEventListener('error', (e) => { console.error(e.error || e.message); toast('⚠ Something went wrong. Your progress is safe.', 3500); autosave(); });
+addEventListener('unhandledrejection', (e) => { console.error(e.reason); toast('⚠ Something went wrong. Your progress is safe.', 3500); });
+addEventListener('pagehide', () => { setBackgrounded(true); autosave(); });
 addEventListener('pageshow', () => setBackgrounded(false));
 // offline play + install support for the single-file build (only when served over https/localhost, never inside a host frame)
 if ('serviceWorker' in navigator && document.querySelector('meta[name=gemforge-bundled]') && window.self === window.top && /^(https:|http:\/\/localhost)/.test(location.href)) navigator.serviceWorker.register('sw.js').catch(() => {});

@@ -15,7 +15,7 @@ for (const [name, w, h, touch, dpr] of DEVICES) {
   await pg.goto(URL_); await pg.waitForTimeout(500);
   const snap = async (tag) => pg.screenshot({ path: `${OUT}/${name}-${tag}.png` });
   await snap('1-title');
-  await pg.click('[data-act=new]'); await pg.waitForTimeout(150); await pg.click('[data-act=close]'); await pg.waitForTimeout(500);
+  await pg.click('[data-act=new]'); await pg.click('[data-act=slotpick][data-a="1"]'); await pg.click('[data-act=diff][data-b=normal]'); await pg.waitForTimeout(150); await pg.click('[data-act=close]'); await pg.waitForTimeout(500);
   await pg.evaluate(() => window.__game.goto('world', 7, 21)); await pg.waitForTimeout(700); await snap('2-world');
   const m = await pg.evaluate(() => {
     const r = (s) => { const e = document.querySelector(s); if (!e) return null; const b = e.getBoundingClientRect(); return [Math.round(b.left), Math.round(b.top), Math.round(b.width), Math.round(b.height)]; };

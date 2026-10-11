@@ -342,3 +342,10 @@ export const QUESTS = {
 
 // gem-wright: price of each successive bonus socket (per hero)
 export const SOCKET_COST = [600, 1500, 3500];
+
+// difficulty presets (chosen per save; can be changed in Options)
+export const DIFFICULTY = {
+  easy: { name: 'Easy', desc: 'Softer enemies (-25% HP, -20% damage). Great for the story.', mod: { hp: 0.75, atk: 0.8, mag: 0.8, def: 0.9, reward: 1 } },
+  normal: { name: 'Normal', desc: 'The intended balance.', mod: { hp: 1, atk: 1, mag: 1, def: 1, reward: 1 } },
+  hard: { name: 'Hard', desc: 'Tougher enemies (+25% HP, +20% damage) with +20% EXP and gold.', mod: { hp: 1.25, atk: 1.2, mag: 1.2, def: 1.1, reward: 1.2 } },
+};

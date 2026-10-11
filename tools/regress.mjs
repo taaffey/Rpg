@@ -16,7 +16,7 @@ const overlayTitle = () => ev(() => document.querySelector('#overlay h2')?.textC
 
 // --- start, keyboard only
 ok('title focuses New Game', (await ev(() => document.activeElement?.dataset?.act)) === 'new');
-await key('Enter'); await key('Enter', 1, 400);
+await key('Enter'); await key('Enter'); await key('Enter'); await key('Enter', 1, 400); // New Game -> slot 1 -> Normal -> Begin
 await ev(() => { for (const m of Object.values(window.__game.MAPS)) m.rate = 0; }); // keep tests deterministic: battles are started explicitly
 ok('game started in Haven', (await ev(() => window.__game.G.map)) === 'haven');
 await pg.waitForTimeout(800); ok('music engine scheduled notes', (await ev(() => window.__osc)) >= 4);
@@ -48,7 +48,7 @@ await pg.click('[data-act=save]'); await pg.waitForTimeout(100);
 const before = await ev(() => ({ x: window.__game.G.x, y: window.__game.G.y, gold: window.__game.G.gold, main: window.__game.G.party[1].main }));
 await pg.reload(); await pg.waitForTimeout(500);
 ok('continue available after reload', !(await ev(() => document.querySelector('[data-act=cont]').disabled)));
-await pg.click('[data-act=cont]'); await pg.waitForTimeout(300);
+await pg.click('[data-act=cont]'); await pg.click('[data-act=slotpick][data-a="1"]'); await pg.waitForTimeout(300);
 const after = await ev(() => ({ x: window.__game.G.x, y: window.__game.G.y, gold: window.__game.G.gold, main: window.__game.G.party[1].main, seen: window.__game.G.flags.seen.world.join('').split('1').length - 1 }));
 ok('save restored position/gold/job', after.x === before.x && after.y === before.y && after.gold === before.gold && after.main === before.main);
 ok('fog persisted through save', after.seen === s1);
@@ -111,6 +111,41 @@ const capBefore = await ev(() => window.__game.G.party[1].extra || 0);
 await pg.click('[data-act=addsock][data-a="1"]'); await pg.waitForTimeout(150);
 ok('bonus socket purchased', (await ev(() => window.__game.G.party[1].extra)) === capBefore + 1 && (await ev(() => window.__game.G.gold)) === 4400);
 await closeAll();
+
+// --- saves: slots, confirmations, legacy import, autosave, difficulty
+await ev(() => { window.__game.G.gold = 777; });
+await ev(() => window.__game.goto('haven', 9, 11)); await pg.waitForTimeout(150); // entering a town autosaves
+const slot1 = await ev(() => JSON.parse(localStorage.getItem('gemforge-save-v3-1')).G.gold);
+ok('entering a town autosaves into the active slot', slot1 === 777, String(slot1));
+await ev(() => { localStorage.setItem('gemforge-save-v2', JSON.stringify({ ...JSON.parse(localStorage.getItem('gemforge-save-v3-1')).G, gold: 4242, flags: { chests: {}, bosses: {}, seen: {}, talked: {} } })); localStorage.removeItem('gemforge-save-v3-1'); window.__game.G.slot = null; /* stop the pagehide autosave from re-creating slot 1 */ });
+await pg.reload(); await pg.waitForTimeout(500);
+await pg.click('[data-act=cont]'); await pg.waitForTimeout(150);
+ok('legacy single-slot save is imported into slot 1', /Slot 1/.test(await ev(() => document.getElementById('overlay').textContent)) && (await ev(() => JSON.parse(localStorage.getItem('gemforge-save-v3-1')).G.gold)) === 4242);
+await pg.click('[data-act=slotpick][data-a="1"]'); await pg.waitForTimeout(300);
+ok('legacy save loads and migrates missing fields', (await ev(() => window.__game.G.gold)) === 4242 && (await ev(() => typeof window.__game.G.flags.qprog)) === 'object' && (await ev(() => window.__game.G.difficulty)) === 'normal');
+await ev(() => { for (const m of Object.values(window.__game.MAPS)) m.rate = 0; });
+await pg.reload(); await pg.waitForTimeout(400);
+await pg.click('[data-act=new]'); await pg.click('[data-act=slotpick][data-a="1"]'); await pg.waitForTimeout(100);
+ok('overwriting an existing slot needs a second tap', /Tap to overwrite/.test(await ev(() => document.getElementById('overlay').textContent)));
+await pg.click('[data-act=slotpick][data-a="2"]'); await pg.waitForTimeout(100); // empty slot 2 -> difficulty
+await pg.click('[data-act=diff][data-b=hard]'); await pg.waitForTimeout(200); await pg.click('[data-act=close]'); await pg.waitForTimeout(200);
+ok('new game in slot 2 on Hard', (await ev(() => window.__game.G.slot)) === 2 && (await ev(() => window.__game.G.difficulty)) === 'hard');
+await ev(() => { for (const m of Object.values(window.__game.MAPS)) m.rate = 0; });
+await ev(() => { window.__game.battle(['goblin']); }); await pg.waitForSelector('[data-act=c]', { timeout: 8000 });
+const hpHard = await ev(() => window.__game.BT.b.e[0].maxhp);
+ok('Hard difficulty scales enemy HP (+25%)', hpHard === Math.round(58 * 1.25), String(hpHard));
+await ev(() => window.__game.BT.b.e.forEach((e) => { e.hp = 1; })); await finishBattle();
+await ev(() => { window.__game.G.difficulty = 'easy'; window.__game.battle(['goblin']); }); await pg.waitForSelector('[data-act=c]', { timeout: 8000 });
+ok('Easy difficulty scales enemy HP (-25%)', (await ev(() => window.__game.BT.b.e[0].maxhp)) === Math.round(58 * 0.75));
+await ev(() => window.__game.BT.b.e.forEach((e) => { e.hp = 1; })); await finishBattle();
+await ev(() => { window.__game.G.difficulty = 'normal'; });
+await pg.reload(); await pg.waitForTimeout(400);
+await pg.click('[data-act=cont]'); await pg.click('[data-act=slotdel][data-a="2"]'); await pg.waitForTimeout(100);
+ok('delete needs confirmation', !!(await ev(() => localStorage.getItem('gemforge-save-v3-2'))));
+await pg.click('[data-act=slotdel][data-a="2"]'); await pg.waitForTimeout(100);
+ok('slot deleted after the second tap', !(await ev(() => localStorage.getItem('gemforge-save-v3-2'))));
+await pg.click('[data-act=slotpick][data-a="1"]'); await pg.waitForTimeout(300);
+await ev(() => { for (const m of Object.values(window.__game.MAPS)) m.rate = 0; });
 
 // --- new status: stun / crit gems resolve in the engine without errors
 const eng = await ev(async () => { try { const L = await import('/src/logic.js'); const m = L.skillWithGems('chop', ['stun', 'crit', 'berserk']); return [m.stun, m.crit, m.recoil, m.pow.toFixed(2)].join(','); } catch { return 'bundled'; } });
