@@ -5,6 +5,8 @@ import { MAPS, WALK } from './maps.js';
 import * as L from './logic.js';
 import * as SP from './sprites.js';
 import * as TR from './terrain.js';
+import * as TA from './townart.js';
+import * as WK from './walkers.js';
 import { Stage, FX } from './stage.js';
 import { music, sfx, unlock, isMuted, setMuted, setVolumes, setBackgrounded } from './audio.js';
 const { stats, newChar, learnable, slotSkill, slotGems, gemCapacity, gemsUsed, sanitize, skillWithGems, describeSkill, gainExp, expNeeded, Battle, rewards, SIG, GEMS_PER_SLOT } = L;
@@ -163,8 +165,8 @@ function miniOverlay(t) {
 
 // ---------- map rendering ----------
 const plr = { x: 256, y: 192 };
-let face = 1, vx = 0, vy = 0, trans = 0, lastT = 0, trail = [], fv = [];
-const snap = () => { vx = G.x; vy = G.y; trail = [{ x: G.x, y: G.y }]; fv = [0, 1, 2].map(() => ({ x: G.x, y: G.y, f: face, mv: false })); reveal(); };
+let face = 'down', vx = 0, vy = 0, trans = 0, lastT = 0, trail = [], fv = [];
+const snap = () => { vx = G.x; vy = G.y; trail = [{ x: G.x, y: G.y }]; fv = [0, 1, 2].map(() => ({ x: G.x, y: G.y, d: face, mv: false })); reveal(); };
 const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
 const LIGHT = { storm: { glow: '255,230,90', dark: 0.86, r: 170 }, cavern: { glow: '255,150,50', dark: 0.88, r: 175 }, crypt: { glow: '90,255,140', dark: 0.9, r: 165 }, spire: { glow: '130,210,255', dark: 0.5, r: 250 } };
 function draw(t = performance.now() / 1000) {
@@ -177,8 +179,8 @@ function draw(t = performance.now() / 1000) {
   const sx = (x) => Math.round((x - camX) * TS), sy = (y) => Math.round((y - camY) * TS);
   const x0 = Math.max(0, Math.floor(camX)), x1 = Math.min(W, Math.ceil(camX + VW) + 1), y0 = Math.max(0, Math.floor(camY)), y1 = Math.min(H, Math.ceil(camY + VH) + 1);
   const defeated = (id) => !!G.flags.bosses[id];
-  const auto = TR.isAutoTheme(m.theme);
-  if (!auto) { // beyond the edge of a room/dungeon: more wall, shaded, instead of black bars
+  const R = TR.isTheme(m.theme) ? TR : TA.isTheme(m.theme) ? TA : null, items = []; // R = autotiled renderer (overworld / towns)
+  if (!R) { // rooms and dungeons: classic tiles; beyond the edge more wall, shaded, instead of black bars
     for (let y = Math.floor(camY) - 1; y <= Math.ceil(camY + VH) + 1; y++) for (let x = Math.floor(camX) - 1; x <= Math.ceil(camX + VW) + 1; x++) if (x < 0 || y < 0 || x >= W || y >= H) cx.drawImage(SP.tile(m.theme, '#', x, y, 0), sx(x), sy(y), TS, TS);
     cx.fillStyle = 'rgba(0,0,0,.55)'; cx.fillRect(0, 0, cv.width, cv.height);
     for (let y = y0; y < y1; y++) for (let x = x0; x < x1; x++) {
@@ -187,53 +189,40 @@ function draw(t = performance.now() / 1000) {
       if (ch === 'X') ch = '.';
       cx.drawImage(SP.tile(m.theme, ch, x, y, frame), sx(x), sy(y), TS, TS);
     }
-  } else { // FF1-style autotiled terrain: rounded coasts, merged forests, cobbled streets
+  } else {
     const outside = m.kind === 'outdoor' ? () => '~' : (x, y) => ((x * 7 + y * 5) % 3 === 0 ? (m.theme === 'snowtown' ? 't' : 'T') : '.');
     const get = (x, y) => { if (x < 0 || y < 0 || x >= W || y >= H) return outside(x, y); const ch = tileAt(x, y); return ch === 'X' ? '.' : ch === 'B' && gateOpen() ? '_' : ch; };
-    const wf = Math.floor(t * 2.2) % 4, ax0 = Math.floor(camX) - 1, ax1 = Math.ceil(camX + VW) + 1, ay0 = Math.floor(camY) - 1, ay1 = Math.ceil(camY + VH) + 1;
-    const snowy = (x, y) => [[0, 0], [1, 0], [-1, 0], [0, 1], [0, -1]].some(([a, b]) => ',t'.includes(get(x + a, y + b)));
-    const place = (x, y) => { const p = m.portals?.[`${x},${y}`]?.to; return p; };
-    for (let y = ay0; y <= ay1; y++) for (let x = ax0; x <= ax1; x++) {
-      const ch = get(x, y), X = sx(x), Y = sy(y);
-      cx.drawImage(TR.autoTile(m.theme, get, x, y, wf), X, Y, TS, TS);
-      let o = null;
-      if (ch === '=') o = TR.bridge(get(x - 1, y) === '~' && get(x + 1, y) === '~'); // water on both sides = the deck runs north-south
-      else if (m.kind === 'outdoor') {
-        if (ch === 'M') o = TR.mountain(snowy(x, y));
-        else if (ch === 'B') o = SP.decor('rockslide');
-        else if (ch === 'H') { const p = place(x, y); o = TR.townIcon(p === 'frostholm' ? 'snow' : p === 'mirewood' ? 'village' : 'town'); }
-        else if (ch === 'D') o = TR.placeIcon(place(x, y));
-      } else {
-        if (ch === 'T' || ch === 't') o = TR.townTree(ch === 't' ? 'snow' : m.theme === 'swamptown' ? 'swamp' : 'tree');
-        else if (ch === 'F') o = TR.fountain(Math.floor(t * 4) % 2, get(x - 1, y) === 'F' ? 1 : get(x + 1, y) === 'F' ? 0 : -1);
-        else if (ch === 'G') o = TR.grave();
-      }
-      if (o) cx.drawImage(o, X, Y, TS, TS);
-    }
-    for (const b of m.buildings || []) { // solid FF1 drop shadow to the right, then the building itself
-      const bx = sx(b.x), by = sy(b.y), rx = bx + b.w * TS, sh = Math.round(TS * 0.45);
-      cx.fillStyle = 'rgba(0,0,0,.82)'; cx.beginPath(); cx.moveTo(rx, by + sh); cx.lineTo(rx + sh, by + sh * 2); cx.lineTo(rx + sh, by + b.h * TS); cx.lineTo(rx, by + b.h * TS); cx.fill();
-      cx.drawImage(TR.building(m.theme, b.kind, b.w, b.h, b.door), bx, by, b.w * TS, b.h * TS);
-    }
+    const ax0 = Math.floor(camX) - 1, ax1 = Math.ceil(camX + VW) + 1, ay0 = Math.floor(camY) - 1, ay1 = Math.ceil(camY + VH) + 1, ctx = { gateOpen: gateOpen(), flags: G.flags };
+    m.gateOpen = ctx.gateOpen;
+    for (let y = ay0; y <= ay1; y++) for (let x = ax0; x <= ax1; x++) cx.drawImage(R.ground(m.theme, get, x, y, t), sx(x), sy(y), TS, TS);
+    for (let y = ay0 - 1; y <= ay1 + 3; y++) for (let x = ax0 - 2; x <= ax1 + 2; x++) R.objects(m.theme, get, x, y, t, items, m); // margins: tall/wide objects rooted off-screen
+    R.mapObjects(m, t, items, ctx);
   }
+  // draw items: z 0 flat now; z 1 sorted with characters by their base; z 2 last
+  const put = (it) => {
+    const w = it.w ?? it.img.width / 16, h = it.h ?? it.img.height / 16, X = sx(it.x), Y = sy(it.y);
+    if (it.shadow) { const rx = X + w * TS, s2 = Math.round(TS * 0.45); cx.fillStyle = 'rgba(0,0,0,.45)'; cx.beginPath(); cx.moveTo(rx, Y + s2); cx.lineTo(rx + s2, Y + s2 * 2); cx.lineTo(rx + s2, Y + h * TS); cx.lineTo(rx, Y + h * TS); cx.fill(); return; }
+    if (it.draw) return it.draw(cx, X, Y, TS);
+    cx.drawImage(it.img, X, Y, w * TS, h * TS);
+  };
+  for (const it of items) if (!it.z) put(it);
   const torches = [], theme = m.theme;
   if (m.kind === 'dungeon') for (let y = Math.max(0, y0 - 1); y < y1 - 1; y++) for (let x = x0; x < x1; x++) if (tileAt(x, y) === '#' && tileAt(x, y + 1) === '.' && (x * 5 + y * 3) % 7 === 0) { cx.drawImage(SP.torch(Math.floor(t * 7 + x) % 2, theme), sx(x), sy(y), TS, TS); torches.push([sx(x) + TS / 2, sy(y) + TS * 0.4]); }
   for (const [dx, dy, k] of m.decor || []) cx.drawImage(SP.decor(k), sx(dx), sy(dy), TS, TS);
-  if (m.boss && !defeated(m.boss.id)) { const bob = Math.round(Math.sin(t * 2) * 1.5); cx.drawImage(SP.enemy(m.boss.id), sx(m.boss.x), sy(m.boss.y) + bob, TS, TS); }
-  for (const n of m.npcs || []) {
-    const nx0 = sx(n.x), ny0 = sy(n.y), bob = Math.round(Math.sin(t * 2 + n.x) * 0.8);
-    cx.fillStyle = 'rgba(0,0,0,.35)'; cx.beginPath(); cx.ellipse(nx0 + TS / 2, ny0 + TS - 3, 10, 4, 0, 0, 7); cx.fill();
-    cx.drawImage(SP.npc(n.type), nx0, ny0 - bob, TS, TS);
-    const mk = questMarker(n); if (mk) { cx.fillStyle = mk === '?' ? '#7af0a0' : '#ffd25a'; cx.font = 'bold 14px sans-serif'; cx.textAlign = 'center'; cx.strokeStyle = '#201000'; cx.lineWidth = 3; cx.strokeText(mk, nx0 + TS / 2, ny0 - 3 - bob * 2); cx.fillText(mk, nx0 + TS / 2, ny0 - 3 - bob * 2); }
-  }
+  // characters: standing on the bottom of their tile, sprites may be taller than one tile
+  const stand = (img, X, Y, bob = 0) => { const h = img.height * (TS / 16); cx.fillStyle = 'rgba(0,0,0,.32)'; cx.beginPath(); cx.ellipse(X + TS / 2, Y + TS - 3, 10, 4, 0, 0, 7); cx.fill(); cx.drawImage(img, X, Y + TS - h - bob, TS, h); return h; };
+  const sorted = items.filter((it) => it.z === 1).map((it) => ({ k: it.sy ?? it.y + (it.h ?? it.img.height / 16), f: () => put(it) }));
+  if (m.boss && !defeated(m.boss.id)) sorted.push({ k: m.boss.y + 1, f: () => { const bob = Math.round(Math.sin(t * 2) * 1.5); cx.drawImage(SP.enemy(m.boss.id), sx(m.boss.x), sy(m.boss.y) + bob, TS, TS); } });
+  for (const n of m.npcs || []) sorted.push({ k: n.y + 1, f: () => {
+    const nx0 = sx(n.x), ny0 = sy(n.y), bob = Math.round(Math.abs(Math.sin(t * 2 + n.x)) * 0.8), fr = Math.floor(t * 1.6 + n.x) % 8 === 0 ? 1 : 0;
+    const h = stand(WK.npcWalker(n.type, n.dir || 'down', fr), nx0, ny0, bob);
+    const mk = questMarker(n); if (mk) { const my = ny0 + TS - h - 4 - bob; cx.fillStyle = mk === '?' ? '#7af0a0' : '#ffd25a'; cx.font = 'bold 14px sans-serif'; cx.textAlign = 'center'; cx.strokeStyle = '#201000'; cx.lineWidth = 3; cx.strokeText(mk, nx0 + TS / 2, my); cx.fillText(mk, nx0 + TS / 2, my); }
+  } });
   const px = sx(vx), py = sy(vy); plr.x = px + TS / 2; plr.y = py + TS / 2;
-  const crew = [{ i: 0, x: vx, y: vy, f: face, mv: Math.abs(vx - G.x) + Math.abs(vy - G.y) > 0.05 }, ...fv.slice(0, G.party.length - 1).map((f, i) => ({ i: i + 1, ...f }))].sort((a, b) => a.y - b.y || b.i - a.i);
-  for (const c of crew) {
-    const cx0 = sx(c.x), cy0 = sy(c.y), hop = c.mv ? Math.round(Math.abs(Math.sin(t * 16 + c.i)) * 2) : 0;
-    cx.fillStyle = 'rgba(0,0,0,.35)'; cx.beginPath(); cx.ellipse(cx0 + TS / 2, cy0 + TS - 3, 10, 4, 0, 0, 7); cx.fill();
-    cx.save(); cx.translate(c.f < 0 ? cx0 + TS : cx0, cy0 - hop); cx.scale(c.f, 1);
-    cx.drawImage(SP.hero(G.party[c.i].main, c.mv ? [0, 1, 0, 2][Math.floor(t * 10 + c.i) % 4] : 0), 0, 0, TS, TS); cx.restore();
-  }
+  const crew = [{ i: 0, x: vx, y: vy, d: face, mv: Math.abs(vx - G.x) + Math.abs(vy - G.y) > 0.05 }, ...fv.slice(0, G.party.length - 1).map((f, i) => ({ i: i + 1, ...f }))];
+  for (const c of crew) sorted.push({ k: c.y + 1 - c.i * 0.001, f: () => stand(WK.walker(G.party[c.i].main, c.d, c.mv ? 1 + (Math.floor(t * 8 + c.i) % 3) : 0), sx(c.x), sy(c.y)) });
+  sorted.sort((a, b) => a.k - b.k).forEach((s2) => s2.f());
+  for (const it of items) if (it.z === 2) put(it);
   if (m.kind === 'outdoor') {
     const reg = regionOf();
     if (reg === 'snow') { cx.fillStyle = 'rgba(210,225,255,.07)'; cx.fillRect(0, 0, cv.width, cv.height); cx.fillStyle = 'rgba(255,255,255,.9)'; for (let i = 0; i < 46; i++) cx.fillRect(Math.round((i * 47 + Math.sin(t * 0.9 + i) * 14 + t * 10) % cv.width), Math.round((t * (30 + (i % 5) * 9) + i * 53) % cv.height), 2, 2); }
@@ -277,7 +266,7 @@ function tick(now) {
   if (!G) return drawTitle(now / 1000);
   G.playtime = (G.playtime || 0) + dt;
   const sp = 9 * dt; vx += clamp(G.x - vx, -sp, sp); vy += clamp(G.y - vy, -sp, sp);
-  fv.forEach((f, i) => { const tg = trail[Math.max(0, trail.length - 2 - i)] || { x: G.x, y: G.y }, dx = tg.x - f.x, dy = tg.y - f.y; f.mv = Math.abs(dx) + Math.abs(dy) > 0.02; if (Math.abs(dx) > 0.01) f.f = Math.sign(dx); f.x += clamp(dx, -sp, sp); f.y += clamp(dy, -sp, sp); });
+  fv.forEach((f, i) => { const tg = trail[Math.max(0, trail.length - 2 - i)] || { x: G.x, y: G.y }, dx = tg.x - f.x, dy = tg.y - f.y; f.mv = Math.abs(dx) + Math.abs(dy) > 0.02; if (f.mv) f.d = Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? 'right' : 'left') : (dy > 0 ? 'down' : 'up'); f.x += clamp(dx, -sp, sp); f.y += clamp(dy, -sp, sp); });
   if (!inOverlay()) draw(now / 1000);
 }
 requestAnimationFrame(tick);
@@ -293,7 +282,7 @@ function mapShake() { if (!OPT.shake) return; cv.classList.remove('shake'); void
 async function step(dx, dy) {
   if (inOverlay() || busy || Math.abs(vx - G.x) + Math.abs(vy - G.y) > 0.45) return;
   const m = mapDef(), nx = G.x + dx, ny = G.y + dy, t = tileAt(nx, ny);
-  if (dx) face = dx;
+  face = dx > 0 ? 'right' : dx < 0 ? 'left' : dy > 0 ? 'down' : 'up';
   const npc = npcAt(nx, ny); if (npc) return talk(npc);
   if (decorAt(nx, ny)) return;
   if (t === 'C') { if (!G.flags.chests[chestKey(nx, ny)]) openChest(nx, ny); return; }
