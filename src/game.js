@@ -68,7 +68,7 @@ function newGame() {
   };
 }
 // ---------- saves: 3 slots, autosave, migration ----------
-const VERSION = '1.0.0', LEGACY_SAVE = 'gemforge-save-v2', SLOT_KEY = (i) => `gemforge-save-v3-${i}`, SLOT_IDS = [1, 2, 3];
+const VERSION = '1.1.0', LEGACY_SAVE = 'gemforge-save-v2', SLOT_KEY = (i) => `gemforge-save-v3-${i}`, SLOT_IDS = [1, 2, 3];
 function migrate(g) {
   g.v = 3; g.flags ||= {};
   for (const k of ['chests', 'bosses', 'seen', 'talked', 'visited', 'quests', 'qprog', 'qitems', 'tips', 'bestiary']) g.flags[k] ||= {};
@@ -156,7 +156,9 @@ function miniOverlay(t) {
   const W = m.rows[0].length, H = m.rows.length, sc = Math.max(2, Math.min(Math.floor(104 / W), Math.floor(80 / H))), w = W * sc, h = H * sc, ox = cv.width - w - 8, oy = 8;
   if (miniDirty || miniCache.id !== G.map) { // redraw the static layer only when something was revealed or changed
     miniCache.id = G.map; miniCache.sc = sc; miniCache.canvas.width = w; miniCache.canvas.height = h; miniDirty = false;
-    drawMini(miniCache.canvas.getContext('2d'), G.map, sc, 0, 0, 0, true);
+    const mc = miniCache.canvas.getContext('2d'), art = G.map === 'world' && TR.mapImage ? TR.mapImage(m) : null, seen = G.flags.seen[G.map] || [];
+    if (!art) drawMini(mc, G.map, sc, 0, 0, 0, true);
+    else { mc.imageSmoothingEnabled = true; mc.drawImage(art, 0, 0, w, h); mc.fillStyle = '#04061a'; for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) if (seen[y]?.[x] !== '1') mc.fillRect(x * sc, y * sc, sc, sc); }
   }
   cx.fillStyle = 'rgba(6,10,40,.72)'; cx.fillRect(ox - 3, oy - 3, w + 6, h + 6); cx.strokeStyle = '#e8ecf8'; cx.lineWidth = 1; cx.strokeRect(ox - 2.5, oy - 2.5, w + 5, h + 5);
   cx.drawImage(miniCache.canvas, ox, oy);
@@ -254,7 +256,7 @@ function drawTitle(t) {
   const gemCols = ['#ff7a3a', '#7fd8f0', '#fff27a', '#ffffff', '#b07aff'], n = Math.max(5, Math.round(W / 54));
   for (let i = 0; i < n; i++) { const x = (i + 0.5) * W / n, y = H * (tall ? 0.45 : 0.5) + Math.sin(t * 1.4 + i * 1.7) * 14 * u, c = gemCols[i % 5], q = u; cx.fillStyle = c; cx.beginPath(); cx.moveTo(x, y - 7 * q); cx.lineTo(x + 5 * q, y); cx.lineTo(x, y + 7 * q); cx.lineTo(x - 5 * q, y); cx.fill(); cx.fillStyle = 'rgba(255,255,255,.6)'; cx.fillRect(x - q, y - 4 * q, 2 * q, 3 * q); }
   const sz = Math.round(48 * u / 8) * 8 || 24, heroes = ['knight', 'mage', 'cleric', 'rogue', 'ranger', 'monk', 'samurai', 'paladin'];
-  heroes.forEach((j, i) => { const x = ((t * 34 * u + i * 96 * u) % (W + 80 * u)) - 56 * u, y = ground - sz - Math.round(Math.abs(Math.sin(t * 9 + i)) * 4 * u) + 8 * u; cx.fillStyle = 'rgba(0,0,0,.4)'; cx.fillRect(x + sz * 0.16, ground + 4 * u, sz * 0.66, 4 * u); cx.drawImage(SP.hero(j, Math.floor(t * 8 + i) % 4 === 1 ? 1 : Math.floor(t * 8 + i) % 4 === 3 ? 2 : 0), x, y, sz, sz); });
+  heroes.forEach((j, i) => { const x = ((t * 34 * u + i * 118 * u) % (heroes.length * 118 * u)) - 56 * u, y = ground - sz - Math.round(Math.abs(Math.sin(t * 9 + i)) * 4 * u) + 8 * u; cx.fillStyle = 'rgba(0,0,0,.4)'; cx.fillRect(x + sz * 0.16, ground + 4 * u, sz * 0.66, 4 * u); const im = WK.walker(j, 'right', 1 + (Math.floor(t * 8 + i) % 3)), h = sz * im.height / 16; cx.drawImage(im, x, y + sz - h + 4 * u, sz, h); }); // the party marches along in their field sprites
   cx.textAlign = 'center'; cx.textBaseline = 'alphabetic'; cx.lineJoin = 'round';
   const ty = H * 0.29, tg = cx.createLinearGradient(0, ty - 44 * u, 0, ty + 8 * u); tg.addColorStop(0, '#fff6c0'); tg.addColorStop(1, '#e89a30');
   const f1 = Math.min(46 * u, (W - 24) / 8.6); cx.font = `${f1}px "Press Start 2P", ui-monospace, Menlo, monospace`; cx.lineWidth = Math.max(4, f1 * 0.2); cx.strokeStyle = '#2a1050'; cx.strokeText('GEMFORGE', cxm, ty); cx.fillStyle = tg; cx.fillText('GEMFORGE', cxm, ty);
@@ -283,7 +285,7 @@ async function step(dx, dy) {
   if (inOverlay() || busy || Math.abs(vx - G.x) + Math.abs(vy - G.y) > 0.45) return;
   const m = mapDef(), nx = G.x + dx, ny = G.y + dy, t = tileAt(nx, ny);
   face = dx > 0 ? 'right' : dx < 0 ? 'left' : dy > 0 ? 'down' : 'up';
-  const npc = npcAt(nx, ny); if (npc) return talk(npc);
+  const npc = npcAt(nx, ny); if (npc) { npc.dir = { up: 'down', down: 'up', left: 'right', right: 'left' }[face]; draw(); return talk(npc); } // they turn to face you
   if (decorAt(nx, ny) || m.blocks?.has(`${nx},${ny}`)) return; // m.blocks: solid props placed by a map renderer (stalls, barrels, fences...)
   if (t === 'C') { if (!G.flags.chests[chestKey(nx, ny)]) openChest(nx, ny); return; }
   if (!walkable(t)) return;
@@ -526,10 +528,20 @@ ACT.mapscreen = () => {
   const W = m.rows[0].length, H = m.rows.length, sc = Math.max(4, Math.min(Math.floor(560 / W), Math.floor(380 / H)));
   const places = (m.places || []).filter(([x, y]) => G.flags.seen[G.map]?.[y]?.[x] === '1');
   show(`<h2>🗺 ${esc(m.name)}</h2><canvas id="bigmap" width="${W * sc}" height="${H * sc}" class="px" style="width:100%;max-width:${W * sc}px;background:#05070f;border:2px solid #060a28;border-radius:4px"></canvas>
-  <div class="dim">White blinking square = you · gold = towns/exits · red = dungeons/bosses · tan = unopened chests (once seen). Press <b>N</b> on the map to toggle the minimap.</div>
+  <div class="dim">${G.map === 'world' ? 'The blinking frame is your party. Dark areas are still unexplored.' : 'White blinking square = you · gold = exits · red = the boss · tan = unopened chests (once seen).'} Press <b>N</b> on the map to toggle the minimap.</div>
   ${places.length ? `<h3>Discovered</h3><div>${places.map((p) => `<span class="chip">${esc(p[2])}</span>`).join('')}</div>` : ''}${btn('menu', 'Back', '', '', 'primary')}`);
   const c2 = $('#bigmap').getContext('2d'); c2.imageSmoothingEnabled = false;
-  const paint = () => { if (!$('#bigmap')) return; c2.clearRect(0, 0, W * sc, H * sc); drawMini(c2, G.map, sc, 0, 0, performance.now() / 1000); requestAnimationFrame(paint); }; paint();
+  const art = G.map === 'world' && TR.mapImage ? TR.mapImage(m) : null, seen = G.flags.seen[G.map] || [];
+  const paint = () => {
+    if (!$('#bigmap')) return; const t2 = performance.now() / 1000; c2.clearRect(0, 0, W * sc, H * sc);
+    if (!art) drawMini(c2, G.map, sc, 0, 0, t2);
+    else { // the painted world, with unexplored tiles left in shadow
+      c2.drawImage(art, 0, 0, W * sc, H * sc); c2.fillStyle = 'rgba(4,6,20,.93)';
+      for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) if (seen[y]?.[x] !== '1') c2.fillRect(x * sc, y * sc, sc, sc);
+      if (Math.floor(t2 * 3) % 2 === 0) { c2.strokeStyle = '#ffffff'; c2.lineWidth = 2; c2.strokeRect(G.x * sc - 2, G.y * sc - 2, sc + 4, sc + 4); }
+    }
+    requestAnimationFrame(paint);
+  }; paint();
 };
 const OBJECTIVES = [
   { id: 'wyrm', title: 'Slay the Ashen Wyrm', hint: 'Ashen Cavern, east of Haven. It is weak to ice. Its fall will clear the northern pass.' },

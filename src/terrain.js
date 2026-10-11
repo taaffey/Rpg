@@ -580,3 +580,18 @@ export function mapObjects(m, t, out) {
     }, x: s.x - 0.75, y: s.y - 1.1 + bob, w: 1.5, h: 22 / 16, z: 1, sy: s.y + 0.4 });
   }
 }
+
+// ---------- whole-world picture for the map screen: the baked terrain (calm water) plus towns, caves and ruins ----------
+let MAPIMG = null;
+export function mapImage(m) {
+  if (MAPIMG) return MAPIMG;
+  const B = bake(), W = m.rows[0].length, H = m.rows.length, c = mk(W * 16, H * 16), x = c.getContext('2d'), id = x.createImageData(W * 16, H * 16), o = id.data;
+  for (let Y = 0; Y < H * 16; Y++) for (let X = 0; X < W * 16; X++) {
+    const gX = X + PAD * 16, gY = Y + PAD * 16, i = gY * B.PW + gX, j = (Y * W * 16 + X) * 4;
+    if (!B.wT[i]) { const s = i * 4; o[j] = B.S[s]; o[j + 1] = B.S[s + 1]; o[j + 2] = B.S[s + 2]; o[j + 3] = 255; } else waterPx(o, j, gX, gY, B.wT[i], B.wD[i], B.wF[i], 0);
+  }
+  x.putImageData(id, 0, 0);
+  const items = []; mapObjects(m, 0, items);
+  for (const it of items) if (it.img) x.drawImage(it.img, Math.round(it.x * 16), Math.round(it.y * 16));
+  MAPIMG = c; return c;
+}
