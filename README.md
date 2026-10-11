@@ -45,10 +45,15 @@ keyboard alone, or with the mouse. Options (volumes, battle speed, shake, minima
 - `src/logic.js`: pure logic (stats, build rules, gem rewriting, battle engine). No DOM.
 - `src/game.js`: map/menus/build UI/battle flow.
 
+## Single-file build
+    ESBUILD=/path/to/esbuild node tools/build.mjs     # or just: node tools/build.mjs (uses npx esbuild)
+Produces `dist/index.html` (the whole game, about 150 KB, no other files, works from any static host or `file://`) and
+`dist/artifact.html` (the same page as a fragment for hosts that supply the document shell). `dist/` is git-ignored.
+
 ## Tests and tools
     node tools/sim.mjs fast 100      # headless balance sim: every region and boss at expected levels
     node tools/checkmaps.mjs         # every map valid; every portal/NPC/chest/boss reachable; gate verified
     node tools/checksprites.mjs      # sprite sizes
-    node tools/regress.mjs           # browser regression (needs the dev server + Playwright)
+    node tools/regress.mjs           # browser regression (needs the dev server + Playwright); URL=... tests the dist build
     python3 tools/genmaps.py         # regenerate the big world and dungeons (deterministic)
     # tools/sheet.html: sprite contact sheet, open via the dev server
