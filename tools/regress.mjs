@@ -16,7 +16,14 @@ const overlayTitle = () => ev(() => (document.querySelector('#overlay h2') || do
 
 // --- start, keyboard only
 ok('title focuses New Game', (await ev(() => document.activeElement?.dataset?.act)) === 'new');
-await key('Enter'); await key('Enter'); await key('Enter'); await key('Enter', 1, 400); // New Game -> slot 1 -> Normal -> Begin
+await key('Enter'); await key('Enter'); await key('Enter', 1, 300); // New Game -> slot 1 -> Normal
+ok('prologue shown after picking difficulty', /The Seals/i.test(await overlayTitle()));
+await key('Enter', 3, 200); ok('party creation opens with hero 1 of 4', /1 of 4/i.test(await overlayTitle()));
+await pg.click('[data-act=crjob][data-a=hexer]'); await pg.waitForTimeout(150); await pg.fill('#crname', 'Vex'); await key('Enter', 1, 200); // pick a calling, rename, Enter = next hero
+await key('Enter', 3, 200); ok('party review lists the four', /The Four/i.test(await overlayTitle()) && (await ev(() => document.querySelectorAll('[data-act=credit]').length)) === 4);
+await key('Enter', 1, 400); // answer the bell
+for (let i = 0; i < 12 && (await ev(() => document.getElementById('overlay').classList.contains('on'))); i++) await key('Enter', 1, 250); // Elder's greeting
+ok('chosen calling and name are used, no sub calling yet', (await ev(() => { const c = window.__game.G.party[0]; return c.name === 'Vex' && c.main === 'hexer' && !c.sub && c.armor === 'cloth'; })));
 await ev(() => { for (const m of Object.values(window.__game.MAPS)) m.rate = 0; }); // keep tests deterministic: battles are started explicitly
 ok('game started in Haven', (await ev(() => window.__game.G.map)) === 'haven');
 await pg.waitForTimeout(800); ok('music engine scheduled notes', (await ev(() => window.__osc)) >= 4);
@@ -37,8 +44,12 @@ await ev(() => window.__game.G.inv.gems.push('chain', 'thrifty')); // the new ga
 await openMenu();
 await pg.click('[data-act=build][data-a="1"]'); await pg.click('[data-act=bslot][data-a="0"]'); await pg.click('[data-act=gem][data-b=chain]'); await pg.click('[data-act=gem][data-b=thrifty]');
 ok('gems socketed', JSON.stringify(await ev(() => window.__game.G.party[1].gems[0])) === '["chain","thrifty"]');
-await pg.click('[data-act=bmain]'); await pg.click('[data-act=bview][data-a=jobMain]'); await pg.click('[data-act=setjob][data-b=alchemist]');
+await pg.click('[data-act=bmain]'); await pg.click('[data-act=bview][data-a=jobMain]');
+ok('advanced callings are locked before the Wyrm falls', await ev(() => document.querySelector('[data-act=setjob][data-b=alchemist]').disabled));
+await pg.click('[data-act=bmain]'); await ev(() => { window.__game.G.flags.bosses.wyrm = true; }); await pg.click('[data-act=bview][data-a=jobMain]');
+await pg.click('[data-act=setjob][data-b=alchemist]');
 ok('changed to the new Alchemist job', (await ev(() => window.__game.G.party[1].main)) === 'alchemist');
+await ev(() => { window.__game.G.flags.bosses.wyrm = false; }); // later checks expect the Wyrm alive
 await closeAll();
 
 // --- explore the world: fog of war grows; options persist; save + reload + continue
@@ -169,7 +180,7 @@ await pg.reload(); await pg.waitForTimeout(400);
 await pg.click('[data-act=new]'); await pg.click('[data-act=slotpick][data-a="1"]'); await pg.waitForTimeout(100);
 ok('overwriting an existing slot needs a second tap', /Tap to overwrite/.test(await ev(() => document.getElementById('overlay').textContent)));
 await pg.click('[data-act=slotpick][data-a="2"]'); await pg.waitForTimeout(100); // empty slot 2 -> difficulty
-await pg.click('[data-act=diff][data-b=hard]'); await pg.waitForTimeout(200); await pg.click('[data-act=close]'); await pg.waitForTimeout(200);
+await pg.click('[data-act=diff][data-b=hard]'); await pg.waitForTimeout(200); await ev(() => { window.__game.ACT.crbegin(); window.__game.ACT.close(); }); await pg.waitForTimeout(200);
 ok('new game in slot 2 on Hard', (await ev(() => window.__game.G.slot)) === 2 && (await ev(() => window.__game.G.difficulty)) === 'hard');
 await ev(() => { for (const m of Object.values(window.__game.MAPS)) m.rate = 0; });
 await ev(() => { window.__game.battle(['goblin']); }); await pg.waitForSelector('[data-act=c]', { timeout: 8000 });
@@ -190,7 +201,7 @@ await ev(() => { for (const m of Object.values(window.__game.MAPS)) m.rate = 0; 
 
 // --- polish features: repeat/auto battle, status cures, equipment compare, bestiary, tips
 await ev(() => { window.__game.battle(['goblin', 'slime']); }); await pg.waitForSelector('[data-act=c]', { timeout: 8000 });
-ok('first battle shows a tutorial tip in the log', /Pick Attack or Skills/.test(await ev(() => window.__game.BT.log.join(' '))));
+ok('no tutorial pop-ups in battle', !/Pick Attack or Skills/.test(await ev(() => window.__game.BT.log.join(' '))));
 ok('Repeat is disabled before any move', await ev(() => document.querySelector('[data-act=c][data-a=repeat]').disabled));
 await ev(() => window.__game.BT.b.e.forEach((e) => { e.hp = e.maxhp = 4000; })); // keep the fight going until Repeat unlocks
 for (let h = 0; h < 8 && !(await pg.$('[data-act=c][data-a=repeat]:not([disabled])')); h++) { await pg.waitForSelector('[data-act=c][data-a=attack]'); await pg.click('[data-act=c][data-a=attack]'); await pg.click('[data-act=tgt][data-a=e]'); await pg.waitForTimeout(80); }

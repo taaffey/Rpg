@@ -64,7 +64,7 @@ ov.addEventListener('click', (e) => {
   ACT[b.dataset.act]?.(b.dataset.a, b.dataset.b);
 });
 ov.addEventListener('input', (e) => { const el = e.target.closest('[data-in]'); if (el) ACTIN[el.dataset.in]?.(el.value, el); });
-const btn = (act, label, a = '', b = '', cls = '', dis = false) => `<button class="${cls}" data-act="${act}" data-a="${a}" data-b="${b}" ${dis ? 'disabled' : ''}>${label}</button>`;
+const btn = (act, label, a = '', b = '', cls = '', dis = false, af = '') => `<button class="${cls}" data-act="${act}" data-a="${a}" data-b="${b}" ${dis ? 'disabled' : ''}${af ? ' data-autofocus' : ''}>${label}</button>`;
 const bar = (v, m, cls) => { const r = v / m, lvl = cls === 'hp' ? (r < 0.25 ? ' low' : r < 0.5 ? ' mid' : '') : ''; return `<div class="bar ${cls}${lvl}"><i style="width:${Math.max(0, Math.min(100, r * 100))}%"></i></div>`; };
 const { ic } = UI, portrait = UI.face;
 const gemImg = (g) => `<img class="gi" src="${SP.gemIcon(g)}" width="20" height="20" alt="">`;
@@ -84,11 +84,17 @@ const gearDesc = (k, d) => (k === 'weapons' ? `${WEAPON_TYPES[d.type].name} · $
 const npcImg = (type, px = 48) => `<span class="face"><img src="${UI.npcFaceURL(type)}" width="${px}" height="${px}" alt=""></span>`;
 
 // ---------- state ----------
-function newGame() {
+// ---------- callings: four heroes each answer the bell with one calling; more are learned on the road ----------
+const STARTER_JOBS = ['knight', 'rogue', 'mage', 'cleric', 'monk', 'ranger', 'hexer', 'bard'];
+const ADVANCED_JOBS = { berserker: 'wyrm', alchemist: 'wyrm', samurai: 'lich', paladin: 'lich' }; // the Guild teaches these once that evil falls
+const SUB_LEVEL = 5; // the Guild teaches a second (sub) calling to heroes of this level
+const DEFAULT_PARTY = [['Aldric', 'knight'], ['Lyra', 'mage'], ['Mira', 'cleric'], ['Kael', 'rogue']];
+const LIGHT_ARMOR = new Set(['mage', 'cleric', 'hexer', 'bard', 'alchemist']);
+const jobLocked = (id) => ADVANCED_JOBS[id] && !G?.flags?.bosses?.[ADVANCED_JOBS[id]];
+function newGame(party = DEFAULT_PARTY) {
   G = {
     // like FF1: the party starts at level 1, unarmed, with 400 G to arm itself at the Haven Smithy (~205 G for the cheap weapons)
-    party: [newChar('Aldric', 'knight', 'rogue', null, 'leather'), newChar('Lyra', 'mage', 'cleric', null, 'cloth'),
-      newChar('Mira', 'cleric', 'bard', null, 'cloth'), newChar('Kael', 'rogue', 'ranger', null, 'leather')],
+    party: party.map(([n, j]) => newChar(n, j, null, null, LIGHT_ARMOR.has(j) ? 'cloth' : 'leather')),
     gold: 400, difficulty: 'normal', slot: 1,
     inv: { weapons: [], armors: [], accs: [], gems: ['fire'], items: { potion: 3 } },
     map: 'haven', x: 17, y: 30, flags: { chests: {}, bosses: {}, seen: {}, talked: {}, visited: {}, quests: {}, qprog: {}, qitems: {}, tips: {}, bestiary: {} }, playtime: 0,
@@ -117,7 +123,7 @@ const save = () => { if (!G || !G.slot) return false; try { localStorage.setItem
 })();
 let toastT = null;
 function toast(msg, ms = 2200) { const t = $('#toast'); if (!t) return; t.innerHTML = UI.deco(esc(msg)); t.classList.add('on'); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('on'), ms); }
-const tipOnce = (id) => { if (!G || G.flags.tips[id]) return false; G.flags.tips[id] = true; return true; };
+const tipOnce = () => false; // no tutorial pop-ups: players work things out (the journal keeps a few notes)
 function tip(id, text, ms = 5200) { if (!tipOnce(id)) return; if (BT) BT.log.push('💡 ' + text); else toast('💡 ' + text, ms); } // in battle the hint goes to the log so it never covers the stage
 const TOUCH = matchMedia('(pointer:coarse)').matches;
 function autosave() { if (!G || !G.slot || BT) return; if (save()) toast('💾 Autosaved', 1400); }
@@ -254,18 +260,13 @@ function draw(t = performance.now() / 1000) {
   for (const n of m.npcs || []) sorted.push({ k: n.y + 1, f: () => {
     const nx0 = sx(n.x), ny0 = sy(n.y), fr = Math.floor(t * 1.6 + n.x) % 8 === 0 ? 1 : 0, bob = Math.round(Math.sin(t * 4 + n.x) * 1.5); // only the '!' bobs
     const h = stand(WK.npcWalker(n.type, n.dir || 'down', fr), nx0, ny0);
-    const mk = questMarker(n); if (mk) { const my = ny0 + TS - h - 4 + bob; cx.fillStyle = mk === '?' ? '#7af0a0' : '#ffd25a'; cx.font = 'bold 14px sans-serif'; cx.textAlign = 'center'; cx.strokeStyle = '#201000'; cx.lineWidth = 3; cx.strokeText(mk, nx0 + TS / 2, my); cx.fillText(mk, nx0 + TS / 2, my); }
   } });
   const px = sx(vx), py = sy(vy); plr.x = px + TS / 2; plr.y = py + TS / 2;
   const crew = [{ i: 0, x: vx, y: vy, d: face, mv: Math.abs(vx - G.x) + Math.abs(vy - G.y) > 0.05 }, ...fv.slice(0, G.party.length - 1).map((f, i) => ({ i: i + 1, ...f }))];
   for (const c of crew) sorted.push({ k: c.y + 1 - c.i * 0.001, f: () => stand(WK.walker(G.party[c.i].main, c.d, c.mv ? 1 + (Math.floor(t * 8 + c.i) % 3) : 0), sx(c.x), sy(c.y)) });
   sorted.sort((a, b) => a.k - b.k).forEach((s2) => s2.f());
   for (const it of items) if (it.z === 2) put(it);
-  for (const k of Object.keys(m.secrets || {})) { // hidden treasure: a faint glint now and then
-    if (G.flags.chests[chestKey(...k.split(',').map(Number))]) continue; const [gx, gy] = k.split(',').map(Number), ph = (t * 0.45 + gx * 0.13 + gy * 0.07) % 1; if (ph > 0.16) continue;
-    const a = Math.sin((ph / 0.16) * Math.PI), u = TS / 16, X = sx(gx) + TS / 2, Y = sy(gy) + TS * 0.6, r = Math.round((2 + a * 3) * u);
-    cx.fillStyle = `rgba(255,248,200,${(0.85 * a).toFixed(2)})`; cx.fillRect(X - r, Y - Math.round(u / 2), r * 2, Math.round(u)); cx.fillRect(X - Math.round(u / 2), Y - r, Math.round(u), r * 2); cx.fillRect(X - u, Y - u, u * 2, u * 2);
-  }
+
   if (m.kind === 'outdoor') {
     const reg = regionOf();
     if (reg === 'snow') { cx.fillStyle = 'rgba(210,225,255,.07)'; cx.fillRect(0, 0, cv.width, cv.height); cx.fillStyle = 'rgba(255,255,255,.9)'; for (let i = 0; i < 46; i++) cx.fillRect(Math.round((i * 47 + Math.sin(t * 0.9 + i) * 14 + t * 10) % cv.width), Math.round((t * (30 + (i % 5) * 9) + i * 53) % cv.height), 2, 2); }
@@ -318,7 +319,7 @@ function banner(text) { const b = $('#banner'); b.textContent = text; b.classLis
 function goto(id, x, y) {
   G.map = id; G.x = x; G.y = y; G.flags.visited[id] = true; snap(); music(musicFor()); sfx('door');
   banner(id === 'world' ? REGION_NAME[regionOf()] : MAPS[id].name); G.region = regionOf(); layoutView(); draw(); autosave();
-  const lv = G.party.reduce((a, c) => a + c.level, 0) / G.party.length; if (MAPS[id].minLv && lv < MAPS[id].minLv) toast(`⚠ An ancient, dangerous place. Monsters here suit level ${MAPS[id].minLv}+.`, 4200);
+  const lv = G.party.reduce((a, c) => a + c.level, 0) / G.party.length;
 }
 let busy = false;
 function mapShake() { if (!OPT.shake) return; cv.classList.remove('shake'); void cv.offsetWidth; cv.classList.add('shake'); }
@@ -335,7 +336,7 @@ async function step(dx, dy) {
   reveal(); draw();
   const sec = m.secrets?.[`${nx},${ny}`]; if (sec && !G.flags.chests[chestKey(nx, ny)]) return openChest(nx, ny, sec);
   tip('move', TOUCH ? 'Tap a spot to travel there, or press and slide on the pad. A talks/checks, B opens the menu.' : 'Arrows or WASD to walk. Esc opens your party menu. A yellow ! marks someone with news.');
-  if (m.kind === 'outdoor') { const reg = regionOf(); if (reg !== G.region) { G.region = reg; banner(REGION_NAME[reg]); music(musicFor()); const need = { swamp: 7, snow: 11, desert: 8 }[reg]; const avg = G.party.reduce((a, c) => a + c.level, 0) / G.party.length; if (need && avg < need) toast(`⚠ Dangerous land! Monsters here suit level ${need}+.`, 4200); } }
+  if (m.kind === 'outdoor') { const reg = regionOf(); if (reg !== G.region) { G.region = reg; banner(REGION_NAME[reg]); music(musicFor()); } }
   if (m.boss && t === 'X' && !G.flags.bosses[m.boss.id]) { busy = true; mapShake(); sfx('crit'); await sleep(350); busy = false; return battle([m.boss.id], m.boss.id); }
   const table = m.enc || m.encByTile?.[t];
   if (table && !(m.safe || []).some(([sx2, sy2, r]) => Math.hypot(nx - sx2, ny - sy2) <= r) && Math.random() < m.rate) {
@@ -357,12 +358,13 @@ new MutationObserver(() => { // keep focus stable across same-screen redraws; st
   const title = ov.querySelector('h2')?.textContent || ''; if (title !== lastTitle) lastSig = ''; lastTitle = title;
   const cur = document.activeElement;
   if (!list.length || (ov.contains(cur) && (cur.dataset?.act || cur.dataset?.in) && sig(cur) === lastSig)) return;
-  (list.find((e) => sig(e) === lastSig) || list[0]).focus({ preventScroll: true });
+  (list.find((e) => sig(e) === lastSig) || list.find((e) => e.hasAttribute('data-autofocus')) || list[0]).focus({ preventScroll: true });
 }).observe(ov, { childList: true });
 function overlayKey(e) {
   if (typing && (e.key === 'Enter' || e.key === ' ')) { finishTyping(); return true; }
   const list = navs(), f = document.activeElement, i = list.indexOf(f);
-  const onSlider = f?.tagName === 'INPUT' && f.type === 'range';
+  const onSlider = f?.tagName === 'INPUT' && f.type === 'range', onText = f?.tagName === 'INPUT' && f.type !== 'range';
+  if (onText) { if (e.key === 'Enter') { ACT.crnext?.(); return true; } if (!['ArrowUp', 'ArrowDown', 'Escape'].includes(e.key)) return false; } // typing a name
   if (['ArrowDown', 'ArrowRight', 'ArrowUp', 'ArrowLeft'].includes(e.key) && list.length) {
     if (onSlider && (e.key === 'ArrowLeft' || e.key === 'ArrowRight')) return false; // let the slider move
     const d = e.key === 'ArrowDown' || e.key === 'ArrowRight' ? 1 : -1; list[(i + d + list.length) % list.length].focus(); return true;
@@ -628,7 +630,48 @@ function diffScreen(slot) {
   const icn = { easy: 'heart', normal: 'sword', hard: 'ko' };
   show(`<h2>⚔️ Choose difficulty</h2>${['normal', 'easy', 'hard'].map((k) => `<div class="slot"><span class="lead">${ic(icn[k])}</span><div class="t"><b>${DIFFICULTY[k].name}</b><small>${DIFFICULTY[k].desc}</small></div>${btn('diff', 'Select', slot, k, k === 'normal' ? 'primary' : '')}</div>`).join('')}<p class="dim">${ic('tip')} You can change this later in Options.</p><div class="foot">${btn('new', 'Back')}</div>`);
 }
-ACT.diff = (slot, d) => { newGame(); G.slot = +slot; G.difficulty = d; G.flags.visited.haven = true; save(); snap(); music(musicFor()); hide(); banner(mapDef().name); intro(); };
+ACT.diff = (slot, d) => { newGame(); G.slot = +slot; G.difficulty = d; G.flags.visited.haven = true; snap(); CR = DEFAULT_PARTY.map(([n, j]) => ({ name: n, job: j })); prologue(0); };
+// ---------- prologue + party creation ----------
+const PROLOGUE = [
+  'Three hundred years ago the smith Gemforge bound three great evils inside gems of power, and the realm slept in peace.',
+  'Now the seals are cracking. The Ashen Wyrm stirs beneath the eastern hills. The Lich King wakes in his drowned crypt. Far to the north, a mountain has begun to walk.',
+  'In Haven the Elder rings the old bell, the one that has not sounded in three centuries. Four answer it.',
+];
+let CR = [];
+function prologue(i) {
+  if (i >= PROLOGUE.length) return creation(0);
+  show(`<h2>${['The Seals', 'The Waking', 'The Bell'][i]}</h2>${i === 2 ? `<div class="npc">${npcImg('elder', 48)}<p>${PROLOGUE[i]}</p></div>` : `<p class="lore">${PROLOGUE[i]}</p>`}<div class="foot">${btn('prolog', i < 2 ? 'Next' : 'Choose your four', i + 1, '', 'primary', false, 'autofocus')}</div>`, '', 'lorewin');
+}
+ACT.prolog = (i) => prologue(+i);
+const STAT_KEYS = [['hp', 'HP'], ['mp', 'MP'], ['atk', 'ATK'], ['def', 'DEF'], ['mag', 'MAG'], ['spd', 'SPD']];
+function creation(i) {
+  const h = CR[i], j = JOBS[h.job];
+  const skills = j.skills.slice(0, 3).map(([sid, lv]) => `${SKILLS[sid].name} <span class="dim">Lv${lv}</span>`).join(' · ');
+  show(`<h2>The Four · ${i + 1} of 4</h2>
+  <div class="crhead">${portrait(h.job, 'lg')}<div class="crname"><small>NAME</small><input id="crname" data-in="name" maxlength="10" autocomplete="off" autocapitalize="words" spellcheck="false" value="${esc(h.name)}"></div></div>
+  <h3>Calling</h3><div class="crjobs">${STARTER_JOBS.map((id) => btn('crjob', `${portrait(id)}<span>${JOBS[id].name}</span>`, id, '', h.job === id ? 'sel' : '')).join('')}</div>
+  <div class="card"><b>${j.name}</b><small>${j.desc}</small>
+    <div class="crstats">${STAT_KEYS.map(([k, l]) => `<span>${l}</span>${bar(Math.round(j.mod[k] * 50), 100, 'xp')}`).join('')}</div>
+    <small>Weapons: ${j.weapons.map((w) => WEAPON_TYPES[w]?.name || w).join(', ')}<br>Skills: ${skills}</small></div>
+  <div class="foot">${btn('crback', i ? 'Back' : 'Prologue', '')}${btn('crnext', i < 3 ? 'Next hero' : 'Review party', '', '', 'primary', false, 'autofocus')}</div>`, '', 'crwin');
+  CR.i = i;
+}
+const crName = () => { const v = ($('#crname')?.value || '').replace(/[<>&"]/g, '').trim().slice(0, 10); if (v) CR[CR.i].name = v; };
+ACT.crjob = (id) => { crName(); CR[CR.i].job = id; creation(CR.i); };
+ACT.crnext = () => { crName(); if (CR.i < 3) creation(CR.i + 1); else review(); };
+ACT.crback = () => { crName(); if (CR.i > 0) creation(CR.i - 1); else prologue(0); };
+function review() {
+  show(`<h2>The Four</h2><div class="crreview">${CR.map((h, i) => `<button data-act="credit" data-a="${i}" class="hero">${portrait(h.job)}<span class="hinfo"><span class="hn">${esc(h.name)}</span><span class="hj">${JOBS[h.job].name}</span></span></button>`).join('')}</div>
+  <p class="dim">Sub callings are taught at the Guild once a hero reaches level ${SUB_LEVEL}. Rarer callings are said to be earned on the road.</p>
+  <div class="foot">${btn('crback2', 'Back', '')}${btn('crbegin', 'Answer the bell', '', '', 'primary', false, 'autofocus')}</div>`, '', 'crwin');
+}
+ACT.credit = (i) => creation(+i);
+ACT.crback2 = () => creation(3);
+ACT.crbegin = () => {
+  const slot = G.slot, diff = G.difficulty; newGame(CR.map((h) => [h.name, h.job])); G.slot = slot; G.difficulty = diff; G.flags.visited.haven = true;
+  save(); snap(); music(musicFor()); hide(); banner(mapDef().name);
+  talk({ name: 'Elder', type: 'elder', x: -9, y: -9, text: [`${CR.map((h) => h.name).join(', ')}... so the bell chose you.`, 'You carry nothing but courage. Arm yourselves, then go east. The Wyrm wakes first.'] });
+};
 function loadSlot(i) {
   const d = readSlot(i); if (!d?.G) return;
   G = migrate(d.G); G.slot = i; snap(); music(musicFor()); hide(); banner(mapDef().name); toast(`Loaded slot ${i}`);
@@ -777,9 +820,9 @@ ACT.bslot = (i) => { B.slot = +i; B.view = 'slot'; buildScreen(); };
 
 function jobPick(which) {
   const c = G.party[B.i];
-  show(`<h2>${which === 'main' ? 'Main' : 'Sub'} job for ${esc(c.name)}</h2>${which === 'sub' ? `<div class="slot"><span class="lead">${ic('socket')}</span><div class="t"><b>No sub job</b></div>${btn('setjob', 'None', which, '')}</div>` : ''}${Object.entries(JOBS).map(([id, j]) => {
-    const dis = (which === 'main' && id === c.sub) || (which === 'sub' && id === c.main);
-    return `<div class="slot ${c[which] === id ? 'sel' : ''}">${portrait(id)}<div class="t"><b>${j.name} ${j.weapons.map((w) => ic(UI.gearIconName('weapons', { type: w }))).join('')}${c[which] === id ? ' <span class="chip tag">NOW</span>' : ''}</b><small>${j.desc} Weapons: ${j.weapons.map((w) => WEAPON_TYPES[w].name).join(', ')}. Skills: ${j.skills.map((s) => SKILLS[s[0]].name + ' L' + s[1]).join(', ')}</small></div>${btn('setjob', 'Select', which, id, '', dis)}</div>`;
+  show(`<h2>${which === 'main' ? 'Main' : 'Sub'} job for ${esc(c.name)}</h2>${which === 'sub' && c.level < SUB_LEVEL ? `<p class="dim">The Guild teaches a second calling once a hero reaches level ${SUB_LEVEL}.</p>` : ''}${which === 'sub' ? `<div class="slot"><span class="lead">${ic('socket')}</span><div class="t"><b>No sub job</b></div>${btn('setjob', 'None', which, '')}</div>` : ''}${Object.entries(JOBS).map(([id, j]) => {
+    const lockAdv = jobLocked(id), lockSub = which === 'sub' && c.level < SUB_LEVEL, dis = (which === 'main' && id === c.sub) || (which === 'sub' && id === c.main) || lockAdv || lockSub;
+    return `<div class="slot ${c[which] === id ? 'sel' : ''}">${portrait(id)}<div class="t"><b>${j.name} ${j.weapons.map((w) => ic(UI.gearIconName('weapons', { type: w }))).join('')}${c[which] === id ? ' <span class="chip tag">NOW</span>' : ''}</b><small>${lockAdv ? `<span class="bad">Taught once ${BOSSES[ADVANCED_JOBS[id]].name} falls.</span> ` : ''}${j.desc} Weapons: ${j.weapons.map((w) => WEAPON_TYPES[w].name).join(', ')}. Skills: ${j.skills.map((s) => SKILLS[s[0]].name + ' L' + s[1]).join(', ')}</small></div>${btn('setjob', 'Select', which, id, '', dis)}</div>`;
   }).join('')}<div class="foot">${btn('bmain', 'Back', '', '', 'primary')}</div>`);
 }
 ACT.setjob = (which, id) => {
