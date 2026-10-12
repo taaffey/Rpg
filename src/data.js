@@ -531,3 +531,65 @@ Object.assign(DROPS, {
   crystal_golem: D('items', 'elixir', 1, 'accs', 'gem_crown', 0.35),
   thunderbird: D('items', 'megaether', 0.2, 'gems', 'stun', 0.06), storm_elemental: D('items', 'ether', 0.3, 'gems', 'siphon', 0.06),
 });
+
+// =====================================================================
+// ===== Content pack 4: Sunscar Ruins (optional dungeon), new side quests, secrets =====
+// =====================================================================
+Object.assign(SKILLS, { // enemy-only
+  hypnogaze: S('Hypnotic Gaze', 0, 'one', 'mag', 0.9, { elem: 'dark', stun: 0.3 }),
+  spitvenom: S('Venom Spit', 0, 'one', 'phys', 0.85, { fx: ['poison'] }),
+  sandstorm: S('Sandstorm', 0, 'all', 'mag', 0.6, { fx: ['slow'] }),
+  sphinxclaw: S('Sphinx Claw', 0, 'one', 'phys', 1.5),
+  sunray: S('Sun Ray', 0, 'all', 'mag', 0.85, { elem: 'holy' }),
+  riddle: S('Riddle of Ruin', 0, 'one', 'mag', 1.2, { elem: 'dark', stun: 0.25 }),
+});
+Object.assign(WEAPONS, {
+  khopesh: W('Pharaoh\'s Khopesh', 'sword', 28, 6, 2, 0, 'holy', 4, 'The sun-gold sickle-sword of a buried king. It still remembers noon.', { elem: 'holy', crit: 0.12, spd: 2, sig: 'sunstrike' }),
+  scarab_bow: W('Scarab Bow', 'bow', 24, 0, 2, 0, 'venom', 3, 'Lacquered beetle-shell limbs; every arrow carries desert venom.', { proc: ['poison', 0.3], spd: 3 }),
+  scorpion_lash: W('Scorpion Lash', 'whip', 18, 6, 2, 0, 'venom', 3, 'Braided from a giant scorpion\'s tail, stinger and all.', { proc: ['poison', 0.35], crit: 0.1 }),
+  dawn_cestus: W('Dawn Cestus', 'fists', 17, 4, 2, 0, 'holy', 3, 'Blessed knuckle-wraps that burn the restless dead.', { hits: 2, elem: 'holy' }),
+  snowfall: W('Snowfall', 'katana', 25, 0, 2, 0, 'frost', 3, 'Forged in Frostholm by a homesick apprentice. Cold as a winter dawn.', { elem: 'ice', spd: 2, crit: 0.15 }),
+  mirage_staff: W('Mirage Staff', 'staff', 5, 24, 2, 0, 'focusg', 4, 'Its tip shimmers like heat over sand; wounds close as if they were never there.', { mp: 20, heal: 0.25, spd: 2 }),
+});
+Object.assign(ARMORS, { sandwalker: { name: 'Sandwalker Garb', def: 16, mp: 15, mag: 6, spd: 3, res: ['fire'], sockets: 1, price: 0 } });
+Object.assign(ACCS, {
+  sun_disc: { name: 'Sun Disc Amulet', atk: 5, mag: 7, hp: 20, res: ['holy', 'fire'], sockets: 1, price: 0 },
+  golden_tusk: { name: 'Golden Tusk Charm', atk: 6, def: 4, hp: 25, sockets: 1, price: 0 },
+  prism_band: { name: 'Prism Band', mag: 8, def: 6, sockets: 2, price: 0 },
+  corsair_ring: { name: 'Corsair\'s Ring', atk: 5, spd: 5, sockets: 1, price: 0 },
+  scarab_charm: { name: 'Scarab Charm', mag: 3, spd: 5, hp: 15, sockets: 1, price: 0 },
+});
+// Sunscar Ruins (optional, Lv 11-14): royal tombs under the desert
+Object.assign(ENEMIES, {
+  royal_mummy: E('Royal Mummy', '🧟', 350, 45, 16, 10, 6, 140, 80, [['wrap', 2], ['rot', 1], ['slam', 1]], { weak: ['fire', 'holy'], res: ['dark', 'ice'] }),
+  ruin_scorpion: E('Ruin Scorpion', '🦂', 280, 46, 20, 6, 11, 132, 66, [['deathsting', 2], ['pincer', 2]], { weak: ['ice', 'bolt'], res: ['fire'] }),
+  sand_golem: E('Sand Golem', '🗿', 560, 50, 24, 6, 3, 190, 92, [['slam', 2], ['sandquake', 1]], { weak: ['ice'], res: ['fire', 'bolt'] }),
+  cobra: E('Temple Cobra', '🐍', 290, 43, 12, 42, 15, 136, 70, [['venombite', 2], ['hypnogaze', 1], ['spitvenom', 1]], { weak: ['ice'], res: ['dark'] }),
+  dust_wraith: E('Dust Wraith', '👻', 300, 14, 13, 52, 14, 140, 68, [['sandstorm', 1], ['draintouch', 2], ['hexbolt', 1]], { weak: ['holy', 'ice'], res: ['dark', 'fire'] }),
+  sphinx: E('Sphinx Pharaoh', '🦁', 2500, 47, 17, 50, 11, 2100, 1900, [['sphinxclaw', 3], ['sunray', 2], ['riddle', 2], ['sandstorm', 1]], { weak: ['ice', 'dark'], res: ['holy', 'fire'], boss: true }),
+});
+ENCOUNTERS.ruins = [['royal_mummy'], ['ruin_scorpion', 'ruin_scorpion'], ['sand_golem'], ['cobra', 'cobra'], ['dust_wraith', 'royal_mummy'], ['cobra', 'ruin_scorpion'], ['dust_wraith', 'dust_wraith'], ['sand_golem', 'cobra'], ['mummy', 'mummy', 'dust_wraith'], ['scorpion', 'cobra', 'desert_bandit']];
+BOSSES.sphinx = { name: 'Sphinx Pharaoh', intro: 'Sand pours from the altar as the Sphinx Pharaoh rises: "Answer, or be buried!"', optional: true, loot: { weapons: ['khopesh'], accs: ['sun_disc'], gems: ['overcharge'] } };
+Object.assign(DROPS, {
+  royal_mummy: D('items', 'remedy', 0.3, 'gems', 'holy', 0.07), ruin_scorpion: D('items', 'antidote', 0.35, 'gems', 'venom', 0.07), sand_golem: D('items', 'hipotion', 0.35, 'gems', 'guard', 0.07),
+  cobra: D('items', 'antidote', 0.3, 'accs', 'scarab_charm', 0.04), dust_wraith: D('items', 'ether', 0.3, 'gems', 'shadow', 0.07),
+  sphinx: D('items', 'elixir', 1, 'weapons', 'mirage_staff', 0.5),
+});
+// side quests 8-14. lure: while the quest is open, fights on that encounter table sometimes bring the quarry instead.
+// deliver: the giver hands over a quest item on accept; the NPC with deliver: id takes it and pays the reward.
+Object.assign(QUESTS, {
+  tombs: { title: 'Rest for the Restless', giver: 'Haven acolyte', goal: { type: 'kill', ids: ['mummy', 'royal_mummy'], n: 5 }, reward: { gold: 500, weapons: ['dawn_cestus'], items: { remedy: 2 } },
+    lines: { offer: ['The dead walk the Sunscar Sands, wrapped in linen and old grudges.', 'Lay five mummies to rest and the temple will reward you. Fire and holy light free them best.'], active: ['Five mummies, in the desert south-east of town, or in the ruins beneath it.'], ready: ['Five souls at peace. Take these blessed wraps; they were made for this work.'], done: ['I pray for them every evening now. And for you.'] } },
+  goldboar: { title: 'The Golden Boar', giver: 'Haven huntress', goal: { type: 'kill', ids: ['golden_boar'], n: 1, lure: { table: 'world', group: ['golden_boar'], p: 0.07 } }, reward: { gold: 600, accs: ['golden_tusk'] },
+    lines: { offer: ['Ever seen a boar with a hide of pure gold? I have. Once. It laughed at my arrows.', 'Hunt it down on the Greenmarch grass and bring me a tusk. Watch out: it shrugs off fire.'], active: ['The Golden Boar roams the open grassland. Keep walking the plains; it will find you.'], ready: ['A golden tusk! I\'ll carve you a charm from the other one. Hunter\'s honour.'], done: ['Every hunter in Haven is jealous of you.'] } },
+  corsair: { title: 'Redwake\'s Buried Gold', giver: 'Haven old sailor', goal: { type: 'find', item: 'doubloon', where: 'south coast, under the waterfall' }, reward: { gold: 400, accs: ['corsair_ring'] },
+    lines: { offer: ['Captain Redwake buried his last haul where the marsh river tumbles off the cliffs into the sea.', 'Stand at the foot of that waterfall and dig. Bring me his gold doubloon and I\'ll give you his ring.'], active: ['West of the river mouth, in the south marsh, where the water falls into the sea. Just walk onto the spot.'], ready: ['Redwake\'s doubloon! Sixty years I waited. Here, the old pirate\'s ring is yours.'], done: ['Fair winds, treasure hunter.'] } },
+  stingers: { title: 'Stingers for the Apothecary', giver: 'Mirewood apothecary', goal: { type: 'kill', ids: ['scorpion', 'ruin_scorpion'], n: 6 }, reward: { gold: 450, weapons: ['scorpion_lash'], items: { antidote: 5, hipotion: 2 } },
+    lines: { offer: ['Scorpion venom, properly brewed, is the base of every good antidote.', 'Bring me the stingers of six scorpions from the Sunscar Sands and I\'ll make it worth your while.'], active: ['Six scorpions. The Sunscar Sands, east of the marsh. Bring ice; their shells laugh at fire.'], ready: ['Lovely, lovely stingers. And here is something the leftovers were good for: a lash with a sting.'], done: ['My shelves are full of antidotes, thanks to you.'] } },
+  letter: { title: 'A Letter Home', giver: 'Mirewood child', goal: { type: 'deliver', item: 'letter', to: 'the apprentice at the Frostholm Forge' }, reward: { gold: 300, weapons: ['snowfall'] },
+    lines: { offer: ['My big brother is an apprentice at the forge in Frostholm. He hasn\'t written in ages.', 'Could you bring him my letter? The road north is blocked by rocks, but you\'re heroes, right?'], active: ['Please give my letter to my brother at the Frostholm Forge!'], deliver: ['A letter... from my little sister? In Mirewood?', 'She drew our boat on it. Ha! I miss that bog more than I thought.', 'Please, take this blade. My first real katana. Tell her I\'ll write back. Every week!'], ready: ['Thank you, thank you!'], done: ['My brother writes every week now! He says you\'re heroes.'] } },
+  sphinx: { title: 'The Sphinx\'s Riddle', giver: 'Desert oracle', goal: { type: 'boss', id: 'sphinx' }, reward: { gold: 2000, gems: ['echo', 'crit'], items: { elixir: 2 } },
+    lines: { offer: ['Beneath the broken stones east of here lies the tomb of the Sun Pharaoh, who bargained with a sphinx for eternal rule.', 'Now the two are one, and it asks every traveller a riddle. None have answered. Will you silence it?'], active: ['Sunscar Ruins, just east. The Sphinx Pharaoh shrugs off holy and fire; ice and darkness bite. Come at level 11 or more.'], ready: ['The riddle is answered at last. The sands are quiet. Take what the oracle has kept for this day.'], done: ['The sun sets kindly on the ruins now.'] } },
+  crystalgolem: { title: 'Heart of Crystal', giver: 'Frostholm prospector', goal: { type: 'kill', ids: ['crystal_golem'], n: 1, lure: { table: 'spire', group: ['crystal_golem'], p: 0.12 } }, reward: { gold: 1500, accs: ['prism_band'] },
+    lines: { offer: ['Ice golems in the Frost Spire sometimes grow a heart of living crystal. Glows like a lantern.', 'Shatter one of those Crystal Golems and bring me a shard. Bolt and darkness crack them.'], active: ['A Crystal Golem, in the Frost Spire. They walk among the ice golems.'], ready: ['Look at that shard sing! Here, set in silver: a band that holds two gems.'], done: ['I\'m rich! Well, richer. Thanks, friend.'] } },
+});

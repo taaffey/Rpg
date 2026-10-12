@@ -62,10 +62,17 @@ get half EXP. `node tools/progress.mjs` simulates a full playthrough and checks 
 - **Towns**: Haven Town, the swamp stilt-village Mirewood, and Frostholm. Buildings are enterable interiors (inn, general store, smithy, guild, houses) with
   NPCs, dialogue, shops and chests. A `!` over an NPC marks news.
 - **Dungeons** with their own lighting, music and enemies: Ashen Cavern (Ashen Wyrm), Sunken Crypt (Lich King Morvath),
-  Frost Spire (Frost Titan, the final boss) and the optional Storm Cavern on the Northern Plains (Storm Drake).
-  29 enemies including recolored tiers. Level cap 20.
+  Frost Spire (Frost Titan, the final boss), the optional Storm Cavern on the Northern Plains (Storm Drake) and the optional
+  **Sunscar Ruins** (Lv 11-14): a sandstone temple under the desert ruins south-east of Haven, with column-lined halls, glyph panels,
+  drifting sand, five treasure chests (Scarab Bow, Sandwalker Garb, Mirage Staff...) and the **Sphinx Pharaoh** on its sun-disc altar
+  (drops the Pharaoh's Khopesh and Sun Disc Amulet; weak to ice and dark). 65 enemies including recolored tiers and rare elites. Level cap 20.
 - **Gem-wright** (in each smithy): spend gold for up to 3 bonus sockets per hero, so more gems fit on their skills.
-- **Side quests** (7): kill, find-an-item and boss quests from NPCs (`!` = offer, `?` = ready to turn in), tracked in the journal.
+- **Side quests** (14) from NPCs (`!` = offer, `?` = ready to turn in), tracked in the journal: monster hunts, find-an-item, boss bounties,
+  a **delivery** (Mirewood child -> her brother at the Frostholm Forge), a **treasure hunt** (Haven's old sailor and Captain Redwake's gold),
+  and **rare-elite hunts** (Golden Boar, Crystal Golem: while the hunt is open the quarry turns up more often). New in Haven: Acolyte, Huntress,
+  Old Sailor; Mirewood: Apothecary; Frostholm: Prospector; in the wilds: the Desert Oracle and the Plains Hermit.
+- **Hidden treasures** (4): spots on the overworld and in towns that glint faintly now and then; step on one to dig it up. The hermit, the
+  oracle and a few townsfolk drop hints. The journal counts them.
 - **Ending**: a cinematic dawn scene with scrolling credits and your stats (play time, battles, quests, gems).
 
 ## Visuals and sound (all generated in code)
@@ -101,5 +108,5 @@ Produces `dist/index.html` (the whole game, about 150 KB, no other files, works 
     node tools/regress-mobile.mjs    # iPhone touch regression (portrait + landscape)
     node tools/devices.mjs <outdir>  # device matrix: layout metrics + screenshots (SE, 14, Pro Max, landscape, iPad, desktop)
     node tools/regress.mjs           # browser regression (needs the dev server + Playwright); URL=... tests the dist build
-    python3 tools/genmaps.py         # regenerate the big world and dungeons (deterministic)
+    python3 tools/genmaps.py         # regenerate the big world and dungeons (deterministic; Sunscar Ruins uses seed 700)
     # tools/sheet.html: sprite contact sheet, open via the dev server

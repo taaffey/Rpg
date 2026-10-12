@@ -935,6 +935,55 @@ Object.assign(ENEMY_VARIANTS, {
   storm_elemental: ['ice_elemental', { ice: '#8a86b8', ice2: '#4a4a7a', core: '#fff27a', eye: '#fff27a' }, { bolt: true }],
   glacier_yeti: ['yeti', { fur: '#a8c8e8', chest: '#7aa0c8', face: '#3a5a8a', horn: '#e8f8ff', eye: '#ff5a4a' }],
 });
+// ---------- Sunscar Ruins: Temple Cobra and the Sphinx Pharaoh (boss), plus recolored tomb dwellers ----------
+Object.assign(MODELS, {
+  cobra: { col: { scale: '#c8a040', belly: '#f0dca0', hood: '#2a4aa8', mark: '#f0c040', eye: '#ff3a2a', tongue: '#e0305a' }, build(P) {
+    const m = { scale: mat(P.scale, 5, { tex: 'scale', spec: '#fff4c0', specAt: 0.9 }), scale2: mat(shade(P.scale, 0.66), 4, { tex: 'scale' }), belly: mat(P.belly, 4, { tex: 'belly' }), hood: mat(P.hood, 5, { tex: (x, y) => ((x + y) % 5 === 0 ? -0.1 : 0) }), mark: mat(P.mark, 4, { spec: '#ffffff', specAt: 0.9 }) };
+    return { w: 42, h: 46, mats: m, parts: [
+      ...chain([[5, 42], [2, 38], [5, 34], [8, 35]], [1.6, 1.2, 0.8, 0.5], 'scale2', -2),
+      ell(18, 41, 14, 4.6, 'scale2', { z: 0 }), ell(20, 37.5, 11.5, 4.2, 'scale', { z: 2 }), ell(22, 34, 8.5, 3.6, 'scale', { z: 4 }),
+      poly([[15, 6], [21, 2], [29, 3], [33, 10], [32, 21], [26, 26], [19, 23], [15, 14]], 'hood', { z: 3, bev: 2.2 }), paint(ell(19.5, 13, 2.6, 3.4, 'mark')), paint(ell(29, 13, 2.6, 3.4, 'mark')),
+      ...chain([[23, 33], [27, 26], [25, 18], [26, 10]], [4.4, 4, 3.6, 3.2], 'scale', 6), paint(cap(28.5, 28, 28, 13, 1.8, 1.6, 'belly')),
+      ell(29, 7, 5.2, 3.8, 'scale', { z: 9 }), cap(30, 8, 37, 9, 3, 2, 'scale', { z: 9 }),
+    ], post(a) { a.px(31, 6, P.eye); a.px(32, 6, '#ffd0c0'); a.line(30, 4, 34, 5, a.ramp('scale', 0)); a.px(36, 8, '#200a08');
+      a.line(38, 10, 40, 11, P.tongue); a.px(41, 10, P.tongue); a.px(41, 12, P.tongue); a.px(35, 11, '#fff8e8'); for (const y of [14, 18, 22]) a.line(26, y, 27, y + 1, a.ramp('scale', 1)); } };
+  } },
+  sphinx: { big: true, col: { fur: '#d8a050', belly: '#f0d090', skin: '#c88a48', gold: '#e8b830', lapis: '#2a4aa8', wing: '#e8c888', disc: '#ffc838', eye: '#40e0ff' }, build(P) {
+    const m = { fur: mat(P.fur, 6, { tex: 'fur' }), fur2: mat(shade(P.fur, 0.7), 5, { tex: 'fur' }), belly: mat(P.belly, 5, { tex: 'belly' }), skin: mat(P.skin, 5, { ramp: { lo: 0.4 } }), gold: mat(P.gold, 6, { spec: '#fffbe0', specAt: 0.88 }), lapis: mat(P.lapis, 5, { spec: '#a8c0ff', specAt: 0.92 }),
+      wing: mat(P.wing, 5, { tex: 'feather' }), wing2: mat(mix(P.wing, '#8a5a20', 0.45), 4, { tex: 'feather' }), disc: mat(P.disc, 5, { glow: true, lift: 0.25, nocrease: true, ramp: { hi: 0.95 } }), claw: mat('#f0e8d8', 3) };
+    const wing = [[60, 50], [46, 30], [30, 18], [12, 14], [2, 20], [12, 26], [4, 32], [16, 37], [8, 44], [24, 48], [18, 55], [40, 58]];
+    return { w: 112, h: 98, mats: m, crease: 2, parts: [
+      ell(72, 24, 16, 16, 'disc', { z: -30 }),
+      poly([[54, 50], [46, 24], [52, 6], [60, 16], [66, 38]], 'wing2', { z: -24, bev: 2 }),
+      ...chain([[26, 70], [14, 72], [7, 82], [12, 91]], [3, 2.4, 1.8, 1.4], 'fur2', -12), ell(14, 92, 4.2, 3, 'lapis', { z: -11 }),
+      ...chain([[72, 70], [74, 82], [76, 89]], [6, 5, 4], 'fur2', -8), ell(79, 91, 6.5, 3, 'fur2', { z: -8, d: 0.5 }),
+      poly(wing, 'wing', { z: -6, bev: 2.4 }),
+      ell(56, 68, 30, 15, 'fur', { z: 0 }), paint(ell(62, 78, 22, 6, 'belly')),
+      ell(34, 72, 15, 15, 'fur', { z: 2 }), ell(40, 90, 10, 3.6, 'fur', { z: 3, d: 0.5 }),
+      ell(80, 60, 13, 15, 'fur', { z: 4 }), paint(ell(84, 64, 7, 10, 'belly')),
+      ...chain([[82, 68], [86, 81], [88, 88]], [7, 6, 5], 'fur', 8), ell(93, 91, 8.5, 3.6, 'fur', { z: 9, d: 0.5 }),
+      ell(86, 47, 13.5, 6, 'gold', { z: 12 }),
+      poly([[74, 17], [84, 8], [98, 9], [104, 18], [102, 28], [107, 48], [99, 51], [95, 41], [82, 41], [78, 51], [70, 49], [74, 29]], 'gold', { z: 13, bev: 2 }),
+      ell(94, 28, 7, 9, 'skin', { z: 16 }), cap(99.5, 25, 101.5, 31, 1.3, 1.7, 'skin', { z: 17 }),
+      cap(83, 15, 102, 16, 1.4, 1.4, 'lapis', { z: 16.5 }), cap(100, 15, 103, 9, 1.2, 1.5, 'gold', { z: 18 }), ell(103.5, 8, 1.7, 2.1, 'gold', { z: 18.5 }),
+      poly([[94, 36], [99.5, 36], [98.5, 48], [95, 48]], 'lapis', { z: 17, bev: 1 }),
+    ], post(a) {
+      for (let y = 8; y <= 51; y++) for (let x = 68; x <= 108; x++) { if (a.mat(x, y) !== 'gold' || ((x - 86) / 13.5) ** 2 + ((y - 47) / 6) ** 2 <= 1) continue; if (y % 4 < 2 && !(x > 98 && y < 12)) a.px(x, y, (x + y) % 9 === 0 ? a.ramp('lapis', 4) : a.ramp('lapis', y % 4 === 0 ? 3 : 2)); } // nemes stripes
+      for (let y = 41; y <= 53; y++) for (let x = 72; x <= 100; x++) { if (a.mat(x, y) !== 'gold') continue; const q = Math.hypot((x - 86) / 13.5, (y - 47) / 6); if (q > 0.5 && q < 0.66) a.px(x, y, a.ramp('lapis', 2)); else if (q > 0.82 && (x % 3 === 0)) a.px(x, y, '#d84a3a'); } // usekh collar
+      for (let y = 36; y <= 48; y += 3) a.line(95, y, 98, y, a.ramp('gold', 3)); // braided beard
+      a.rect(95, 25, 4, 1, '#1a1010'); a.px(96, 26, P.eye); a.px(97, 26, '#ffffff'); a.px(95, 26, '#1a1010'); a.px(99, 26, '#1a1010'); a.px(100, 27, '#1a1010'); a.line(96, 33, 99, 33, a.ramp('skin', 0)); a.px(99, 23, a.ramp('skin', 0));
+      for (const [x0, y0, x1, y1] of [[46, 30, 20, 22], [44, 38, 10, 30], [40, 46, 14, 44], [38, 54, 22, 52]]) a.line(x0, y0, x1, y1, a.ramp('wing', 1)); // feather rows
+      for (const [x, y] of [[96, 92], [99, 92], [102, 91], [44, 92], [47, 92], [83, 92], [86, 92]]) { a.px(x, y, '#f0e8d8'); a.px(x, y + 1, '#a09880'); }
+      a.px(70, 13, '#ffffff'); a.px(69, 14, '#fff8d0');
+    } };
+  } },
+});
+Object.assign(ENEMY_VARIANTS, {
+  royal_mummy: ['mummy', { wrap: '#e8d8a8', gold: '#ffd040', dark: '#1a2a6a', eye: '#40e0ff' }],
+  ruin_scorpion: ['scorpion', { shell: '#4a4058', shell2: '#2e2638', sting: '#e8b830', eye: '#ff4030' }],
+  sand_golem: ['golem', { rock: '#d0a868', dark: '#9a7440', moss: '#ecd090', glow: '#40d0ff' }],
+  dust_wraith: ['wraith', { cloak: '#c8a070', inner: '#2a1a10', hand: '#f0dcb0', eye: '#ffb040' }],
+});
 const ECACHE = new Map();
 export function enemyArt(id) {
   if (ECACHE.has(id)) return ECACHE.get(id);
@@ -951,7 +1000,7 @@ export const enemyIds = () => [...Object.keys(MODELS), ...Object.keys(ENEMY_VARI
 // ===== Painted backdrops =====
 // =====================================================================
 export const BW = 256, BH = 176;
-export const BACKDROPS = ['world', 'desert', 'forest', 'snow', 'swamp', 'dungeon', 'crypt', 'spire', 'storm', 'boss', 'crypt:boss', 'spire:boss', 'storm:boss'];
+export const BACKDROPS = ['world', 'desert', 'forest', 'snow', 'swamp', 'dungeon', 'crypt', 'spire', 'storm', 'ruins', 'boss', 'crypt:boss', 'spire:boss', 'storm:boss', 'ruins:boss'];
 function painter(w, h, seed) {
   const img = new Uint8ClampedArray(w * h * 4), r = rng(seed);
   const P = {
@@ -1179,6 +1228,22 @@ const BD_FNS = {
     scatter(P, hy + 6, 50, 83, (x, y, s, k) => { if (k < 0.6) rock(P, x, y, s, ['#0e1020', '#22283e', '#3a4460', '#58648a'], x); else if (s > 0.25) crystal(P, x, y, 8 * s + 3, 1.5, 0.2, ['#5a4a10', '#c0a020', '#fff27a', '#ffffff']); });
     torch(P, 40, 42, '#ffe45a', L); torch(P, 216, 42, '#ffe45a', L);
     vignette(P, 0.35);
+  },
+  ruins(P, hy, L, boss) { // Sunscar Ruins: sandstone hall, carved columns, a glyph frieze; the boss hall has a blazing sun disc
+    const SS = ['#2a170c', '#4a2c14', '#6e4422', '#946032', '#b47e46', '#cf9c5c', '#e8bc7c'], C = RG(SS);
+    bricks(P, 0, 0, P.w, hy + 10, SS.slice(0, 6), 121, 18, 9);
+    for (let y = 18; y < 32; y++) for (let x = 0; x < P.w; x++) { const g = Math.floor(x / 6), lx = x % 6, ly = y - 20, on = ly >= 0 && ly < 9 && lx > 0 && lx < 5 && hash(g * 7 + lx, ly, boss ? 5 : 3) < 0.42; P.set(x, y, P.pick(C, y === 18 || y === 31 ? 0.75 : on ? 0.12 : 0.5 + (fbm(x / 4, y / 4, 9) - 0.5) * 0.2, x, y)); if (on && hash(g, 1, 4) < 0.3) P.set(x, y, hex2rgb(hash(g, 2, 4) < 0.5 ? '#3a5cc0' : '#e0b030')); }
+    if (boss) { glow(P, 128, 44, 60, '#ffd060', 0.7); const D = RG(['#a05a10', '#d08a20', '#f0b830', '#ffe070', '#fff6c0']);
+      for (let y = 4; y < 88; y++) for (let x = 60; x < 196; x++) { const dx = x + 0.5 - 128, dy = y + 0.5 - 44, r = Math.hypot(dx, dy), a = ((Math.atan2(dy, dx) / (Math.PI * 2)) * 20 + 20) % 1;
+        if (r < 24) P.set(x, y, P.pick(D, clamp(0.95 - r / 40 - (dx + dy) / 120, 0, 1), x, y)); else if (r < 26) P.set(x, y, D[0]); else if (r < 44 && a < 0.28 && bayer(x, y) < 1.2 - r / 44) P.blend(x, y, [255, 214, 110], 0.55); } }
+    for (const cx of boss ? [28, 228] : [26, 96, 160, 230]) { const top = 4, wd = 10;
+      for (let y = top; y < hy + 12; y++) for (let x = cx - wd - 3; x <= cx + wd + 3; x++) { const u = (x - cx) / wd, capt = y < top + 6, base = y > hy + 6; if (!capt && !base && Math.abs(u) > 1) continue;
+        const flute = !capt && !base && Math.floor((x - cx + wd) / 3) % 2 ? -0.1 : 0; P.set(x, y, P.pick(C, clamp((capt || base ? 0.8 : 0.72) - (u + 1) * 0.28 + flute + (capt && y === top ? 0.15 : 0), 0, 1), x, y)); }
+      glow(P, cx, hy + 14, 18, '#1a0c04', 0.25); }
+    torch(P, boss ? 70 : 62, 40, '#ffb23a', L); torch(P, boss ? 186 : 194, 40, '#ffb23a', L);
+    ground(P, hy + 10, ['#6a4422', '#8a5e30', '#a87a42', '#c49656', '#dcb070', '#f0cc8c'], (X, Z, x, y) => { const fx = ((X * 0.3) % 1 + 1) % 1, fz = ((Z * 0.42) % 1 + 1) % 1, sand = fbm(X * 0.4, Z * 0.5, 12, 3); const slab = sand < 0.52 ? (fx < 0.05 || fz < 0.07 ? -0.32 : 0) : 0; return 0.42 + slab + (fbm(X * 1.3, Z * 1.7, 11, 3) - 0.5) * 0.35 + (sand > 0.52 ? 0.12 + Math.sin(X * 2 + Z * 3) * 0.06 : 0); }, { haze: '#c89a5a', hazeMax: 0.4 });
+    scatter(P, hy + 10, 50, 85, (x, y, s, k) => { if (k < 0.5) rock(P, x, y, s, ['#3a2410', '#7a5030', '#b08050', '#dcb47a'], x); else if (k < 0.6 && s > 0.35) { const C2 = RG(['#4a2c14', '#946032', '#cf9c5c']); for (let j = 0; j < Math.round(5 * s + 2); j++) for (let i = -2; i <= 2; i++) P.set(x + i, y - j, C2[i < 0 ? 2 : i > 0 ? 0 : 1]); } });
+    shadowBand(P, hy + 10, hy + 22, 0.3); vignette(P, 0.38);
   },
   boss(P, hy, L) { // Ashen Wyrm's lair: lava cavern
     caveWall(P, 0, hy + 8, ['#0a0408', '#140a10', '#201016', '#2e181c', '#402420', '#563226'], 111, {});

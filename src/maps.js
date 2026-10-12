@@ -162,11 +162,15 @@ MAPS.haven = {
   npcs: [
     { x: 19, y: 31, type: 'guard', name: 'Guard', text: ['Welcome to Haven! Heading out empty-handed? The Smithy is the shop with the sword sign, up the main street.', 'The Ashen Wyrm sleeps in the Ashen Cavern, east of here.', 'It is weak to ice. Bring a mage, or socket a Frost Gem into a fire skill!'] },
     { x: 14, y: 15, type: 'villager', name: 'Villager', quest: 'slimes', text: ['The road north is blocked by a rockslide. They say the Wyrm\'s roars shook the mountain loose.', 'Beat the beast and the pass should clear.'] },
-    { x: 20, y: 18, type: 'kid', name: 'Child', text: ['Mister! Did you know a Wide Gem makes a single-target skill hit everyone?', 'Put one in your Heal skill... but it only heals for 60% of the usual power.'] },
+    { x: 20, y: 18, type: 'kid', name: 'Child', text: ['Mister! Did you know a Wide Gem makes a single-target skill hit everyone?', 'Put one in your Heal skill... but it only heals for 60% of the usual power.', 'Psst... I hid my treasure box behind the castle, past the barrels by the old tree. Don\'t tell!'] },
     { x: 15, y: 5, type: 'guard', name: 'Castle Guard', text: ['Halt! The castle is closed while the King holds council.', 'Come back once the Ashen Wyrm is dealt with.'] },
     { x: 19, y: 5, type: 'guard', name: 'Castle Guard', text: ['Haven Castle has guarded this harbour for three hundred years.'] },
     { x: 26, y: 12, type: 'villager2', name: 'Furrier', quest: 'wolves', text: ['Pro tip: the Guild lets you change jobs. A sub job lends you its skills (two levels behind) and its weapon types!'] },
+    { x: 10, y: 20, type: 'elder', name: 'Acolyte', quest: 'tombs', text: ['Light keep you, travellers.'] },
+    { x: 25, y: 23, type: 'villager', name: 'Huntress', quest: 'goldboar', text: ['Boar stew tonight, if my luck holds.'] },
+    { x: 3, y: 8, type: 'fisher', name: 'Old Sailor', quest: 'corsair', text: ['Arr. Sixty years at sea, and now I just watch the gulls.'] },
   ],
+  secrets: { [P(9, 3)]: { gold: 300, items: { phoenix: 2 }, accs: ['mana_charm'] } }, // tucked behind the castle wall
 };
 interior('haven_inn', 'Haven Inn', 'inn', back('haven', 'haven_inn'), { cost: 25, npcs: [{ x: 8, y: 5, type: 'villager', name: 'Patron', text: ['*hic* The swamp south of town hides a Sunken Crypt. Undead everywhere. Bring holy magic!'] }] });
 interior('haven_shop', 'Haven General Store', 'general', back('haven', 'haven_shop'), { shop: 'haven_general' });
@@ -184,11 +188,13 @@ MAPS.frostholm = {
     { x: 16, y: 25, type: 'guard', name: 'Guard', text: ['You cleared the pass? Then you\'re the ones who slew the Wyrm! Frostholm owes you.', 'The Frost Spire lies northeast. The Frost Titan within is weak to fire. Ice magic will barely scratch it.'] },
     { x: 21, y: 9, type: 'villager', name: 'Hunter', quest: 'yetis', text: ['Yetis and ice wolves roam the snow. Their hides are thick, but fire burns them well.', 'Fur armor from the forge resists ice, which helps a lot out there.'] },
     { x: 11, y: 17, type: 'kid', name: 'Child', text: ['I tried a Stun Gem on my snowball throw. Worked great! ...Mom says not to tell.'] },
+    { x: 20, y: 18, type: 'villager2', name: 'Prospector', quest: 'crystalgolem', text: ['Frostholm sits on a fortune in crystal, if you know where to dig.', 'Old trappers used to stash their furs behind the pines in the south-east corner of town. Probably nothing left now.'] },
   ],
+  secrets: { [P(27, 22)]: { gems: ['execute'], gold: 500 } }, // a trapper's cache behind the south-east pines
 };
 interior('frost_inn', 'Frostholm Inn', 'inn', back('frostholm', 'frost_inn', { theme: 'interior', music: 'frosttown' }), { cost: 60, npcs: [{ x: 8, y: 5, type: 'fisher', name: 'Traveler', text: ['The Lich King\'s crypt is no joke. Bring Revive and a few Phoenix Downs.'] }] });
 interior('frost_shop', 'Frostholm Provisions', 'general', back('frostholm', 'frost_shop', { music: 'frosttown' }), { shop: 'frost_general' });
-interior('frost_smith', 'Frostholm Forge', 'smith', back('frostholm', 'frost_smith', { music: 'frosttown' }), { shop: 'frost_smith' });
+interior('frost_smith', 'Frostholm Forge', 'smith', back('frostholm', 'frost_smith', { music: 'frosttown' }), { shop: 'frost_smith', npcs: [{ x: 2, y: 4, type: 'villager', name: 'Apprentice', deliver: 'letter', text: ['Hammer, quench, hammer, quench... I dream in sparks.', 'I grew up in Mirewood, you know. Frostholm is so dry. And so cold.'] }] });
 interior('frost_guild', 'Frostholm Guild', 'guild', back('frostholm', 'frost_guild', { music: 'frosttown' }));
 interior('frost_house', 'Old Hunter\'s Lodge', 'house', back('frostholm', 'frost_house', { music: 'frosttown' }), { npcs: [{ x: 4, y: 3, type: 'elder', name: 'Old Hunter', quest: 'stormdrake', text: ['The Frost Titan was a mountain once, they say, until an ancient gem woke it.', 'Gems are dangerous things. Use them wisely, adventurers.'] }], chest: [9, 5, { gems: ['guard'], gold: 400 }] });
 
@@ -215,6 +221,10 @@ gen('spire', 'Frost Spire', 'spire', GEN.spireInfo, 'spire', 'titan',
 gen('storm', 'Storm Cavern', 'storm', GEN.stormInfo, 'storm', 'storm_drake',
   [{ gems: ['wide', 'swift'], gold: 300 }, { weapons: ['moonblade'] }, { items: { elixir: 2, megaether: 2 }, gold: 500 }, { accs: ['lich_ring'] }], GEN.adj.storm, 'dungeon');
 
+gen('ruins', 'Sunscar Ruins', 'ruins', GEN.ruinsInfo, 'ruins', 'sphinx',
+  [{ weapons: ['scarab_bow'], gold: 400 }, { armors: ['sandwalker'], items: { hipotion: 3 } }, { accs: ['scarab_charm'], gems: ['overcharge'] }, { weapons: ['mirage_staff'], items: { megaether: 1 } }, { gems: ['execute', 'crit'], gold: 800 }], GEN.adj.ruins, 'crypt');
+MAPS.ruins.minLv = 11; // optional: a warning toast below this average level
+
 // ---------------------------------------------------------------- Mirewood
 MAPS.mirewood = {
   name: 'Mirewood', kind: 'town', theme: 'swamptown', music: 'town', rows: TOWNS.mirewood.rows, base: TOWNS.mirewood.base, buildings: TOWNS.mirewood.buildings, props: TOWNS.mirewood.props, spawn: { x: 14, y: 26 },
@@ -223,7 +233,8 @@ MAPS.mirewood = {
   npcs: [
     { x: 16, y: 24, type: 'guard', name: 'Warden', quest: 'marsh', text: ['Welcome to Mirewood. Mind the bog after dark.'] },
     { x: 27, y: 8, type: 'fisher', name: 'Boatwright', quest: 'lantern', text: ['These planks have seen a hundred floods.'] },
-    { x: 12, y: 15, type: 'kid', name: 'Child', text: ['The Sunken Crypt is full of skeletons! ...Allegedly. I\'m not allowed to go near it.'] },
+    { x: 12, y: 15, type: 'kid', name: 'Child', quest: 'letter', text: ['The Sunken Crypt is full of skeletons! ...Allegedly. I\'m not allowed to go near it.'] },
+    { x: 18, y: 14, type: 'villager2', name: 'Apothecary', quest: 'stingers', text: ['Bog-moss, newt oil, a pinch of ash... no, no, that\'s for warts.'] },
     { x: 17, y: 12, type: 'villager2', name: 'Villager', text: ['Holy magic and fire both work wonders on the undead. Pack Phoenix Downs for the Lich King.'] },
   ],
 };
@@ -234,7 +245,7 @@ interior('mire_house', 'Warden\'s House', 'house', back('mirewood', 'mire_house'
 interior('mire_hut', 'Hermit\'s Hut', 'house', back('mirewood', 'mire_hut'), { npcs: [{ x: 4, y: 3, type: 'elder', name: 'Hermit', text: ['Gems whisper to those who listen. A Siphon Gem on a big spell turns your damage into mana.', 'Stack Stun on a quick skill and even a boss may lose a turn... unless it is too proud to fall for it.'] }], chest: [9, 5, { items: { phoenix: 2, megaether: 1 } }] });
 
 // ---------------------------------------------------------------- overworld
-const [mx, my] = GEN.pois.mirewood, [tx, ty] = GEN.pois.storm, [hx, hy] = GEN.pois.haven, [fx, fy] = GEN.pois.frost, [cx, cy] = GEN.pois.cavern, [rx, ry] = GEN.pois.crypt, [sx, sy] = GEN.pois.spire;
+const [ux, uy] = GEN.pois.ruins, [mx, my] = GEN.pois.mirewood, [tx, ty] = GEN.pois.storm, [hx, hy] = GEN.pois.haven, [fx, fy] = GEN.pois.frost, [cx, cy] = GEN.pois.cavern, [rx, ry] = GEN.pois.crypt, [sx, sy] = GEN.pois.spire;
 MAPS.world = {
   name: 'Greenmarch', kind: 'outdoor', theme: 'world', music: 'world', rows: GEN.world, spawn: { x: hx, y: hy + 1 }, fog: 5, rate: 0.07,
   encByTile: { '.': 'world', ',': 'snow', ':': 'swamp', d: 'desert' },
@@ -242,11 +253,20 @@ MAPS.world = {
     [P(hx, hy)]: portal('haven', 17, 32), [P(fx, fy)]: portal('frostholm', 14, 26), [P(cx, cy)]: portal('cavern', 2, 1),
     [P(rx, ry)]: portal('crypt', GEN.cryptInfo.spawn[0], GEN.cryptInfo.spawn[1]), [P(sx, sy)]: portal('spire', GEN.spireInfo.spawn[0], GEN.spireInfo.spawn[1]),
     [P(mx, my)]: portal('mirewood', 14, 26), [P(tx, ty)]: portal('storm', GEN.stormInfo.spawn[0], GEN.stormInfo.spawn[1]),
+    [P(ux, uy)]: portal('ruins', GEN.ruinsInfo.spawn[0], GEN.ruinsInfo.spawn[1]),
   },
-  places: [[hx, hy, 'Haven Town'], [fx, fy, 'Frostholm'], [cx, cy, 'Ashen Cavern'], [rx, ry, 'Sunken Crypt'], [sx, sy, 'Frost Spire'], [mx, my, 'Mirewood'], [tx, ty, 'Storm Cavern']],
+  npcs: [
+    { x: ux - 2, y: uy + 1, type: 'elder', name: 'Desert Oracle', quest: 'sphinx', text: ['The sand remembers everything, child. Even you.', 'Seek the hermit of the northern plains, if the pass ever opens. He knows where the old kings hid their gifts.'] },
+    { x: 8, y: 8, type: 'elder', name: 'Plains Hermit', text: ['Visitors! Sit, sit. I have lived alone on these plains for forty winters.', 'The old kings of Greenmarch hid gifts for the worthy. One lies in the north-west, where the land ends beneath the twin peaks.', 'And the sea-captain Redwake buried his gold by a waterfall in the south. Haven\'s old sailor knows the tale.', 'Look for a faint glimmer on the ground. Treasure likes to twinkle.'] },
+  ],
+  secrets: {
+    [P(15, 27)]: { gold: 1200, gems: ['crit'], qitem: 'doubloon' }, // Redwake's cache at the foot of the waterfall
+    [P(4, 5)]: { gems: ['echo'], items: { elixir: 2 }, accs: ['life_charm'] }, // the old kings' gift, north-west corner
+  },
+  places: [[hx, hy, 'Haven Town'], [fx, fy, 'Frostholm'], [cx, cy, 'Ashen Cavern'], [rx, ry, 'Sunken Crypt'], [sx, sy, 'Frost Spire'], [mx, my, 'Mirewood'], [tx, ty, 'Storm Cavern'], [ux, uy, 'Sunscar Ruins']],
 };
 // no random fights close to towns, and grassland fights ramp up with distance from Haven (gentle first steps)
-MAPS.world.safe = [[hx, hy, 6], [fx, fy, 4], [mx, my, 4], [cx, cy, 2], [rx, ry, 2], [sx, sy, 2], [tx, ty, 2]];
+MAPS.world.safe = [[hx, hy, 6], [fx, fy, 4], [mx, my, 4], [cx, cy, 2], [rx, ry, 2], [sx, sy, 2], [tx, ty, 2], [ux, uy, 2]];
 MAPS.world.ramp = [hx, hy];
 // the northern pass is gated until the Ashen Wyrm falls
 MAPS.world.gate = { tile: 'B', flag: 'wyrm' };

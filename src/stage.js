@@ -7,7 +7,7 @@ export const W = BA.BW, H = BA.BH; // 256 x 176 logical pixels
 const ELEM_COL = { fire: ['#ff9a2a', '#ffd25a', '#e04a20', '#fff2a0'], ice: ['#c8f4ff', '#7fd8f0', '#ffffff', '#4aa0e8'], bolt: ['#fff27a', '#ffffff', '#ffd25a'], holy: ['#ffffff', '#fff2a0', '#d0f0ff'], dark: ['#9a62e0', '#4a2a80', '#d0a0ff', '#20103a'], slash: ['#ffffff', '#d8e4ff'], heal: ['#7af0a0', '#c8ffd8', '#ffffff'], mp: ['#7ab0ff', '#c8e0ff', '#ffffff'] };
 const STYLE = { slime: 'squash', bat: 'swoop', wolf: 'pounce', wraith: 'float', zombie: 'sway', golem: 'stomp', yeti: 'stomp', wyrm: 'swoop', lich: 'float', titan: 'stomp', imp: 'pounce', goblin: 'lunge', skeleton: 'lunge',
   hornet: 'swoop', shroom: 'squash', boar: 'lunge', bandit: 'lunge', sapling: 'sway', spider: 'pounce', bog_toad: 'pounce', leech: 'squash', wisp: 'float', lizardman: 'lunge', scorpion: 'lunge', sandworm: 'stomp', cactus: 'sway', mummy: 'sway',
-  salamander: 'pounce', batswarm: 'swoop', ghoul_knight: 'lunge', banshee: 'float', bone_whelp: 'swoop', ice_elemental: 'float', harpy: 'swoop', mammoth: 'stomp', crystal_sentinel: 'stomp', thunderbird: 'swoop' };
+  salamander: 'pounce', batswarm: 'swoop', ghoul_knight: 'lunge', banshee: 'float', bone_whelp: 'swoop', ice_elemental: 'float', harpy: 'swoop', mammoth: 'stomp', crystal_sentinel: 'stomp', thunderbird: 'swoop', cobra: 'sway', sphinx: 'pounce' };
 const HOVER = new Set(['bat', 'wraith', 'lich', 'hornet', 'wisp', 'batswarm', 'banshee', 'bone_whelp', 'ice_elemental', 'harpy', 'thunderbird']); // genuine flyers drift above their own shadow
 const mk = (w, h) => { const c = document.createElement('canvas'); c.width = w; c.height = h; return c; };
 const whiteCache = new Map();
@@ -45,7 +45,7 @@ function wtypeOf(p) { const w = p.wpn; return w ? w.type : 'none'; }
 export class Stage {
   constructor(battle, kind) {
     this.b = battle; this.canvas = mk(W, H); this.canvas.className = 'stage'; this.ctx = this.canvas.getContext('2d');
-    const arena = battle.boss && ['crypt', 'spire', 'storm'].includes(kind) ? kind + ':boss' : kind;
+    const arena = battle.boss && ['crypt', 'spire', 'storm', 'ruins'].includes(kind) ? kind + ':boss' : kind;
     this.info = BA.backdropInfo(BA.BACKDROPS.includes(arena) ? arena : 'world'); this.bg = this.info.c; this.kind = this.info.kind;
     this.parts = []; this.floats = []; this.proj = []; this.shapes = []; this.running = true; this.last = performance.now(); this.lastElem = null; this.active = null; this.shake = 0; this.flashA = 0; this.flashC = '#ffffff';
     const live = battle.e, epos = POS[Math.min(5, live.length)] || POS[5]; let ni = 0;

@@ -42,8 +42,8 @@ function crawl(level,tier,table,fights,n,boss){
 const row=(label,r)=>console.log(label.padEnd(26),`win ${(r.win*100).toFixed(0).padStart(3)}%  hp left ${(r.hp*100).toFixed(0).padStart(3)}%`);
 const N=+process.argv[3]||120;
 console.log('--- single fights (full HP) ---');
-for(const [t,l,tier] of [['world',3,0],['world',5,0],['swamp',7,0],['swamp',9,0],['dungeon',6,0],['dungeon',8,0],['crypt',10,1],['crypt',12,1],['snow',12,1],['snow',14,1],['spire',14,1],['spire',16,2],['storm',11,1],['storm',13,1],['desert',8,0],['desert',10,0],['desert',11,1]]) row(`${t} L${l}`,crawl(l,tier,t,1,N));
+for(const [t,l,tier] of [['world',3,0],['world',5,0],['swamp',7,0],['swamp',9,0],['dungeon',6,0],['dungeon',8,0],['crypt',10,1],['crypt',12,1],['snow',12,1],['snow',14,1],['spire',14,1],['spire',16,2],['storm',11,1],['storm',13,1],['desert',8,0],['desert',10,0],['desert',11,1],['ruins',11,1],['ruins',13,1]]) row(`${t} L${l}`,crawl(l,tier,t,1,N));
 console.log('--- 4-fight crawls (HP carries over, no healing) ---');
-for(const [t,l,tier] of [['dungeon',7,0],['dungeon',9,0],['crypt',11,1],['crypt',13,1],['spire',15,2],['spire',17,2]]) row(`${t} L${l} x4`,crawl(l,tier,t,4,N));
+for(const [t,l,tier] of [['dungeon',7,0],['dungeon',9,0],['crypt',11,1],['crypt',13,1],['spire',15,2],['spire',17,2],['ruins',12,1],['ruins',14,1]]) row(`${t} L${l} x4`,crawl(l,tier,t,4,N));
 console.log('--- bosses ---');
-for(const [b,l,tier] of [['wyrm',8,0],['wyrm',9,0],['wyrm',10,0],['lich',12,1],['lich',13,1],['lich',14,1],['titan',16,2],['titan',17,2],['titan',18,2],['storm_drake',11,1],['storm_drake',12,1],['storm_drake',13,1]]) row(`${b} L${l}`,crawl(l,tier,null,1,N,b));
+for(const [b,l,tier] of [['wyrm',8,0],['wyrm',9,0],['wyrm',10,0],['lich',12,1],['lich',13,1],['lich',14,1],['titan',16,2],['titan',17,2],['titan',18,2],['storm_drake',11,1],['storm_drake',12,1],['storm_drake',13,1],['sphinx',11,1],['sphinx',12,1],['sphinx',13,1],['sphinx',14,1]]) row(`${b} L${l}`,crawl(l,tier,null,1,N,b));

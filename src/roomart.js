@@ -102,9 +102,12 @@ const PAL = {
   slate: ramp('#07080e #0c0e16 #12151f #181c29 #1f2433 #272d3f #30384c #3b445a #48526a #58647e'),
   ystal: ramp('#3a2a08 #6a4e10 #a07a18 #d0a828 #f0d040 #fff080 #ffffd0'),
   pstal: ramp('#1e0a3a #341464 #4e2090 #6a34b8 #8a50d8 #ac78ee #d0a8fa #f0e0ff'),
+  sstone: ramp('#2a170c #3f2412 #573419 #704522 #8a582c #a46d38 #bb8446 #cf9c58 #e0b46e #eecb8a'),
+  sand: ramp('#8a6034 #a2763f #b98c4e #cca260 #dcb874 #e9cc8c #f4dfaa'),
+  lapis: ramp('#0e1840 #182a6a #24409a #3a5cc0 #5a80dc #8aa8f0'),
 };
 const POTS = [['#5a0e14', '#a01c24', '#e04a4a', '#ffb0a0'], ['#0e1a5a', '#2040b0', '#4a7ae8', '#b0d0ff'], ['#0e4a1a', '#1e8a34', '#4ac860', '#b8f8c0'], ['#4a2a06', '#a06a10', '#e8b030', '#fff0a0'], ['#3a0e4a', '#7a2a9a', '#b85ae0', '#f0c0ff']].map((r) => r.map(pk));
-const THEMES = new Set(['interior', 'cavern', 'crypt', 'spire', 'storm']);
+const THEMES = new Set(['interior', 'cavern', 'crypt', 'spire', 'storm', 'ruins']);
 export const isTheme = (theme) => THEMES.has(theme);
 export const drawsDecor = (m) => THEMES.has(m.theme);
 const VOID = pk('#07050a');
@@ -497,6 +500,26 @@ const DUN = {
     rim: PAL.slate, rimV: 0.8, accent: '#ffe060', glow: '255,230,110',
   },
 };
+// Sunscar Ruins: sandstone courses and flagstones half-buried in drifting sand (columns, glyph panels and the sun-disc altar are added in buildDungeon)
+DUN.ruins = {
+  top: (x, y) => { const n = fbmP(x, y, 21), h = hash(w64(x), w64(y), 22), sd = fbmP(x * 1.3, y, 24) + (vnoise(x, y, 4, 25, 64) - 0.5) * 0.12;
+    return pick(PAL.sstone, cl(0.04 + n * 0.12 + (sd > 0.66 ? 0.07 : 0) + (h < 0.04 ? 0.06 : 0)), x, y); },
+  face: (x, y, fy, tx, ty) => { const row = Math.floor(fy / 6), xx = x + ((row + ty) & 1) * 6, u = ((xx % 12) + 12) % 12, v = fy % 6;
+    let s = 0.56 + (hash(Math.floor(xx / 12), row + ty * 3, 41) - 0.5) * 0.22 + (fbm(x, y, 42) - 0.5) * 0.2 - fy * 0.014;
+    if (u === 0 || v === 5) s = 0.22; else if (v === 0 || u === 1) s += 0.12;
+    if (fy === 0) s = 0.88; if (hash(x, y, 43) < 0.03) s -= 0.16;
+    return pick(PAL.sstone, cl(s, 0.05, 0.95), x, y); },
+  floor: (x, y) => { const row = Math.floor(y / 16), off = (row & 1) * 8, cx = Math.floor((x + off) / 16), u = (((x + off) % 16) + 16) % 16, v = ((y % 16) + 16) % 16, n = fbm(x, y, 7);
+    const sd = vnoise(x, y, 22, 61) + (n - 0.5) * 0.25;
+    if (sd > 0.6) { const rip = Math.sin(x * 0.35 + y * 0.9 + vnoise(x, y, 9, 63) * 4); let s = 0.52 + rip * 0.13 + (n - 0.5) * 0.2; if (sd < 0.625) s -= 0.16; return pick(PAL.sand, cl(s), x, y); }
+    let c; if (u === 0 || v === 0) c = pick(PAL.sstone, 0.14, x, y);
+    else { let s = 0.5 + (hash(cx, row, 64) - 0.5) * 0.22 + (n - 0.5) * 0.2; if (u === 1 || v === 1) s += 0.12; else if (u === 15 || v === 15) s -= 0.1;
+      if (hash(cx, row, 65) < 0.18 && Math.abs(u - v) < 0.7 && u > 2) s -= 0.25; // cracked flagstones
+      c = pick(PAL.sstone, cl(s, 0.08, 0.95), x, y); }
+    return sd > 0.52 ? mix(c, PAL.sand[3], (sd - 0.52) / 0.08 * 0.6) : c; },
+  rim: PAL.sstone, rimV: 0.92, accent: '#ffc840', glow: '255,200,90',
+};
+const GLYPHS = [['.##.', '#..#', '.##.', '####', '.##.', '.##.'], ['.##.', '###.', '.##.', '.###', '.##.', '#..#'], ['#.#.', '.#.#', '....', '#.#.', '.#.#', '....'], ['.##.', '####', '####', '.##.', '#..#', '....'], ['#...', '##..', '#.#.', '#...', '#...', '#...'], ['....', '.##.', '#..#', '.##.', '..#.', '.##.']];
 // ice / storm crystal clusters (tile-local, bottom at y 15)
 const CLUSTERS = [[[7.5, 10, 3, 0], [4.5, 6, 2, -0.3], [11, 7, 2, 0.35]], [[6, 8, 3, -0.15], [10, 10, 3, 0.15], [13, 5, 2, 0.4]], [[8, 11, 4, 0.05], [4, 5, 2, -0.45]]];
 function crystal(set, R, v, ox = 0, oy = 0, by = 15) {
@@ -543,6 +566,23 @@ function buildDungeon(m) {
     }
     if ((th === 'storm' || th === 'spire') && faceRun && h < (th === 'storm' ? 0.34 : 0.22)) { const pal = th === 'spire' ? 'ice' : hash(tx, ty, 5) < 0.6 ? 'ystal' : 'pstal', v = Math.floor(hash(tx, ty, 6) * 3);
       crystal((x, y, c) => S(X + x, Y + y, th === 'storm' ? dk(c, 0.55) : c), PAL[pal], v); anim.cryst.push([tx, ty, pal, v]); }
+    if (th === 'ruins' && faceRun && h < 0.26) { // engaged column: capital, fluted shaft, plinth; a few are broken off
+      const broken = h < 0.08, top = broken ? 4 + Math.floor(hash(tx, ty, 9) * 3) : 0;
+      for (let fy = 0; fy < 12; fy++) {
+        if (fy < 2 || fy >= 10) { if (fy < 2 && broken) continue; for (let lx = 3; lx < 13; lx++) S(X + lx, Y + CAPH + fy, pick(PAL.sstone, cl((fy === 0 || fy === 10 ? 0.9 : 0.42) - (lx - 3) * 0.025), lx, fy)); continue; }
+        if (broken && fy < top) continue;
+        for (let lx = 5; lx < 11; lx++) { const jag = broken && fy === top && hash(lx, ty, 3) < 0.5; if (jag) continue; S(X + lx, Y + CAPH + fy, pick(PAL.sstone, cl(0.82 - (lx - 5) * 0.08 + ((lx - 5) % 2 ? -0.12 : 0.03) + (broken && fy <= top + 1 ? 0.12 : 0)), lx, fy)); }
+        S(X + 4, Y + CAPH + fy, pick(PAL.sstone, 0.18, 4, fy)); S(X + 11, Y + CAPH + fy, pick(PAL.sstone, 0.12, 11, fy));
+      }
+    } else if (th === 'ruins' && faceRun && h < 0.5) { // recessed panel of carved glyphs, some painted lapis or gold
+      for (let fy = 2; fy < 10; fy++) for (let lx = 2; lx < 14; lx++) S(X + lx, Y + CAPH + fy, pick(PAL.sstone, fy === 2 || lx === 2 ? 0.2 : fy === 9 || lx === 13 ? 0.78 : 0.48 + (hash(lx, fy, tx) - 0.5) * 0.08, lx, fy));
+      for (let k = 0; k < 2; k++) { const g = GLYPHS[Math.floor(hash(tx, ty, 30 + k) * GLYPHS.length)], paint = hash(tx, ty, 40 + k), gx = X + 3 + k * 6, gy = Y + CAPH + 3;
+        g.forEach((r, j) => [...r].forEach((ch2, i) => { if (ch2 !== '#') return; S(gx + i, gy + j, paint < 0.3 ? pick(PAL.lapis, 0.55, i, j) : paint < 0.5 ? pick(PAL.gold, 0.6, i, j) : pick(PAL.sstone, 0.16, i, j)); if (g[j + 1]?.[i] !== '#') S(gx + i, gy + j + 1, pick(PAL.sstone, 0.7, i, j)); })); }
+    }
+    if (th === 'ruins' && c !== '#') { // sand drifts against the walls, scattered rubble
+      if (isW(tx, ty - 1)) for (let lx = 0; lx < 16; lx++) { const hh = 2 + vnoise(X + lx, ty * 16, 6, 70) * 5 + (isW(tx - 1, ty) && lx < 5 ? 5 - lx : 0) + (isW(tx + 1, ty) && lx > 10 ? lx - 10 : 0); for (let ly = 0; ly < hh; ly++) B(X + lx, Y + ly, pick(PAL.sand, cl(0.75 - ly / hh * 0.35 + (lx === 0 ? -0.1 : 0)), lx, ly), ly > hh - 1.5 ? 0.5 : 0.9); }
+      if (c === '.' && h > 0.93) for (const [u, v, w2] of [[4, 9, 3], [8, 11, 2], [11, 8, 2], [6, 12, 1]]) { const bx = X + u + Math.floor(hash(tx, ty, u) * 2), by = Y + v; for (let j = 0; j < w2; j++) for (let i = 0; i < w2 + 1; i++) S(bx + i, by + j, pick(PAL.sstone, j === 0 ? 0.85 : 0.45, i, j)); S(bx, by + w2, pick(PAL.sstone, 0.15, 0, 0)); }
+    }
     if (th === 'cavern' && faceRun && h < 0.14) for (let fy = 0; fy < 12; fy++) for (let lx = 6; lx < 10; lx++) { const wv = 7.5 + Math.sin(fy * 0.9 + tx) * 0.8; if (Math.abs(lx + 0.5 - wv) < 1.3) S(X + lx, Y + CAPH + fy, pick(PAL.lava, cl(0.85 - Math.abs(lx + 0.5 - wv) * 0.3 - (fy & 1) * 0.08), lx, fy)); } // lava seep
     if (c !== '#' && th === 'crypt') { // cobwebs in inner corners, scattered bones
       for (const sd of [-1, 1]) if (isW(tx, ty - 1) && isW(tx + sd, ty) && hash(tx, ty, 40 + sd) < 0.75) { const cx0 = sd < 0 ? X : X + 15;
@@ -552,7 +592,7 @@ function buildDungeon(m) {
     }
     if (c === 'C') for (let y = Y + 12; y < Y + 17; y++) for (let x = X + 2; x < X + 16; x++) if (((x + 0.5 - X - 9) / 7) ** 2 + ((y + 0.5 - Y - 14.5) / 2.4) ** 2 <= 1) D(x, y, 0.55);
     if (c === 'E') { // stairs up to daylight: an arched passage in the wall above, steps down onto the floor
-      const day = pk('#fff2c8'), stone = th === 'spire' ? PAL.icef : th === 'crypt' ? PAL.cstone : th === 'storm' ? PAL.slate : PAL.basalt;
+      const day = pk('#fff2c8'), stone = th === 'spire' ? PAL.icef : th === 'crypt' ? PAL.cstone : th === 'storm' ? PAL.slate : th === 'ruins' ? PAL.sstone : PAL.basalt;
       if (isW(tx, ty - 1)) for (let ly = CAPH - 2; ly < 16; ly++) for (let lx = 1; lx < 15; lx++) { const fy = ly - CAPH + 2, ar = fy < 4 && Math.abs(lx + 0.5 - 8) > 7 - [5, 3, 1.5, 0.5][fy]; if (ar) continue;
         const jamb = lx < 3 || lx > 12, k = (ly - CAPH + 2) / 14;
         S(X + lx, Y - 16 + ly, jamb ? pick(stone, lx === 1 || lx === 13 ? 0.85 : 0.5, lx, ly) : mix(pick(stone, ((ly + 1) % 3 === 0 ? 0.15 : (ly + 1) % 3 === 1 ? 0.8 : 0.55), lx, ly), day, cl(0.7 - k * 0.8))); }
@@ -564,7 +604,17 @@ function buildDungeon(m) {
     const x = px - O, y = py - O, tx = x >> 4, ty = y >> 4, ly = y & 15; if (isW(tx, ty) || !isW(tx, ty - 1) || ly > 9) continue;
     const src = P.get(px, py - 2 * ly - 1); if (cA(src)) P.d[py * GW + px] = mix(P.d[py * GW + px], src, 0.42 * (1 - ly / 10));
   }
-  const boss = m.boss; if (boss) { // rune circle around the boss's lair
+  const boss = m.boss;
+  if (boss && th === 'ruins') { // sun-disc altar: a gold disc inlaid in the floor, sixteen rays, a lapis ring, and a stepped sandstone dais
+    const cx = boss.x * 16 + 8, cy = boss.y * 16 + 9, fl = (x, y) => !isW(x >> 4, y >> 4);
+    for (let y = cy - 30; y <= cy + 30; y++) for (let x = cx - 34; x <= cx + 34; x++) { if (!fl(x, y)) continue; const dx = x + 0.5 - cx, dy = (y + 0.5 - cy) / 0.78, r = Math.hypot(dx, dy), a = (Math.atan2(dy, dx) / (Math.PI * 2) * 16 + 16) % 1;
+      if (r < 30 && r >= 27) S(x, y, pick(PAL.sstone, r < 28 ? 0.9 : 0.35, x, y)); // dais step
+      else if (r < 27 && r >= 25.5) S(x, y, pick(PAL.lapis, 0.5 + (dx < 0 ? 0.2 : 0), x, y));
+      else if (r < 25.5 && r >= 12) S(x, y, a < 0.34 && r < 24 ? pick(PAL.gold, cl(0.45 + (1 - r / 24) * 0.4 - dy * 0.004), x, y) : pick(PAL.sstone, cl(0.62 + (hash(x, y, 8) - 0.5) * 0.12), x, y));
+      else if (r < 12 && r >= 10.5) S(x, y, pick(PAL.sstone, 0.15, x, y));
+      else if (r < 10.5) S(x, y, pick(PAL.gold, cl(0.55 - (dx + dy) / 30 + (r < 3 ? 0.3 : 0)), x, y)); }
+    anim.boss = [boss.x + 0.5, boss.y + 0.5];
+  } else if (boss) { // rune circle around the boss's lair
     const cx = boss.x * 16 + 8, cy = boss.y * 16 + 8, glowC = mix(ACC, pk('#ffffff'), 0.5), pts = [0, 1, 2, 3, 4, 5].map((i) => [cx + Math.cos(i * Math.PI / 3 - Math.PI / 2) * 21, cy + Math.sin(i * Math.PI / 3 - Math.PI / 2) * 21 * 0.8]);
     const fl = (x, y) => !isW((x) >> 4, (y) >> 4);
     for (let y = cy - 26; y <= cy + 26; y++) for (let x = cx - 28; x <= cx + 28; x++) { if (!fl(x, y)) continue; const r = Math.hypot(x + 0.5 - cx, (y + 0.5 - cy) / 0.8);
@@ -636,6 +686,11 @@ export function mapObjects(m, t, out) {
     const F = A.floor.concat(A.walls);
     for (let i = 0; i < 40; i++) { const u = (t * 0.55 + hash(i, 7, 4)) % 1; if (u > 0.14) continue; const [tx, ty] = F[Math.floor(hash(i, 8, 4) * F.length)]; out.push({ img: starPix(), x: tx + 0.2 + hash(i, 9, 4) * 0.6, y: ty + 0.2 + hash(i, 10, 4) * 0.6, w: 5 / 16, h: 5 / 16, z: 2 }); }
     for (const [tx, ty, pal, v] of A.cryst) out.push(glowItem(T.glow, tx + 0.5, ty + 0.6, 0.9, 0.22 + Math.sin(t * 1.4 + tx * 2 + ty) * 0.1, 0));
+  } else if (th === 'ruins') { // fine sand drifting through the halls
+    const F = A.floor;
+    out.push({ x: 0, y: 0, w: 1, h: 1, z: 2, draw: (ctx, X, Y, TS) => { const q = TS / 16; for (let i = 0; i < 56; i++) { const [tx, ty] = F[Math.floor(hash(i, 11, 5) * F.length)], T0 = 3 + hash(i, 12, 5) * 3, u = (t / T0 + hash(i, 13, 5)) % 1;
+      const ex = X + (tx - 1 + u * 3) * TS, ey = Y + (ty + 0.4 + Math.sin(u * 9 + i) * 0.25 + u * 0.3) * TS; if (ex < -4 || ey < -4 || ex > ctx.canvas.width + 4 || ey > ctx.canvas.height + 4) continue;
+      ctx.fillStyle = u < 0.15 || u > 0.85 ? 'rgba(240,210,150,.3)' : 'rgba(252,228,172,.75)'; ctx.fillRect(Math.round(ex), Math.round(ey), q * (i % 5 ? 1 : 2), q); } } });
   } else if (th === 'storm') {
     const f = stormFlash(t);
     for (const [tx, ty, pal, v] of A.cryst) { const a = Math.max(f, 0.3 + 0.25 * Math.sin(t * 1.7 + tx * 1.3 + ty * 0.7)); out.push({ img: crystalPix(pal, v), x: tx, y: ty, z: 0, draw: (ctx, X, Y, TS) => { ctx.globalAlpha = a; ctx.drawImage(crystalPix(pal, v), X, Y, TS, TS); ctx.globalAlpha = 1; } }); out.push(glowItem(pal === 'pstal' ? '190,130,255' : T.glow, tx + 0.5, ty + 0.65, 1.1, a * 0.5, 0)); }

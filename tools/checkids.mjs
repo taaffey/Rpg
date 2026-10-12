@@ -11,7 +11,17 @@ const loot = (o, where) => {
   for (const id of Object.keys(o.items || {})) has('items', id, where);
 };
 for (const [sid, s] of Object.entries(SHOPS)) for (const [k, ids] of Object.entries(s.stock)) for (const id of ids) { has(k, id, `shop ${sid}`); if (DB[k]?.[id] && !(DB[k][id].price > 0)) errs.push(`shop ${sid}: ${id} has no price`); }
-for (const [mid, m] of Object.entries(MAPS)) for (const [pos, c] of Object.entries(m.chests || {})) loot(c, `chest ${mid}@${pos}`);
+for (const [mid, m] of Object.entries(MAPS)) for (const [pos, c] of Object.entries({ ...(m.chests || {}), ...(m.secrets || {}) })) loot(c, `chest ${mid}@${pos}`);
+// quest items: every find/deliver item has a display name in game.js; every find item sits in some chest; every deliver quest has a recipient
+{ const gsrc = readFileSync(new URL('../src/game.js', import.meta.url), 'utf8'), qi = gsrc.match(/const QITEM = (\{.*\});/), QITEM = qi ? Function(`return (${qi[1]})`)() : {};
+  const inChests = new Set(Object.values(MAPS).flatMap((m) => Object.values({ ...(m.chests || {}), ...(m.secrets || {}) }).map((c) => c.qitem).filter(Boolean)));
+  const recv = new Set(Object.values(MAPS).flatMap((m) => (m.npcs || []).map((n) => n.deliver).filter(Boolean)));
+  for (const [qid, q] of Object.entries(QUESTS)) { const g = q.goal;
+    if (['find', 'deliver'].includes(g.type) && !QITEM[g.item]) errs.push(`quest ${qid}: no QITEM name for ${g.item}`);
+    if (g.type === 'find' && !inChests.has(g.item)) errs.push(`quest ${qid}: item ${g.item} is in no chest`);
+    if (g.type === 'deliver' && (!recv.has(qid) || !q.lines.deliver)) errs.push(`quest ${qid}: no recipient NPC or deliver lines`);
+    if (g.lure && (!ENCOUNTERS[g.lure.table] || g.lure.group.some((id) => !ENEMIES[id]))) errs.push(`quest ${qid}: bad lure`);
+    if (!Object.values(MAPS).some((m) => (m.npcs || []).some((n) => n.quest === qid))) errs.push(`quest ${qid}: no giver NPC`); } }
 for (const [eid, d] of Object.entries(DROPS)) {
   if (!ENEMIES[eid]) errs.push(`drops: unknown enemy ${eid}`);
   for (const slot of ['common', 'rare']) if (d[slot]) { has(d[slot][0], d[slot][1], `drops ${eid}.${slot}`); if (!(d[slot][2] > 0 && d[slot][2] <= 1)) errs.push(`drops ${eid}.${slot}: bad chance`); }

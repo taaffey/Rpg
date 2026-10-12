@@ -197,7 +197,7 @@ const plr = { x: 256, y: 192 };
 let face = 'down', vx = 0, vy = 0, trans = 0, lastT = 0, trail = [], fv = [];
 const snap = () => { vx = G.x; vy = G.y; trail = [{ x: G.x, y: G.y }]; fv = [0, 1, 2].map(() => ({ x: G.x, y: G.y, d: face, mv: false })); reveal(); };
 const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
-const LIGHT = { storm: { glow: '255,230,90', dark: 0.8, r: 180 }, cavern: { glow: '255,150,50', dark: 0.88, r: 175 }, crypt: { glow: '90,255,140', dark: 0.9, r: 165 }, spire: { glow: '130,210,255', dark: 0.5, r: 250 } };
+const LIGHT = { ruins: { glow: '255,190,100', dark: 0.74, r: 205 }, storm: { glow: '255,230,90', dark: 0.8, r: 180 }, cavern: { glow: '255,150,50', dark: 0.88, r: 175 }, crypt: { glow: '90,255,140', dark: 0.9, r: 165 }, spire: { glow: '130,210,255', dark: 0.5, r: 250 } };
 function draw(t = performance.now() / 1000) {
   if (!G) return;
   const m = mapDef(), W = m.rows[0].length, H = m.rows.length, frame = Math.floor(t / 0.6) % 2;
@@ -261,6 +261,11 @@ function draw(t = performance.now() / 1000) {
   for (const c of crew) sorted.push({ k: c.y + 1 - c.i * 0.001, f: () => stand(WK.walker(G.party[c.i].main, c.d, c.mv ? 1 + (Math.floor(t * 8 + c.i) % 3) : 0), sx(c.x), sy(c.y)) });
   sorted.sort((a, b) => a.k - b.k).forEach((s2) => s2.f());
   for (const it of items) if (it.z === 2) put(it);
+  for (const k of Object.keys(m.secrets || {})) { // hidden treasure: a faint glint now and then
+    if (G.flags.chests[chestKey(...k.split(',').map(Number))]) continue; const [gx, gy] = k.split(',').map(Number), ph = (t * 0.45 + gx * 0.13 + gy * 0.07) % 1; if (ph > 0.16) continue;
+    const a = Math.sin((ph / 0.16) * Math.PI), u = TS / 16, X = sx(gx) + TS / 2, Y = sy(gy) + TS * 0.6, r = Math.round((2 + a * 3) * u);
+    cx.fillStyle = `rgba(255,248,200,${(0.85 * a).toFixed(2)})`; cx.fillRect(X - r, Y - Math.round(u / 2), r * 2, Math.round(u)); cx.fillRect(X - Math.round(u / 2), Y - r, Math.round(u), r * 2); cx.fillRect(X - u, Y - u, u * 2, u * 2);
+  }
   if (m.kind === 'outdoor') {
     const reg = regionOf();
     if (reg === 'snow') { cx.fillStyle = 'rgba(210,225,255,.07)'; cx.fillRect(0, 0, cv.width, cv.height); cx.fillStyle = 'rgba(255,255,255,.9)'; for (let i = 0; i < 46; i++) cx.fillRect(Math.round((i * 47 + Math.sin(t * 0.9 + i) * 14 + t * 10) % cv.width), Math.round((t * (30 + (i % 5) * 9) + i * 53) % cv.height), 2, 2); }
@@ -313,6 +318,7 @@ function banner(text) { const b = $('#banner'); b.textContent = text; b.classLis
 function goto(id, x, y) {
   G.map = id; G.x = x; G.y = y; G.flags.visited[id] = true; snap(); music(musicFor()); sfx('door');
   banner(id === 'world' ? REGION_NAME[regionOf()] : MAPS[id].name); G.region = regionOf(); layoutView(); draw(); autosave();
+  const lv = G.party.reduce((a, c) => a + c.level, 0) / G.party.length; if (MAPS[id].minLv && lv < MAPS[id].minLv) toast(`⚠ An ancient, dangerous place. Monsters here suit level ${MAPS[id].minLv}+.`, 4200);
 }
 let busy = false;
 function mapShake() { if (!OPT.shake) return; cv.classList.remove('shake'); void cv.offsetWidth; cv.classList.add('shake'); }
@@ -327,12 +333,15 @@ async function step(dx, dy) {
   G.x = nx; G.y = ny; trail.push({ x: nx, y: ny }); if (trail.length > 8) trail.shift();
   const pt = m.portals?.[`${nx},${ny}`]; if (pt) return goto(pt.to, pt.x, pt.y);
   reveal(); draw();
+  const sec = m.secrets?.[`${nx},${ny}`]; if (sec && !G.flags.chests[chestKey(nx, ny)]) return openChest(nx, ny, sec);
   tip('move', TOUCH ? 'Tap a spot to travel there, or press and slide on the pad. A talks/checks, B opens the menu.' : 'Arrows or WASD to walk. Esc opens your party menu. A yellow ! marks someone with news.');
-  if (m.kind === 'outdoor') { const reg = regionOf(); if (reg !== G.region) { G.region = reg; banner(REGION_NAME[reg]); music(musicFor()); const need = { swamp: 7, snow: 11 }[reg]; const avg = G.party.reduce((a, c) => a + c.level, 0) / G.party.length; if (need && avg < need) toast(`⚠ Dangerous land! Monsters here suit level ${need}+.`, 4200); } }
+  if (m.kind === 'outdoor') { const reg = regionOf(); if (reg !== G.region) { G.region = reg; banner(REGION_NAME[reg]); music(musicFor()); const need = { swamp: 7, snow: 11, desert: 8 }[reg]; const avg = G.party.reduce((a, c) => a + c.level, 0) / G.party.length; if (need && avg < need) toast(`⚠ Dangerous land! Monsters here suit level ${need}+.`, 4200); } }
   if (m.boss && t === 'X' && !G.flags.bosses[m.boss.id]) { busy = true; mapShake(); sfx('crit'); await sleep(350); busy = false; return battle([m.boss.id], m.boss.id); }
   const table = m.enc || m.encByTile?.[t];
   if (table && !(m.safe || []).some(([sx2, sy2, r]) => Math.hypot(nx - sx2, ny - sy2) <= r) && Math.random() < m.rate) {
     let tb = ENCOUNTERS[table];
+    const lure = Object.entries(QUESTS).find(([id, q]) => q.goal.lure?.table === table && qstate(id) === 'active' && !questDone(id))?.[1].goal.lure; // a hunt quest's quarry shows up more often
+    if (lure && Math.random() < lure.p) return battle(lure.group);
     if (table === 'world' && m.ramp) tb = tb.slice(0, Math.min(tb.length, 2 + Math.floor(Math.hypot(nx - m.ramp[0], ny - m.ramp[1]) / 3))); // easy fights first, tougher the farther you roam
     await battle(tb[Math.floor(Math.random() * tb.length)]);
   }
@@ -480,23 +489,24 @@ addEventListener('keyup', (e) => { const i = keysDown.indexOf(e.key); if (i >= 0
 addEventListener('blur', () => { keysDown.length = 0; held = null; });
 ACT.close = hide;
 
-function openChest(x, y) {
-  const c = mapDef().chests?.[`${x},${y}`] || { gold: 50 }; G.flags.chests[chestKey(x, y)] = true; miniDirty = true; sfx('chest');
+function openChest(x, y, secret = null) { // secret: loot of a hidden treasure spot (m.secrets), found by stepping on it
+  const c = secret || mapDef().chests?.[`${x},${y}`] || { gold: 50 }; G.flags.chests[chestKey(x, y)] = true; miniDirty = true; sfx('chest');
   const got = [];
   for (const k of ['weapons', 'armors', 'accs', 'gems']) for (const id of c[k] || []) { G.inv[k].push(id); got.push(DB[k][id].name); }
   for (const [id, n] of Object.entries(c.items || {})) { G.inv.items[id] = (G.inv.items[id] || 0) + n; got.push(`${ITEMS[id].name} ×${n}`); }
   if (c.gold) { G.gold += c.gold; got.push(`${c.gold} G`); }
   if (c.qitem) { G.flags.qitems[c.qitem] = true; got.push(`<span class="gold">${QITEM[c.qitem]}</span> (quest item)`); }
   draw();
-  show(`<h2>📦 Treasure!</h2><p>You found:</p>${got.map((g) => `<div class="slot"><span class="lead">${ic('chest')}</span><div class="t"><b class="gold">${g}</b></div></div>`).join('')}<div class="foot">${btn('close', 'OK', '', '', 'primary')}</div>`);
+  show(`<h2>${secret ? '✨ Hidden treasure!' : '📦 Treasure!'}</h2><p>${secret ? 'Something glints in the ground... You dig up:' : 'You found:'}</p>${got.map((g) => `<div class="slot"><span class="lead">${ic('chest')}</span><div class="t"><b class="gold">${g}</b></div></div>`).join('')}<div class="foot">${btn('close', 'OK', '', '', 'primary')}</div>`);
 }
 
 // ---------- NPCs, dialogue, services ----------
-const QITEM = { heirloom: 'Grandmother\'s Ring', lantern: 'Boatwright\'s Lantern' };
+const QITEM = { heirloom: 'Grandmother\'s Ring', lantern: 'Boatwright\'s Lantern', doubloon: 'Redwake\'s Doubloon', letter: 'Sealed Letter' };
 const qstate = (id) => G.flags.quests[id];
-function questDone(id) { const g = QUESTS[id].goal; return g.type === 'kill' ? (G.flags.qprog[id] || 0) >= g.n : g.type === 'find' ? !!G.flags.qitems[g.item] : !!G.flags.bosses[g.id]; }
-function questProgress(id) { const g = QUESTS[id].goal; return g.type === 'kill' ? `${Math.min(G.flags.qprog[id] || 0, g.n)}/${g.n}` : g.type === 'find' ? (G.flags.qitems[g.item] ? 'found' : `find it in the ${g.where}`) : (G.flags.bosses[g.id] ? 'slain' : 'not yet slain'); }
+function questDone(id) { const g = QUESTS[id].goal; return g.type === 'kill' ? (G.flags.qprog[id] || 0) >= g.n : g.type === 'find' ? !!G.flags.qitems[g.item] : g.type === 'deliver' ? (G.flags.qprog[id] || 0) >= 1 : !!G.flags.bosses[g.id]; }
+function questProgress(id) { const g = QUESTS[id].goal; if (g.type === 'deliver') return G.flags.qprog[id] ? 'delivered' : `bring it to ${g.to}`; return g.type === 'kill' ? `${Math.min(G.flags.qprog[id] || 0, g.n)}/${g.n}` : g.type === 'find' ? (G.flags.qitems[g.item] ? 'found' : `find it in the ${g.where}`) : (G.flags.bosses[g.id] ? 'slain' : 'not yet slain'); }
 function questMarker(n) { // '!' = offers a quest or news, '?' = ready to turn in
+  if (n.deliver && qstate(n.deliver) === 'active' && !questDone(n.deliver)) return '?'; // a delivery recipient
   if (n.quest) { const st = qstate(n.quest); return !st ? '!' : st === 'active' && questDone(n.quest) ? '?' : null; }
   return n.text && !G.flags.talked[`${G.map}:${n.x},${n.y}`] ? '!' : null;
 }
@@ -508,6 +518,7 @@ function talk(npc) {
   if (npc.service === 'guild') return guild();
   if (npc.service === 'socketer') return socketer();
   G.flags.talked[`${G.map}:${npc.x},${npc.y}`] = true; curNpc = npc;
+  if (npc.deliver && qstate(npc.deliver) === 'active' && !questDone(npc.deliver)) { const q = QUESTS[npc.deliver]; curLines = q.lines.deliver; curFinal = btn('qdeliver', `Hand over: ${esc(QITEM[q.goal.item])}`, npc.deliver, '', 'primary'); return say(0); }
   if (!npc.quest) { curLines = npc.text; curFinal = btn('close', 'Close', '', '', 'primary'); return say(0); }
   const id = npc.quest, q = QUESTS[id], st = qstate(id);
   if (!st) { curLines = [...(npc.text || []), ...q.lines.offer]; curFinal = btn('qaccept', `Accept: ${esc(q.title)}`, id, '', 'primary') + btn('close', 'Not now'); }
@@ -531,7 +542,8 @@ function say(i) {
 }
 ACT.skiptype = finishTyping;
 ACT.say = (i) => say(+i);
-ACT.qaccept = (id) => { G.flags.quests[id] = 'active'; G.flags.qprog[id] = 0; sfx('levelup'); hide(); banner(`Quest: ${QUESTS[id].title}`); };
+ACT.qaccept = (id) => { const g = QUESTS[id].goal; G.flags.quests[id] = 'active'; G.flags.qprog[id] = 0; if (g.type === 'deliver') { G.flags.qitems[g.item] = true; toast(`📜 Received: ${QITEM[g.item]}`, 2600); } sfx('levelup'); hide(); banner(`Quest: ${QUESTS[id].title}`); };
+ACT.qdeliver = (id) => { const g = QUESTS[id].goal; if (qstate(id) !== 'active' || g.type !== 'deliver') return; G.flags.qprog[id] = 1; G.flags.qitems[g.item] = false; ACT.qclaim(id); }; // the recipient pays
 function giveReward(r) {
   const got = [];
   if (r.gold) { G.gold += r.gold; got.push(`${r.gold} G`); }
@@ -674,14 +686,17 @@ const OBJECTIVES = [
   { id: 'frost', title: 'Reach Frostholm', hint: 'Cross the cleared mountain pass to the northern snowfields.', visit: 'frostholm', after: 'wyrm' },
   { id: 'lich', title: 'Slay Lich King Morvath', hint: 'Sunken Crypt, in the swamp south of Haven. Weak to holy and fire; strong against dark.' },
   { id: 'titan', title: 'Slay the Frost Titan', hint: 'Frost Spire, far northeast beyond Frostholm. Weak to fire; ice does little.', after: 'wyrm', final: true },
+  { id: 'storm_drake', title: 'Optional: the Storm Drake', hint: 'Storm Cavern, on the Northern Plains past the pass (Lv 11+). Weak to ice.', after: 'wyrm', optional: true },
+  { id: 'sphinx', title: 'Optional: the Sphinx Pharaoh', hint: 'Sunscar Ruins, a sandstone temple in the desert south-east of Haven (Lv 11+). Weak to ice and dark; holy and fire barely scratch it.', optional: true },
 ];
 ACT.journal = () => {
   const done = (o) => (o.visit ? !!G.flags.visited[o.visit] : !!G.flags.bosses[o.id]);
-  const n = OBJECTIVES.filter((o) => o.id !== 'frost' && done(o)).length;
-  show(`<h2>📜 Journal</h2><p class="dim">Great evils slain: <b class="gold">${n}/3</b></p>${OBJECTIVES.map((o) => { const locked = o.after && !G.flags.bosses[o.after]; return `<div class="card ${done(o) ? 'done' : ''}"><b>${done(o) ? '✔' : locked ? '🔒' : '◇'} ${o.title}</b><div class="dim">${locked ? 'Blocked for now: the northern pass is closed by a rockslide.' : o.hint}</div></div>`; }).join('')}
+  const n = OBJECTIVES.filter((o) => o.id !== 'frost' && !o.optional && done(o)).length;
+  const secrets = Object.entries(MAPS).flatMap(([mid, m]) => Object.keys(m.secrets || {}).map((k) => `${mid}:${k}`)), found = secrets.filter((k) => G.flags.chests[k]).length;
+  show(`<h2>📜 Journal</h2><p class="dim">Great evils slain: <b class="gold">${n}/3</b> · Hidden treasures: <b class="gold">${found}/${secrets.length}</b></p>${OBJECTIVES.map((o) => { const locked = o.after && !G.flags.bosses[o.after]; return `<div class="card ${done(o) ? 'done' : ''}"><b>${done(o) ? '✔' : locked ? '🔒' : '◇'} ${o.title}</b><div class="dim">${locked ? 'Blocked for now: the northern pass is closed by a rockslide.' : o.hint}</div></div>`; }).join('')}
   <h3>Side quests</h3>${(() => { const act = Object.entries(QUESTS).filter(([id]) => qstate(id) === 'active'), dn = Object.entries(QUESTS).filter(([id]) => qstate(id) === 'done');
     return (act.length ? act.map(([id, q]) => `<div class="card ${questDone(id) ? 'done' : ''}"><b>${questDone(id) ? '❓' : '◇'} ${esc(q.title)}</b> <span class="dim">(${questProgress(id)})</span><div class="dim">${questDone(id) ? 'Return to ' + esc(q.giver) + ' to claim your reward.' : esc(q.lines.active[0])}</div></div>`).join('') : '<div class="dim">No active quests. Talk to townsfolk marked with a yellow <b>!</b>.</div>') + (dn.length ? `<div class="dim">Completed: ${dn.map(([, q]) => '✔ ' + esc(q.title)).join(' · ')}</div>` : ''); })()}
-  <h3>💡 Tips</h3><div class="dim">• Gems rewrite skills: try Wide + a heal, Echo on a big spell, Stun on a fast skill.<br>• Jobs can be changed in any town building; sub jobs lend skills (2 levels behind).<br>• Inns heal and save. Frostholm's shops sell much better gear.</div><div class="foot">${btn('menu', 'Back', '', '', 'primary')}</div>`);
+  <h3>💡 Tips</h3><div class="dim">• Gems rewrite skills: try Wide + a heal, Echo on a big spell, Stun on a fast skill.<br>• Jobs can be changed in any town building; sub jobs lend skills (2 levels behind).<br>• Inns heal and save. Frostholm's shops sell much better gear.<br>• Hermits and oracles roam the wilds. Listen to them, and watch the ground for a faint glint of buried treasure.</div><div class="foot">${btn('menu', 'Back', '', '', 'primary')}</div>`);
 };
 let optBack = 'menu';
 function optionsScreen() {
@@ -808,7 +823,7 @@ ACT.ungem = (i, k) => { const c = G.party[B.i]; G.inv.gems.push(...c.gems[+i].sp
 // ---------- battle ----------
 let BT = null;
 function stageKind(bossId) {
-  if (bossId) return { wyrm: 'boss', lich: 'crypt', storm_drake: 'storm' }[bossId] || 'spire';
+  if (bossId) return { wyrm: 'boss', lich: 'crypt', storm_drake: 'storm', sphinx: 'ruins' }[bossId] || 'spire';
   const m = mapDef();
   if (m.kind === 'dungeon') return m.theme === 'cavern' ? 'dungeon' : m.theme;
   const r = regionOf(), woods = [[1, 0], [-1, 0], [0, 1], [0, -1]].some(([a, b2]) => tileAt(G.x + a, G.y + b2) === 'T'); // fighting at a forest's edge

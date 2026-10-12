@@ -23,6 +23,7 @@ const ROUTE = [
   { name: 'Sunken Crypt', table: 'crypt', fights: 10, loot: [[3, 'weapons', 'stiletto'], [1, 'armors', 'frost_robe']], boss: 'lich', bossWant: [12, 14], want: [13, 15] },
   { name: 'Frost Spire', table: 'spire', fights: 14, pre: [[1, 'weapons', 'lich_staff'], [1, 'armors', 'lich_robes']], shop: [[0, 'armors', 'mythril_mail'], [2, 'accs', 'life_charm']], loot: [[3, 'weapons', 'frost_bow']], boss: 'titan', bossWant: [16, 18], want: [17, 19] },
   { name: 'Storm Cavern (opt.)', table: 'storm', fights: 6, boss: 'storm_drake', bossWant: [11, 20], want: [17, 20] },
+  { name: 'Sunscar Ruins (opt.)', table: 'ruins', fights: 6, boss: 'sphinx', bossWant: [11, 20], want: [17, 20] },
 ];
 const JOBSET = [['Aldric', 'knight', 'rogue', 'leather'], ['Lyra', 'mage', 'cleric', 'cloth'], ['Mira', 'cleric', 'bard', 'cloth'], ['Kael', 'rogue', 'ranger', 'leather']];
 // a sensible player keeps their newest main-job skills slotted, plus the newest sub-job one

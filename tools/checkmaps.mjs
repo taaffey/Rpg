@@ -23,6 +23,7 @@ for (const [id, m] of Object.entries(MAPS)) {
   for (const n of m.npcs || []) if (!adj(n.x, n.y)) fail(`${id}: npc ${n.name} at ${n.x},${n.y} unreachable`);
   m.rows.forEach((r, y) => [...r].forEach((c, x) => { if (c === 'C') { if (!adj(x, y)) fail(`${id}: chest ${x},${y} unreachable`); if (!m.chests?.[`${x},${y}`]) fail(`${id}: chest ${x},${y} has no loot`); } if (c === 'X' && !(m.boss && m.boss.x === x && m.boss.y === y)) fail(`${id}: boss tile mismatch`); }));
   if (m.boss && !seen.has(`${m.boss.x},${m.boss.y}`)) fail(`${id}: boss unreachable`);
+  for (const k of Object.keys(m.secrets || {})) { const [x, y] = k.split(',').map(Number); if (!WALK.has(m.rows[y]?.[x]) || !seen.has(k)) fail(`${id}: hidden treasure ${k} not on a reachable walkable tile`); if (m.portals?.[k] || m.chests?.[k]) fail(`${id}: hidden treasure ${k} overlaps a portal/chest`); }
   for (const k of Object.keys(m.chests || {})) { const [x, y] = k.split(',').map(Number); if (m.rows[y][x] !== 'C') fail(`${id}: loot for non-chest ${k}`); }
 }
 // gate: without the flag only the south is reachable; with it, the whole world is
@@ -30,6 +31,6 @@ const w0 = reach('world', MAPS.world.spawn, false), w1 = reach('world', MAPS.wor
 const place = (n) => MAPS.world.places.find((p) => p[2] === n);
 for (const n of ['Frostholm', 'Frost Spire', 'Storm Cavern']) if (w0.has(`${place(n)[0]},${place(n)[1]}`)) fail(`gate leaks to ${n}`);
 for (const p of MAPS.world.places) if (!w1.has(`${p[0]},${p[1]}`)) fail(`${p[2]} unreachable even with gate open`);
-for (const n of ['Haven Town', 'Ashen Cavern', 'Sunken Crypt', 'Mirewood']) if (!w0.has(`${place(n)[0]},${place(n)[1]}`)) fail(`${n} should be reachable before the gate`);
+for (const n of ['Haven Town', 'Ashen Cavern', 'Sunken Crypt', 'Mirewood', 'Sunscar Ruins']) if (!w0.has(`${place(n)[0]},${place(n)[1]}`)) fail(`${n} should be reachable before the gate`);
 console.log(bad ? `${bad} problem(s)` : `all ${Object.keys(MAPS).length} maps valid; gate verified`);
 process.exit(bad ? 1 : 0);
