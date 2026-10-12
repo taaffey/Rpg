@@ -237,7 +237,7 @@ interior('mire_hut', 'Hermit\'s Hut', 'house', back('mirewood', 'mire_hut'), { n
 const [mx, my] = GEN.pois.mirewood, [tx, ty] = GEN.pois.storm, [hx, hy] = GEN.pois.haven, [fx, fy] = GEN.pois.frost, [cx, cy] = GEN.pois.cavern, [rx, ry] = GEN.pois.crypt, [sx, sy] = GEN.pois.spire;
 MAPS.world = {
   name: 'Greenmarch', kind: 'outdoor', theme: 'world', music: 'world', rows: GEN.world, spawn: { x: hx, y: hy + 1 }, fog: 5, rate: 0.07,
-  encByTile: { '.': 'world', ',': 'snow', ':': 'swamp', d: 'world' },
+  encByTile: { '.': 'world', ',': 'snow', ':': 'swamp', d: 'desert' },
   portals: {
     [P(hx, hy)]: portal('haven', 17, 32), [P(fx, fy)]: portal('frostholm', 14, 26), [P(cx, cy)]: portal('cavern', 2, 1),
     [P(rx, ry)]: portal('crypt', GEN.cryptInfo.spawn[0], GEN.cryptInfo.spawn[1]), [P(sx, sy)]: portal('spire', GEN.spireInfo.spawn[0], GEN.spireInfo.spawn[1]),

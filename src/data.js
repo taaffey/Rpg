@@ -422,3 +422,112 @@ Object.assign(DROPS, {
   storm_bat: D('items', 'ether', 0.25, 'gems', 'swift', 0.06), thunder_imp: D('items', 'ether', 0.3, 'gems', 'bolt', 0.07), gale_wraith: D('items', 'megaether', 0.2, 'weapons', 'gale_bow', 0.05),
   storm_drake: D('items', 'elixir', 1, 'gems', 'echo', 0.5),
 });
+
+// =====================================================================
+// ===== Bestiary expansion: 24 new monster designs + tiered variants and rare elites =====
+// =====================================================================
+Object.assign(SKILLS, { // enemy-only. stun: chance to make the target lose its next turn
+  slash: S('Slash', 0, 'one', 'phys', 1.0),
+  sting: S('Stinger', 0, 'one', 'phys', 0.6, { hits: 2, fx: ['poison'] }),
+  spores: S('Sleep Spores', 0, 'all', 'buff', 0, { fx: ['slow'], hostile: true }),
+  gore: S('Gore', 0, 'one', 'phys', 1.45),
+  enrage: S('Enrage', 0, 'self', 'buff', 0, { fx: ['atkup'] }),
+  cheapshot: S('Cheap Shot', 0, 'one', 'phys', 0.8, { stun: 0.3 }),
+  sandtoss: S('Sand Toss', 0, 'one', 'phys', 0.6, { fx: ['slow'] }),
+  vinelash: S('Vine Lash', 0, 'one', 'phys', 1.0, { fx: ['slow'] }),
+  photosynth: S('Photosynthesis', 0, 'self', 'heal', 1.6),
+  web: S('Web Shot', 0, 'one', 'phys', 0.5, { fx: ['slow'] }),
+  tongue: S('Tongue Lash', 0, 'one', 'phys', 1.0, { fx: ['slow'] }),
+  leech: S('Leech', 0, 'one', 'phys', 1.0, { fx: ['drain'] }),
+  wispfire: S('Foxfire', 0, 'one', 'mag', 1.3, { elem: 'fire' }),
+  twinthrust: S('Twin Thrust', 0, 'one', 'phys', 0.65, { hits: 2 }),
+  scaleguard: S('Scale Guard', 0, 'self', 'buff', 0, { fx: ['defup'] }),
+  pincer: S('Pincer', 0, 'one', 'phys', 0.6, { hits: 2 }),
+  deathsting: S('Death Stinger', 0, 'one', 'phys', 1.1, { fx: ['poison'] }),
+  devour: S('Devour', 0, 'one', 'phys', 1.4, { fx: ['drain'] }),
+  sandquake: S('Sandquake', 0, 'all', 'phys', 0.7),
+  needles: S('Needle Volley', 0, 'all', 'phys', 0.55),
+  wrap: S('Bandage Bind', 0, 'one', 'phys', 0.8, { stun: 0.3 }),
+  firefang: S('Fire Fang', 0, 'one', 'phys', 1.2, { elem: 'fire' }),
+  eruption: S('Eruption', 0, 'all', 'mag', 0.85, { elem: 'fire' }),
+  swarm: S('Swarm', 0, 'one', 'phys', 0.4, { hits: 4 }),
+  dreadcleave: S('Dread Cleave', 0, 'all', 'phys', 0.75),
+  soulslash: S('Soul Slash', 0, 'one', 'phys', 1.3, { elem: 'dark', fx: ['drain'] }),
+  wail: S('Banshee Wail', 0, 'all', 'mag', 0.55, { elem: 'dark', stun: 0.2 }),
+  gravebreath: S('Grave Breath', 0, 'all', 'mag', 0.8, { elem: 'dark', fx: ['poison'] }),
+  refreeze: S('Refreeze', 0, 'self', 'heal', 1.0),
+  talonrake: S('Talon Rake', 0, 'one', 'phys', 0.6, { hits: 2 }),
+  featherstorm: S('Feather Storm', 0, 'all', 'phys', 0.6, { elem: 'ice' }),
+  trample: S('Trample', 0, 'all', 'phys', 0.75),
+  earthshaker: S('Earthshaker', 0, 'one', 'phys', 1.0, { stun: 0.3 }),
+  prism: S('Prism Beam', 0, 'one', 'mag', 1.4, { elem: 'holy' }),
+  crystalward: S('Crystal Ward', 0, 'self', 'buff', 0, { fx: ['defup'] }),
+  mendprism: S('Mending Prism', 0, 'ally', 'heal', 1.0),
+  thunderclap: S('Thunderclap', 0, 'all', 'mag', 0.7, { elem: 'bolt', stun: 0.15 }),
+});
+// elite: [id, chance] -> the Battle constructor occasionally swaps this enemy for a rare elite
+Object.assign(ENEMIES, {
+  // Greenmarch grassland & forest edge (Lv 2-6)
+  hornet: E('Giant Hornet', '🐝', 46, 13, 2, 3, 15, 19, 11, [['sting', 2], ['tackle', 1]], { weak: ['fire', 'ice'] }),
+  shroom: E('Myconid', '🍄', 70, 11, 4, 8, 5, 22, 14, [['tackle', 2], ['spores', 1]], { weak: ['fire'], res: ['dark'] }),
+  boar: E('Wild Boar', '🐗', 84, 16, 5, 3, 8, 27, 15, [['tackle', 2], ['gore', 1]], { weak: ['ice'], elite: ['golden_boar', 0.06] }),
+  bandit: E('Bandit', '🗡️', 74, 15, 4, 4, 12, 28, 34, [['slash', 2], ['cheapshot', 1]], { weak: ['bolt'] }),
+  sapling: E('Treant Sapling', '🌳', 96, 14, 7, 8, 4, 27, 16, [['vinelash', 2], ['photosynth', 1]], { weak: ['fire'], res: ['bolt'] }),
+  spider: E('Giant Spider', '🕷️', 66, 14, 3, 4, 13, 24, 13, [['venombite', 2], ['web', 1]], { weak: ['fire'] }),
+  golden_boar: E('Golden Boar', '🐗', 150, 16, 18, 4, 9, 160, 260, [['tackle', 2], ['gore', 1], ['enrage', 1]], { weak: ['ice'], res: ['fire'], rare: true }),
+  // Mire Marsh (Lv 7-9)
+  bog_toad: E('Bog Toad', '🐸', 175, 27, 7, 10, 8, 56, 34, [['tongue', 2], ['venombite', 1], ['tackle', 1]], { weak: ['ice', 'bolt'], res: ['dark'] }),
+  leech: E('Giant Leech', '🪱', 150, 26, 5, 6, 9, 50, 26, [['leech', 3], ['tackle', 1]], { weak: ['fire', 'bolt'], res: ['dark', 'ice'] }),
+  wisp: E('Will-o\'-Wisp', '🕯️', 120, 10, 5, 30, 14, 58, 32, [['wispfire', 2], ['hexbolt', 1], ['draintouch', 1]], { weak: ['ice', 'holy'], res: ['fire', 'dark'] }),
+  lizardman: E('Lizardman', '🦎', 200, 32, 10, 6, 11, 64, 42, [['twinthrust', 2], ['slash', 1], ['scaleguard', 1]], { weak: ['ice'], res: ['fire'] }),
+  // Sunscar Sands desert (Lv 8-11)
+  scorpion: E('Sand Scorpion', '🦂', 220, 36, 18, 6, 10, 74, 44, [['deathsting', 2], ['pincer', 2]], { weak: ['ice', 'bolt'], res: ['fire'] }),
+  sandworm: E('Sandworm', '🪱', 430, 44, 12, 8, 5, 120, 64, [['devour', 1], ['sandquake', 1], ['slam', 1]], { weak: ['ice'], res: ['fire', 'bolt'] }),
+  cactus: E('Cactling', '🌵', 190, 30, 12, 6, 9, 66, 38, [['needles', 2], ['tackle', 1]], { weak: ['fire'], res: ['bolt'] }),
+  mummy: E('Mummy', '🧟', 300, 38, 12, 8, 5, 82, 52, [['wrap', 2], ['rot', 1], ['slam', 1]], { weak: ['fire', 'holy'], res: ['dark', 'ice'] }),
+  desert_bandit: E('Sand Raider', '🗡️', 240, 40, 10, 8, 14, 92, 90, [['slash', 2], ['cheapshot', 1], ['sandtoss', 1]], { weak: ['ice'], res: ['fire'] }),
+  // Ashen Cavern (Lv 8-10)
+  salamander: E('Fire Salamander', '🦎', 180, 28, 9, 30, 11, 62, 44, [['firefang', 2], ['flamebreath', 1]], { weak: ['ice'], res: ['fire'] }),
+  magma_golem: E('Magma Golem', '🗿', 380, 44, 20, 24, 3, 104, 72, [['slam', 2], ['eruption', 1]], { weak: ['ice', 'bolt'], res: ['fire'] }),
+  batswarm: E('Bat Swarm', '🦇', 130, 20, 3, 4, 16, 46, 22, [['swarm', 2], ['bite', 1]], { weak: ['fire', 'bolt'] }),
+  // Sunken Crypt (Lv 12-15)
+  ghoul_knight: E('Ghoul Knight', '⚔️', 430, 56, 22, 8, 8, 156, 76, [['soulslash', 2], ['dreadcleave', 1], ['slam', 1]], { weak: ['holy'], res: ['dark', 'ice'] }),
+  banshee: E('Banshee', '👻', 270, 14, 10, 54, 15, 140, 66, [['wail', 1], ['draintouch', 2], ['hexbolt', 1]], { weak: ['holy'], res: ['dark', 'ice'] }),
+  bone_whelp: E('Bone Whelp', '🐉', 360, 50, 16, 46, 12, 150, 72, [['gravebreath', 1], ['claw', 2], ['bite', 1]], { weak: ['holy', 'bolt'], res: ['dark', 'fire'] }),
+  // Frostfields (Lv 11-13)
+  ice_elemental: E('Ice Elemental', '❄️', 300, 14, 18, 54, 10, 140, 70, [['icebolt', 2], ['blizzard', 1], ['refreeze', 1]], { weak: ['fire'], res: ['ice', 'dark'] }),
+  harpy: E('Snow Harpy', '🦅', 260, 48, 10, 8, 17, 130, 68, [['talonrake', 2], ['featherstorm', 1]], { weak: ['bolt', 'fire'], res: ['ice'] }),
+  mammoth: E('Woolly Mammoth', '🦣', 580, 60, 18, 6, 5, 190, 84, [['gore', 2], ['trample', 1], ['earthshaker', 1]], { weak: ['fire'], res: ['ice'] }),
+  // Frost Spire (Lv 14-18)
+  crystal_sentinel: E('Crystal Sentinel', '💎', 600, 64, 30, 52, 9, 230, 104, [['prism', 2], ['slam', 1], ['crystalward', 1], ['mendprism', 1]], { weak: ['dark', 'bolt'], res: ['ice', 'fire', 'holy'] }),
+  glacier_yeti: E('Glacier Yeti', '🦍', 620, 70, 20, 6, 8, 220, 96, [['slam', 2], ['claw', 2], ['frostbite', 1]], { weak: ['fire'], res: ['ice'] }),
+  crystal_golem: E('Crystal Golem', '💎', 1100, 72, 40, 60, 6, 650, 900, [['slam', 2], ['prism', 2], ['crystalward', 1]], { weak: ['dark', 'bolt'], res: ['ice', 'fire'], rare: true }),
+  // Storm Cavern (optional, Lv 11-20)
+  thunderbird: E('Thunderbird', '🦅', 340, 48, 12, 50, 18, 150, 72, [['stormclaw', 2], ['thunderclap', 1]], { weak: ['ice'], res: ['bolt'] }),
+  storm_elemental: E('Storm Elemental', '🌩️', 320, 14, 16, 58, 11, 146, 70, [['sparkbolt', 2], ['thunderclap', 1], ['hexbolt', 1]], { weak: ['ice'], res: ['bolt', 'fire'] }),
+});
+ENEMIES.ice_golem.elite = ['crystal_golem', 0.08];
+// Greenmarch: the first four groups are what a level-1 party meets near Haven (the distance ramp in game.js slices this list)
+ENCOUNTERS.world = [['slime'], ['slime', 'slime'], ['goblin'], ['goblin', 'slime'], ['hornet'], ['wolf'], ['shroom', 'slime'], ['spider'], ['wolf', 'wolf'], ['boar'], ['goblin', 'goblin', 'wolf'], ['bandit', 'goblin'], ['sapling', 'shroom'], ['hornet', 'hornet'], ['boar', 'spider'], ['bandit', 'bandit'], ['sapling', 'spider']];
+ENCOUNTERS.swamp.push(['bog_toad'], ['leech', 'leech'], ['wisp', 'bog_slime'], ['lizardman'], ['bog_toad', 'leech'], ['lizardman', 'wisp'], ['wisp', 'wisp']);
+ENCOUNTERS.desert = [['scorpion'], ['cactus', 'cactus'], ['desert_bandit', 'desert_bandit'], ['mummy'], ['sandworm'], ['scorpion', 'cactus'], ['mummy', 'desert_bandit'], ['scorpion', 'scorpion'], ['cactus', 'desert_bandit', 'cactus']];
+ENCOUNTERS.dungeon.push(['salamander'], ['batswarm'], ['salamander', 'bat'], ['magma_golem'], ['batswarm', 'imp']);
+ENCOUNTERS.crypt.push(['ghoul_knight'], ['banshee', 'ghoul'], ['bone_whelp'], ['ghoul_knight', 'bone_mage'], ['banshee', 'banshee']);
+ENCOUNTERS.snow.push(['ice_elemental'], ['harpy', 'harpy'], ['mammoth'], ['ice_elemental', 'ice_wolf'], ['harpy', 'frost_goblin']);
+ENCOUNTERS.spire.push(['crystal_sentinel'], ['glacier_yeti'], ['crystal_sentinel', 'ice_imp'], ['glacier_yeti', 'frost_wraith']);
+ENCOUNTERS.storm.push(['thunderbird'], ['storm_elemental', 'storm_bat'], ['thunderbird', 'thunder_imp'], ['storm_elemental', 'gale_wraith']);
+Object.assign(DROPS, {
+  hornet: D('items', 'antidote', 0.3, 'gems', 'swift', 0.05), shroom: D('items', 'ether', 0.2, 'gems', 'thrifty', 0.06), boar: D('items', 'potion', 0.35, 'accs', 'power_ring', 0.05),
+  bandit: D('items', 'potion', 0.25, 'weapons', 'viper_fang', 0.05), sapling: D('items', 'ether', 0.2, 'weapons', 'healing_staff', 0.05), spider: D('items', 'antidote', 0.3, 'weapons', 'serpent_lash', 0.05),
+  golden_boar: D('items', 'elixir', 0.6, 'accs', 'socket_jewel', 0.4),
+  bog_toad: D('items', 'antidote', 0.3, 'accs', 'mana_charm', 0.05), leech: D('items', 'potion', 0.3, 'gems', 'vamp', 0.07), wisp: D('items', 'ether', 0.3, 'weapons', 'void_grimoire', 0.04),
+  lizardman: D('items', 'hipotion', 0.2, 'weapons', 'iron_katana', 0.05),
+  scorpion: D('items', 'antidote', 0.35, 'gems', 'pierce', 0.07), sandworm: D('items', 'hipotion', 0.35, 'accs', 'life_charm', 0.06), cactus: D('items', 'potion', 0.3, 'weapons', 'thorn_whip', 0.04),
+  mummy: D('items', 'remedy', 0.25, 'accs', 'sage_ring', 0.04), desert_bandit: D('items', 'hipotion', 0.2, 'weapons', 'moonblade', 0.03),
+  salamander: D('items', 'ether', 0.25, 'accs', 'fire_pendant', 0.06), magma_golem: D('items', 'hipotion', 0.3, 'gems', 'overcharge', 0.07), batswarm: D('items', 'antidote', 0.3, 'gems', 'chain', 0.06),
+  ghoul_knight: D('items', 'hipotion', 0.3, 'weapons', 'grave_scythe', 0.05), banshee: D('items', 'megaether', 0.15, 'gems', 'echo', 0.05), bone_whelp: D('items', 'hipotion', 0.3, 'weapons', 'dragonbane', 0.03),
+  ice_elemental: D('items', 'ether', 0.3, 'accs', 'frost_pendant', 0.06), harpy: D('items', 'hipotion', 0.25, 'weapons', 'gale_bow', 0.03), mammoth: D('items', 'hipotion', 0.35, 'weapons', 'war_axe', 0.04),
+  crystal_sentinel: D('items', 'megaether', 0.2, 'gems', 'guard', 0.08), glacier_yeti: D('items', 'hipotion', 0.3, 'accs', 'frost_amulet', 0.05),
+  crystal_golem: D('items', 'elixir', 1, 'accs', 'gem_crown', 0.35),
+  thunderbird: D('items', 'megaether', 0.2, 'gems', 'stun', 0.06), storm_elemental: D('items', 'ether', 0.3, 'gems', 'siphon', 0.06),
+});

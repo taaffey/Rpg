@@ -66,7 +66,7 @@ export function sanitize(c, inv) {
 // ---------- Gem rewriting: base skill + gems => final skill ----------
 export function skillWithGems(id, gems = []) {
   const sk = SKILLS[id];
-  const m = { id, ...sk, fx: [...(sk.fx || [])], hits: sk.hits || 1, pierce: sk.pierce || 0, chain: false, echo: false, vamp: 0, swift: false, stun: 0, execute: !!sk.execute, recoil: 0, siphon: 0, guard: false, crit: sk.crit || 0, tags: [] };
+  const m = { id, ...sk, fx: [...(sk.fx || [])], hits: sk.hits || 1, pierce: sk.pierce || 0, chain: false, echo: false, vamp: 0, swift: false, stun: sk.stun || 0, execute: !!sk.execute, recoil: 0, siphon: 0, guard: false, crit: sk.crit || 0, tags: [] };
   let mpMul = 1;
   for (const gid of gems) {
     const g = GEMS[gid];
@@ -175,6 +175,8 @@ export class Battle {
       const s = stats(c);
       return { side: 'p', ch: c, wpn: WEAPONS[c.weapon] || null, sig: sigSkill(c), name: c.name, hp: c.hp, mp: c.mp, maxhp: s.hp, maxmp: s.mp, atk: s.atk, def: s.def, mag: s.mag, spd: s.spd, weak: [], res: resists(c), st: {}, defending: false };
     });
+    // rare elites: an enemy with elite: [id, chance] is occasionally replaced by its golden/crystal cousin
+    enemyIds = enemyIds.map((id) => { const el = !boss && ENEMIES[id]?.elite; return el && ENEMIES[el[0]] && rng() < el[1] ? el[0] : id; });
     const counts = {}; enemyIds.forEach((id) => (counts[id] = (counts[id] || 0) + 1));
     const seen = {};
     this.e = enemyIds.map((id) => {
@@ -187,10 +189,15 @@ export class Battle {
   foes(x) { return x.side === 'p' ? this.e : this.p; }
 
   enemyCmd(e) {
-    const tbl = e.def_.skills, tot = tbl.reduce((n, s) => n + s[1], 0);
+    // healing skills are only picked when they would help (self below 60% HP, or a wounded ally for 'ally' heals)
+    const hurt = this.e.filter((x) => alive(x) && x.hp < x.maxhp * 0.6).sort((a, b) => a.hp / a.maxhp - b.hp / b.maxhp)[0];
+    const useful = ([sid]) => SKILLS[sid].kind !== 'heal' || (SKILLS[sid].tgt === 'self' ? e.hp < e.maxhp * 0.6 : !!hurt);
+    let tbl = e.def_.skills.filter(useful); if (!tbl.length) tbl = e.def_.skills;
+    const tot = tbl.reduce((n, s) => n + s[1], 0);
     let r = this.rng() * tot, id = tbl[0][0];
     for (const [sid, w] of tbl) { if ((r -= w) < 0) { id = sid; break; } }
-    return { kind: 'skill', skillId: id, gems: [], target: pick(this.p.filter(alive), this.rng) };
+    const s = SKILLS[id], target = s.kind === 'heal' && s.tgt === 'ally' ? hurt : pick(this.p.filter(alive), this.rng);
+    return { kind: 'skill', skillId: id, gems: [], target };
   }
   speed(x) { return x.spd * (x.st.slow > 0 ? 0.5 : 1) + this.rng() * 2; }
   // approximate upcoming action order (no randomness), for the turn-order bar
