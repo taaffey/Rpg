@@ -2,6 +2,7 @@
 // Everything is drawn in code at load time and handed to CSS as data-URLs (classes .ic-<name>, vars --frame etc).
 import * as SP from './sprites.js';
 import * as BA from './battleart.js';
+import * as WK from './walkers.js';
 
 const mk = (w, h) => { const c = document.createElement('canvas'); c.width = w; c.height = h; return c; };
 const OUTLINE = '#100c1c';
@@ -100,7 +101,11 @@ function layer(rows, pal, tf) {
   let R = rows.map((r) => [...r]);
   if (tf === 'flip') R = R.map((r) => r.reverse());
   if (tf === 'flipv') R = R.reverse();
-  if (tf === 'left' || tf === 'right') { const h = R.length, w = Math.max(...R.map((r) => r.length)), T = []; for (let x = 0; x < w; x++) T.push(R.map((r, y) => (tf === 'left' ? r[x] : R[h - 1 - y][x]) || '.')); R = tf === 'left' ? T : T.map((r) => r.reverse()); if (tf === 'right') R = R.reverse(); }
+  if (tf === 'left' || tf === 'right') { // quarter turns of an up-pointing shape
+    const h = R.length, w = Math.max(...R.map((r) => r.length)), at = (y, x) => R[y]?.[x] || '.', T = [];
+    for (let y = 0; y < w; y++) { const row = []; for (let x = 0; x < h; x++) row.push(tf === 'right' ? at(h - 1 - x, y) : at(x, w - 1 - y)); T.push(row); }
+    R = T;
+  }
   const w = Math.max(...R.map((r) => r.length)), h = R.length, half = tf === 'half';
   const c = mk(w, h), x = c.getContext('2d');
   R.forEach((r, yy) => r.forEach((ch, xx) => { if (ch === '.' || ch === ' ') return; x.fillStyle = pal[ch] || PAL[ch] || '#f0f'; x.fillRect(xx, yy, 1, 1); }));
@@ -174,6 +179,12 @@ export function faceURL(job) {
   x.drawImage(src, Math.round(S / 2 - cxp), 1 - top);
   const u = SP.url(c, 4); faces.set(job, u); return u;
 }
+export function npcFaceURL(type) { // head crop of a townsperson's field sprite
+  const k = 'npc:' + type; if (faces.has(k)) return faces.get(k);
+  const src = WK.npcWalker(type, 'down', 0), w = src.width, h = src.height, d = src.getContext('2d').getImageData(0, 0, w, h).data;
+  const S = 16, c = mk(S, S); c.getContext('2d').drawImage(src, Math.round((S - w) / 2), -Math.max(0, h - 24) + 1); // field sprites are 16x24 (taller only when a spear or staff pokes up)
+  const u = SP.url(c, 4); faces.set(k, u); return u;
+}
 export const face = (job, cls = '') => `<span class="face ${cls}"><img src="${faceURL(job)}" alt=""></span>`;
 
 // ---------- window frames (9-slice, baked at 2x so corners stay pixel-exact) ----------
@@ -192,12 +203,12 @@ function frame(T, rings, corner) {
   const s = mk(N * 2, N * 2), sx2 = s.getContext('2d'); sx2.imageSmoothingEnabled = false; sx2.drawImage(c, 0, 0, N * 2, N * 2); return s.toDataURL();
 }
 const K = '#0c0c24';
-const stud = (gold, dark, lite) => (x, ax, ay, sx, sy) => { // a gold rivet sitting on each corner
-  const px = ax + sx * 1, py = ay + sy * 1;
-  x.fillStyle = K; x.fillRect(Math.min(px, px + sx * 3), Math.min(py, py + sy * 3), 4, 4);
-  x.fillStyle = gold; x.fillRect(Math.min(px + sx, px + sx * 2), Math.min(py + sy, py + sy * 2), 2, 2);
-  x.fillStyle = lite; x.fillRect(Math.min(px + sx, px + sx * 2), Math.min(py + sy, py + sy * 2), 1, 1);
-  x.fillStyle = dark; x.fillRect(Math.max(px + sx, px + sx * 2), Math.max(py + sy, py + sy * 2), 1, 1);
+const stud = (gold, dark, lite) => (x, ax, ay) => { // a gold rivet filling each 4x4 corner cell
+  const ox = ax ? ax - 3 : 0, oy = ay ? ay - 3 : 0;
+  x.fillStyle = K; x.fillRect(ox, oy, 4, 4);
+  x.fillStyle = gold; x.fillRect(ox + 1, oy + 1, 2, 2);
+  x.fillStyle = lite; x.fillRect(ox + 1, oy + 1, 1, 1);
+  x.fillStyle = dark; x.fillRect(ox + 2, oy + 2, 1, 1);
 };
 function dither() { const c = mk(4, 4), x = c.getContext('2d'); x.fillStyle = 'rgba(255,255,255,.07)'; x.fillRect(0, 0, 2, 2); x.fillStyle = 'rgba(0,0,40,.10)'; x.fillRect(2, 2, 2, 2); return c.toDataURL(); }
 

@@ -19,15 +19,15 @@
 <body>
 <div id="app">
   <div id="hud">
-    <span id="loc"></span><span id="gold"></span><span class="grow"></span><span class="hint">Move: Arrows/WASD · Menu: Esc/M</span>
-    <button id="mute" title="Sound on/off" aria-label="Sound on or off">🔊</button><button id="hudmenu" title="Menu" aria-label="Menu">☰</button>
+    <span class="hudloc"><i class="ic ic-pin" aria-hidden="true"></i><span id="loc"></span></span><span class="hudgold"><i class="ic ic-coin" aria-hidden="true"></i><span id="gold"></span></span><span class="grow"></span><span class="hint">Move: Arrows/WASD · Menu: Esc/M</span>
+    <button id="mute" title="Sound on/off" aria-label="Sound on or off"><i class="ic ic-sound" aria-hidden="true"></i></button><button id="hudmenu" title="Menu" aria-label="Menu"><i class="ic ic-menu" aria-hidden="true"></i></button>
   </div>
   <div id="play">
     <div id="padL" class="pad"><div class="cross" aria-label="Direction pad: press and slide">
-      <button data-d="up" aria-label="Up">▲</button><button data-d="left" aria-label="Left">◀</button><button data-d="right" aria-label="Right">▶</button><button data-d="down" aria-label="Down">▼</button><span class="nub"></span>
+      <button data-d="up" aria-label="Up"><i class="ic ic-aup" aria-hidden="true"></i></button><button data-d="left" aria-label="Left"><i class="ic ic-aleft" aria-hidden="true"></i></button><button data-d="right" aria-label="Right"><i class="ic ic-aright" aria-hidden="true"></i></button><button data-d="down" aria-label="Down"><i class="ic ic-adown" aria-hidden="true"></i></button><span class="nub"></span>
     </div></div>
     <div id="view"><canvas id="map" width="512" height="384" aria-label="Game map"></canvas><div id="banner"></div></div>
-    <div id="padR" class="pad"><button data-d="map" class="round mapb" aria-label="Map">🗺<small>Map</small></button><button data-d="menu" class="round bbtn" aria-label="B: Menu">B<small>Menu</small></button><button data-d="a" class="round abtn" aria-label="A: Talk or check">A<small>Talk</small></button></div>
+    <div id="padR" class="pad"><button data-d="map" class="round mapb" aria-label="Map"><i class="ic ic-map" aria-hidden="true"></i><small>Map</small></button><button data-d="menu" class="round bbtn" aria-label="B: Menu">B<small>Menu</small></button><button data-d="a" class="round abtn" aria-label="A: Talk or check">A<small>Talk</small></button></div>
   </div>
   <div id="toast" role="status" aria-live="polite"></div>
   <div id="overlay"></div>

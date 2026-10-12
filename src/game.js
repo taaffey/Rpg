@@ -9,6 +9,7 @@ import * as TA from './townart.js';
 import * as RA from './roomart.js';
 import * as WK from './walkers.js';
 import { Stage, FX } from './stage.js';
+import * as UI from './uiart.js';
 import { music, sfx, unlock, isMuted, setMuted, setVolumes, setBackgrounded } from './audio.js';
 const { stats, newChar, learnable, slotSkill, slotGems, gemCapacity, gemsUsed, sanitize, skillWithGems, describeSkill, gainExp, expNeeded, Battle, rewards, SIG, GEMS_PER_SLOT } = L;
 
@@ -21,7 +22,7 @@ const root = document.documentElement;
 const IS_IOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
 if (window.self !== window.top) root.classList.add('framed');
 if (navigator.standalone || matchMedia('(display-mode: standalone)').matches) root.classList.add('standalone');
-root.style.setProperty('--hand', `url(${SP.handURL()})`);
+root.style.setProperty('--hand', `url(${SP.handURL()})`); UI.installUI();
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const esc = (s) => String(s).replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
 const DB = { weapons: WEAPONS, armors: ARMORS, accs: ACCS, gems: GEMS, items: ITEMS };
@@ -35,8 +36,26 @@ applyOptions();
 
 // ---------- overlay plumbing ----------
 const ACT = {}, ACTIN = {};
-function show(html, cls = '', winCls = '') { html = html.replace(/<h2>(?:\s*[\p{Extended_Pictographic}\u2600-\u27BF]\uFE0F?)+\s*/gu, '<h2>'); ov.innerHTML = `<div class="win anim ${winCls}">${html}</div>`; ov.className = 'on ' + cls; }
-function hide() { ov.className = ''; ov.innerHTML = ''; draw(); }
+let lastWinKey = '';
+function show(html, cls = '', winCls = '') { // every window: emoji become pixel icons; the open animation only plays when the screen changes
+  html = UI.deco(html);
+  const key = `${cls}|${winCls}|${(html.match(/<h2[^>]*>([\s\S]*?)<\/h2>/) || [])[1] || ''}`, anim = key !== lastWinKey || !inOverlay(); lastWinKey = key;
+  ov.innerHTML = `<div class="win ${anim ? 'anim' : ''} ${winCls}">${html}</div>`; ov.className = 'on ' + cls;
+}
+function closeGhost() { // a non-interactive copy of the windows folds shut while the real overlay is already gone
+  if (!ov.classList.contains('on') || !ov.firstElementChild || ov.querySelector('.battle')) return;
+  const g = document.createElement('div'); g.className = 'ghost'; g.style.background = getComputedStyle(ov).backgroundColor;
+  for (const w of ov.querySelectorAll('.win:not(.multi), .win.multi .pane')) {
+    const r = w.getBoundingClientRect(); if (r.bottom < 0 || r.top > innerHeight) continue;
+    const c = w.cloneNode(true); c.classList.remove('anim');
+    c.querySelectorAll('[id],[data-act],[data-tap],[data-in]').forEach((e) => { e.removeAttribute('id'); delete e.dataset.act; delete e.dataset.tap; delete e.dataset.in; });
+    const src = w.querySelectorAll('canvas'), dst = c.querySelectorAll('canvas'); src.forEach((cv0, k) => { try { dst[k].getContext('2d').drawImage(cv0, 0, 0); } catch {} });
+    Object.assign(c.style, { position: 'fixed', left: r.left + 'px', top: r.top + 'px', width: r.width + 'px', height: r.height + 'px', margin: 0, maxWidth: 'none', overflow: 'hidden' });
+    g.appendChild(c);
+  }
+  $('#app').appendChild(g); setTimeout(() => g.remove(), 160);
+}
+function hide() { closeGhost(); lastWinKey = ''; ov.className = ''; ov.innerHTML = ''; draw(); }
 const inOverlay = () => ov.classList.contains('on');
 ov.addEventListener('click', (e) => {
   const b = e.target.closest('[data-act]');
@@ -47,15 +66,22 @@ ov.addEventListener('click', (e) => {
 ov.addEventListener('input', (e) => { const el = e.target.closest('[data-in]'); if (el) ACTIN[el.dataset.in]?.(el.value, el); });
 const btn = (act, label, a = '', b = '', cls = '', dis = false) => `<button class="${cls}" data-act="${act}" data-a="${a}" data-b="${b}" ${dis ? 'disabled' : ''}>${label}</button>`;
 const bar = (v, m, cls) => { const r = v / m, lvl = cls === 'hp' ? (r < 0.25 ? ' low' : r < 0.5 ? ' mid' : '') : ''; return `<div class="bar ${cls}${lvl}"><i style="width:${Math.max(0, Math.min(100, r * 100))}%"></i></div>`; };
+const { ic } = UI, portrait = UI.face;
 const gemImg = (g) => `<img class="gi" src="${SP.gemIcon(g)}" width="20" height="20" alt="">`;
+const itemIc = (k, id) => (k === 'gems' ? gemImg(id) : ic(UI.gearIconName(k, { ...DB[k][id], id })));
+const coin = (n) => `<span class="price">${ic('coin')}${n}</span>`;
+const heroBtn = (c, act = 'build', a = '', b = '') => { // portrait, name, job, level and HP/MP gauges: the party row used by every menu
+  const s = maxOf(c), r = c.hp / s.hp;
+  return btn(act, `${portrait(c.main, c.hp <= 0 ? 'ko' : '')}<span class="hinfo"><span class="hn">${esc(c.name)}</span><span class="hl">LV ${c.level}</span><span class="hj">${JOBS[c.main].name}${c.sub ? ' / ' + JOBS[c.sub].name : ''}</span><span class="hh ${r < 0.25 ? 'low' : r < 0.5 ? 'mid' : ''}">HP <b>${c.hp}</b>/${s.hp}${bar(c.hp, s.hp, 'hp')}</span><span class="hm">MP <b>${c.mp}</b>/${s.mp}${bar(c.mp, s.mp || 1, 'mp')}</span></span>`, a === '' ? '' : a, b, 'hero');
+};
 const gemChip = (g, short = false) => `<span class="chip" title="${GEMS[g].desc}">${gemImg(g)}${short ? GEMS[g].name.replace(' Gem', '') : GEMS[g].name}</span>`;
 const statLine = (s) => `<div class="stats">${['hp', 'mp', 'atk', 'def', 'mag', 'spd'].map((k) => `<span>${k.toUpperCase()} <b>${s[k]}</b></span>`).join('')}</div>`;
 const gearLine = (g) => ['atk', 'mag', 'def', 'hp', 'mp', 'spd'].filter((k) => g[k]).map((k) => `${g[k] > 0 ? '+' : ''}${g[k]} ${k}`).concat(g.res ? g.res.map((r) => `resist ${r}`) : [], g.sockets ? [`${g.sockets}◇`] : [], g.innate ? [`innate ${GEMS[g.innate].name}`] : [], weaponTraits(g)).join(', ');
 // weapon traits (see WEAPONS in data.js) as short tags, plus the flavour line for shop / equip lists
-const weaponTraits = (g) => [g.elem ? `${ELEM_ICON[g.elem]} ${g.elem} attacks` : '', g.hits > 1 ? `${g.hits} hits/attack` : '', g.crit ? `crit +${Math.round(g.crit * 100)}%` : '', g.pierce ? `pierce ${Math.round(g.pierce * 100)}%` : '',
+const weaponTraits = (g) => [g.elem ? `${UI.elemIcon(g.elem)} ${g.elem} attacks` : '', g.hits > 1 ? `${g.hits} hits/attack` : '', g.crit ? `crit +${Math.round(g.crit * 100)}%` : '', g.pierce ? `pierce ${Math.round(g.pierce * 100)}%` : '',
   g.proc ? `${Math.round(g.proc[1] * 100)}% ${g.proc[0]} on hit` : '', g.heal ? `heal +${Math.round(g.heal * 100)}%` : '', g.sig ? `skill: ${SKILLS[g.sig].name}` : ''].filter(Boolean);
 const gearDesc = (k, d) => (k === 'weapons' ? `${WEAPON_TYPES[d.type].name} · ${gearLine(d)}${d.desc ? `<br><i class="dim">${d.desc}</i>` : ''}` : d.desc || gearLine(d));
-const npcImg = (type, px = 48) => `<img class="px" src="${SP.url(SP.npc(type), px / 16)}" width="${px}" height="${px}" alt="">`;
+const npcImg = (type, px = 48) => `<span class="face"><img src="${UI.npcFaceURL(type)}" width="${px}" height="${px}" alt=""></span>`;
 
 // ---------- state ----------
 function newGame() {
@@ -90,7 +116,7 @@ const save = () => { if (!G || !G.slot) return false; try { localStorage.setItem
   try { const old = localStorage.getItem(LEGACY_SAVE); if (old && !readSlot(1)) { const g = migrate(JSON.parse(old)); g.slot = 1; localStorage.setItem(SLOT_KEY(1), JSON.stringify({ v: 3, savedAt: Date.now(), G: g })); localStorage.removeItem(LEGACY_SAVE); } } catch {}
 })();
 let toastT = null;
-function toast(msg, ms = 2200) { const t = $('#toast'); if (!t) return; t.textContent = msg; t.classList.add('on'); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('on'), ms); }
+function toast(msg, ms = 2200) { const t = $('#toast'); if (!t) return; t.innerHTML = UI.deco(esc(msg)); t.classList.add('on'); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('on'), ms); }
 const tipOnce = (id) => { if (!G || G.flags.tips[id]) return false; G.flags.tips[id] = true; return true; };
 function tip(id, text, ms = 5200) { if (!tipOnce(id)) return; if (BT) BT.log.push('💡 ' + text); else toast('💡 ' + text, ms); } // in battle the hint goes to the log so it never covers the stage
 const TOUCH = matchMedia('(pointer:coarse)').matches;
@@ -462,7 +488,7 @@ function openChest(x, y) {
   if (c.gold) { G.gold += c.gold; got.push(`${c.gold} G`); }
   if (c.qitem) { G.flags.qitems[c.qitem] = true; got.push(`<span class="gold">${QITEM[c.qitem]}</span> (quest item)`); }
   draw();
-  show(`<h2>📦 Treasure!</h2><p>You found: <b class="gold">${got.join(', ')}</b></p>${btn('close', 'OK', '', '', 'primary')}`);
+  show(`<h2>📦 Treasure!</h2><p>You found:</p>${got.map((g) => `<div class="slot"><span class="lead">${ic('chest')}</span><div class="t"><b class="gold">${g}</b></div></div>`).join('')}<div class="foot">${btn('close', 'OK', '', '', 'primary')}</div>`);
 }
 
 // ---------- NPCs, dialogue, services ----------
@@ -499,7 +525,7 @@ function finishTyping() { // show the whole line and reveal the buttons
 }
 function say(i) {
   const n = curNpc, last = i >= curLines.length - 1; typingText = curLines[i];
-  show(`<div class="sayname">${esc(n.name)}</div><div class="saytext" data-tap="skiptype"><span id="tt"></span><span class="more">▼</span></div><div class="sayrow hidden">${last ? curFinal : btn('say', 'NEXT', i + 1, '', 'primary')}</div>`, 'say');
+  show(`<div class="saybox">${npcImg(n.type || 'villager')}<div class="saybody"><div class="sayname">${esc(n.name)}</div><div class="saytext" data-tap="skiptype"><span id="tt"></span><span class="more">▼</span></div></div></div><div class="sayrow hidden">${last ? curFinal : btn('say', 'NEXT', i + 1, '', 'primary')}</div>`, 'say');
   let k = 0; clearInterval(typing);
   typing = setInterval(() => { k++; const el = $('#tt'); if (!el) return finishTyping(); el.textContent = typingText.slice(0, k); if (k % 3 === 0) sfx('blip'); if (k >= typingText.length) finishTyping(); }, 28);
 }
@@ -516,7 +542,7 @@ function giveReward(r) {
 ACT.qclaim = (id) => {
   if (G.flags.quests[id] !== 'active' || !questDone(id)) return;
   G.flags.quests[id] = 'done'; sfx('levelup'); sfx('coin'); const got = giveReward(QUESTS[id].reward); autosave();
-  show(`<h2>✔ Quest complete!</h2><p><b>${esc(QUESTS[id].title)}</b></p><p>Reward: <b class="gold">${got.join(', ')}</b></p>${btn('close', 'Wonderful', '', '', 'primary')}`);
+  show(`<h2>📜 Quest complete!</h2><div class="card done"><b>✔ ${esc(QUESTS[id].title)}</b></div><h3>Reward</h3>${got.map((g) => `<div class="slot"><span class="lead">${ic('chest')}</span><div class="t"><b class="gold">${g}</b></div></div>`).join('')}<div class="foot">${btn('close', 'Wonderful', '', '', 'primary')}</div>`, '', 'gold');
 };
 function questLog(lines = []) { // progress notes appended to the victory panel
   for (const [id, q] of Object.entries(QUESTS)) {
@@ -527,17 +553,17 @@ function questLog(lines = []) { // progress notes appended to the victory panel
   }
   return lines;
 }
-function guild() { B.guild = true; show(`<h2>⚔️ ${esc(mapDef().name)}</h2><div class="npc">${npcImg('guildmaster', 64)}<p>Reassign jobs, gear and skills for free. Sub jobs lend their skills two levels behind your main job.</p></div><div class="pane menuparty">${G.party.map((c, i) => btn('build', `<img src="${SP.heroURL(c.main)}" width="36" height="36" class="px" alt=""><span class="hinfo"><span class="hn">${esc(c.name)}</span><span class="hj">${JOBS[c.main].name}${c.sub ? '/' + JOBS[c.sub].name : ''}</span><span class="hl">LV ${c.level}</span></span>`, i, '', 'hero')).join('')}</div>${btn('leave', 'Leave', '', '', 'primary')}`); }
+function guild() { B.guild = true; show(`<h2>⚔️ ${esc(mapDef().name)}</h2><div class="npc">${npcImg('guildmaster', 48)}<p>Reassign jobs, gear and skills for free. Sub jobs lend their skills two levels behind your main job.</p></div><div class="card menuparty">${G.party.map((c, i) => heroBtn(c, 'build', i)).join('')}</div><div class="foot">${btn('leave', 'Leave', '', '', 'primary')}</div>`); }
 ACT.leave = () => { B.guild = false; hide(); };
 function inn(npc) {
   const cost = npc.cost || 25;
-  show(`<h2>🛏️ ${esc(mapDef().name)}</h2><div class="npc">${npcImg('innkeeper', 64)}<p>A night's rest restores everyone and saves your game. <span class="gold">${cost} G</span><br>You have <span class="gold">${G.gold} G</span>.</p></div>${btn('rest', 'Rest', cost, '', 'primary', G.gold < cost)}${btn('close', 'Leave')}`);
+  show(`<h2>🛏️ ${esc(mapDef().name)}</h2><div class="npc">${npcImg('innkeeper', 48)}<p>A night's rest restores everyone and saves your game.</p></div><div class="card"><div class="gilbox"><span>One night</span>${coin(cost + ' G')}</div><div class="gilbox"><span>You have</span>${coin(G.gold + ' G')}</div></div><div class="card menuparty">${G.party.map((c) => { const st = maxOf(c); return `<div class="slot">${portrait(c.main, 'sm' + (c.hp <= 0 ? ' ko' : ''))}<div class="t"><b>${esc(c.name)}</b><div class="row" style="flex-wrap:nowrap"><small style="width:3em">HP</small><div class="grow">${bar(c.hp, st.hp, 'hp')}</div><small style="width:3em;text-align:right">MP</small><div class="grow">${bar(c.mp, st.mp || 1, 'mp')}</div></div></div></div>`; }).join('')}</div><div class="foot">${btn('rest', `${ic('bed')}Rest`, cost, '', 'primary', G.gold < cost)}${btn('close', 'Leave')}</div>`);
 }
-ACT.rest = (cost) => { sfx('rest'); G.gold -= +cost; for (const c of G.party) { const s = maxOf(c); c.hp = s.hp; c.mp = s.mp; } save(); draw(); show(`<h2>🛏️ Rested</h2><p>HP and MP restored. Game saved.</p>${btn('close', 'OK', '', '', 'primary')}`); };
+ACT.rest = (cost) => { sfx('rest'); G.gold -= +cost; for (const c of G.party) { const s = maxOf(c); c.hp = s.hp; c.mp = s.mp; } save(); draw(); show(`<h2>🛏️ Rested</h2><p>${ic('heart')} HP and MP restored.</p><p>${ic('save')} Game saved.</p><div class="foot">${btn('close', 'OK', '', '', 'primary')}</div>`); };
 
 function socketer(msg = '') {
-  show(`<h2>💎 Gem-wright</h2><div class="npc">${npcImg('merchant', 64)}<p>I can bore extra sockets into a hero's gear, so more gems fit on their skills. Each hero can take up to ${SOCKET_COST.length} more. The price rises with each one.<br>You have <span class="gold">${G.gold} G</span>.</p></div>${msg ? `<p class="dim">${msg}</p>` : ''}
-  ${G.party.map((c, i) => { const n = c.extra || 0, cost = SOCKET_COST[n]; return `<div class="slot"><div class="t"><b>${esc(c.name)}</b> <span class="dim">${JOBS[c.main].name}</span><small>Sockets: ${gemCapacity(c)} total (${n}/${SOCKET_COST.length} bonus)</small></div>${n >= SOCKET_COST.length ? '<span class="dim">Maxed</span>' : btn('addsock', `+1 socket · ${cost} G`, i, '', '', G.gold < cost)}</div>`; }).join('')}${btn('close', 'Leave', '', '', 'primary')}`);
+  show(`<h2>💎 Gem-wright</h2><div class="npc">${npcImg('merchant', 48)}<p>I bore extra sockets into a hero's gear so more gems fit on their skills. Each hero can take up to ${SOCKET_COST.length} more; the price rises with each one.</p></div><div class="card"><div class="gilbox"><span>You have</span>${coin(G.gold + ' G')}</div></div>${msg ? `<p class="gold">${msg}</p>` : ''}
+  ${G.party.map((c, i) => { const n = c.extra || 0, cost = SOCKET_COST[n]; return `<div class="slot">${portrait(c.main)}<div class="t"><b>${esc(c.name)}</b><small>${'◇'.repeat(gemCapacity(c))} ${gemCapacity(c)} sockets · bonus ${n}/${SOCKET_COST.length}</small></div>${n >= SOCKET_COST.length ? '<span class="dim">MAX</span>' : btn('addsock', `+1 ◇ ${cost} G`, i, '', '', G.gold < cost)}</div>`; }).join('')}<div class="foot">${btn('close', 'Leave', '', '', 'primary')}</div>`);
 }
 ACT.addsock = (i) => { const c = G.party[+i], n = c.extra || 0, cost = SOCKET_COST[n]; if (cost == null || G.gold < cost) return; G.gold -= cost; c.extra = n + 1; sfx('chest'); socketer(`${c.name} now has ${gemCapacity(c)} sockets.`); };
 
@@ -545,9 +571,10 @@ let shopTab = 'buy', curShop = null;
 function shop(id, msg = '') {
   if (id) curShop = id;
   const def = SHOPS[curShop];
-  const buyRows = Object.entries(def.stock).flatMap(([k, ids]) => ids.map((id2) => { const d = DB[k][id2]; return `<div class="slot"><div class="t"><b>${k === 'gems' ? gemImg(id2) + ' ' : ''}${d.name}</b><small>${gearDesc(k, d)}${k === 'weapons' ? `<br>${G.party.filter((c) => L.weaponOk(c, id2)).map((c) => esc(c.name)).join(', ') || '<span class="bad">no one in the party can use it</span>'}` : ''}</small></div>${btn('buy', `${d.price} G`, k, id2, '', G.gold < d.price)}</div>`; }));
-  const sellRows = ['weapons', 'armors', 'accs', 'gems'].flatMap((k) => [...new Set(G.inv[k])].map((id2) => { const d = DB[k][id2], p = Math.floor((d.price || 200) / 2); return `<div class="slot"><div class="t"><b>${k === 'gems' ? gemImg(id2) + ' ' : ''}${d.name}</b> ×${G.inv[k].filter((x) => x === id2).length}</div>${btn('sell', `Sell ${p} G`, k, id2)}</div>`; })).concat(Object.entries(G.inv.items).filter(([, n]) => n > 0).map(([id2, n]) => `<div class="slot"><div class="t"><b>${ITEMS[id2].name}</b> ×${n}</div>${btn('sell', `Sell ${Math.floor(ITEMS[id2].price / 2)} G`, 'items', id2)}</div>`));
-  show(`<h2>${def.title}</h2><div class="shophead">${npcImg(/smith/.test(curShop) ? 'smith' : 'merchant', 48)}<div class="shoptabs">${btn('tab', 'Buy', 'buy', '', shopTab === 'buy' ? 'sel' : '')}${btn('tab', 'Sell', 'sell', '', shopTab === 'sell' ? 'sel' : '')}</div><div class="gilbox"><span>G</span>${G.gold}</div></div>${msg ? `<p class="dim">${msg}</p>` : ''}${(shopTab === 'buy' ? buyRows : sellRows).join('') || '<p class="dim">Nothing to sell.</p>'}${btn('close', 'Leave', '', '', 'primary')}`);
+  const who = (id2) => `<span class="who">${G.party.map((c) => `<span class="face ${L.weaponOk(c, id2) ? '' : 'no'}" title="${esc(c.name)}"><img src="${UI.faceURL(c.main)}" alt=""></span>`).join('')}${G.party.some((c) => L.weaponOk(c, id2)) ? '' : '<span class="bad">&nbsp;no one can use it</span>'}</span>`;
+  const buyRows = Object.entries(def.stock).flatMap(([k, ids]) => ids.map((id2) => { const d = DB[k][id2]; return `<div class="slot"><span class="lead">${itemIc(k, id2)}</span><div class="t"><b>${d.name}</b><small>${gearDesc(k, d)}</small>${k === 'weapons' ? who(id2) : ''}</div>${btn('buy', `${d.price} G`, k, id2, '', G.gold < d.price)}</div>`; }));
+  const sellRows = ['weapons', 'armors', 'accs', 'gems'].flatMap((k) => [...new Set(G.inv[k])].map((id2) => { const d = DB[k][id2], p = Math.floor((d.price || 200) / 2); return `<div class="slot"><span class="lead">${itemIc(k, id2)}</span><div class="t"><b>${d.name} <span class="dim">×${G.inv[k].filter((x) => x === id2).length}</span></b></div>${btn('sell', `Sell ${p} G`, k, id2)}</div>`; })).concat(Object.entries(G.inv.items).filter(([, n]) => n > 0).map(([id2, n]) => `<div class="slot"><span class="lead">${itemIc('items', id2)}</span><div class="t"><b>${ITEMS[id2].name} <span class="dim">×${n}</span></b></div>${btn('sell', `Sell ${Math.floor(ITEMS[id2].price / 2)} G`, 'items', id2)}</div>`));
+  show(`<h2>${def.title}</h2><div class="shophead">${npcImg(/smith/.test(curShop) ? 'smith' : 'merchant', 48)}<div class="shoptabs">${btn('tab', 'Buy', 'buy', '', shopTab === 'buy' ? 'sel' : '')}${btn('tab', 'Sell', 'sell', '', shopTab === 'sell' ? 'sel' : '')}</div><div class="gilbox">${coin(G.gold)}<span>G</span></div></div>${msg ? `<p class="gold">${msg}</p>` : ''}${(shopTab === 'buy' ? buyRows : sellRows).join('') || '<p class="dim">Nothing to sell.</p>'}<div class="foot">${btn('close', 'Leave', '', '', 'primary')}</div>`);
 }
 ACT.tab = (t) => { shopTab = t; shop(); };
 ACT.buy = (k, id) => { const d = DB[k][id]; if (G.gold < d.price) return; G.gold -= d.price; sfx('coin'); if (k === 'items') G.inv.items[id] = (G.inv.items[id] || 0) + 1; else G.inv[k].push(id); shop(null, `Bought ${d.name}.`); };
@@ -560,20 +587,21 @@ ACT.sell = (k, id) => {
 // ---------- title / main menu ----------
 function title() {
   G = null; optBack = 'title';
-  show(`<p class="dim" style="text-align:center">Pick a main job and a sub job. Wield weapons that grant signature skills. Socket gems to rewrite every skill.</p>
-  <div class="row" style="justify-content:center">${btn('new', 'New Game', '', '', 'primary')}${btn('cont', 'Continue', '', '', '', !anySave())}${btn('opts', '⚙ Options')}</div><div class="dim" style="text-align:center;font-size:11px">v${VERSION}</div>`, 'title');
+  show(`<div class="tagline">Pick a main job and a sub job. Wield weapons that grant signature skills. Socket gems to rewrite every skill.</div>
+  <div class="titlecmd">${btn('new', `${ic('star')}New Game`, '', '', 'primary')}${btn('cont', `${ic('save')}Continue`, '', '', '', !anySave())}${btn('opts', `${ic('options')}Options`)}</div>`, 'title');
+  ov.insertAdjacentHTML('beforeend', `<div class="ver">v${VERSION} · made in code</div>`);
   $('#loc').textContent = ''; $('#gold').textContent = ''; music('town');
 }
 let slotMode = 'new', pendingSlot = null, pendingDel = null;
 function slotScreen(mode) {
   slotMode = mode; const fmt = (ms) => new Date(ms).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
-  show(`<h2>${mode === 'new' ? 'New Game: pick a slot' : 'Continue'}</h2>${SLOT_IDS.map((i) => {
+  show(`<h2>${mode === 'new' ? '💾 New Game: pick a slot' : '💾 Continue'}</h2>${SLOT_IDS.map((i) => {
     const d = readSlot(i), g = d?.G;
-    if (!g) return `<div class="slot"><div class="t"><b>Slot ${i}</b><small>Empty</small></div>${mode === 'new' ? btn('slotpick', 'Start here', i, '', 'primary') : '<span class="dim">—</span>'}</div>`;
+    if (!g) return `<div class="slot"><span class="lead">${ic('save')}</span><div class="t"><b>Slot ${i}</b><small>Empty</small></div>${mode === 'new' ? btn('slotpick', 'Start here', i, '', 'primary') : '<span class="dim">—</span>'}</div>`;
     const where = g.map === 'world' ? 'Overworld' : MAPS[g.map]?.name || '?', bosses = ['wyrm', 'lich', 'titan'].filter((k) => g.flags?.bosses?.[k]).length;
-    return `<div class="slot"><div class="t"><b>Slot ${i}</b> <span class="chip">${DIFFICULTY[g.difficulty]?.name || 'Normal'}</span><small>${esc(where)} · ${fmtTime(g.playtime)} · ${bosses}/3 evils slain<br>${g.party.map((c) => `${esc(c.name)} ${c.level}`).join(' · ')}<br>${fmt(d.savedAt)}</small></div>
+    return `<div class="slot"><div class="t"><b>Slot ${i} <span class="chip tag">${DIFFICULTY[g.difficulty]?.name || 'Normal'}</span></b><div class="who">${(g.party || []).map((c) => `<span class="face" title="${esc(c.name)}"><img src="${UI.faceURL(c.main)}" alt=""></span><small>${c.level}</small>`).join(' ')}</div><small>${ic('pin')} ${esc(where)}<br>${ic('trophy')} ${bosses}/3 evils slain · ${fmtTime(g.playtime)}<br>${fmt(d.savedAt)}</small></div>
       <div class="col">${btn('slotpick', mode === 'new' ? (pendingSlot === i ? 'Tap to overwrite' : 'Overwrite') : 'Load', i, '', mode === 'new' && pendingSlot !== i ? '' : 'primary')}${btn('slotdel', pendingDel === i ? 'Tap to delete' : 'Delete', i, '', pendingDel === i ? 'danger' : '')}</div></div>`;
-  }).join('')}${btn('title', 'Back')}`);
+  }).join('')}<div class="foot">${btn('title', 'Back')}</div>`);
 }
 ACT.new = () => { pendingSlot = pendingDel = null; slotScreen('new'); };
 ACT.cont = () => { pendingSlot = pendingDel = null; slotScreen('load'); };
@@ -585,7 +613,8 @@ ACT.slotpick = (i) => {
 };
 ACT.slotdel = (i) => { i = +i; pendingSlot = null; if (pendingDel !== i) { pendingDel = i; return slotScreen(slotMode); } pendingDel = null; try { localStorage.removeItem(SLOT_KEY(i)); } catch {} if (!anySave() && slotMode === 'load') return title(); slotScreen(slotMode); };
 function diffScreen(slot) {
-  show(`<h2>Choose difficulty</h2>${['normal', 'easy', 'hard'].map((k) => `<div class="slot"><div class="t"><b>${DIFFICULTY[k].name}</b><small>${DIFFICULTY[k].desc}</small></div>${btn('diff', 'Select', slot, k, k === 'normal' ? 'primary' : '')}</div>`).join('')}<div class="dim">You can change this later in Options.</div>${btn('new', 'Back')}`);
+  const icn = { easy: 'heart', normal: 'sword', hard: 'ko' };
+  show(`<h2>⚔️ Choose difficulty</h2>${['normal', 'easy', 'hard'].map((k) => `<div class="slot"><span class="lead">${ic(icn[k])}</span><div class="t"><b>${DIFFICULTY[k].name}</b><small>${DIFFICULTY[k].desc}</small></div>${btn('diff', 'Select', slot, k, k === 'normal' ? 'primary' : '')}</div>`).join('')}<p class="dim">${ic('tip')} You can change this later in Options.</p><div class="foot">${btn('new', 'Back')}</div>`);
 }
 ACT.diff = (slot, d) => { newGame(); G.slot = +slot; G.difficulty = d; G.flags.visited.haven = true; save(); snap(); music(musicFor()); hide(); banner(mapDef().name); intro(); };
 function loadSlot(i) {
@@ -593,25 +622,27 @@ function loadSlot(i) {
   G = migrate(d.G); G.slot = i; snap(); music(musicFor()); hide(); banner(mapDef().name); toast(`Loaded slot ${i}`);
 }
 function intro() {
-  show(`<h2>Welcome to Haven Town</h2><div class="npc">${npcImg('elder', 64)}<p>Three great evils stir: the <b>Ashen Wyrm</b> in the cavern east of town, a <b>Lich King</b> in the swamp crypt, and a <b>Frost Titan</b> in a spire far to the north.</p></div>
+  show(`<h2>${ic('house')} Welcome to Haven Town</h2><div class="npc">${npcImg('elder', 48)}<p>Three great evils stir: the <b>Ashen Wyrm</b> in the cavern east of town, a <b>Lich King</b> in the swamp crypt, and a <b>Frost Titan</b> in a spire far to the north.</p></div>
   <p>Your party sets out <b>unarmed</b> with <span class="gold">400 G</span>: arm everyone at the <b>Smithy</b> first (a sword, two staves and a dagger cost about 205 G), then buy a few potions.</p>
-  <p>Visit the <b>Guild</b> to choose jobs, the <b>Smithy</b> for gear, and open the <b>Menu</b> (Esc) to socket gems into skills. Talk to townsfolk: a <span class="gold">!</span> marks someone with news. Check your <b>Journal</b> if you get lost.</p>${btn('close', 'Begin', '', '', 'primary')}`);
+  <p>Visit the <b>Guild</b> to choose jobs, the <b>Smithy</b> for gear, and open the <b>Menu</b> (Esc) to socket gems into skills. Talk to townsfolk: a <span class="gold">!</span> marks someone with news. Check your <b>Journal</b> if you get lost.</p><div class="foot">${btn('close', 'Begin', '', '', 'primary')}</div>`);
 }
 function mainMenu() {
   const menuTip = tipOnce('menu') ? 'TIP: pick a hero, then Edit a skill slot to socket gems. Gems rewrite how a skill works.' : '';
-  const cmds = [['items', 'ITEM'], ['mapscreen', 'MAP'], ['journal', 'JOURNAL'], ['bestiary', 'BESTIARY'], ['opts', 'OPTIONS'], ['save', 'SAVE'], ['title', 'TITLE'], ['close', 'CLOSE']];
-  show(`<div class="menugrid"><div class="pane menucmd"><div class="gilbox"><span>G</span>${G.gold}</div><div class="cmdlist">${cmds.map(([a, l]) => btn(a, l, '', '', a === 'close' ? 'primary' : '')).join('')}</div></div>
-  <div class="pane menuparty">${G.party.map((c, i) => { const s = maxOf(c); return btn('build', `<img src="${SP.heroURL(c.main)}" width="36" height="36" class="px" alt=""><span class="hinfo"><span class="hn">${esc(c.name)}</span><span class="hj">${JOBS[c.main].name}${c.sub ? '/' + JOBS[c.sub].name : ''}</span><span class="hl">LV ${c.level}</span><span class="hh ${c.hp < s.hp * 0.25 ? 'low' : c.hp < s.hp * 0.5 ? 'mid' : ''}">HP ${c.hp}/${s.hp}</span><span class="hm">MP ${c.mp}/${s.mp}</span></span>`, i, '', 'hero'); }).join('')}</div></div>
-  ${menuTip ? `<div id="msg" class="pane">${menuTip}</div>` : '<div id="msg"></div>'}<div class="dim ptime">TIME ${fmtTime(G.playtime)}   WINS ${G.stats?.wins || 0}</div>`, '', 'multi');
+  const cmds = [['items', 'ITEM', 'bag'], ['mapscreen', 'MAP', 'map'], ['journal', 'JOURNAL', 'journal'], ['bestiary', 'BESTIARY', 'bestiary'], ['opts', 'OPTIONS', 'options'], ['save', 'SAVE', 'save'], ['title', 'TITLE', 'title'], ['close', 'CLOSE', 'close']];
+  show(`<div class="menugrid"><div class="menuside"><div class="pane menucmd"><div class="cmdlist">${cmds.map(([a, l, n]) => btn(a, ic(n) + l, '', '', a === 'close' ? 'primary' : '')).join('')}</div></div>
+  <div class="pane menuinfo"><span class="dim">TIME</span><span>${fmtTime(G.playtime)}</span><span class="dim">WINS</span><span>${G.stats?.wins || 0}</span><span class="g">${ic('coin')}GOLD</span><span class="gold">${G.gold}</span></div></div>
+  <div class="pane menuparty">${G.party.map((c, i) => heroBtn(c, 'build', i)).join('')}</div></div>
+  ${menuTip ? `<div id="msg" class="pane">${ic('tip')} ${menuTip}</div>` : '<div id="msg"></div>'}`, '', 'multi');
 }
 const fmtTime = (sec = 0) => { sec = Math.floor(sec); const h = Math.floor(sec / 3600), m = Math.floor((sec % 3600) / 60), s2 = sec % 60; return `${h}:${String(m).padStart(2, '0')}:${String(s2).padStart(2, '0')}`; };
 ACT.bestiary = () => {
   const ids = Object.keys(ENEMIES), seen = ids.filter((id) => G.flags.bestiary[id]);
+  const els = (l) => l.map((w) => UI.elemIcon(w)).join('') || '<span class="dim">—</span>';
   show(`<h2>📖 Bestiary</h2><p class="dim">Foes discovered: <b class="gold">${seen.length}/${ids.length}</b>. Defeat a creature to learn its weaknesses.</p><div class="grid">${ids.map((id) => {
     const r = G.flags.bestiary[id], d = ENEMIES[id];
     if (!r) return '';
-    return `<div class="card"><img class="px" src="${SP.enemyURL(id)}" width="${SP.isBig(id) ? 64 : 48}" height="${SP.isBig(id) ? 64 : 48}" alt="" style="float:right"><b>${d.name}</b>${d.boss ? ' <span class="chip">Boss</span>' : ''}<div class="dim">Defeated ${r.kills}</div><div>HP ${d.hp} · ATK ${d.atk} · MAG ${d.mag}</div><div>${r.kills ? `weak ${d.weak.map((w) => ELEM_ICON[w]).join('') || '—'} · resists ${d.res.map((w) => ELEM_ICON[w]).join('') || '—'}` : '<span class="dim">weaknesses unknown</span>'}</div>${r.kills && DROPS[id]?.common ? `<div>Drops: ${[DROPS[id].common, DROPS[id].rare].filter(Boolean).map(([k, did], j) => (j ? (r.got?.[did] ? `<span class="gold">★ ${DB[k][did].name}</span>` : '<span class="dim">★ ???</span>') : DB[k][did].name)).join(' · ')}</div>` : ''}</div>`;
-  }).join('')}</div>${ids.length - seen.length ? `<div class="card dim" style="text-align:center">❔ ${ids.length - seen.length} more creatures are still undiscovered</div>` : ''}${btn('menu', 'Back', '', '', 'primary')}`);
+    return `<div class="card beast"><div class="bh"><span class="bimg"><img src="${SP.enemyURL(id)}" alt=""></span><div><div class="bn">${d.name}</div>${d.boss ? `<span class="chip tag">${ic('trophy')} Boss</span>` : ''}<div class="dim">Defeated ${r.kills}</div></div></div><div>HP <b>${d.hp}</b> · ATK <b>${d.atk}</b> · MAG <b>${d.mag}</b></div>${r.kills ? `<div>WEAK ${els(d.weak)}&nbsp; RES ${els(d.res)}</div>` : '<div class="dim">Weaknesses unknown</div>'}${r.kills && DROPS[id]?.common ? `<div>${[DROPS[id].common, DROPS[id].rare].filter(Boolean).map(([k, did], j) => (j ? (r.got?.[did] ? `<span class="gold">${ic('star')}${itemIc(k, did)} ${DB[k][did].name}</span>` : `<span class="dim">${ic('star')} ???</span>`) : `${itemIc(k, did)} ${DB[k][did].name}`)).join('<br>')}</div>` : ''}</div>`;
+  }).join('')}</div>${ids.length - seen.length ? `<div class="card dim" style="text-align:center">❔ ${ids.length - seen.length} more creatures are still undiscovered</div>` : ''}<div class="foot">${btn('menu', 'Back', '', '', 'primary')}</div>`);
 };
 ACT.title = title;
 ACT.save = () => { const m = $('#msg'); m.className = 'pane'; m.textContent = save() ? `GAME SAVED TO SLOT ${G.slot}.` : 'COULD NOT SAVE (STORAGE FULL OR BLOCKED).'; };
@@ -619,12 +650,12 @@ ACT.save = () => { const m = $('#msg'); m.className = 'pane'; m.textContent = sa
 // ---------- map screen, journal, options ----------
 ACT.mapscreen = () => {
   const m = mapDef();
-  if (!m.fog) { show(`<h2>🗺 Map</h2><p class="dim">There's nothing to chart indoors. Step outside or into a dungeon to see the map.</p>${btn('menu', 'Back', '', '', 'primary')}`); return; }
+  if (!m.fog) { show(`<h2>🗺 Map</h2><p class="dim">There's nothing to chart indoors. Step outside or into a dungeon to see the map.</p><div class="foot">${btn('menu', 'Back', '', '', 'primary')}</div>`); return; }
   const W = m.rows[0].length, H = m.rows.length, sc = Math.max(4, Math.min(Math.floor(560 / W), Math.floor(380 / H)));
   const places = (m.places || []).filter(([x, y]) => G.flags.seen[G.map]?.[y]?.[x] === '1');
-  show(`<h2>🗺 ${esc(m.name)}</h2><canvas id="bigmap" width="${W * sc}" height="${H * sc}" class="px" style="width:100%;max-width:${W * sc}px;background:#05070f;border:2px solid #060a28;border-radius:4px"></canvas>
+  show(`<h2>🗺 ${esc(m.name)}</h2><canvas id="bigmap" width="${W * sc}" height="${H * sc}" class="px framed" style="max-width:${W * sc + 8}px;margin:0 auto"></canvas>
   <div class="dim">${G.map === 'world' ? 'The blinking frame is your party. Dark areas are still unexplored.' : 'White blinking square = you · gold = exits · red = the boss · tan = unopened chests (once seen).'} Press <b>N</b> on the map to toggle the minimap.</div>
-  ${places.length ? `<h3>Discovered</h3><div>${places.map((p) => `<span class="chip">${esc(p[2])}</span>`).join('')}</div>` : ''}${btn('menu', 'Back', '', '', 'primary')}`);
+  ${places.length ? `<h3>Discovered</h3><div>${places.map((p) => `<span class="chip tag">${ic('pin')}${esc(p[2])}</span>`).join('')}</div>` : ''}<div class="foot">${btn('menu', 'Back', '', '', 'primary')}</div>`);
   const c2 = $('#bigmap').getContext('2d'); c2.imageSmoothingEnabled = false;
   const art = G.map === 'world' && TR.mapImage ? TR.mapImage(m) : null, seen = G.flags.seen[G.map] || [];
   const paint = () => {
@@ -650,18 +681,18 @@ ACT.journal = () => {
   show(`<h2>📜 Journal</h2><p class="dim">Great evils slain: <b class="gold">${n}/3</b></p>${OBJECTIVES.map((o) => { const locked = o.after && !G.flags.bosses[o.after]; return `<div class="card ${done(o) ? 'done' : ''}"><b>${done(o) ? '✔' : locked ? '🔒' : '◇'} ${o.title}</b><div class="dim">${locked ? 'Blocked for now: the northern pass is closed by a rockslide.' : o.hint}</div></div>`; }).join('')}
   <h3>Side quests</h3>${(() => { const act = Object.entries(QUESTS).filter(([id]) => qstate(id) === 'active'), dn = Object.entries(QUESTS).filter(([id]) => qstate(id) === 'done');
     return (act.length ? act.map(([id, q]) => `<div class="card ${questDone(id) ? 'done' : ''}"><b>${questDone(id) ? '❓' : '◇'} ${esc(q.title)}</b> <span class="dim">(${questProgress(id)})</span><div class="dim">${questDone(id) ? 'Return to ' + esc(q.giver) + ' to claim your reward.' : esc(q.lines.active[0])}</div></div>`).join('') : '<div class="dim">No active quests. Talk to townsfolk marked with a yellow <b>!</b>.</div>') + (dn.length ? `<div class="dim">Completed: ${dn.map(([, q]) => '✔ ' + esc(q.title)).join(' · ')}</div>` : ''); })()}
-  <h3>Tips</h3><div class="dim">• Gems rewrite skills: try Wide + a heal, Echo on a big spell, Stun on a fast skill.<br>• Jobs can be changed in any town building; sub jobs lend skills (2 levels behind).<br>• Inns heal and save. Frostholm's shops sell much better gear.</div>${btn('menu', 'Back', '', '', 'primary')}`);
+  <h3>💡 Tips</h3><div class="dim">• Gems rewrite skills: try Wide + a heal, Echo on a big spell, Stun on a fast skill.<br>• Jobs can be changed in any town building; sub jobs lend skills (2 levels behind).<br>• Inns heal and save. Frostholm's shops sell much better gear.</div><div class="foot">${btn('menu', 'Back', '', '', 'primary')}</div>`);
 };
 let optBack = 'menu';
 function optionsScreen() {
   const onOff = (v) => (v ? 'On' : 'Off');
   show(`<h2>⚙ Options</h2>
-  <div class="opt"><label>Music volume <b>${Math.round(OPT.music * 100)}%</b></label><input type="range" min="0" max="100" value="${Math.round(OPT.music * 100)}" data-in="music"></div>
-  <div class="opt"><label>Sound effects <b>${Math.round(OPT.sfx * 100)}%</b></label><input type="range" min="0" max="100" value="${Math.round(OPT.sfx * 100)}" data-in="sfx"></div>
-  <div class="row">${G ? btn('optdiff', `Difficulty: <b>${DIFFICULTY[G.difficulty].name}</b>`) : ''}${btn('optspeed', `Battle speed: <b>${OPT.speed}</b>`)}${btn('optmini', `Minimap: <b>${onOff(OPT.minimap)}</b>`)}${btn('optshake', `Screen shake: <b>${onOff(OPT.shake)}</b>`)}${btn('optmute', `Sound: <b>${isMuted() ? 'Muted' : 'On'}</b>`)}</div>
+  <div class="opt"><label>${ic('sound')} Music volume <b>${Math.round(OPT.music * 100)}%</b></label><input type="range" min="0" max="100" value="${Math.round(OPT.music * 100)}" data-in="music"></div>
+  <div class="opt"><label>${ic('sound')} Sound effects <b>${Math.round(OPT.sfx * 100)}%</b></label><input type="range" min="0" max="100" value="${Math.round(OPT.sfx * 100)}" data-in="sfx"></div>
+  <div class="opts">${G ? btn('optdiff', `<span>Difficulty</span><b>${DIFFICULTY[G.difficulty].name}</b>`) : ''}${btn('optspeed', `<span>Battle speed</span><b>${OPT.speed}</b>`)}${btn('optmini', `<span>Minimap</span><b>${onOff(OPT.minimap)}</b>`)}${btn('optshake', `<span>Screen shake</span><b>${onOff(OPT.shake)}</b>`)}${btn('optmute', `<span>${ic(isMuted() ? 'mute' : 'sound')}Sound</span><b>${isMuted() ? 'Muted' : 'On'}</b>`)}</div>
   <h3>Controls</h3><div class="dim controls"><div><b>Arrows / WASD</b> move</div><div><b>Esc / M</b> menu</div><div><b>N</b> toggle minimap</div><div><b>Arrows</b> move menu focus</div><div><b>Enter / Space</b> select</div><div><b>Esc / Backspace</b> back</div></div>
   ${IS_IOS && !root.classList.contains('standalone') && !root.classList.contains('framed') ? '<div class="card"><b>📱 Install on iPhone</b><div class="dim">In Safari tap Share, then <b>Add to Home Screen</b>. Gemforge then runs full-screen, works offline, and remembers your saves.</div></div>' : ''}
-  <div class="dim" style="font-size:11px">Gemforge Chronicles v${VERSION}</div><div class="row">${btn('optback', 'Back', '', '', 'primary')}</div>`);
+  <div class="foot"><span class="dim grow" style="font-size:8px;align-self:center">Gemforge Chronicles v${VERSION}</span>${btn('optback', 'Back', '', '', 'primary')}</div>`);
 }
 ACT.opts = () => optionsScreen();
 ACT.optback = () => (optBack === 'title' && !G ? title() : mainMenu());
@@ -676,13 +707,13 @@ ACT.optmute = () => { setMuted(!isMuted()); syncMute(); optionsScreen(); };
 // ---------- items (field use) ----------
 function itemsMenu(msg = '') {
   const it = Object.entries(G.inv.items).filter(([, n]) => n > 0);
-  show(`<h2>🎒 Items</h2><p class="gold">${G.gold} G</p>${msg ? `<p>${msg}</p>` : ''}${it.length ? it.map(([id, n]) => `<div class="row">${btn('useitem', `${ITEMS[id].name} ×${n}`, id)}<span class="dim">${ITEMS[id].desc}</span></div>`).join('') : '<p class="dim">No consumables.</p>'}
-  <h3>Gems (${G.inv.gems.length})</h3><div>${G.inv.gems.map((g) => gemChip(g)).join('') || '<span class="dim">none</span>'}</div>
-  <div class="row">${btn('menu', 'Back')}</div>`);
+  show(`<h2>🎒 Items</h2><div class="card"><div class="gilbox"><span>Gold</span>${coin(G.gold + ' G')}</div></div>${msg ? `<p class="gold">${msg}</p>` : ''}${it.length ? it.map(([id, n]) => `<div class="slot"><span class="lead">${itemIc('items', id)}</span><div class="t"><b>${ITEMS[id].name} <span class="dim">×${n}</span></b><small>${ITEMS[id].desc}</small></div>${btn('useitem', 'Use', id)}</div>`).join('') : '<p class="dim">No consumables.</p>'}
+  <h3>💎 Gems (${G.inv.gems.length})</h3><div>${G.inv.gems.map((g) => gemChip(g)).join('') || '<span class="dim">none</span>'}</div>
+  <div class="foot">${btn('menu', 'Back', '', '', 'primary')}</div>`);
 }
 ACT.items = () => itemsMenu(); ACT.menu = mainMenu;
 ACT.useitem = (id) => {
-  show(`<h2>Use ${ITEMS[id].name} on…</h2>${G.party.map((c, i) => { const s = maxOf(c); return `<div class="row">${btn('useon', `${esc(c.name)} — HP ${c.hp}/${s.hp} MP ${c.mp}/${s.mp}${c.hp <= 0 ? ' (KO)' : ''}`, id, i)}</div>`; }).join('')}${btn('items', 'Back')}`);
+  show(`<h2>${itemIc('items', id)} Use ${ITEMS[id].name} on…</h2><div class="card menuparty">${G.party.map((c, i) => heroBtn(c, 'useon', id, i)).join('')}</div><div class="foot">${btn('items', 'Back', '', '', 'primary')}</div>`);
 };
 ACT.useon = (id, i) => {
   const c = G.party[i], it = ITEMS[id], s = maxOf(c); let ok = false;
@@ -708,32 +739,33 @@ ACT.bclose = () => (B.guild ? guild() : mainMenu());
 function buildMain(c) {
   const s = stats(c), m = JOBS[c.main], sj = c.sub ? JOBS[c.sub] : null, cap = gemCapacity(c), used = gemsUsed(c);
   const jobs = inTown();
-  const gearRow = (label, view, id, kind) => `<div class="slot"><div class="t"><b>${label}:</b> ${id ? DB[kind][id].name : `<span class="dim">— ${kind === 'weapons' ? 'unarmed' : 'none'} —</span>`}<small>${id ? gearDesc(kind, DB[kind][id]) : kind === 'weapons' ? 'Fighting bare-handed. Buy a weapon at a Smithy.' : ''}</small></div>${btn('bview', 'Change', view)}</div>`;
+  const gearRow = (label, view, id, kind) => `<div class="slot"><span class="lead">${id ? itemIc(kind, id) : ic({ weapons: 'fists', armors: 'armor', accs: 'ring' }[kind], 'dimic')}</span><div class="t"><b><span class="dim">${label}</span> ${id ? DB[kind][id].name : `<span class="dim">— ${kind === 'weapons' ? 'unarmed' : 'none'} —</span>`}</b><small>${id ? gearDesc(kind, DB[kind][id]) : kind === 'weapons' ? 'Fighting bare-handed. Buy a weapon at a Smithy.' : ''}</small></div>${btn('bview', 'Change', view)}</div>`;
   const slotRow = (i) => {
     const sid = slotSkill(c, i), gems = slotGems(c, i);
     const m2 = sid ? skillWithGems(sid, gems) : null;
-    return `<div class="slot"><div class="t"><b>${i === SIG ? '⭐ Weapon' : `Slot ${i + 1}`}:</b> ${sid ? `<b>${m2.name}</b> ${gems.map((g) => gemChip(g, true)).join('')}` : '<span class="dim">— empty —</span>'}<small>${m2 ? describeSkill(m2) : ''}</small></div>${btn('bslot', 'Edit', i)}</div>`;
+    return `<div class="slot"><span class="lead">${m2 ? ic(i === SIG ? 'star' : UI.skillIconName(m2)) : ic('socket')}</span><div class="t"><b><span class="dim">${i === SIG ? 'Weapon' : `Slot ${i + 1}`}</span> ${sid ? `${m2.name} ${gems.map((g) => gemChip(g, true)).join('')}` : '<span class="dim">— empty —</span>'}</b><small>${m2 ? describeSkill(m2) : ''}</small></div>${btn('bslot', 'Edit', i)}</div>`;
   };
-  show(`<div class="row">${btn('bnav', '◀', -1)}<h2 class="grow"><img src="${SP.heroURL(c.main)}" width="36" height="36" class="px" style="vertical-align:middle"> ${esc(c.name)} · Lv${c.level}</h2>${btn('bnav', '▶', 1)}</div>
-  <div class="dim">${c.level < L.MAX_LEVEL ? `EXP ${c.exp}/${expNeeded(c.level)} · next level in ${expNeeded(c.level) - c.exp}` : 'EXP — · max level'}</div>
+  const xpN = expNeeded(c.level), maxed = c.level >= L.MAX_LEVEL;
+  show(`<div class="buildhead">${btn('bnav', ic('aleft'), -1, '', 'navbtn')}<div class="who2">${portrait(c.main, 'lg')}<div><h2 style="background:none;padding:0;margin:0">${esc(c.name)}</h2><div class="lv">LV ${c.level}</div></div></div>${btn('bnav', ic('aright'), 1, '', 'navbtn')}</div>
+  <div class="expline"><span>EXP</span>${bar(maxed ? 1 : c.exp, maxed ? 1 : xpN, 'xp')}<span>${maxed ? 'MAX' : `${c.exp}/${xpN}`}</span></div>
   <div class="card">
-    <div class="row jobrow"><span><b>Main:</b> ${m.icon} ${m.name}</span>${btn('bview', 'Change', 'jobMain', '', '', !jobs)}</div><div class="row jobrow"><span><b>Sub:</b> ${sj ? sj.icon + ' ' + sj.name : 'none'}</span>${btn('bview', 'Change', 'jobSub', '', '', !jobs)}</div>
-    ${jobs ? '' : '<div class="dim">Jobs can only be changed in town (visit the Guild ⚔️).</div>'}
-    ${statLine(s)}<div class="dim">Sub job adds 40% of its stat modifiers and its skills (2 levels behind). Weapon types from either job can be equipped.</div>
+    <div class="jobrow"><span>${portrait(c.main, 'sm')}<span><span class="dim">MAIN</span> ${m.name}</span></span>${btn('bview', 'Change', 'jobMain', '', '', !jobs)}</div><div class="jobrow"><span>${sj ? portrait(c.sub, 'sm') : ic('socket')}<span><span class="dim">SUB</span> ${sj ? sj.name : 'none'}</span></span>${btn('bview', 'Change', 'jobSub', '', '', !jobs)}</div>
+    ${jobs ? '' : `<div class="dim">${ic('lock')} Jobs can only be changed in town (visit the Guild).</div>`}
+    ${statLine(s)}<small>Sub job adds 40% of its stat modifiers and its skills (2 levels behind). Weapon types from either job can be equipped.</small>
   </div>
-  <h3>Equipment</h3>${gearRow('Weapon', 'weapon', c.weapon, 'weapons')}${gearRow('Armor', 'armor', c.armor, 'armors')}${gearRow('Accessory', 'acc', c.acc, 'accs')}
+  <h3>Equipment</h3>${gearRow('Weapon', 'weapon', c.weapon, 'weapons')}${gearRow('Armor', 'armor', c.armor, 'armors')}${gearRow('Acc.', 'acc', c.acc, 'accs')}
   <h3>Skills &amp; Gems <span class="${used > cap ? 'bad' : 'gold'}">◇ ${used}/${cap}</span></h3>${[0, 1, 2, 3, SIG].map(slotRow).join('')}
-  <div class="row">${btn('bclose', 'Done', '', '', 'primary')}</div>`);
+  <div class="foot">${btn('bclose', 'Done', '', '', 'primary')}</div>`);
 }
 ACT.bview = (v) => { B.view = v; buildScreen(); };
 ACT.bslot = (i) => { B.slot = +i; B.view = 'slot'; buildScreen(); };
 
 function jobPick(which) {
   const c = G.party[B.i];
-  show(`<h2>${which === 'main' ? 'Main' : 'Sub'} job for ${esc(c.name)}</h2>${which === 'sub' ? btn('setjob', 'None', which, '') : ''}${Object.entries(JOBS).map(([id, j]) => {
+  show(`<h2>${which === 'main' ? 'Main' : 'Sub'} job for ${esc(c.name)}</h2>${which === 'sub' ? `<div class="slot"><span class="lead">${ic('socket')}</span><div class="t"><b>No sub job</b></div>${btn('setjob', 'None', which, '')}</div>` : ''}${Object.entries(JOBS).map(([id, j]) => {
     const dis = (which === 'main' && id === c.sub) || (which === 'sub' && id === c.main);
-    return `<div class="slot ${c[which] === id ? 'sel' : ''}"><div class="t"><b>${j.icon} ${j.name}</b><small>${j.desc} Weapons: ${j.weapons.map((w) => WEAPON_TYPES[w].name).join(', ')}. Skills: ${j.skills.map((s) => SKILLS[s[0]].name + ' L' + s[1]).join(', ')}</small></div>${btn('setjob', 'Select', which, id, '', dis)}</div>`;
-  }).join('')}${btn('bmain', 'Back')}`);
+    return `<div class="slot ${c[which] === id ? 'sel' : ''}">${portrait(id)}<div class="t"><b>${j.name} ${j.weapons.map((w) => ic(UI.gearIconName('weapons', { type: w }))).join('')}${c[which] === id ? ' <span class="chip tag">NOW</span>' : ''}</b><small>${j.desc} Weapons: ${j.weapons.map((w) => WEAPON_TYPES[w].name).join(', ')}. Skills: ${j.skills.map((s) => SKILLS[s[0]].name + ' L' + s[1]).join(', ')}</small></div>${btn('setjob', 'Select', which, id, '', dis)}</div>`;
+  }).join('')}<div class="foot">${btn('bmain', 'Back', '', '', 'primary')}</div>`);
 }
 ACT.setjob = (which, id) => {
   const c = G.party[B.i]; c[which] = id || null; sanitize(c, G.inv); autofill(c); B.view = 'main'; buildScreen();
@@ -741,11 +773,11 @@ ACT.setjob = (which, id) => {
 function gearPick(kind) {
   const c = G.party[B.i], field = { weapons: 'weapon', armors: 'armor', accs: 'acc' }[kind];
   const uniq = [...new Set(G.inv[kind])];
-  show(`<h2>${esc(c.name)}: ${field}</h2>${c[field] ? btn('equip', 'Unequip', kind, '') : ''}${uniq.map((id) => {
+  show(`<h2>${ic({ weapons: 'sword', armors: 'armor', accs: 'ring' }[kind])} ${esc(c.name)}: ${field}</h2>${c[field] ? `<div class="slot"><span class="lead">${itemIc(kind, c[field])}</span><div class="t"><b><span class="dim">NOW</span> ${DB[kind][c[field]].name}</b></div>${btn('equip', 'Unequip', kind, '')}</div>` : ''}${uniq.map((id) => {
     const g = DB[kind][id], ok = kind !== 'weapons' || L.weaponOk(c, id);
     const now = stats(c), after = stats({ ...c, [field]: id }), delta = ok ? ['atk', 'mag', 'def', 'hp', 'mp', 'spd'].filter((k) => after[k] !== now[k]).map((k) => `<span class="${after[k] > now[k] ? 'up' : 'down'}">${after[k] > now[k] ? '▲' : '▼'}${Math.abs(after[k] - now[k])} ${k}</span>`).join(' ') : '';
-    return `<div class="slot"><div class="t"><b>${g.name}</b> ×${G.inv[kind].filter((x) => x === id).length}<small>${gearDesc(kind, g)}${ok ? '' : ' · <span class="bad">job can\'t use</span>'}</small>${delta ? `<div class="delta">${delta}</div>` : ''}</div>${btn('equip', 'Equip', kind, id, '', !ok)}</div>`;
-  }).join('') || '<p class="dim">Nothing in inventory.</p>'}${btn('bmain', 'Back')}`);
+    return `<div class="slot"><span class="lead">${itemIc(kind, id)}</span><div class="t"><b>${g.name} <span class="dim">×${G.inv[kind].filter((x) => x === id).length}</span></b><small>${gearDesc(kind, g)}${ok ? '' : ' · <span class="bad">job can\'t use</span>'}</small>${delta ? `<div class="delta">${delta}</div>` : ''}</div>${btn('equip', 'Equip', kind, id, '', !ok)}</div>`;
+  }).join('') || '<p class="dim">Nothing in inventory.</p>'}<div class="foot">${btn('bmain', 'Back', '', '', 'primary')}</div>`);
 }
 ACT.equip = (kind, id) => {
   const c = G.party[B.i], field = { weapons: 'weapon', armors: 'armor', accs: 'acc' }[kind];
@@ -760,13 +792,13 @@ function slotEdit(c) {
   const final = sid ? skillWithGems(sid, slotGems(c, i)) : null;
   const inv = [...new Set(G.inv.gems)];
   show(`<h2>${i === SIG ? '⭐ Weapon skill' : 'Skill slot ' + (i + 1)} — ${esc(c.name)}</h2>
-  <div class="card"><b>${final ? final.name : '— empty —'}</b> ${slotGems(c, i).map((g) => gemChip(g)).join('')}<br><span class="dim">${final ? describeSkill(final) : 'Pick a skill below.'}</span></div>
+  <div class="card"><div class="row">${final ? ic(UI.skillIconName(final)) : ic('socket')}<b>${final ? final.name : '— empty —'}</b>${final ? `<span class="gold">${final.mp} MP</span>` : ''}</div><div>${slotGems(c, i).map((g) => gemChip(g)).join('')}</div><small>${final ? describeSkill(final) : 'Pick a skill below.'}</small></div>
   ${i === SIG ? `<div class="dim">Granted by your weapon (${c.weapon ? WEAPONS[c.weapon].name : 'unarmed'}). ${c.weapon && WEAPONS[c.weapon].innate ? 'Includes free innate gem: ' + GEMS[WEAPONS[c.weapon].innate].name + '.' : ''}</div>` :
-    `<h3>Skill</h3><div class="row">${btn('setskill', 'Empty', i, '')}${learnable(c).map((s) => btn('setskill', `${SKILLS[s].name} <small>${SKILLS[s].mp}mp</small>`, i, s, c.slots[i] === s ? 'sel' : '')).join('')}</div>`}
-  <h3>Socketed gems (${gemsUsed(c)}/${gemCapacity(c)} total · max ${GEMS_PER_SLOT} per skill)</h3>
-  <div class="row">${gems.map((g, k) => btn('ungem', `✖ ${gemImg(g)} ${GEMS[g].name}`, i, k)).join('') || '<span class="dim">none</span>'}</div>
-  <h3>Inventory gems</h3>${inv.map((g) => `<div class="slot"><div class="t"><b>${gemImg(g)} ${GEMS[g].name}</b> ×${G.inv.gems.filter((x) => x === g).length}<small>${GEMS[g].desc}</small></div>${btn('gem', 'Socket', i, g, '', full || !sid)}</div>`).join('') || '<p class="dim">No spare gems. Buy some in the shop or find them in the cavern.</p>'}
-  ${btn('bmain', 'Back', '', '', 'primary')}`);
+    `<h3>Skill</h3><div class="skillpick">${btn('setskill', `<span>${ic('socket')} Empty</span>`, i, '')}${learnable(c).map((s) => btn('setskill', `<span>${ic(UI.skillIconName(SKILLS[s]))} ${SKILLS[s].name}</span><small>${SKILLS[s].mp}mp</small>`, i, s, c.slots[i] === s ? 'sel two' : 'two')).join('')}</div>`}
+  <h3>Socketed ◇ ${gemsUsed(c)}/${gemCapacity(c)} <small>max ${GEMS_PER_SLOT}/skill</small></h3>
+  ${gems.map((g, k) => `<div class="slot"><span class="lead">${gemImg(g)}</span><div class="t"><b>${GEMS[g].name}</b><small>${GEMS[g].desc}</small></div>${btn('ungem', `${ic('close')}Remove`, i, k)}</div>`).join('') || '<p class="dim">None socketed.</p>'}
+  <h3>💎 Inventory gems</h3>${inv.map((g) => `<div class="slot"><span class="lead">${gemImg(g)}</span><div class="t"><b>${GEMS[g].name} <span class="dim">×${G.inv.gems.filter((x) => x === g).length}</span></b><small>${GEMS[g].desc}</small></div>${btn('gem', 'Socket', i, g, '', full || !sid)}</div>`).join('') || '<p class="dim">No spare gems. Buy some in the shop or find them in the cavern.</p>'}
+  <div class="foot">${btn('bmain', 'Back', '', '', 'primary')}</div>`);
 }
 ACT.setskill = (i, sid) => { const c = G.party[B.i]; c.slots[+i] = sid || null; if (!sid) { G.inv.gems.push(...c.gems[+i]); c.gems[+i] = []; } buildScreen(); };
 ACT.gem = (i, g) => { const c = G.party[B.i]; G.inv.gems.splice(G.inv.gems.indexOf(g), 1); c.gems[+i].push(g); buildScreen(); };
@@ -780,7 +812,7 @@ function stageKind(bossId) {
   const m = mapDef();
   if (m.kind === 'dungeon') return m.theme === 'cavern' ? 'dungeon' : m.theme;
   const r = regionOf(), woods = [[1, 0], [-1, 0], [0, 1], [0, -1]].some(([a, b2]) => tileAt(G.x + a, G.y + b2) === 'T'); // fighting at a forest's edge
-  return r === 'snow' ? 'snow' : r === 'swamp' ? 'swamp' : woods ? 'forest' : 'world';
+  return r === 'snow' ? 'snow' : r === 'swamp' ? 'swamp' : r === 'desert' ? 'desert' : woods ? 'forest' : 'world';
 }
 async function battle(groupIds, bossId = null) {
   if (BT || busy) return; // never run two battles at once (BT is only set after the start-of-battle wipe, so check busy too)
@@ -827,17 +859,17 @@ async function battleInner(groupIds, bossId = null) {
 }
 function renderBattle() {
   const { b, ask } = BT;
-  const order = b.order().map((x) => `<img class="px o-${x.side} ${ask?.p === x ? 'cur' : ''}" title="${esc(x.name)}" src="${x.side === 'p' ? SP.heroURL(x.ch.main) : SP.enemyURL(x.id)}" width="${x.side === 'e' && SP.isBig(x.id) ? 34 : 26}" height="${x.side === 'e' && SP.isBig(x.id) ? 34 : 26}" alt="${esc(x.name)}">`).join('');
-  const sts = (x) => `${x.st.poison > 0 ? '☠' : ''}${x.st.slow > 0 ? '🐌' : ''}${x.st.stun > 0 ? '💫' : ''}${x.st.atkup > 0 ? '⬆' : ''}${x.st.defup > 0 ? '🛡' : ''}`;
-  const icons = (list) => list.map((w) => ELEM_ICON[w]).join('');
+  const order = b.order().map((x) => `<img class="px o-${x.side} ${ask?.p === x ? 'cur' : ''} ${x.side === 'e' && SP.isBig(x.id) ? 'big' : ''}" title="${esc(x.name)}" src="${x.side === 'p' ? UI.faceURL(x.ch.main) : SP.enemyURL(x.id)}" alt="${esc(x.name)}">`).join('');
+  const icons = (list) => list.map((w) => UI.elemIcon(w)).join('');
+  const line = (l) => `<div>${UI.deco(esc(l))}</div>`;
   const groups = []; for (const e of b.e) { if (e.hp <= 0) continue; const g = groups.find((x) => x.name === e.name); if (g) g.n++; else groups.push({ name: e.name, n: 1, e }); }
-  const enemyWin = `<div class="elist">${groups.map(({ name, n, e }) => `<div class="er" data-n="${esc(name)}"><span class="en">${esc(name)}</span><span class="ec">${n}</span>${e.weak.length || e.res.length ? `<span class="ew">${e.weak.length ? 'WEAK ' + icons(e.weak) : ''}${e.res.length ? ' RES ' + icons(e.res) : ''}</span>` : ''}</div>`).join('')}</div>`;
-  const msg = BT.log.slice(-2).map((l) => `<div>${esc(l)}</div>`).join('');
-  ov.innerHTML = `<div class="win battle"><div class="bl"><div class="order"><span class="dim">ORDER</span>${order}${BT.auto ? '<button class="autobtn on" data-tap="autotoggle" tabindex="-1">AUTO ON</button>' : ''}</div>
-  <div class="stagewrap"><div id="stagehost"></div>${msg && !BT.logBig ? `<div class="bmsg">${msg}</div>` : ''}<button class="logtoggle" data-tap="logsize" tabindex="-1" title="Battle log (L)">${BT.logBig ? '✕' : 'LOG'}</button></div>
-  ${BT.logBig ? `<div class="logwrap"><div class="log big" id="log">${BT.log.map((l) => `<div>${esc(l)}</div>`).join('')}</div></div>` : ''}</div>
+  const enemyWin = `<div class="elist">${groups.map(({ name, n, e }) => `<div class="er" data-n="${esc(name)}"><span class="en">${esc(name)}</span><span class="ec">${n > 1 ? '×' + n : ''}</span>${e.weak.length || e.res.length ? `<span class="ew">${e.weak.length ? '<span class="lab">WEAK</span>' + icons(e.weak) : ''}${e.res.length ? '<span class="lab">RES</span>' + icons(e.res) : ''}</span>` : ''}</div>`).join('')}</div>`;
+  const msg = BT.log.slice(-2).map(line).join('');
+  ov.innerHTML = `<div class="win battle"><div class="bl"><div class="order"><span class="olab">ORDER</span>${order}${BT.auto ? '<button class="autobtn on" data-tap="autotoggle" tabindex="-1">AUTO ON</button>' : ''}</div>
+  <div class="stagewrap"><div id="stagehost"></div>${msg && !BT.logBig ? `<div class="bmsg">${msg}</div>` : ''}<button class="logtoggle" data-tap="logsize" tabindex="-1" title="Battle log (L)">${BT.logBig ? 'CLOSE' : 'LOG'}</button></div>
+  ${BT.logBig ? `<div class="logwrap"><div class="log big" id="log">${BT.log.map(line).join('')}</div></div>` : ''}</div>
   <div class="br"><div class="pane cmdwin"><div id="cmd">${ask ? cmdHtml(ask) : enemyWin}</div></div>
-  <div class="pane partywin">${b.p.map((p) => { const r = p.hp / p.maxhp; return `<div data-n="${p.name}" class="pm ${p.hp <= 0 ? 'dead' : ''} ${ask?.p === p ? 'active' : ''}"><span class="pn">${esc(p.name)}</span><span class="ph ${r < 0.25 ? 'low' : r < 0.5 ? 'mid' : ''}">${p.hp}/${p.maxhp}</span><span class="pmp">MP ${p.mp}</span><span class="pst">${sts(p)}</span></div>`; }).join('')}</div></div></div>`;
+  <div class="pane partywin">${b.p.map((p) => { const r = p.hp / p.maxhp; return `<div data-n="${p.name}" class="pm ${p.hp <= 0 ? 'dead' : ''} ${ask?.p === p ? 'active' : ''}">${portrait(p.ch.main, 'sm' + (p.hp <= 0 ? ' ko' : ''))}<span class="pn">${esc(p.name)}${UI.statusIcons(p.st)}</span><span class="ph ${r < 0.25 ? 'low' : r < 0.5 ? 'mid' : ''}">${p.hp}<small>/${p.maxhp}</small></span><span class="pg">${bar(p.hp, p.maxhp, 'hp')}</span><span class="pmp">MP ${p.mp}</span></div>`; }).join('')}</div></div></div>`;
   ov.className = 'on';
   $('#stagehost').appendChild(BT.stage.canvas);
   const lg = $('#log'); if (lg) lg.scrollTop = lg.scrollHeight;
@@ -862,21 +894,21 @@ function playFx(list) {
   }
 }
 function cmdHtml(a) {
-  const p = a.p, c = p.ch, head = `<div class="cmdhead">${esc(p.name)}</div>`, back = btn('c', 'BACK', 'root');
-  if (a.stage === 'root') return `${head}<div class="cmdlist">${btn('c', 'FIGHT', 'attack')}${btn('c', 'SKILL', 'skills')}${btn('c', 'ITEM', 'item')}${btn('c', 'GUARD', 'defend')}${btn('c', 'REPEAT', 'repeat', '', '', !BT.last.has(p.name))}${btn('c', 'AUTO', 'auto')}${btn('c', 'RUN', 'flee', '', '', BT.b.boss)}</div>`;
+  const p = a.p, c = p.ch, head = `<div class="cmdhead">${portrait(c.main, 'sm')}${esc(p.name)}</div>`, back = btn('c', `${ic('back')}BACK`, 'root');
+  if (a.stage === 'root') return `${head}<div class="cmdlist">${btn('c', `${ic('fight')}FIGHT`, 'attack')}${btn('c', `${ic('skill')}SKILL`, 'skills')}${btn('c', `${ic('item')}ITEM`, 'item')}${btn('c', `${ic('guard')}GUARD`, 'defend')}${btn('c', `${ic('repeat')}REPEAT`, 'repeat', '', '', !BT.last.has(p.name))}${btn('c', `${ic('auto')}AUTO`, 'auto')}${btn('c', `${ic('run')}RUN`, 'flee', '', '', BT.b.boss)}</div>`;
   if (a.stage === 'skills') {
     return `${head}<div class="cmdlist">` + [0, 1, 2, 3, SIG].map((i) => {
       const sid = slotSkill(c, i); if (!sid) return '';
       const gems = slotGems(c, i), s = skillWithGems(sid, gems);
-      return btn('c', `<span class="sk"><b>${s.name}</b><i>${s.mp}MP</i></span><small>${s.tags.length ? s.tags.join(' + ') + ' · ' : ''}${describeSkill(s)}</small>`, 'cast', i, 'two', p.mp < s.mp);
+      return btn('c', `<span class="sk">${ic(UI.skillIconName(s))}<b>${s.name}</b><i>${s.mp}MP</i></span><small>${s.tags.length ? s.tags.join(' + ') + ' · ' : ''}${describeSkill(s)}</small>`, 'cast', i, 'two', p.mp < s.mp);
     }).join('') + `${back}</div>`;
   }
   if (a.stage === 'item') {
     const its = Object.entries(G.inv.items).filter(([, n]) => n > 0);
-    return `${head}<div class="cmdlist">` + (its.map(([id, n]) => btn('c', `<span class="sk"><b>${ITEMS[id].name}</b><i>x${n}</i></span><small>${ITEMS[id].desc}</small>`, 'useitem', id, 'two')).join('') || '<div class="dim">No items.</div>') + `${back}</div>`;
+    return `${head}<div class="cmdlist">` + (its.map(([id, n]) => btn('c', `<span class="sk">${itemIc('items', id)}<b>${ITEMS[id].name}</b><i>x${n}</i></span><small>${ITEMS[id].desc}</small>`, 'useitem', id, 'two')).join('') || '<div class="dim">No items.</div>') + `${back}</div>`;
   }
   // target: pick from a list of names, like the original
-  const list = a.tside === 'e' ? BT.b.e.map((e, i) => (e.hp > 0 ? btn('tgt', `${e.name}${e.weak.length ? ` <span class="tw">${e.weak.map((w) => ELEM_ICON[w]).join('')}</span>` : ''}<i>${e.hp}</i>`, 'e', i) : '')) : BT.b.p.map((x, i) => btn('tgt', `${esc(x.name)}<i>${x.hp > 0 ? x.hp : 'KO'}</i>`, 'p', i));
+  const list = a.tside === 'e' ? BT.b.e.map((e, i) => (e.hp > 0 ? btn('tgt', `<span class="tgtname">${e.name}</span>${e.weak.length ? `<span class="tw">${e.weak.map((w) => UI.elemIcon(w)).join('')}</span>` : ''}<i>${e.hp}</i>`, 'e', i) : '')) : BT.b.p.map((x, i) => btn('tgt', `${portrait(x.ch.main, 'sm' + (x.hp > 0 ? '' : ' ko'))}<span class="tgtname">&nbsp;${esc(x.name)}</span><i>${x.hp > 0 ? x.hp : 'KO'}</i>`, 'p', i));
   return `${head}<div class="cmdlist"><div class="dim">${a.tside === 'e' ? 'ATTACK WHICH?' : 'WHO?'}</div>${list.join('')}${back}</div>`;
 }
 function autoCommand(p) { // reuse the hero's last move with sensible targets; fall back to a basic attack
@@ -954,7 +986,8 @@ async function victory(b, bossId) {
   if (G.party.some((c) => c.hp > 0 && c.hp < maxOf(c).hp * 0.35) && tipOnce('rest')) lines.push('💡 Low on HP? Inns heal the whole party and save your game. Potions work from the Items menu.');
   questLog(lines);
   await new Promise((res) => {
-    ov.innerHTML = `<div class="win"><h2>${def ? '🏆 ' + def.name + ' is slain!' : 'Victory!'}</h2><p>+${r.exp} EXP · +<span class="gold">${r.gold} G</span></p>${lines.map((l) => `<div>${l}</div>`).join('')}<div class="row">${btn('vdone', 'Continue', '', '', 'primary')}</div></div>`;
+    const vp = G.party.map((c) => { const n = expNeeded(c.level), mx = c.level >= L.MAX_LEVEL; return `<div class="vp">${portrait(c.main, 'sm' + (c.hp <= 0 ? ' ko' : ''))}<div class="vi"><div>${esc(c.name)} <span class="gold">LV ${c.level}</span></div>${bar(mx ? 1 : c.exp, mx ? 1 : n, 'xp')}</div></div>`; }).join('');
+    ov.innerHTML = `<div class="win gold anim"><div class="vhead">${ic('trophy')}<h2>${def ? esc(def.name) + ' is slain!' : 'Victory!'}</h2>${ic('trophy')}</div><div class="spoils"><span>${ic('star')}+${r.exp} EXP</span><span class="gold">${ic('coin')}+${r.gold} G</span></div><div class="vparty">${vp}</div><div class="vlines">${lines.map((l) => `<div>${UI.deco(l)}</div>`).join('')}</div><div class="foot">${btn('vdone', 'Continue', '', '', 'primary')}</div></div>`;
     ACT.vdone = () => { hide(); res(); };
   });
   if (def?.final) await ending();
@@ -983,9 +1016,9 @@ async function ending() {
     ['MADE WITH', 'h'], ['Claude Code', ''], ['every sprite, tile and song', ''], ['was drawn or composed in code', ''], ['', ''], ['THANK YOU FOR PLAYING', 'h'],
   ];
   await new Promise((res) => {
-    show(`<h2>🎉 The Frost Titan falls!</h2><canvas id="endcv" width="512" height="230" style="width:100%;border:2px solid #060a28;border-radius:4px;display:block;background:#000"></canvas>
+    show(`<h2>🎉 The Frost Titan falls!</h2><canvas id="endcv" width="512" height="230" class="framed"></canvas>
     <div class="credits"><div class="roll">${roll.map(([t, k]) => `<div class="${k}">${t || '&nbsp;'}</div>`).join('')}</div></div>
-    ${left.length ? `<p class="dim">Still at large: ${left.join(', ')}. Hunt them down for the full legend.</p>` : '<p class="gold">All three great evils are slain. The realm is safe, for now.</p>'}${btn('edone', 'Keep exploring', '', '', 'primary')}`);
+    ${left.length ? `<p class="dim">Still at large: ${left.join(', ')}. Hunt them down for the full legend.</p>` : '<p class="gold">All three great evils are slain. The realm is safe, for now.</p>'}<div class="foot">${btn('edone', 'Keep exploring', '', '', 'primary')}</div>`, '', 'gold');
     const c2 = $('#endcv').getContext('2d'), t0 = performance.now();
     const loop = () => { if (!$('#endcv')) return; drawEnding(c2, (performance.now() - t0) / 1000, 512, 230); requestAnimationFrame(loop); }; loop();
     ACT.edone = () => { hide(); music(musicFor()); res(); };
@@ -994,7 +1027,7 @@ async function ending() {
 async function defeat() {
   music('gameover');
   await new Promise((res) => {
-    ov.innerHTML = `<div class="win"><h2 class="bad">Defeated…</h2><p>The party is carried back to Haven Town. You lose half your gold.</p>${btn('ddone', 'Wake up', '', '', 'primary')}</div>`;
+    ov.innerHTML = `<div class="win red anim"><div class="vhead">${ic('ko')}<h2 class="bad">Defeated…</h2>${ic('ko')}</div><div class="vparty">${G.party.map((c) => `<div class="vp">${portrait(c.main, 'sm ko')}<div class="vi">${esc(c.name)}</div></div>`).join('')}</div><p>The party is carried back to Haven Town. You lose half your gold.</p><div class="foot">${btn('ddone', 'Wake up', '', '', 'primary')}</div></div>`;
     ACT.ddone = () => { G.gold = Math.floor(G.gold / 2); for (const c of G.party) { const s = maxOf(c); c.hp = s.hp; c.mp = s.mp; } goto('haven', 9, 11); hide(); res(); };
   });
 }
@@ -1008,7 +1041,7 @@ addEventListener('pagehide', () => { setBackgrounded(true); autosave(); });
 addEventListener('pageshow', () => setBackgrounded(false));
 // offline play + install support for the single-file build (only when served over https/localhost, never inside a host frame)
 if ('serviceWorker' in navigator && document.querySelector('meta[name=gemforge-bundled]') && window.self === window.top && /^(https:|http:\/\/localhost)/.test(location.href)) navigator.serviceWorker.register('sw.js').catch(() => {});
-const muteBtn = $('#mute'), syncMute = () => { muteBtn.textContent = isMuted() ? '🔇' : '🔊'; };
+const muteBtn = $('#mute'), syncMute = () => { muteBtn.innerHTML = ic(isMuted() ? 'mute' : 'sound'); };
 muteBtn.addEventListener('click', () => { setMuted(!isMuted()); syncMute(); if (!isMuted()) sfx('click'); });
 syncMute();
 

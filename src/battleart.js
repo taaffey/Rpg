@@ -582,6 +582,359 @@ const ENEMY_VARIANTS = {
   skeleton_knight: ['skeleton', { armor: '#4a62a8', shield: '#3a4a7a', trim: '#e0c050', eye: '#7ad8ff' }, { helm: true }],
   frozen_knight: ['skeleton', { bone: '#d8f0ff', armor: '#8ad0f0', shield: '#5a8ab8', trim: '#ffffff', metal: '#c8f0ff', eye: '#3ad0ff' }, { helm: true }],
 };
+// ---------- bestiary expansion: new monster designs (all face right, lit from the upper left) ----------
+TEX.ribs = (x) => (x % 4 === 0 ? -0.16 : x % 4 === 1 ? 0.06 : 0);
+TEX.grain = (x, y) => (x % 3 === 0 ? -0.12 : 0) + (hash(x, y >> 2, 4) < 0.08 ? -0.1 : 0);
+TEX.wrap = (x, y) => ((y + (x >> 1)) % 4 === 0 ? -0.2 : (y + (x >> 1)) % 4 === 1 ? 0.06 : 0);
+TEX.feather = (x, y) => ((x + y * 2) % 5 === 0 ? -0.12 : 0) + (y % 4 === 0 ? -0.05 : 0);
+TEX.wart = (x, y) => (hash(x >> 1, y >> 1, 11) < 0.12 ? -0.16 : 0) + (hash(x, y, 12) < 0.05 ? 0.12 : 0);
+const chain = (pts, r, m, z, o = {}) => { const out = []; for (let i = 0; i < pts.length - 1; i++) out.push(cap(pts[i][0], pts[i][1], pts[i + 1][0], pts[i + 1][1], r[i], r[i + 1], m, { z, ...o })); return out; };
+function bolts(a, list, col = '#fff27a') { for (const [x, y] of list) { a.line(x, y, x + 2, y + 3, col); a.line(x + 2, y + 3, x, y + 4, col); a.line(x, y + 4, x + 2, y + 7, '#ffffff'); } }
+Object.assign(MODELS, {
+  hornet: { col: { body: '#e8b830', stripe: '#2a2018', wing: '#e8f4ff', eye: '#b0182a', sting: '#f0e8d8' }, build(P) {
+    const m = { body: mat(P.body, 5, { spec: '#fff8d0', specAt: 0.9 }), stripe: mat(P.stripe, 4), wing: mat(P.wing, 4, { lift: 0.18, nocrease: true, tex: (x, y) => ((x + y) % 5 === 0 ? -0.1 : 0) }), sting: mat(P.sting, 3), eye: mat(P.eye, 3, { spec: '#ffffff' }) };
+    const ax = [Math.cos(0.45), Math.sin(0.45)], pp = [-ax[1], ax[0]], A = [13, 20], st = [];
+    for (const t of [-4.5, -0.5, 3.5]) { const c = [A[0] + ax[0] * t, A[1] + ax[1] * t]; st.push(paint(cap(c[0] - pp[0] * 7, c[1] - pp[1] * 7, c[0] + pp[0] * 7, c[1] + pp[1] * 7, 1.1, 1.1, 'stripe'))); }
+    return { w: 42, h: 34, mats: m, parts: [
+      ell(21, 6, 6.5, 2.2, 'wing', { z: -6, rot: -0.9 }), // far wing
+      ...chain([[22, 19], [20, 25], [21, 29]], [0.8, 0.6, 0.5], 'stripe', -4), ...chain([[25, 19], [27, 24], [29, 27]], [0.8, 0.6, 0.5], 'stripe', -4),
+      ell(A[0], A[1], 9, 5.6, 'body', { rot: 0.45, z: 0 }), ...st, poly([[5, 23.5], [0.5, 29], [6.5, 26]], 'sting', { z: 1, bev: 0.8 }),
+      ell(22.5, 15.5, 5.2, 4.6, 'stripe', { z: 2 }), paint(ell(22, 13.5, 3.6, 2, 'body')),
+      ell(29.5, 14, 4, 3.8, 'body', { z: 4 }), ell(31, 13, 2.2, 2.6, 'eye', { z: 6 }), cap(33, 17, 35.5, 19, 0.8, 0.5, 'stripe', { z: 6 }), cap(31.5, 17.5, 33, 20, 0.7, 0.4, 'stripe', { z: 5 }),
+      cap(29, 10.5, 33, 5, 0.45, 0.4, 'stripe', { z: 5 }), cap(30, 10.5, 36, 7, 0.45, 0.4, 'stripe', { z: 5 }),
+      ...chain([[24, 19], [23.5, 24], [25, 29]], [0.9, 0.7, 0.5], 'stripe', 3), ...chain([[26.5, 18.5], [29, 23], [31.5, 25]], [0.9, 0.7, 0.5], 'stripe', 3),
+      ell(17, 7, 7, 2.4, 'wing', { z: 8, rot: -0.6 }), // near wing
+    ], post(a) { a.px(31, 12, '#ffffff'); a.px(32, 13, '#ff6a6a'); a.px(36, 6, a.ramp('stripe', 2)); a.px(33, 4, a.ramp('stripe', 2)); a.line(12, 10, 21, 4, a.ramp('wing', 1)); } };
+  } },
+  shroom: { col: { cap: '#d23a30', spot: '#f4ecd8', gill: '#c8a888', stem: '#e8d8b8', eye: '#2a1810' }, build(P) {
+    const m = { cap: mat(P.cap, 5, { spec: '#ffd8d0', specAt: 0.9 }), spot: mat(P.spot, 4), gill: mat(P.gill, 4, { tex: (x) => (x % 2 ? -0.12 : 0) }), stem: mat(P.stem, 5, { tex: 'rough' }) };
+    return { w: 38, h: 40, mats: m, parts: [
+      ell(19, 13, 16, 10.5, 'cap', { z: 4, d: 0.85 }), cut(poly([[0, 16.2], [38, 16.2], [38, 40], [0, 40]], null)),
+      cap(12, 25, 7, 30, 1.8, 1.4, 'stem', { z: -3 }), ell(6.5, 30.5, 1.8, 1.6, 'stem', { z: -3 }),
+      ell(14, 36, 4, 2.6, 'stem', { z: -1, d: 0.6 }), ell(24, 36.5, 4.2, 2.6, 'stem', { z: 2, d: 0.6 }),
+      ell(19, 27, 8, 9.5, 'stem', { z: 0 }), ell(19, 16.5, 14, 2.6, 'gill', { z: 3, d: 0.4 }),
+      ...[[11, 9, 3, 2.4], [20, 6, 2.6, 2], [27, 10, 2.8, 2.4], [16, 13, 2, 1.6], [33, 13, 1.6, 1.6], [6, 13.5, 1.6, 1.4]].map(([x, y, rx, ry]) => paint(ell(x, y, rx, ry, 'spot'))),
+      cap(25, 24, 30, 27, 1.8, 1.4, 'stem', { z: 3 }), ell(30.5, 27.5, 1.8, 1.6, 'stem', { z: 3 }),
+    ], post(a) {
+      a.rect(21, 21, 2, 3, P.eye); a.rect(25, 21, 2, 3, P.eye); a.px(21, 21, '#ffffff'); a.px(25, 21, '#ffffff');
+      a.line(22, 27, 25, 27, '#6a3020'); a.px(23, 28, '#6a3020'); a.px(19, 24, '#e89a8a'); a.px(28, 24, '#e89a8a');
+    } };
+  } },
+  boar: { col: { fur: '#7a5038', mane: '#3e2a20', snout: '#c88a78', tusk: '#f4ecd8', hoof: '#2a2020', eye: '#ff5030' }, build(P, V) {
+    const m = { fur: mat(P.fur, 5, { tex: 'fur', spec: V.gold ? '#fffbe0' : undefined, specAt: 0.84, ramp: V.gold ? { hi: 0.8 } : undefined }), mane: mat(P.mane, 4, { tex: 'fur' }), snout: mat(P.snout, 4), tusk: mat(P.tusk, 4), hoof: mat(P.hoof, 3) };
+    const bristles = []; for (let k = 0; k < 6; k++) { const x = 17 + k * 3.2, y = 11.5 - Math.sin(k / 5 * Math.PI) * 3; bristles.push(poly([[x - 2, y + 3], [x - 0.5, y - 3.5], [x + 1.8, y + 3]], 'mane', { z: 1, bev: 0.9 })); }
+    return { w: 50, h: 34, mats: m, parts: [
+      cap(7, 15, 4, 14, 0.9, 0.7, 'fur', { z: -4 }), ell(3.5, 13, 1.3, 1.3, 'fur', { z: -4 }),
+      cap(15, 24, 14, 30.5, 2.3, 1.8, 'fur', { z: -6 }), ell(14, 31, 2.2, 1.3, 'hoof', { z: -6, d: 0.5 }), cap(31, 24, 33, 30.5, 2.4, 1.8, 'fur', { z: -6 }), ell(33, 31, 2.2, 1.3, 'hoof', { z: -6, d: 0.5 }),
+      ...bristles, ell(21, 19.5, 14, 8.5, 'fur', { z: 0 }), ell(11, 19.5, 6.5, 7, 'fur', { z: 0.5 }), ell(29, 16, 8.5, 8.5, 'mane', { z: 1 }),
+      cap(11, 24, 11.5, 30.5, 2.6, 1.9, 'fur', { z: 2 }), ell(11.5, 31, 2.3, 1.3, 'hoof', { z: 2, d: 0.5 }), cap(29, 24, 29.5, 31, 2.8, 2, 'fur', { z: 3 }), ell(29.5, 31.6, 2.5, 1.3, 'hoof', { z: 3, d: 0.5 }),
+      poly([[33, 13], [32, 6.5], [37, 11]], 'mane', { z: 4, bev: 1 }), ell(37, 19, 7, 6.2, 'fur', { z: 4 }), cap(40, 20.5, 46, 22, 3.6, 2.8, 'fur', { z: 5 }), ell(46.6, 22.2, 1.4, 2.5, 'snout', { z: 6 }),
+      cap(42, 25, 43.5, 21, 0.8, 0.5, 'tusk', { z: 7 }), cap(43.5, 21, 45, 18.5, 0.5, 0.3, 'tusk', { z: 7 }),
+    ], post(a) {
+      a.px(40, 17, P.eye); a.px(41, 17, P.eye); a.px(41, 18, '#200808'); a.line(38, 15.5, 41, 16, a.ramp('mane', 0));
+      a.px(47, 21, a.ramp('snout', 0)); a.px(47, 23, a.ramp('snout', 0)); a.line(42, 24, 45, 24, '#2a1010');
+      for (const x of [10, 12, 28, 30]) a.px(x, 32, a.ramp('hoof', 0));
+      if (V.gold) for (const [x, y] of [[18, 14], [25, 20], [10, 17], [36, 15], [31, 25]]) { a.px(x, y, '#ffffff'); a.px(x - 1, y, '#fff6c0'); a.px(x + 1, y, '#fff6c0'); a.px(x, y - 1, '#fff6c0'); a.px(x, y + 1, '#fff6c0'); }
+    } };
+  } },
+  bandit: { col: { skin: '#d8a070', hood: '#5a4a3a', vest: '#7a5a30', cloth: '#b83a2a', pants: '#4a4a5a', boots: '#3a2a20', steel: '#b8c0d0', eye: '#ffffff' }, build(P, V) {
+    const m = { skin: mat(P.skin, 4, { ramp: { lo: 0.5 } }), hood: mat(P.hood, 5, { tex: 'cloth' }), vest: mat(P.vest, 4, { tex: 'rough' }), cloth: mat(P.cloth, 4, { tex: 'cloth' }), pants: mat(P.pants, 4, { tex: 'cloth' }), boots: mat(P.boots, 3), steel: mat(P.steel, 5, { spec: '#ffffff', specAt: 0.85, ramp: { hi: 0.85 } }) };
+    const blade = V.desert ? [poly([[28, 15], [31, 4], [35, 0.5], [33.5, 6], [30, 16]], 'steel', { z: 10, bev: 1 })] : [cap(28.5, 14.5, 32.5, 1.5, 1.1, 0.35, 'steel', { z: 10 })];
+    return { w: 38, h: 42, mats: m, parts: [
+      cap(12, 16, 9, 22, 1.8, 1.5, 'hood', { z: -4 }), cap(9, 22, 8, 26, 1.5, 1.2, 'skin', { z: -4 }), ell(8, 26.5, 1.5, 1.4, 'skin', { z: -4 }),
+      cap(14, 28, 12, 34, 2.1, 1.8, 'pants', { z: -2 }), cap(12, 34, 12, 38.5, 1.8, 1.6, 'boots', { z: -2 }), ell(13, 39.5, 3, 1.4, 'boots', { z: -2, d: 0.5 }),
+      cap(14, 26, 8, 33, 1.2, 0.8, 'cloth', { z: -1 }), cap(14.5, 26.5, 10, 35, 1, 0.6, 'cloth', { z: -1 }),
+      poly([[11, 14], [21, 13], [23, 21], [22, 29], [11, 29], [9.5, 21]], 'vest', { z: 0, bev: 2 }), paint(poly([[15, 14], [18, 14], [17, 29], [15.5, 29]], 'hood')),
+      cap(10.5, 27, 22.5, 27, 1.3, 1.3, 'cloth', { z: 2 }), ell(17, 27, 1.4, 1.4, 'steel', { z: 3 }),
+      cap(19, 29, 20, 34, 2.2, 1.9, 'pants', { z: 2 }), cap(20, 34, 20.5, 38.5, 1.9, 1.6, 'boots', { z: 2 }), ell(22, 39.5, 3, 1.4, 'boots', { z: 2, d: 0.5 }),
+      cap(13, 4, 8, 11, 2.4, 0.8, 'hood', { z: 3 }), ell(17, 8, 5.8, 6, 'hood', { z: 4 }), ell(20, 9, 3.4, 4, 'skin', { z: 6 }), paint(poly([[16, 10.5], [26, 10.5], [24, 14], [17, 14]], 'cloth')),
+      cap(19, 16, 24, 19, 1.9, 1.6, 'hood', { z: 7 }), cap(24, 19, 28, 16, 1.6, 1.3, 'skin', { z: 7 }),
+      cap(26, 16.5, 30.5, 14, 0.7, 0.7, 'steel', { z: 9 }), ...blade, ell(28.3, 15.6, 1.6, 1.5, 'skin', { z: 11 }),
+    ], post(a) { a.px(20, 8, P.eye); a.px(21, 8, '#1a1018'); a.px(23, 8, P.eye); a.px(24, 8, '#1a1018'); a.line(19, 7, 21, 6.6, a.ramp('hood', 0)); a.line(23, 6.6, 25, 7, a.ramp('hood', 0)); a.px(13, 20, a.ramp('vest', 0)); a.px(20, 22, a.ramp('vest', 0)); } };
+  } },
+  sapling: { col: { bark: '#7a5a3a', leaf: '#5aa040', bud: '#f0a0c0', eye: '#e8f060' }, build(P) {
+    const m = { bark: mat(P.bark, 5, { tex: 'grain' }), leaf: mat(P.leaf, 5, { tex: (x, y) => (hash(x >> 1, y, 21) < 0.2 ? -0.18 : hash(x, y, 22) < 0.08 ? 0.15 : 0) }), void: mat('#1a120c', 2, { flat: 0.1 }) };
+    return { w: 38, h: 44, mats: m, parts: [
+      ...chain([[14, 20], [8, 16], [5, 10]], [1.8, 1.3, 0.8], 'bark', -4), ell(4.5, 8.5, 3.5, 3, 'leaf', { z: -3 }),
+      ...chain([[15, 34], [11, 38], [8, 41]], [2.4, 1.6, 0.9], 'bark', -2), ...chain([[18, 35], [18, 39], [17, 42]], [2.2, 1.6, 1], 'bark', 0), ...chain([[21, 34], [25, 38], [28, 41]], [2.4, 1.6, 0.9], 'bark', 1),
+      cap(18, 35, 18, 14, 6.4, 4.8, 'bark', { z: 0 }),
+      ell(18, 9, 9, 6.5, 'leaf', { z: 3 }), ell(11, 12, 5.5, 4.6, 'leaf', { z: 2 }), ell(25, 10, 5.8, 5, 'leaf', { z: 4 }), ell(17, 3.8, 5.8, 3.8, 'leaf', { z: 5 }), ell(23, 4.5, 3.8, 3, 'leaf', { z: 5.5 }),
+      ...chain([[21, 26], [27, 24], [31, 19]], [1.9, 1.4, 0.9], 'bark', 6), cap(31, 19, 34, 17, 0.7, 0.4, 'bark', { z: 6 }), cap(31, 19, 31.5, 15.5, 0.7, 0.4, 'bark', { z: 6 }), ell(33, 15, 2.6, 2.2, 'leaf', { z: 7 }),
+      paint(ell(17, 20.5, 1.6, 1.8, 'void')), paint(ell(21, 20.5, 1.5, 1.8, 'void')), paint(poly([[16, 25], [22, 25], [21, 27.5], [17, 27.5]], 'void')),
+    ], post(a) {
+      a.px(17, 21, P.eye); a.px(21, 21, P.eye); a.px(17, 25, a.ramp('bark', 3)); a.px(19, 25, a.ramp('bark', 3)); a.px(21, 25, a.ramp('bark', 3));
+      for (const [x, y] of [[14, 6], [22, 2], [27, 8], [9, 11], [33, 14]]) { a.px(x, y, P.bud); a.px(x + 1, y, shade(P.bud, 0.75)); a.px(x, y - 1, '#ffffff'); }
+      a.line(16, 17, 16, 30, a.ramp('bark', 0)); a.px(13, 32, '#7ac050'); a.px(12, 31, '#7ac050');
+    } };
+  } },
+  spider: { col: { chitin: '#4a3a30', abd: '#3a2a24', mark: '#e8c040', leg: '#2e2420', eye: '#ff3a2a', fang: '#c8b898' }, build(P) {
+    const m = { chitin: mat(P.chitin, 5, { spec: '#d8c8b0', specAt: 0.88 }), abd: mat(P.abd, 5, { tex: 'fur' }), mark: mat(P.mark, 4), leg: mat(P.leg, 4, { spec: '#a89888', specAt: 0.9 }), fang: mat(P.fang, 3) };
+    const leg = (b, k, f, z, mm = 'leg') => chain([b, k, f], [1.2, 0.9, 0.5], mm, z);
+    return { w: 46, h: 34, mats: m, parts: [
+      ...leg([28, 19], [37, 9], [44, 28], -7), ...leg([27, 19], [32, 7], [36, 30], -7), ...leg([25, 19], [21, 7], [21, 30], -7), ...leg([24, 19], [15, 9], [10, 29], -7),
+      ell(13, 15, 10, 8.5, 'abd', { z: 0, rot: -0.2 }), paint(poly([[9, 10], [13, 13], [17, 10], [16, 14], [13, 17], [10, 14]], 'mark')), paint(ell(8, 19, 1.4, 1.4, 'mark')), paint(ell(15, 20, 1.2, 1.2, 'mark')),
+      ell(27, 19, 6.5, 5, 'chitin', { z: 2 }), ell(33, 19, 4, 3.8, 'chitin', { z: 3 }),
+      cap(35, 21, 36.5, 25, 1.1, 0.5, 'fang', { z: 6 }), cap(33.5, 21.5, 34, 25.5, 1, 0.45, 'fang', { z: 5 }),
+      ...leg([30, 21], [39, 11], [45, 30], 8), ...leg([28, 22], [33, 10], [38, 31], 7), ...leg([26, 22], [22, 10], [24, 31], 6), ...leg([24, 21], [16, 12], [13, 31], 5),
+    ], post(a) { for (const [x, y] of [[34, 17], [36, 17], [35, 16], [37, 18]]) a.px(x, y, P.eye); a.px(36, 17, '#ffd0a0'); } };
+  } },
+  bog_toad: { col: { skin: '#6a7a3a', spot: '#3a4a20', belly: '#d8c878', eye: '#e8d040', mouth: '#2a1810' }, build(P) {
+    const m = { skin: mat(P.skin, 5, { tex: 'wart', spec: '#e8f0c0', specAt: 0.9 }), spot: mat(P.spot, 4), belly: mat(P.belly, 4, { tex: 'belly' }), eye: mat(P.eye, 4, { spec: '#ffffff' }) };
+    return { w: 44, h: 34, mats: m, parts: [
+      ell(9, 24, 6.5, 6.5, 'skin', { z: -3 }), cap(6, 30, 15, 31.5, 1.8, 1.5, 'skin', { z: -3 }),
+      ell(21, 22, 14, 9.5, 'skin', { z: 0 }), paint(ell(27, 27, 9, 4.5, 'belly')), ...[[14, 16, 2.4], [19, 14, 1.8], [11, 21, 2], [24, 17, 1.6]].map(([x, y, r]) => paint(ell(x, y, r, r * 0.8, 'spot'))),
+      ell(12, 26, 6, 6.5, 'skin', { z: 2 }), cap(9, 31, 18, 32, 2, 1.6, 'skin', { z: 2 }), ...[[18.5, 31], [19, 33]].map(([x, y]) => ell(x, y, 1.3, 1, 'skin', { z: 3 })),
+      ell(31, 18.5, 8.5, 6.5, 'skin', { z: 3 }), ell(34, 24, 4.5, 3, 'belly', { z: 4 }),
+      ell(29, 12, 3.4, 3.4, 'skin', { z: 5 }), ell(35, 13, 3.2, 3.2, 'skin', { z: 6 }), ell(29.5, 11.4, 2.3, 2.3, 'eye', { z: 6 }), ell(35.4, 12.4, 2.2, 2.2, 'eye', { z: 7 }),
+      cap(33, 25, 35, 31, 1.9, 1.5, 'skin', { z: 5 }), ell(36, 31.5, 2.6, 1.2, 'skin', { z: 5, d: 0.5 }),
+    ], post(a) {
+      a.rect(30, 11, 1, 2, '#100808'); a.rect(36, 12, 1, 2, '#100808');
+      for (let x = 27; x <= 39; x++) a.px(x, 20 + (x > 36 ? -1 : 0), P.mouth); a.px(39, 18, P.mouth);
+      a.px(38, 16, a.ramp('skin', 0)); a.px(37, 16, a.ramp('skin', 0));
+    } };
+  } },
+  leech: { col: { skin: '#5a3a4a', belly: '#a87878', mouth: '#2a0a14', tooth: '#f0e0d0' }, build(P) {
+    const m = { skin: mat(P.skin, 5, { spec: '#f0c8d8', specAt: 0.84, tex: (x, y) => ((x + y) % 4 === 0 ? -0.14 : 0) }), belly: mat(P.belly, 4, { tex: 'belly' }), mouth: mat(P.mouth, 3, { flat: 0.25 }) };
+    const seg = [[5, 22, 3.6, 3.2], [10, 21.5, 5, 4.4], [16, 20.5, 5.6, 5.2], [22, 18.5, 5.6, 5.4], [27.5, 15, 5.2, 5.2], [32.5, 11.5, 4.6, 4.6]];
+    return { w: 42, h: 28, mats: m, parts: [
+      ...seg.map(([x, y, rx, ry], i) => ell(x, y, rx, ry, 'skin', { z: i * 0.6 })), ...seg.slice(1).map(([x, y, rx, ry]) => paint(ell(x + 1, y + ry * 0.62, rx * 0.8, ry * 0.35, 'belly'))),
+      ell(37, 10.5, 2.6, 4.8, 'skin', { z: 5, rot: 0.3 }), ell(38.2, 10.8, 1.5, 3.6, 'mouth', { z: 6, rot: 0.3 }),
+    ], post(a) {
+      for (const [x, y] of [[38, 7], [39, 8], [39, 12], [38, 14], [37, 13]]) a.px(x, y, P.tooth);
+      for (const [x, y] of [[33, 7], [35, 8], [34, 6]]) a.px(x, y, '#ff6a3a');
+      for (const x of [13, 19, 25, 30]) a.px(x, x < 25 ? 16 : x < 30 ? 11 : 8, a.ramp('skin', 4));
+    } };
+  } },
+  wisp: { col: { flame: '#4ad0b0', core: '#d0fff0', eye: '#0a3a30' }, build(P) {
+    const m = { flame: mat(P.flame, 5, { glow: true, lift: 0.22, nocrease: true, ramp: { hi: 0.8 } }), core: mat(P.core, 4, { glow: true, lift: 0.4, nocrease: true }) };
+    return { w: 32, h: 40, mats: m, outline: shade(P.flame, 0.35), parts: [
+      ...chain([[14, 24], [9, 31], [4, 35], [2, 39]], [5.5, 3.6, 2, 0.6], 'flame', -2), ...chain([[18, 25], [19, 31], [16, 36]], [3, 2, 0.6], 'flame', -2),
+      ell(16, 18, 9, 8.5, 'flame', { z: 0 }), ...chain([[16, 11], [15, 5], [17, 0.6]], [5, 2.6, 0.5], 'flame', 1), ...chain([[11, 13], [7, 7], [8, 3]], [3, 1.6, 0.4], 'flame', 1), ...chain([[21, 12], [24, 6], [23, 2]], [3, 1.6, 0.4], 'flame', 1),
+      ell(17.5, 18, 5.6, 5.6, 'core', { z: 4 }),
+    ], post(a) {
+      a.rect(16, 16, 2, 3, P.eye); a.rect(20, 16, 2, 3, P.eye); a.px(18, 21, P.eye); a.px(19, 21, P.eye); a.px(18, 22, P.eye); a.px(19, 22, P.eye);
+      for (const [x, y] of [[5, 15], [27, 9], [28, 24], [3, 26], [25, 30]]) { a.px(x, y, P.core); a.px(x, y + 1, a.ramp('flame', 2)); }
+    } };
+  } },
+  lizardman: { col: { scale: '#3a8a6a', belly: '#d8c890', crest: '#c84a2a', shield: '#8a5a30', wood: '#6a4424', steel: '#b8c0d0', eye: '#ffd23a' }, build(P) {
+    const m = { scale: mat(P.scale, 5, { tex: 'scale' }), belly: mat(P.belly, 4, { tex: 'belly' }), crest: mat(P.crest, 4), shield: mat(P.shield, 4, { tex: 'grain' }), wood: mat(P.wood, 4), steel: mat(P.steel, 5, { spec: '#ffffff', ramp: { hi: 0.85 } }) };
+    return { w: 40, h: 46, mats: m, parts: [
+      ...chain([[13, 28], [7, 34], [3, 40], [1, 44]], [3.6, 2.6, 1.6, 0.6], 'scale', -6),
+      ell(9, 21, 5, 6.5, 'shield', { z: -5, d: 0.45 }), paint(cap(9, 15, 9, 27, 0.8, 0.8, 'steel')), ell(9, 21, 1.6, 1.6, 'steel', { z: -3 }),
+      ...chain([[15, 28], [12, 35], [15, 41]], [2.4, 1.8, 1.4], 'scale', -3), ell(16.5, 42, 2.8, 1.2, 'scale', { z: -3, d: 0.5 }),
+      ell(18, 21.5, 6.5, 8.5, 'scale', { z: 0 }), paint(ell(21, 23, 3.6, 6.8, 'belly')), cap(12, 27.5, 24, 27.5, 1, 1, 'shield', { z: 2 }),
+      ...chain([[20, 28], [24, 35], [22, 41]], [2.6, 1.9, 1.5], 'scale', 2), ell(24, 42, 3, 1.2, 'scale', { z: 2, d: 0.5 }),
+      cap(12, 39, 34, 2.5, 0.75, 0.75, 'wood', { z: 3 }), poly([[33, 4], [35.5, -1], [36.5, 5], [34, 7]], 'steel', { z: 4, bev: 0.9 }), cap(32, 6.5, 34.5, 8, 0.7, 0.7, 'crest', { z: 4 }),
+      poly([[17, 7], [12, 2], [14, 7], [10, 6], [16, 11]], 'crest', { z: 4, bev: 1 }),
+      ell(22, 10, 5, 4.6, 'scale', { z: 5 }), cap(24, 11, 31, 12.5, 3.2, 1.8, 'scale', { z: 6 }), cap(24, 14, 30, 14, 1.6, 1, 'belly', { z: 5.5 }),
+      cap(19, 16, 24, 21, 1.9, 1.6, 'scale', { z: 7 }), cap(24, 21, 27.5, 19, 1.6, 1.3, 'scale', { z: 7 }), ell(27.5, 19.3, 1.6, 1.5, 'scale', { z: 9 }),
+    ], post(a) { a.px(24, 9, P.eye); a.px(25, 9, P.eye); a.px(25, 10, '#100808'); a.line(23, 8, 26, 8, a.ramp('scale', 0)); a.line(26, 13, 31, 13, '#1a2a20'); fangs(a, [[28, 13], [30, 13]], '#fff8e0'); a.px(31, 11, a.ramp('scale', 0)); } };
+  } },
+  scorpion: { col: { shell: '#c8903a', shell2: '#8a5a28', sting: '#3a1a18', eye: '#100808' }, build(P) {
+    const m = { shell: mat(P.shell, 5, { spec: '#fff0c0', specAt: 0.86, tex: 'rough' }), shell2: mat(P.shell2, 4, { tex: 'rough' }), sting: mat(P.sting, 4, { spec: '#ffffff' }) };
+    const legs = []; for (const [bx, fx, z, mm] of [[15, 11, -5, 'shell2'], [19, 18, -5, 'shell2'], [23, 25, -5, 'shell2'], [26, 31, -5, 'shell2'], [16, 13, 4, 'shell'], [20, 20, 4, 'shell'], [24, 27, 4, 'shell'], [27, 33, 4, 'shell']]) legs.push(...chain([[bx, 26], [(bx + fx) / 2 + (z > 0 ? 0 : 1), 23 + (z > 0 ? 4 : 2)], [fx, z > 0 ? 34 : 32]], [0.9, 0.8, 0.45], mm, z));
+    return { w: 48, h: 36, mats: m, parts: [
+      ...chain([[30, 26], [35, 28], [39, 26]], [1.8, 1.6, 1.4], 'shell2', -4), ell(42, 25.5, 3.6, 2.4, 'shell2', { z: -4 }), poly([[43, 23.5], [47, 22.5], [44, 25]], 'shell2', { z: -4, bev: 0.8 }),
+      ...legs.slice(0, 8),
+      ell(9, 23, 4, 3.6, 'shell', { z: 0 }), ell(13.5, 24, 5, 4.4, 'shell', { z: 0.5 }), ell(21, 25, 9.5, 5.5, 'shell', { z: 1 }),
+      ...[[6, 18, 3.4, 3.2], [5.5, 12, 3.2, 3], [8.5, 6.5, 3, 2.8], [14, 3.5, 2.8, 2.6], [19.5, 4, 2.6, 2.4]].map(([x, y, rx, ry], i) => ell(x, y, rx, ry, 'shell', { z: 2 + i * 0.4 })),
+      ell(23.5, 6.5, 2.8, 2.3, 'shell2', { z: 5 }), poly([[25, 6.5], [29.5, 10.5], [25, 9]], 'sting', { z: 6, bev: 0.8 }),
+      ...legs.slice(8),
+      ...chain([[27, 23], [32, 20], [35, 18.5]], [2.3, 2, 1.8], 'shell', 6), ell(38.5, 18, 4.6, 3, 'shell', { z: 7 }), poly([[39, 15.6], [46.5, 14.5], [41, 18]], 'shell', { z: 8, bev: 1 }), poly([[39, 20.5], [46, 21], [40.5, 19]], 'shell2', { z: 8, bev: 1 }),
+    ], post(a) { a.px(29, 22, P.eye); a.px(30, 21, P.eye); a.px(30, 22, '#ff6a3a'); for (const x of [17, 21, 25]) a.line(x, 21, x + 1, 29, a.ramp('shell', 1)); a.px(28, 10, '#ffffff'); } };
+  } },
+  sandworm: { col: { skin: '#c8986a', plate: '#7a5a3a', sand: '#e0c080', maw: '#3a0a18', tooth: '#fff4e0' }, build(P) {
+    const m = { skin: mat(P.skin, 5, { tex: 'belly', spec: '#fff0d0', specAt: 0.9 }), plate: mat(P.plate, 4, { tex: 'stone' }), sand: mat(P.sand, 5, { tex: 'rough' }), maw: mat(P.maw, 3, { flat: 0.25 }) };
+    const seg = [[19, 42, 10, 6.5, 0.2], [17.5, 34, 9.6, 6.2, 0.1], [19.5, 26, 9, 6, -0.3], [25, 19, 8.6, 6, -0.7], [31.5, 13.5, 8, 6.6, -0.9]];
+    return { w: 52, h: 52, mats: m, crease: 1.8, parts: [
+      ...seg.map(([x, y, rx, ry, r], i) => ell(x, y, rx, ry, 'skin', { z: i * 1.2, rot: r })),
+      ...[[11, 33, 3.6, 5], [12.5, 25, 3.6, 4.6], [17, 17, 3.4, 4.2], [23, 10.5, 3.2, 3.8]].map(([x, y, rx, ry], i) => ell(x, y, rx, ry, 'plate', { z: 2 + i * 1.3, d: 0.7 })),
+      ell(38, 12.5, 4.5, 8, 'skin', { z: 8, rot: -0.35 }), ell(39.5, 12.2, 3, 6.4, 'maw', { z: 9, rot: -0.35 }),
+      ell(24, 47.5, 23, 5.2, 'sand', { z: 6, d: 0.45 }), ell(8, 48, 6, 3, 'sand', { z: 7, d: 0.5 }), ell(40, 48.5, 7, 2.8, 'sand', { z: 7, d: 0.5 }),
+    ], post(a) {
+      for (const [x, y] of [[38, 6], [40, 7], [41, 9], [42, 12], [41, 15], [40, 17], [38, 18], [37, 8], [37, 16]]) { a.px(x, y, P.tooth); }
+      a.px(39, 11, '#ff7a3a'); a.px(39, 13, '#ff7a3a'); a.px(40, 12, '#ffb070');
+      for (const [x, y] of [[4, 41], [45, 42], [47, 39], [2, 44], [33, 41], [43, 44]]) a.px(x, y, P.sand);
+    } };
+  } },
+  cactus: { col: { cactus: '#4a9a5a', flower: '#ff7ab0', root: '#8a6a40', eye: '#1a1008', spine: '#f8f0d0' }, build(P) {
+    const m = { cactus: mat(P.cactus, 5, { tex: 'ribs' }), flower: mat(P.flower, 4), root: mat(P.root, 4), void: mat('#1a2a18', 2, { flat: 0.1 }) };
+    return { w: 36, h: 44, mats: m, parts: [
+      ...chain([[11, 25], [5, 23], [5, 13]], [3.2, 3.2, 2.8], 'cactus', -2), ell(5, 12.5, 2.8, 2.6, 'cactus', { z: -2 }),
+      ell(13, 41, 3.8, 2, 'root', { z: -1, d: 0.6 }), ell(22, 41, 3.8, 2, 'root', { z: 1, d: 0.6 }),
+      cap(17.5, 37, 17.5, 11, 8, 7, 'cactus', { z: 0 }), ell(17.5, 10, 7, 6.5, 'cactus', { z: 0.5 }),
+      ...chain([[24, 22], [29.5, 21], [30.5, 12]], [3.2, 3.2, 2.8], 'cactus', 3), ell(30.5, 11.5, 2.8, 2.6, 'cactus', { z: 3 }),
+      ell(15, 4.2, 3, 2.2, 'flower', { z: 4 }), ell(19.5, 4, 2.6, 2, 'flower', { z: 4.5 }), ell(17, 2.6, 2.4, 1.8, 'flower', { z: 5 }),
+      paint(poly([[14, 15], [18, 16.5], [18, 19], [14, 18.5]], 'void')), paint(poly([[20, 16.5], [23, 15], [23, 18.5], [20, 19]], 'void')), paint(poly([[15, 23], [22, 23], [21, 25.5], [16, 25.5]], 'void')),
+    ], post(a) {
+      a.px(16, 18, '#ffe060'); a.px(21, 18, '#ffe060'); a.px(17, 4, '#ffe060'); a.px(18, 3, '#ffe060'); fangs(a, [[17, 23], [20, 23]], '#f8f0d0');
+      for (const [x, y] of [[10, 14], [10, 24], [10, 32], [25, 30], [25, 36], [13, 7], [22, 7], [2, 16], [8, 17], [33, 14], [27, 15], [33, 19], [14, 30], [20, 34]]) { a.px(x, y, P.spine); a.px(x + (x < 18 ? -1 : 1), y - 1, P.spine); }
+    } };
+  } },
+  mummy: { col: { wrap: '#d8c8a0', dark: '#2a2018', gold: '#e0b040', eye: '#ff6a3a' }, build(P) {
+    const m = { wrap: mat(P.wrap, 5, { tex: 'wrap', ramp: { lo: 0.4 } }), dark: mat(P.dark, 3, { flat: 0.2 }), gold: mat(P.gold, 4, { spec: '#ffffff' }) };
+    return { w: 36, h: 44, mats: m, parts: [
+      cap(13, 16, 20, 18, 1.9, 1.6, 'wrap', { z: -4 }), cap(20, 18, 27, 17.5, 1.6, 1.4, 'wrap', { z: -4 }), cap(27, 17.5, 29, 24, 0.6, 0.4, 'wrap', { z: -4 }),
+      cap(14, 28, 12, 34, 2.4, 2, 'wrap', { z: -2 }), cap(12, 34, 12, 39.5, 2, 1.7, 'wrap', { z: -2 }), ell(13, 40.5, 3, 1.4, 'wrap', { z: -2, d: 0.5 }),
+      poly([[11, 14], [21, 13], [23, 22], [22, 29], [11, 30], [9, 21]], 'wrap', { z: 0, bev: 2.2 }), cap(12, 29, 7, 37, 0.9, 0.6, 'wrap', { z: -1 }),
+      poly([[13, 15], [21, 14.5], [19.5, 18.5], [14, 18.5]], 'gold', { z: 2, bev: 1 }), ell(17, 17.5, 1.4, 1.4, 'dark', { z: 3 }),
+      cap(19, 29, 21, 34.5, 2.5, 2.1, 'wrap', { z: 2 }), cap(21, 34.5, 21, 39.5, 2.1, 1.8, 'wrap', { z: 2 }), ell(22.5, 40.5, 3, 1.4, 'wrap', { z: 2, d: 0.5 }),
+      ell(17.5, 8, 5.6, 6, 'wrap', { z: 4, rot: 0.2 }), paint(poly([[16, 7], [24, 6.5], [24, 9.6], [16, 10]], 'dark')), cap(12, 6, 8, 12, 1, 0.5, 'wrap', { z: 3 }),
+      cap(17, 16, 24, 15.5, 2, 1.7, 'wrap', { z: 7 }), cap(24, 15.5, 31, 15.5, 1.7, 1.4, 'wrap', { z: 7 }), cap(28, 16, 30, 23, 0.6, 0.4, 'wrap', { z: 7 }),
+      ...[[34, 14.5], [34.2, 16.2], [33.5, 18]].map(([x, y]) => cap(31, 15.5, x, y, 0.5, 0.4, 'dark', { z: 8 })),
+    ], post(a) { a.px(19, 8, P.eye); a.px(20, 8, '#ffd080'); a.px(22, 8, P.eye); a.px(23, 8, '#ffd080'); a.px(17, 9, '#100808'); a.line(10, 22, 13, 25, a.ramp('wrap', 0)); a.line(19, 24, 22, 22, a.ramp('wrap', 0)); } };
+  } },
+  salamander: { col: { skin: '#c83a2a', belly: '#f0a040', fire: '#ff9a2a', eye: '#ffe040' }, build(P) {
+    const m = { skin: mat(P.skin, 5, { tex: 'scale', spec: '#ffd0a0', specAt: 0.9 }), belly: mat(P.belly, 4, { tex: 'belly' }), fire: mat(P.fire, 5, { glow: true, lift: 0.25, nocrease: true, ramp: { hi: 0.95 } }) };
+    const flames = []; for (let k = 0; k < 6; k++) { const x = 13 + k * 3.8, y = 15 - Math.sin(k / 5 * Math.PI) * 1.6, h = 4 + (k % 2) * 2.5; flames.push(...chain([[x, y + 2], [x - 1, y - h * 0.5], [x + 0.6, y - h]], [1.8, 1.1, 0.3], 'fire', -1)); }
+    return { w: 48, h: 30, mats: m, parts: [
+      ...flames, ...chain([[12, 19], [6, 18], [2.5, 14], [2, 10]], [4, 2.8, 1.8, 1], 'skin', -2), ...chain([[2, 10], [1.4, 6], [3, 2]], [2.2, 1.6, 0.4], 'fire', -1),
+      ...chain([[17, 22], [14.5, 25], [16, 27.5]], [1.6, 1.2, 0.8], 'skin', -5), ...chain([[30, 22], [33, 25], [33, 27.5]], [1.6, 1.2, 0.8], 'skin', -5),
+      ell(22, 19.5, 12, 5.6, 'skin', { z: 0 }), paint(ell(23, 23.5, 10, 2.2, 'belly')),
+      ...chain([[14, 22], [10, 25], [11.5, 28]], [1.9, 1.4, 1], 'skin', 2), ...chain([[29, 22], [26.5, 25.5], [28.5, 28]], [1.9, 1.4, 1], 'skin', 3),
+      ell(36, 16.5, 6.4, 4.6, 'skin', { z: 4 }), cap(38, 18, 45, 19, 3.2, 1.8, 'skin', { z: 5 }), cap(39, 20.5, 44, 20.5, 1.4, 0.9, 'belly', { z: 4.5 }),
+    ], post(a) {
+      a.px(38, 14, P.eye); a.px(39, 14, P.eye); a.px(39, 15, '#200808'); a.line(37, 13, 40, 13, a.ramp('skin', 0)); a.line(40, 19, 45, 19, '#3a0808'); a.px(46, 18, '#3a0808');
+      for (const [x, y] of [[19, 17], [25, 16], [31, 18], [15, 20]]) { a.px(x, y, '#ffb040'); a.px(x + 1, y, '#3a0a10'); }
+      for (const [x, y] of [[10, 25], [11, 28], [29, 28]]) a.px(x, y, '#f0e0c0');
+    } };
+  } },
+  batswarm: { col: { fur: '#4a3a5a', wing: '#6a4a7a', bone: '#2a1a3a', eye: '#ff3a3a' }, build(P) {
+    const m = { fur: mat(P.fur, 4, { tex: 'fur' }), wing: mat(P.wing, 4, { lift: -0.04 }), bone: mat(P.bone, 3) }, parts = [], eyes = [];
+    const bat = (cx, cy, s, z, up) => {
+      const W = [[0, 0], [-4, up ? -6 : -3], [-8, up ? -6 : -2], [-10, up ? -1 : 2], [-7, 0], [-6, 3], [-3, 1.5]].map(([x, y]) => [cx - 1.5 * s + x * s, cy - 1 * s + y * s]);
+      parts.push(poly(W, 'wing', { z: z - 1, bev: 1 }), poly(mirrorPts(W, cx), 'wing', { z: z - 1, bev: 1 }));
+      parts.push(cap(cx - 1.5 * s, cy - 1 * s, cx - 1.5 * s - 4 * s, cy - (up ? 7 : 4) * s, 0.6, 0.35, 'bone', { z: z - 0.5 }), cap(cx + 1.5 * s, cy - 1 * s, cx + 1.5 * s + 4 * s, cy - (up ? 7 : 4) * s, 0.6, 0.35, 'bone', { z: z - 0.5 }));
+      parts.push(ell(cx, cy + 0.6 * s, 2.4 * s, 3 * s, 'fur', { z }), ell(cx, cy - 2.6 * s, 2.3 * s, 2 * s, 'fur', { z: z + 0.5 }), poly([[cx - 2 * s, cy - 3.5 * s], [cx - 2.2 * s, cy - 6.5 * s], [cx - 0.6 * s, cy - 4 * s]], 'fur', { z: z + 1, bev: 0.7 }), poly([[cx + 2 * s, cy - 3.5 * s], [cx + 2.2 * s, cy - 6.5 * s], [cx + 0.6 * s, cy - 4 * s]], 'fur', { z: z + 1, bev: 0.7 }));
+      eyes.push([Math.round(cx - 1 * s), Math.round(cy - 2.8 * s)], [Math.round(cx + 1 * s), Math.round(cy - 2.8 * s)]);
+    };
+    bat(13, 12, 0.85, -6, true); bat(33, 10, 0.95, -3, false); bat(9, 28, 0.9, 0, false); bat(36, 27, 1, 2, true); bat(22, 20, 1.15, 5, false);
+    return { w: 46, h: 36, mats: m, parts, post(a) { for (const [x, y] of eyes) a.px(x, y, P.eye); } };
+  } },
+  ghoul_knight: { col: { armor: '#4a4a5a', cape: '#5a1a24', steel: '#a8a8b8', skin: '#7a8a6a', eye: '#7aff9a', trim: '#8a7a40' }, build(P) {
+    const m = { armor: mat(P.armor, 6, { spec: '#d8e0f0', specAt: 0.88, ramp: { hi: 0.7 } }), armor2: mat(shade(P.armor, 0.65), 4), cape: mat(P.cape, 4, { tex: 'cloth' }), steel: mat(P.steel, 5, { spec: '#ffffff', ramp: { hi: 0.8 }, tex: (x, y) => (hash(x, y, 31) < 0.1 ? -0.25 : 0) }), skin: mat(P.skin, 4, { tex: 'rough' }), trim: mat(P.trim, 4) };
+    return { w: 42, h: 48, mats: m, crease: 1.6, parts: [
+      poly([[11, 12], [22, 12], [25, 28], [23, 45], [19, 40], [15, 46], [11, 41], [7, 45], [5, 30]], 'cape', { z: -9, bev: 1.6 }),
+      cap(13, 15, 9, 23, 2.4, 2, 'armor2', { z: -5 }), ell(8.5, 24, 2.3, 2.2, 'armor2', { z: -5 }),
+      ...chain([[16, 32], [14, 38], [14, 44]], [2.8, 2.4, 2.2], 'armor2', -3), ell(15, 45.5, 3.6, 1.6, 'armor2', { z: -3, d: 0.5 }),
+      poly([[10, 13], [27, 12], [29, 22], [26, 32], [13, 32], [9.5, 22]], 'armor', { z: 0, tilt: [-0.1, -0.1], bev: 2 }), poly([[14, 15], [25, 14], [26, 22], [20, 27], [14, 22]], 'armor', { z: 1.5, tilt: [0.2, 0.15], bev: 1.6 }),
+      cap(11, 30, 27, 30, 1.2, 1.2, 'trim', { z: 3 }), poly([[11, 31], [27, 31], [28, 36], [11, 36]], 'armor2', { z: 2, bev: 1.2 }),
+      ...chain([[23, 33], [25, 39], [25, 44]], [3, 2.6, 2.3], 'armor', 3), ell(27, 45.5, 3.8, 1.6, 'armor', { z: 3, d: 0.5 }),
+      ell(20.5, 7.5, 5.8, 5.8, 'armor', { z: 5 }), ...chain([[16.5, 4.5], [13, 2], [11, 4.5]], [1.6, 1, 0.4], 'trim', 6), ...chain([[23.5, 3], [27, 0.8], [29.5, 3]], [1.5, 0.9, 0.4], 'trim', 6),
+      cap(30, 25, 35, 25, 0.9, 0.9, 'trim', { z: 9 }), cap(32, 26, 37, 46, 1.9, 0.7, 'steel', { z: 8 }), cap(31.4, 22.5, 32.1, 25, 0.7, 0.7, 'trim', { z: 9 }),
+      ell(26, 14, 5, 4, 'armor', { z: 8 }), poly([[24, 11], [26, 6], [28, 11]], 'armor', { z: 9, bev: 0.8 }), cap(27, 17, 30.5, 23, 2.2, 1.9, 'armor', { z: 10 }), ell(31.5, 24, 2.2, 2, 'skin', { z: 11 }),
+    ], post(a) { a.rect(19, 7, 6, 1, '#0a0810'); a.rect(21, 5, 1, 5, '#0a0810'); a.px(20, 7, P.eye); a.px(23, 7, P.eye); a.px(24, 7, '#ffffff'); a.px(15, 33, a.ramp('armor2', 3)); a.px(23, 34, a.ramp('armor2', 3)); a.px(21, 19, '#7aff9a'); } };
+  } },
+  banshee: { col: { gown: '#8aa0c8', hair: '#e8eef8', skin: '#c8d8e8', eye: '#a0f0ff' }, build(P) {
+    const m = { gown: mat(P.gown, 5, { tex: 'cloth', lift: 0.08 }), hair: mat(P.hair, 5, { tex: (x, y) => ((x * 2 + y) % 5 === 0 ? -0.14 : 0), lift: 0.05 }), skin: mat(P.skin, 4), void: mat('#0e0a1a', 2, { flat: 0.1 }) };
+    return { w: 38, h: 48, mats: m, parts: [
+      poly([[15, 3], [22, 2], [23, 10], [17, 17], [10, 25], [2, 32], [5, 22], [0.5, 17], [6, 11]], 'hair', { z: -6, bev: 1.6 }), ...chain([[14, 9], [6, 14], [1, 12]], [1.4, 1, 0.4], 'hair', -5),
+      cap(16, 16, 12, 22, 1.2, 1, 'skin', { z: -3 }), cap(12, 22, 9, 25, 1, 0.6, 'skin', { z: -3 }),
+      poly([[14, 15], [22, 14], [26, 26], [27, 36], [24, 43], [21, 37], [18, 46], [15, 38], [11, 46], [10.5, 34], [10, 24]], 'gown', { z: 0, bev: 2.2 }),
+      ell(19, 6.5, 5.6, 4.8, 'hair', { z: 4 }), ell(22.5, 9.5, 3.4, 4.6, 'skin', { z: 5 }), cap(18, 9, 16, 16, 2, 1.2, 'hair', { z: 6 }),
+      paint(ell(23.5, 8.6, 1.2, 1.2, 'void')), paint(ell(25.4, 9, 1, 1.1, 'void')), paint(ell(25, 12.6, 1.1, 1.6, 'void')),
+      cap(21, 16.5, 27, 20, 1.3, 1.1, 'skin', { z: 7 }), cap(27, 20, 33, 17, 1.1, 0.9, 'skin', { z: 7 }), ...[[36, 14.5], [36.5, 17], [35.5, 19.5]].map(([x, y]) => cap(33, 17, x, y, 0.5, 0.35, 'skin', { z: 8 })),
+    ], post(a) { a.px(23, 9, P.eye); a.px(25, 9, P.eye); a.px(25, 13, '#3a1020'); for (const [x, y] of [[29, 10], [31, 9], [30, 13], [33, 12]]) a.px(x, y, '#d0f4ff'); } };
+  } },
+  bone_whelp: { col: { bone: '#e0d8c0', membrane: '#4a2a5a', soul: '#b080ff', eye: '#c070ff' }, build(P) {
+    const m = { bone: mat(P.bone, 5, { tex: 'bone', ramp: { lo: 0.38 } }), membrane: mat(P.membrane, 4, { tex: (x, y) => (hash(x >> 1, y >> 1, 41) < 0.08 ? -0.3 : 0) }), soul: mat(P.soul, 5, { glow: true, lift: 0.3, nocrease: true, ramp: { hi: 0.9 } }) };
+    const ribs = []; for (let k = 0; k < 5; k++) { const x = 17 + k * 2.6; ribs.push(...chain([[x, 20], [x - 1.4, 24.5], [x + 0.6, 28.5]], [0.75, 0.7, 0.55], 'bone', 2)); }
+    const W = [[25, 18], [22, 6], [16, 1], [13, 7], [8, 4], [9, 11], [3, 13], [11, 16], [9, 20], [16, 19]];
+    return { w: 50, h: 40, mats: m, parts: [
+      poly(W, 'membrane', { z: -8, bev: 1.2 }), ...chain([[25, 18], [22, 6], [16, 1]], [1.2, 1, 0.6], 'bone', -7), ...[[8, 4], [3, 13], [9, 20]].map(([x, y]) => cap(22, 6, x, y, 0.8, 0.4, 'bone', { z: -7 })),
+      ...chain([[13, 22], [7, 27], [3, 25], [1.5, 20]], [1.5, 1.1, 0.8, 0.4], 'bone', -2), ...[[9, 25.5], [5, 26.5]].map(([x, y]) => ell(x, y, 1.4, 1.4, 'bone', { z: -1.5 })),
+      ell(22, 25, 6.5, 4.2, 'soul', { z: -1 }), ...chain([[12, 22], [20, 20], [29, 19.5], [34, 15], [38, 12.5]], [1.6, 1.5, 1.5, 1.2, 1.1], 'bone', 0),
+      ...[[15, 21], [19, 20.2], [23, 19.8], [27, 19.6], [32, 16.5], [35.5, 13.5]].map(([x, y]) => ell(x, y, 1.6, 1.4, 'bone', { z: 1 })), ...ribs,
+      ell(13, 23.5, 3, 2.4, 'bone', { z: 1 }), ...chain([[14, 24], [12, 30], [15, 34]], [1.3, 1, 0.8], 'bone', 3), ...chain([[29, 21], [31.5, 27], [29.5, 32]], [1.3, 1, 0.8], 'bone', 3),
+      ...chain([[11, 24], [9, 30], [11.5, 34]], [1.1, 0.9, 0.7], 'bone', -3), ...chain([[27, 21], [28, 27], [26.5, 32]], [1.1, 0.9, 0.7], 'bone', -3),
+      ell(41, 12, 5, 4.2, 'bone', { z: 5 }), cap(43, 12.5, 49, 14.5, 3, 1.6, 'bone', { z: 6 }), cap(41, 16.5, 47.5, 18.5, 1.3, 0.8, 'bone', { z: 4 }), ...chain([[38.5, 9], [34, 5.5], [31, 5]], [1.3, 0.8, 0.3], 'bone', 6),
+    ], post(a) {
+      a.rect(41, 10, 3, 3, '#140a1c'); a.px(42, 11, P.eye); a.px(43, 11, '#ffffff'); a.px(47, 13, '#140a1c'); fangs(a, [[44, 16], [46, 16], [48, 16]], '#fff8e8');
+      for (const [x, y] of [[16, 34], [30, 32], [12, 34], [27, 32]]) a.px(x, y, '#fff8e8'); a.px(22, 24, '#ffffff'); a.px(21, 25, '#e0d0ff');
+    } };
+  } },
+  ice_elemental: { col: { ice: '#8ad0f0', ice2: '#5a9ad0', core: '#e8ffff', eye: '#ffffff' }, build(P, V) {
+    const m = { ice: mat(P.ice, 5, { spec: '#ffffff', specAt: 0.85, tex: V.bolt ? 'rough' : 'ice', ramp: { hi: 0.8 } }), ice2: mat(P.ice2, 4, { tex: V.bolt ? 'rough' : 'ice' }), core: mat(P.core, 4, { glow: true, lift: 0.35, nocrease: true }) };
+    const t = (pts, mm, tilt, z, bev = 1.4) => poly(pts, mm, { z, tilt, bev });
+    return { w: 40, h: 46, mats: m, parts: [
+      t([[5, 16], [10, 13], [12, 20], [8, 25], [4, 22]], 'ice2', [-0.3, -0.2], -6), t([[6, 27], [10, 26], [9, 32]], 'ice2', [-0.2, 0.2], -6),
+      t([[13, 29], [26, 29], [19.5, 43]], 'ice2', [0.2, 0.3], -1), t([[11, 14], [26, 13], [29, 23], [20, 34], [11, 24]], 'ice', [-0.25, -0.25], 0, 1.8), t([[19.5, 14], [26, 13], [29, 23], [20.5, 30]], 'ice', [0.4, -0.05], 1, 1.2),
+      t([[15, 22], [19, 19], [23, 22], [19, 26]], 'core', [0, 0], 3, 1),
+      t([[14, 5], [19.5, 0], [26, 5], [24, 12], [16, 12]], 'ice', [-0.25, -0.3], 4), t([[20, 0.5], [26, 5], [24, 12], [21, 9]], 'ice', [0.45, 0], 5, 1),
+      t([[28, 12], [34, 8], [36, 15], [31, 19]], 'ice', [0.2, -0.3], 6), t([[31, 21], [36, 19], [38, 25], [33, 27]], 'ice', [0.3, 0], 6), t([[33.5, 28], [37, 28], [35, 33]], 'ice2', [0.2, 0.2], 6),
+      t([[25, 36], [29, 34], [29, 39]], 'ice2', [0.3, 0], 2), t([[8, 36], [12, 37], [9, 40]], 'ice2', [-0.2, 0.2], -2),
+    ], post(a) {
+      a.rect(18, 6, 2, 1, P.eye); a.rect(22, 6, 2, 1, P.eye); a.px(18, 7, shade(P.ice, 0.5)); a.px(23, 7, shade(P.ice, 0.5));
+      a.px(19, 22, '#ffffff'); a.px(20, 21, '#ffffff');
+      if (V.bolt) bolts(a, [[3, 30], [30, 30], [14, 37], [36, 5]], P.core); else for (const [x, y] of [[3, 34], [33, 4], [37, 35], [14, 42]]) { a.px(x, y, '#ffffff'); a.px(x - 1, y, P.ice); a.px(x + 1, y, P.ice); a.px(x, y - 1, P.ice); a.px(x, y + 1, P.ice); }
+    } };
+  } },
+  harpy: { col: { feather: '#e8f0fa', wing: '#a0bce0', wing2: '#7894c0', skin: '#c8d4e8', hair: '#3a4a90', leg: '#8a8070', eye: '#ffd23a' }, build(P) {
+    const m = { feather: mat(P.feather, 5, { tex: 'feather', ramp: { lo: 0.45 } }), wing: mat(P.wing, 5, { tex: 'feather' }), wing2: mat(P.wing2, 4, { tex: 'feather' }), skin: mat(P.skin, 4), hair: mat(P.hair, 4, { tex: (x, y) => ((x + y * 2) % 4 === 0 ? -0.15 : 0) }), leg: mat(P.leg, 4) };
+    return { w: 44, h: 44, mats: m, parts: [
+      poly([[18, 15], [12, 3], [5, 0.5], [1, 5], [6, 7], [1, 11], [7, 13], [2, 18], [10, 18], [8, 23], [15, 20]], 'wing2', { z: -6, bev: 1.4 }),
+      poly([[23, 15], [24, 4], [30, 0.5], [37, 2], [33, 5], [39, 7], [33, 9], [37, 13], [30, 14], [32, 18], [26, 18]], 'wing', { z: -3, bev: 1.4 }),
+      poly([[16, 28], [5, 34], [3, 39], [9, 37], [11, 41], [17, 32]], 'wing2', { z: -2, bev: 1.2 }),
+      ...chain([[18, 31], [16, 36], [18, 40.5]], [1.2, 0.9, 0.7], 'leg', -1), ...chain([[23, 31], [25.5, 36], [24, 40.5]], [1.3, 1, 0.8], 'leg', 2),
+      ell(20.5, 21, 4.6, 6.2, 'skin', { z: 0 }), paint(ell(20.5, 25, 5, 3, 'feather')), ell(20, 28.5, 5.6, 4.4, 'feather', { z: 1 }),
+      ...chain([[19, 7], [13, 10], [9, 15], [7, 19]], [3, 2.4, 1.6, 0.6], 'hair', 2), ell(22, 9.5, 4, 4.6, 'skin', { z: 4 }), ell(20.5, 6.8, 4.8, 3.6, 'hair', { z: 5 }), cap(19, 8, 18, 14, 1.8, 1, 'hair', { z: 5 }),
+      ell(26, 17, 3, 3, 'feather', { z: 6 }), ...chain([[27, 17], [33, 13], [38, 11]], [2.6, 2, 1], 'wing', 6), ...chain([[33, 13], [39, 15]], [1.4, 0.6], 'wing', 6.5),
+    ], post(a) {
+      a.px(23, 9, P.eye); a.px(24, 9, P.eye); a.px(24, 10, '#100808'); a.line(22, 8, 25, 8, a.ramp('hair', 0)); a.line(23, 12, 25, 12, '#5a3048');
+      for (const [x, y] of [[19, 41], [17, 41], [25, 41], [23, 41]]) a.px(x, y, '#2a2028');
+    } };
+  } },
+  mammoth: { col: { fur: '#7a5a40', fur2: '#5a3e2a', tusk: '#f0e8d0', skin: '#5a4a44', snow: '#eef4fa', eye: '#ffd060' }, build(P) {
+    const m = { fur: mat(P.fur, 5, { tex: 'fur' }), fur2: mat(P.fur2, 4, { tex: 'fur' }), tusk: mat(P.tusk, 5, { spec: '#ffffff' }), skin: mat(P.skin, 4), snow: mat(P.snow, 3) };
+    const hem = []; for (let k = 0; k <= 12; k++) hem.push([44 - k * 3, 38 + (k % 2 ? 3 : 0)]);
+    return { w: 60, h: 52, mats: m, crease: 1.8, parts: [
+      cap(9, 24, 5, 31, 1.4, 0.9, 'fur2', { z: -6 }),
+      cap(15, 33, 15, 46, 4, 3.6, 'fur2', { z: -6 }), ell(15, 47.5, 4, 1.6, 'skin', { z: -6, d: 0.5 }), cap(36, 33, 37, 46, 4, 3.6, 'fur2', { z: -6 }), ell(37, 47.5, 4, 1.6, 'skin', { z: -6, d: 0.5 }),
+      ell(26, 27, 18, 12, 'fur', { z: 0 }), ell(33, 18, 10, 9, 'fur', { z: 1 }), poly([[10, 30], [46, 30], ...hem], 'fur2', { z: 1.5, bev: 1.4 }),
+      paint(ell(31, 12, 9, 3.4, 'snow')), paint(ell(18, 17.5, 7, 2.4, 'snow')),
+      cap(21, 34, 21, 47, 4.4, 4, 'fur', { z: 3 }), ell(21, 48.5, 4.4, 1.7, 'skin', { z: 3, d: 0.5 }), cap(41, 33, 42, 47, 4.4, 4, 'fur', { z: 4 }), ell(42.5, 48.5, 4.4, 1.7, 'skin', { z: 4, d: 0.5 }),
+      ell(44, 22, 8, 9, 'fur', { z: 5 }), ell(43, 15, 6, 5, 'fur', { z: 5.5 }), paint(ell(42, 12, 5, 2, 'snow')), ell(39.5, 21, 3, 4.6, 'fur2', { z: 6 }),
+      ...chain([[49, 24], [52, 32], [51, 40], [54, 44.5]], [3.6, 2.8, 2, 1.4], 'fur2', 7),
+      ...chain([[47, 28], [51, 36], [56.5, 34], [57, 27]], [2.2, 2, 1.4, 0.5], 'tusk', 9),
+    ], post(a) { a.px(47, 19, P.eye); a.px(48, 19, '#100808'); a.line(45, 18, 48, 17.6, a.ramp('fur', 0)); for (const x of [19, 21, 23, 40, 42, 44]) a.px(x, 49, '#d8d0c0'); a.line(53, 44, 55, 45, a.ramp('fur2', 0)); } };
+  } },
+  crystal_sentinel: { col: { crystal: '#c070e0', crystal2: '#7a3aa8', gold: '#e0b040', core: '#ffe0ff', eye: '#ffffff' }, build(P) {
+    const m = { crystal: mat(P.crystal, 5, { spec: '#ffffff', specAt: 0.84, ramp: { hi: 0.85 } }), crystal2: mat(P.crystal2, 4), gold: mat(P.gold, 5, { spec: '#fffbe0' }), core: mat(P.core, 4, { glow: true, lift: 0.4, nocrease: true }) };
+    const t = (pts, mm, tilt, z, bev = 1.6) => poly(pts, mm, { z, tilt, bev });
+    return { w: 46, h: 50, mats: m, crease: 1.6, parts: [
+      t([[1, 18], [9, 16], [10, 31], [5, 36], [0.5, 29]], 'crystal2', [-0.3, 0], -6), paint(poly([[4, 18], [6, 18], [6, 33], [4, 31]], 'gold')),
+      t([[13, 34], [20, 34], [19, 48], [12, 48]], 'crystal2', [-0.2, 0], -3), t([[11, 46], [21, 46], [21, 49], [10, 49]], 'gold', [0, -0.3], -2, 1),
+      t([[9, 13], [33, 12], [31, 27], [21, 36], [12, 27]], 'crystal', [-0.2, -0.2], 0, 2), t([[21, 13], [33, 12], [31, 27], [21, 33]], 'crystal', [0.4, 0], 1, 1.4),
+      cap(12, 13, 31, 12.5, 1.1, 1.1, 'gold', { z: 2 }), t([[17, 19], [21, 16], [25, 19], [21, 25]], 'core', [0, 0], 3, 1), paint(poly([[16.5, 18.5], [21, 15.5], [25.5, 18.5], [21, 25.5]], 'gold')), t([[18, 19.5], [21, 17], [24, 19.5], [21, 23.5]], 'core', [0, 0], 4, 0.8),
+      t([[23, 34], [31, 34], [32, 48], [24, 48]], 'crystal', [0.2, 0], 2), t([[23, 46], [33, 46], [34, 49], [22, 49]], 'gold', [0, -0.3], 3, 1),
+      t([[5, 15], [8, 3], [13, 9], [13, 16]], 'crystal', [-0.4, -0.2], 4), t([[28, 14], [33, 2], [38, 9], [35, 18]], 'crystal', [0.3, -0.3], 6),
+      t([[16, 8], [21, 0.5], [26, 8], [21, 13]], 'crystal', [-0.2, -0.3], 5), t([[21, 0.5], [26, 8], [21, 13]], 'crystal', [0.4, 0], 5.5, 1),
+      cap(41, 2, 41, 49, 0.9, 0.9, 'gold', { z: 7 }), t([[41, 1], [45.5, 7], [41, 13], [38, 7]], 'crystal', [0.3, -0.2], 8, 1.2),
+      ...chain([[34, 18], [37, 25], [40, 24]], [2.4, 2, 1.8], 'crystal', 9), ell(40.5, 24, 2.2, 2.2, 'gold', { z: 10 }),
+    ], post(a) { a.rect(18, 7, 6, 1, '#2a0a3a'); a.px(20, 7, P.eye); a.px(23, 7, P.eye); a.px(22, 7, '#ffd0ff'); for (const [x, y] of [[8, 5], [32, 4], [44, 5]]) a.px(x, y, '#ffffff'); } };
+  } },
+  thunderbird: { col: { feather: '#3a5ab8', wing: '#4a6ad0', wing2: '#2a3a8a', chest: '#e8eef8', beak: '#f0c030', crest: '#f4d35e', eye: '#ffffff' }, build(P) {
+    const m = { feather: mat(P.feather, 5, { tex: 'feather' }), wing: mat(P.wing, 5, { tex: 'feather' }), wing2: mat(P.wing2, 4, { tex: 'feather' }), chest: mat(P.chest, 4, { tex: 'feather' }), beak: mat(P.beak, 4, { spec: '#ffffff' }), crest: mat(P.crest, 4, { glow: true, lift: 0.15 }) };
+    return { w: 52, h: 44, mats: m, parts: [
+      poly([[22, 19], [16, 5], [8, 0.5], [0.5, 2], [5, 6], [0.5, 9], [7, 11], [2, 15], [10, 16], [6, 21], [16, 22]], 'wing2', { z: -6, bev: 1.4 }),
+      poly([[26, 18], [29, 7], [37, 1], [46, 0.5], [43, 5], [50, 6], [44, 10], [48, 13], [39, 15], [34, 21]], 'wing', { z: -3, bev: 1.4 }),
+      poly([[17, 26], [4, 33], [7, 37], [3, 41], [11, 39], [12, 43], [19, 31]], 'wing2', { z: -2, bev: 1.2 }),
+      ...chain([[24, 29], [25, 34], [28, 36.5]], [1.4, 1.1, 0.8], 'beak', -1),
+      ell(23, 23, 8.5, 7.4, 'feather', { z: 0 }), paint(ell(26.5, 25, 4.6, 5.6, 'chest')),
+      ...chain([[28, 29], [30, 34], [33, 36]], [1.5, 1.2, 0.9], 'beak', 2),
+      ...chain([[30, 12], [24, 8], [19, 7]], [1.6, 1.1, 0.4], 'crest', 3), ...chain([[31, 11], [28, 4], [25, 1.5]], [1.4, 1, 0.4], 'crest', 3.5), ...chain([[33, 10.5], [33, 4], [31, 0.6]], [1.2, 0.9, 0.3], 'crest', 4),
+      ell(32, 15, 5.4, 5, 'feather', { z: 5 }), poly([[36, 13], [42, 14.5], [41, 18.5], [37.5, 17]], 'beak', { z: 6, bev: 1 }), ell(29.5, 19, 4, 3, 'chest', { z: 4.5 }),
+    ], post(a) { a.px(34, 13, P.eye); a.px(35, 13, P.crest); a.px(35, 14, '#100808'); a.line(33, 12, 36, 12.4, a.ramp('feather', 0)); a.px(41, 18, a.ramp('beak', 0)); a.line(37, 16, 40, 16.5, a.ramp('beak', 0)); for (const x of [26, 28, 31, 33]) a.px(x, 37, '#f0f0f0'); bolts(a, [[9, 7], [39, 5], [6, 30]], P.crest); } };
+  } },
+});
+Object.assign(ENEMY_VARIANTS, {
+  golden_boar: ['boar', { fur: '#e0b040', mane: '#a87818', snout: '#f4c8a0', hoof: '#6a4a18', eye: '#ffffff' }, { gold: true }],
+  desert_bandit: ['bandit', { hood: '#e8d8b0', vest: '#c89a58', cloth: '#3a7ab8', pants: '#a07848', skin: '#b07848', boots: '#6a4a2a' }, { desert: true }],
+  magma_golem: ['golem', { rock: '#5a4440', dark: '#3a2a28', glow: '#ff8a2a', moss: '#ff5a1a' }],
+  crystal_golem: ['golem', { rock: '#c8a0f0', dark: '#8a60c0', glow: '#ffe0ff' }, { ice: true }],
+  storm_elemental: ['ice_elemental', { ice: '#8a86b8', ice2: '#4a4a7a', core: '#fff27a', eye: '#fff27a' }, { bolt: true }],
+  glacier_yeti: ['yeti', { fur: '#a8c8e8', chest: '#7aa0c8', face: '#3a5a8a', horn: '#e8f8ff', eye: '#ff5a4a' }],
+});
 const ECACHE = new Map();
 export function enemyArt(id) {
   if (ECACHE.has(id)) return ECACHE.get(id);
@@ -598,7 +951,7 @@ export const enemyIds = () => [...Object.keys(MODELS), ...Object.keys(ENEMY_VARI
 // ===== Painted backdrops =====
 // =====================================================================
 export const BW = 256, BH = 176;
-export const BACKDROPS = ['world', 'forest', 'snow', 'swamp', 'dungeon', 'crypt', 'spire', 'storm', 'boss', 'crypt:boss', 'spire:boss', 'storm:boss'];
+export const BACKDROPS = ['world', 'desert', 'forest', 'snow', 'swamp', 'dungeon', 'crypt', 'spire', 'storm', 'boss', 'crypt:boss', 'spire:boss', 'storm:boss'];
 function painter(w, h, seed) {
   const img = new Uint8ClampedArray(w * h * 4), r = rng(seed);
   const P = {
@@ -737,6 +1090,14 @@ const BD_FNS = {
     const D = RG(['#6a4a2a', '#8a6a3c', '#a88a52', '#c8a868']);
     for (let y = hy + 1; y < P.h; y++) { const dz = y - hy - 1 + 1.5, Z = 90 / dz; for (let x = 0; x < P.w; x++) { const X = ((x - P.w / 2) * Z) / 26, d = Math.abs(X - 2.6 - Math.sin(Z * 0.18) * 3 - Z * 0.08), wdt = 0.75 + Z * 0.012; if (d < wdt) P.set(x, y, P.pick(D, clamp(0.75 - d / wdt * 0.5 + (fbm(X, Z * 2, 9) - 0.5) * 0.5, 0, 1), x, y)); } }
     scatter(P, hy + 1, 260, 77, (x, y, s, k) => { if (k < 0.08) rock(P, x, y, s, ['#3a3a48', '#5a5a68', '#8a8a96', '#b8b8c0'], x); else if (k < 0.2) { const c = ['#ffffff', '#f4d35e', '#ee80a8', '#c8a0ff'][Math.floor(k * 40) % 4]; P.set(x, y - 1, hex2rgb(c)); if (s > 0.5) { P.set(x + 1, y - 1, hex2rgb(c)); P.set(x, y, hex2rgb('#2a6a2e')); } } else tuft(P, x, y, s, ['#2a6a2e', '#4a9a3a', '#7cc04a', '#b8e870']); });
+  },
+  desert(P, hy, L) { // Sunscar Sands: bleached sky, sandstone mesas, rolling dunes, bones and rocks
+    sky(P, 0, hy, ['#3a6ac0', '#5a8ad0', '#86acdc', '#b8cce0', '#e0d8c4', '#f4e4c0']);
+    cloud(P, 196, 18, 46, 9, ['#c8c0b0', '#e4dccc', '#fbf6ec'], 6);
+    ridge(P, hy - 4, 34, 0.009, 29, ['#7a3a20', '#9a5028', '#b86a34', '#d08a48', '#e4aa66'], {});
+    ridge(P, hy + 1, 14, 0.022, 33, ['#a05a2c', '#c07838', '#d8964c', '#ecb468'], {});
+    ground(P, hy + 1, ['#a8743c', '#c08c48', '#d4a45a', '#e4bc70', '#f0d088', '#f8e2a8'], (X, Z) => { const dune = Math.sin(X * 0.35 + Z * 0.9 + fbm(X * 0.2, Z * 0.3, 7, 2) * 5) * 0.5 + 0.5; return 0.2 + dune * 0.45 + fbm(X * 1.4, Z * 1.8, 8, 3) * 0.3; }, { haze: '#f0d8a8', hazeMax: 0.45 });
+    scatter(P, hy + 1, 150, 91, (x, y, s, k) => { if (k < 0.12) rock(P, x, y, s, ['#5a3a24', '#7a5634', '#a07a4c', '#c8a06c'], x); else if (k < 0.18) { P.set(x, y, hex2rgb('#f4ecd8')); P.set(x + 1, y, hex2rgb('#f4ecd8')); P.set(x + 2, y - 1, hex2rgb('#d8ccb0')); } });
   },
   forest(P, hy, L) {
     sky(P, 0, hy, ['#5a9ad0', '#7ab8e0', '#a8d4ec', '#d8ecf0']);

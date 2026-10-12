@@ -470,11 +470,11 @@ Object.assign(ENEMIES, {
   // Greenmarch grassland & forest edge (Lv 2-6)
   hornet: E('Giant Hornet', '🐝', 46, 13, 2, 3, 15, 19, 11, [['sting', 2], ['tackle', 1]], { weak: ['fire', 'ice'] }),
   shroom: E('Myconid', '🍄', 70, 11, 4, 8, 5, 22, 14, [['tackle', 2], ['spores', 1]], { weak: ['fire'], res: ['dark'] }),
-  boar: E('Wild Boar', '🐗', 84, 16, 5, 3, 8, 27, 15, [['tackle', 2], ['gore', 1]], { weak: ['ice'], elite: ['golden_boar', 0.06] }),
-  bandit: E('Bandit', '🗡️', 74, 15, 4, 4, 12, 28, 34, [['slash', 2], ['cheapshot', 1]], { weak: ['bolt'] }),
-  sapling: E('Treant Sapling', '🌳', 96, 14, 7, 8, 4, 27, 16, [['vinelash', 2], ['photosynth', 1]], { weak: ['fire'], res: ['bolt'] }),
-  spider: E('Giant Spider', '🕷️', 66, 14, 3, 4, 13, 24, 13, [['venombite', 2], ['web', 1]], { weak: ['fire'] }),
-  golden_boar: E('Golden Boar', '🐗', 150, 16, 18, 4, 9, 160, 260, [['tackle', 2], ['gore', 1], ['enrage', 1]], { weak: ['ice'], res: ['fire'], rare: true }),
+  boar: E('Wild Boar', '🐗', 84, 15, 5, 3, 8, 27, 15, [['tackle', 2], ['gore', 1]], { weak: ['ice'], elite: ['golden_boar', 0.05] }),
+  bandit: E('Bandit', '🗡️', 70, 14, 4, 4, 12, 28, 34, [['slash', 2], ['cheapshot', 1]], { weak: ['bolt'] }),
+  sapling: E('Treant Sapling', '🌳', 96, 13, 7, 8, 4, 27, 16, [['vinelash', 2], ['photosynth', 1]], { weak: ['fire'], res: ['bolt'] }),
+  spider: E('Giant Spider', '🕷️', 62, 13, 3, 4, 13, 24, 13, [['venombite', 2], ['web', 1]], { weak: ['fire'] }),
+  golden_boar: E('Golden Boar', '🐗', 200, 16, 18, 4, 9, 140, 240, [['tackle', 2], ['gore', 1], ['enrage', 1]], { weak: ['ice'], res: ['fire'], rare: true }),
   // Mire Marsh (Lv 7-9)
   bog_toad: E('Bog Toad', '🐸', 175, 27, 7, 10, 8, 56, 34, [['tongue', 2], ['venombite', 1], ['tackle', 1]], { weak: ['ice', 'bolt'], res: ['dark'] }),
   leech: E('Giant Leech', '🪱', 150, 26, 5, 6, 9, 50, 26, [['leech', 3], ['tackle', 1]], { weak: ['fire', 'bolt'], res: ['dark', 'ice'] }),
@@ -508,7 +508,7 @@ Object.assign(ENEMIES, {
 });
 ENEMIES.ice_golem.elite = ['crystal_golem', 0.08];
 // Greenmarch: the first four groups are what a level-1 party meets near Haven (the distance ramp in game.js slices this list)
-ENCOUNTERS.world = [['slime'], ['slime', 'slime'], ['goblin'], ['goblin', 'slime'], ['hornet'], ['wolf'], ['shroom', 'slime'], ['spider'], ['wolf', 'wolf'], ['boar'], ['goblin', 'goblin', 'wolf'], ['bandit', 'goblin'], ['sapling', 'shroom'], ['hornet', 'hornet'], ['boar', 'spider'], ['bandit', 'bandit'], ['sapling', 'spider']];
+ENCOUNTERS.world = [['slime'], ['slime', 'slime'], ['goblin'], ['goblin', 'slime'], ['hornet'], ['wolf'], ['shroom', 'slime'], ['spider'], ['wolf', 'wolf'], ['boar'], ['goblin', 'goblin', 'wolf'], ['bandit', 'goblin'], ['sapling', 'shroom'], ['hornet', 'hornet'], ['boar', 'slime'], ['bandit', 'bandit'], ['sapling', 'spider']];
 ENCOUNTERS.swamp.push(['bog_toad'], ['leech', 'leech'], ['wisp', 'bog_slime'], ['lizardman'], ['bog_toad', 'leech'], ['lizardman', 'wisp'], ['wisp', 'wisp']);
 ENCOUNTERS.desert = [['scorpion'], ['cactus', 'cactus'], ['desert_bandit', 'desert_bandit'], ['mummy'], ['sandworm'], ['scorpion', 'cactus'], ['mummy', 'desert_bandit'], ['scorpion', 'scorpion'], ['cactus', 'desert_bandit', 'cactus']];
 ENCOUNTERS.dungeon.push(['salamander'], ['batswarm'], ['salamander', 'bat'], ['magma_golem'], ['batswarm', 'imp']);
