@@ -22,9 +22,12 @@ await key('Enter', 3, 200); ok('party creation opens with hero 1 of 4', /1 of 4/
 await pg.click('[data-act=crjob][data-a=hexer]'); await pg.waitForTimeout(150); await pg.fill('#crname', 'Vex'); await key('Enter', 1, 200); // pick a calling, rename, Enter = next hero
 await key('Enter', 3, 200); ok('party review lists the four', /The Four/i.test(await overlayTitle()) && (await ev(() => document.querySelectorAll('[data-act=credit]').length)) === 4);
 await key('Enter', 1, 400); // answer the bell
+await key('Enter', 1, 150); await key('Enter', 1, 150); await key('Enter', 1, 200); // first line, then finish typing the second
+ok('Elder greeting uses the chosen name and calling', /Vex the Hexer/.test(await ev(() => document.getElementById('tt')?.textContent || '')), await ev(() => document.getElementById('tt')?.textContent || ''));
 for (let i = 0; i < 12 && (await ev(() => document.getElementById('overlay').classList.contains('on'))); i++) await key('Enter', 1, 250); // Elder's greeting
 ok('chosen calling and name are used, no sub calling yet', (await ev(() => { const c = window.__game.G.party[0]; return c.name === 'Vex' && c.main === 'hexer' && !c.sub && c.armor === 'cloth'; })));
 await ev(() => { for (const m of Object.values(window.__game.MAPS)) m.rate = 0; }); // keep tests deterministic: battles are started explicitly
+await ev(() => { for (const id of ['cavern', 'crypt', 'mirewood', 'frostholm', 'spire', 'storm', 'ruins']) window.__game.G.flags.visited[id] = true; }); // first-visit scenes would cover the teleports below
 ok('game started in Haven', (await ev(() => window.__game.G.map)) === 'haven');
 await pg.waitForTimeout(800); ok('music engine scheduled notes', (await ev(() => window.__osc)) >= 4);
 
@@ -114,6 +117,18 @@ await closeAll();
 await ev(() => window.__game.goto('cavern', 18, 11)); await key('ArrowDown', 1, 250);
 ok('hidden quest chest gives the heirloom', (await ev(() => window.__game.G.flags.qitems.heirloom)) === true);
 await closeAll();
+// --- story: the Wyrm's fall plays an aftermath scene, leaves its heart, and Haven's guard has news
+const guardSays = async () => { await closeAll(); await ev(() => window.__game.goto('haven', 18, 31)); await pg.waitForTimeout(200); await key('ArrowRight', 1, 250); await key('Enter', 1, 150); const t = await ev(() => document.getElementById('tt')?.textContent || ''); await closeAll(); return t; };
+await ev(() => { window.__game.G.flags.bosses.wyrm = false; });
+const guard0 = await guardSays();
+await ev(() => { window.__game.battle(['wyrm'], 'wyrm'); }); await pg.waitForSelector('[data-act=c]', { timeout: 8000 });
+await ev(() => window.__game.BT.b.e.forEach((e) => { e.hp = 1; })); await finishBattle(); await pg.waitForTimeout(300);
+ok('aftermath scene plays after the Wyrm falls', await ev(() => !!document.querySelector('#overlay .saybox.narr')));
+ok('the Wyrm leaves the Ember Heart', (await ev(() => window.__game.G.flags.qitems.ember_heart)) === true);
+for (let i = 0; i < 6 && (await ev(() => !!document.querySelector('#overlay .saybox'))); i++) await key('Escape', 1, 150); // Esc skips to the end, then closes
+ok('Esc skips and closes a scene', !(await ev(() => document.getElementById('overlay').classList.contains('on'))));
+const guard1 = await guardSays();
+ok('Haven guard\'s dialogue changes after the Wyrm falls', !!guard0 && !!guard1 && guard0 !== guard1, `${guard0.slice(0, 40)} -> ${guard1.slice(0, 40)}`);
 // --- new regions: Mirewood interior NPCs, Storm Cavern boss, ending cinematic
 await ev(() => { window.__game.G.flags.bosses.wyrm = true; window.__game.goto('mirewood', 10, 12); }); await pg.waitForTimeout(300);
 ok('Mirewood loads', (await ev(() => window.__game.G.map)) === 'mirewood');
@@ -151,7 +166,10 @@ await closeAll();
 await ev(() => { window.__game.G.flags.bosses.wyrm = true; });
 await ev(() => { window.__game.battle(['titan'], 'titan'); }); await pg.waitForSelector('[data-act=c]', { timeout: 8000 });
 await ev(() => window.__game.BT.b.e.forEach((e) => { e.hp = 1; })); await finishBattle();
-await pg.waitForTimeout(500);
+await pg.waitForTimeout(300);
+ok('finale scene: Sereth comes for the hearts', /Sereth/.test(await ev(async () => { let t = ''; for (let i = 0; i < 4; i++) { t += document.getElementById('overlay').textContent; document.querySelector('[data-act=say]')?.click(); await new Promise((r) => setTimeout(r, 60)); } return t; })));
+for (let i = 0; i < 6 && !(await pg.$('[data-act=edone]')); i++) await key('Escape', 1, 200);
+await pg.waitForTimeout(300);
 ok('ending cinematic shown after the Titan', /Frost Titan falls/.test(await overlayTitle()));
 await pg.screenshot({ path: process.env.SHOT || '/tmp/ending.png' });
 await pg.click('[data-act=edone]'); await pg.waitForTimeout(200);

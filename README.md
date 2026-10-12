@@ -56,6 +56,25 @@ get half EXP. `node tools/progress.mjs` simulates a full playthrough and checks 
 
 **Overworld** (`src/terrain.js`): FF1-style autotiling. Each tile is composed from a ground texture plus region layers (swamp, snow, sand, forest, water). Region edges are found by sampling a disc around every pixel across the 3x3 neighbourhood, so coastlines, woods and paths come out rounded the way the NES map looks: patterned blue ocean with a pale shore band, flat bright grass, dense merged forests, walled-town and dungeon icons.
 
+## The story
+Three hundred years ago the smith Gemforge bound three great evils inside gems: the Ashen Wyrm, the drowned Lich King
+Morvath and the Frost Titan. Now the seals are cracking, and Haven's Elder rings the old bell. Four answer it: you name them
+and choose their callings, and the story speaks to them by name.
+
+The seals are not failing on their own. They are being cut. Chisel marks in the cavern and the crypt, a grey figure on a
+ledge after the first evil falls, a boatman's passenger, an acolyte's old books: Wyrm and Lich can be taken in either order and
+the scenes follow suit. Each slain evil leaves a heart-gem (Ember, Grave, Rime Heart; key items shown in the journal). At the
+foot of the Frost Spire the party meets the one who wants them. The Titan is the last battle, and the last scene settles it.
+
+- **Scenes** (`STORY` in `src/data.js`): a few lines the first time the party enters each dungeon, Mirewood and Frostholm;
+  boss taunts as battle intros; an aftermath after every boss; the finale; an epilogue line per hero (by calling) in the ending.
+  `scene()` in `src/game.js` plays them in the dialogue window (narration, heroes by party slot, or a cast member). Esc skips.
+- **A world that notices**: NPCs carry `textBy: [[condition, lines], ...]` (first match wins) next to their default `text`;
+  conditions are tiny strings like `'wyrm !lich'`, `'s:met'`, `'v:frostholm'`. Guards, the Elder, innkeepers, the acolyte, the
+  Mirewood warden and boatwright, the Plains Hermit and the Desert Oracle all change their tune as the story moves. News is told
+  once ahead of quest talk. `node tools/checkids.mjs` validates every condition, speaker and epilogue.
+- **Journal**: the main thread as short narrative goals that reveal and update as the plot advances.
+
 ## The world
 - **Overworld** (40x30) with four regions: Greenmarch, Mire Marsh (swamp), Northern Plains and the Frostfields. Fog of war,
   a minimap and a full map screen. A rockslide gates the north until the Ashen Wyrm falls.
@@ -73,7 +92,7 @@ get half EXP. `node tools/progress.mjs` simulates a full playthrough and checks 
   Old Sailor; Mirewood: Apothecary; Frostholm: Prospector; in the wilds: the Desert Oracle and the Plains Hermit.
 - **Hidden treasures** (4): spots on the overworld and in towns that glint faintly now and then; step on one to dig it up. The hermit, the
   oracle and a few townsfolk drop hints. The journal counts them.
-- **Ending**: a cinematic dawn scene with scrolling credits and your stats (play time, battles, quests, gems).
+- **Ending**: the finale scene, then a cinematic dawn with an epilogue for each hero, scrolling credits and your stats.
 
 ## Visuals and sound (all generated in code)
 - `src/sprites.js`, `src/art2.js`: ASCII-grid pixel sprites (10 jobs, townsfolk, 25 enemies, three 32x32 bosses, furniture,

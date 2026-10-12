@@ -1,5 +1,5 @@
 // ===== Gemforge Chronicles: UI, map, menus, battle flow =====
-import { SOCKET_COST, DIFFICULTY, DROPS } from './data.js';
+import { SOCKET_COST, DIFFICULTY, DROPS, STORY, KEY_ITEMS } from './data.js';
 import { JOBS, SKILLS, GEMS, WEAPONS, ARMORS, ACCS, ITEMS, WEAPON_TYPES, ENEMIES, ENCOUNTERS, ELEM_ICON, BOSSES, SHOPS, QUESTS } from './data.js';
 import { MAPS, WALK } from './maps.js';
 import * as L from './logic.js';
@@ -97,14 +97,14 @@ function newGame(party = DEFAULT_PARTY) {
     party: party.map(([n, j]) => newChar(n, j, null, null, LIGHT_ARMOR.has(j) ? 'cloth' : 'leather')),
     gold: 400, difficulty: 'normal', slot: 1,
     inv: { weapons: [], armors: [], accs: [], gems: ['fire'], items: { potion: 3 } },
-    map: 'haven', x: 17, y: 30, flags: { chests: {}, bosses: {}, seen: {}, talked: {}, visited: {}, quests: {}, qprog: {}, qitems: {}, tips: {}, bestiary: {} }, playtime: 0,
+    map: 'haven', x: 17, y: 30, flags: { chests: {}, bosses: {}, seen: {}, talked: {}, visited: {}, quests: {}, qprog: {}, qitems: {}, tips: {}, bestiary: {}, story: {} }, playtime: 0,
   };
 }
 // ---------- saves: 3 slots, autosave, migration ----------
 const VERSION = '1.1.0', LEGACY_SAVE = 'gemforge-save-v2', SLOT_KEY = (i) => `gemforge-save-v3-${i}`, SLOT_IDS = [1, 2, 3];
 function migrate(g) {
   g.v = 3; g.flags ||= {};
-  for (const k of ['chests', 'bosses', 'seen', 'talked', 'visited', 'quests', 'qprog', 'qitems', 'tips', 'bestiary']) g.flags[k] ||= {};
+  for (const k of ['chests', 'bosses', 'seen', 'talked', 'visited', 'quests', 'qprog', 'qitems', 'tips', 'bestiary', 'story']) g.flags[k] ||= {};
   g.playtime ||= 0; g.stats ||= { wins: 0 }; g.difficulty = DIFFICULTY[g.difficulty] ? g.difficulty : 'normal';
   for (const c of g.party) { c.extra ||= 0; c.gems ||= []; while (c.gems.length < 5) c.gems.push([]); }
   // old saves keep their gear; only ids that no longer exist are dropped (never a crash on load)
@@ -317,9 +317,9 @@ const frame = () => new Promise((r) => requestAnimationFrame(r));
 async function transition() { sfx('encounter'); for (trans = 0.02; trans < 1.2; trans += 0.065) await frame(); trans = 1; await sleep(60); }
 function banner(text) { const b = $('#banner'); b.textContent = text; b.classList.remove('show'); void b.offsetWidth; b.classList.add('show'); }
 function goto(id, x, y) {
-  G.map = id; G.x = x; G.y = y; G.flags.visited[id] = true; snap(); music(musicFor()); sfx('door');
+  const first = !G.flags.visited[id]; G.map = id; G.x = x; G.y = y; G.flags.visited[id] = true; snap(); music(musicFor()); sfx('door');
   banner(id === 'world' ? REGION_NAME[regionOf()] : MAPS[id].name); G.region = regionOf(); layoutView(); draw(); autosave();
-  const lv = G.party.reduce((a, c) => a + c.level, 0) / G.party.length;
+  if (first && STORY.area[id]) scene(STORY.area[id]); // a few lines the first time the party sets foot somewhere
 }
 let busy = false;
 function mapShake() { if (!OPT.shake) return; cv.classList.remove('shake'); void cv.offsetWidth; cv.classList.add('shake'); }
@@ -370,8 +370,12 @@ function overlayKey(e) {
     const d = e.key === 'ArrowDown' || e.key === 'ArrowRight' ? 1 : -1; list[(i + d + list.length) % list.length].focus(); return true;
   }
   if ((e.key === 'Enter' || e.key === ' ') && f?.dataset?.act && f.tagName !== 'BUTTON') { f.click(); return true; }
+  if ((e.key === 'Escape' || e.key === 'Backspace') && ov.querySelector('.saybox')) { // skip to the last line of a dialogue, then close it
+    if (sayAt < curLines.length - 1) { say(curLines.length - 1); finishTyping(); return true; }
+    if (typing) { finishTyping(); return true; }
+  }
   if (e.key === 'Escape' || e.key === 'Backspace') {
-    const b = list.find((x) => /^(close|bmain|leave|menu|bclose|optback)$/.test(x.dataset.act) || (x.dataset.act === 'c' && x.dataset.a === 'root'));
+    const b = list.find((x) => /^(close|scend|bmain|leave|menu|bclose|optback)$/.test(x.dataset.act) || (x.dataset.act === 'c' && x.dataset.a === 'root'));
     if (b) { b.click(); return true; }
   }
   return false;
@@ -503,7 +507,7 @@ function openChest(x, y, secret = null) { // secret: loot of a hidden treasure s
 }
 
 // ---------- NPCs, dialogue, services ----------
-const QITEM = { heirloom: 'Grandmother\'s Ring', lantern: 'Boatwright\'s Lantern', doubloon: 'Redwake\'s Doubloon', letter: 'Sealed Letter' };
+const QITEM = { heirloom: 'Grandmother\'s Ring', lantern: 'Boatwright\'s Lantern', doubloon: 'Redwake\'s Doubloon', letter: 'Sealed Letter', ...KEY_ITEMS };
 const qstate = (id) => G.flags.quests[id];
 function questDone(id) { const g = QUESTS[id].goal; return g.type === 'kill' ? (G.flags.qprog[id] || 0) >= g.n : g.type === 'find' ? !!G.flags.qitems[g.item] : g.type === 'deliver' ? (G.flags.qprog[id] || 0) >= 1 : !!G.flags.bosses[g.id]; }
 function questProgress(id) { const g = QUESTS[id].goal; if (g.type === 'deliver') return G.flags.qprog[id] ? 'delivered' : `bring it to ${g.to}`; return g.type === 'kill' ? `${Math.min(G.flags.qprog[id] || 0, g.n)}/${g.n}` : g.type === 'find' ? (G.flags.qitems[g.item] ? 'found' : `find it in the ${g.where}`) : (G.flags.bosses[g.id] ? 'slain' : 'not yet slain'); }
@@ -512,21 +516,50 @@ function questMarker(n) { // '!' = offers a quest or news, '?' = ready to turn i
   if (n.quest) { const st = qstate(n.quest); return !st ? '!' : st === 'active' && questDone(n.quest) ? '?' : null; }
   return n.text && !G.flags.talked[`${G.map}:${n.x},${n.y}`] ? '!' : null;
 }
-let curNpc = null, curLines = [], curFinal = '';
+// ---------- story: conditions, text fill-ins, reactive NPC lines, scenes (content in STORY / npc.textBy) ----------
+function cond(c) { // 'wyrm !lich', 'v:frostholm', 's:met', 'q:slimes', 'wyrm|lich': see STORY in data.js
+  return !c || c.split(' ').every((tok) => {
+    const neg = tok[0] === '!', v = (neg ? tok.slice(1) : tok).split('|').some((a) => {
+      const [k, x] = a.includes(':') ? a.split(':') : ['b', a];
+      return k === 'b' ? !!G.flags.bosses[x] : k === 'v' ? !!G.flags.visited[x] : k === 's' ? !!G.flags.story[x] : k === 'q' ? qstate(x) === 'done' : false;
+    });
+    return neg ? !v : v;
+  });
+}
+const partyNames = () => { const n = G.party.map((c) => c.name); return n.slice(0, -1).join(', ') + ' and ' + n.at(-1); };
+const fill = (t) => String(t).replace(/\{all\}|\{(job)?(\d)\}/g, (m, j, i) => { if (m === '{all}') return partyNames(); const c = G.party[+i]; return !c ? '' : j ? JOBS[c.main].name : c.name; });
+function npcLines(npc) { // npc.textBy: [[condition, lines], ...], first match wins ('@base' = npc.text); otherwise npc.text
+  const v = npc.textBy?.find(([c]) => cond(c));
+  return v ? { vid: v[0], lines: v[1].flatMap((l) => (l === '@base' ? npc.text || [] : [l])) } : { vid: '', lines: npc.text || [] };
+}
+let curNpc = null, curLines = [], curFinal = '', sayAt = 0, sceneDone = null;
+function scene(sc) { // a short story scene in the dialogue window; resolves when it closes
+  sc = Array.isArray(sc) ? { lines: sc } : sc;
+  const lines = sc.lines.filter((l) => cond(l.if)); if (sc.set) G.flags.story[sc.set] = true;
+  if (!lines.length) return Promise.resolve();
+  return new Promise((res) => { sceneDone?.(); sceneDone = res; curNpc = null; curLines = lines; curFinal = btn('scend', 'Close', '', '', 'primary'); say(0); });
+}
+ACT.scend = () => { const r = sceneDone; sceneDone = null; hide(); r?.(); };
+function speaker(l) { // a scene line's speaker: narration, a hero (by party slot) or one of STORY.cast
+  if (!l.s || l.s === 'n') return { narr: true, name: '' };
+  if (/^h\d$/.test(l.s)) { const c = G.party[+l.s[1]] || G.party[0]; return { name: c.name, job: c.main }; }
+  const [name, type] = STORY.cast[l.s] || [l.s, 'villager']; return { name, type };
+}
 function talk(npc) {
   sfx('click');
   if (npc.service === 'shop') return shop(npc.shop);
   if (npc.service === 'inn') return inn(npc);
   if (npc.service === 'guild') return guild();
   if (npc.service === 'socketer') return socketer();
-  G.flags.talked[`${G.map}:${npc.x},${npc.y}`] = true; curNpc = npc;
+  const key = `${G.map}:${npc.x},${npc.y}`, { vid, lines } = npcLines(npc), news = vid && G.flags.talked[key] !== vid ? lines : []; // news: a new reactive line, told once before quest talk
+  G.flags.talked[key] = vid || true; curNpc = npc;
   if (npc.deliver && qstate(npc.deliver) === 'active' && !questDone(npc.deliver)) { const q = QUESTS[npc.deliver]; curLines = q.lines.deliver; curFinal = btn('qdeliver', `Hand over: ${esc(QITEM[q.goal.item])}`, npc.deliver, '', 'primary'); return say(0); }
-  if (!npc.quest) { curLines = npc.text; curFinal = btn('close', 'Close', '', '', 'primary'); return say(0); }
+  if (!npc.quest) { curLines = lines; curFinal = btn('close', 'Close', '', '', 'primary'); return say(0); }
   const id = npc.quest, q = QUESTS[id], st = qstate(id);
-  if (!st) { curLines = [...(npc.text || []), ...q.lines.offer]; curFinal = btn('qaccept', `Accept: ${esc(q.title)}`, id, '', 'primary') + btn('close', 'Not now'); }
+  if (!st) { curLines = [...lines, ...q.lines.offer]; curFinal = btn('qaccept', `Accept: ${esc(q.title)}`, id, '', 'primary') + btn('close', 'Not now'); }
   else if (st === 'active' && questDone(id)) { curLines = q.lines.ready; curFinal = btn('qclaim', 'Claim reward', id, '', 'primary'); }
-  else if (st === 'active') { curLines = [...q.lines.active, `(${q.title}: ${questProgress(id)})`]; curFinal = btn('close', 'Close', '', '', 'primary'); }
-  else { curLines = q.lines.done; curFinal = btn('close', 'Close', '', '', 'primary'); }
+  else if (st === 'active') { curLines = [...news, ...q.lines.active, `(${q.title}: ${questProgress(id)})`]; curFinal = btn('close', 'Close', '', '', 'primary'); }
+  else { curLines = [...news, ...q.lines.done]; curFinal = btn('close', 'Close', '', '', 'primary'); }
   say(0);
 }
 let typing = null, typingText = '';
@@ -537,8 +570,9 @@ function finishTyping() { // show the whole line and reveal the buttons
   ov.querySelector('.more')?.classList.add('on');
 }
 function say(i) {
-  const n = curNpc, last = i >= curLines.length - 1; typingText = curLines[i];
-  show(`<div class="saybox">${npcImg(n.type || 'villager')}<div class="saybody"><div class="sayname">${esc(n.name)}</div><div class="saytext" data-tap="skiptype"><span id="tt"></span><span class="more">▼</span></div></div></div><div class="sayrow hidden">${last ? curFinal : btn('say', 'NEXT', i + 1, '', 'primary')}</div>`, 'say');
+  sayAt = i; const l = curLines[i], n = typeof l === 'string' ? curNpc : speaker(l), last = i >= curLines.length - 1; typingText = fill(typeof l === 'string' ? l : l.t);
+  const face = n.narr ? '' : n.job ? portrait(n.job) : npcImg(n.type || 'villager');
+  show(`<div class="saybox${n.narr ? ' narr' : ''}">${face}<div class="saybody">${n.narr ? '' : `<div class="sayname">${esc(n.name)}</div>`}<div class="saytext" data-tap="skiptype"${n.narr ? ' style="color:#c8d4ff"' : ''}><span id="tt"></span><span class="more">▼</span></div></div></div><div class="sayrow hidden">${last ? curFinal : btn('say', 'NEXT', i + 1, '', 'primary')}</div>`, 'say');
   let k = 0; clearInterval(typing);
   typing = setInterval(() => { k++; const el = $('#tt'); if (!el) return finishTyping(); el.textContent = typingText.slice(0, k); if (k % 3 === 0) sfx('blip'); if (k >= typingText.length) finishTyping(); }, 28);
 }
@@ -571,7 +605,7 @@ function guild() { B.guild = true; show(`<h2>⚔️ ${esc(mapDef().name)}</h2><d
 ACT.leave = () => { B.guild = false; hide(); };
 function inn(npc) {
   const cost = npc.cost || 25;
-  show(`<h2>🛏️ ${esc(mapDef().name)}</h2><div class="npc">${npcImg('innkeeper', 48)}<p>A night's rest restores everyone and saves your game.</p></div><div class="card"><div class="gilbox"><span>One night</span>${coin(cost + ' G')}</div><div class="gilbox"><span>You have</span>${coin(G.gold + ' G')}</div></div><div class="card menuparty">${G.party.map((c) => { const st = maxOf(c); return `<div class="slot">${portrait(c.main, 'sm' + (c.hp <= 0 ? ' ko' : ''))}<div class="t"><b>${esc(c.name)}</b><div class="row" style="flex-wrap:nowrap"><small style="width:3em">HP</small><div class="grow">${bar(c.hp, st.hp, 'hp')}</div><small style="width:3em;text-align:right">MP</small><div class="grow">${bar(c.mp, st.mp || 1, 'mp')}</div></div></div></div>`; }).join('')}</div><div class="foot">${btn('rest', `${ic('bed')}Rest`, cost, '', 'primary', G.gold < cost)}${btn('close', 'Leave')}</div>`);
+  show(`<h2>🛏️ ${esc(mapDef().name)}</h2><div class="npc">${npcImg('innkeeper', 48)}<p>${esc(fill(npcLines(npc).lines[0] || 'A bed for the night?'))}<br><small class="dim">Rest restores HP and MP, and saves your game.</small></p></div><div class="card"><div class="gilbox"><span>One night</span>${coin(cost + ' G')}</div><div class="gilbox"><span>You have</span>${coin(G.gold + ' G')}</div></div><div class="card menuparty">${G.party.map((c) => { const st = maxOf(c); return `<div class="slot">${portrait(c.main, 'sm' + (c.hp <= 0 ? ' ko' : ''))}<div class="t"><b>${esc(c.name)}</b><div class="row" style="flex-wrap:nowrap"><small style="width:3em">HP</small><div class="grow">${bar(c.hp, st.hp, 'hp')}</div><small style="width:3em;text-align:right">MP</small><div class="grow">${bar(c.mp, st.mp || 1, 'mp')}</div></div></div></div>`; }).join('')}</div><div class="foot">${btn('rest', `${ic('bed')}Rest`, cost, '', 'primary', G.gold < cost)}${btn('close', 'Leave')}</div>`);
 }
 ACT.rest = (cost) => { sfx('rest'); G.gold -= +cost; for (const c of G.party) { const s = maxOf(c); c.hp = s.hp; c.mp = s.mp; } save(); draw(); show(`<h2>🛏️ Rested</h2><p>${ic('heart')} HP and MP restored.</p><p>${ic('save')} Game saved.</p><div class="foot">${btn('close', 'OK', '', '', 'primary')}</div>`); };
 
@@ -670,7 +704,7 @@ ACT.crback2 = () => creation(3);
 ACT.crbegin = () => {
   const slot = G.slot, diff = G.difficulty; newGame(CR.map((h) => [h.name, h.job])); G.slot = slot; G.difficulty = diff; G.flags.visited.haven = true;
   save(); snap(); music(musicFor()); hide(); banner(mapDef().name);
-  talk({ name: 'Elder', type: 'elder', x: -9, y: -9, text: [`${CR.map((h) => h.name).join(', ')}... so the bell chose you.`, 'You carry nothing but courage. Arm yourselves, then go east. The Wyrm wakes first.'] });
+  talk({ name: 'Elder', type: 'elder', x: -9, y: -9, text: STORY.greet });
 };
 function loadSlot(i) {
   const d = readSlot(i); if (!d?.G) return;
@@ -724,21 +758,21 @@ ACT.mapscreen = () => {
     requestAnimationFrame(paint);
   }; paint();
 };
-const OBJECTIVES = [
-  { id: 'wyrm', title: 'Slay the Ashen Wyrm', hint: 'Ashen Cavern, east of Haven. It is weak to ice. Its fall will clear the northern pass.' },
-  { id: 'frost', title: 'Reach Frostholm', hint: 'Cross the cleared mountain pass to the northern snowfields.', visit: 'frostholm', after: 'wyrm' },
-  { id: 'lich', title: 'Slay Lich King Morvath', hint: 'Sunken Crypt, in the swamp south of Haven. Weak to holy and fire; strong against dark.' },
-  { id: 'titan', title: 'Slay the Frost Titan', hint: 'Frost Spire, far northeast beyond Frostholm. Weak to fire; ice does little.', after: 'wyrm', final: true },
-  { id: 'storm_drake', title: 'Optional: the Storm Drake', hint: 'Storm Cavern, on the Northern Plains past the pass (Lv 11+). Weak to ice.', after: 'wyrm', optional: true },
-  { id: 'sphinx', title: 'Optional: the Sphinx Pharaoh', hint: 'Sunscar Ruins, a sandstone temple in the desert south-east of Haven (Lv 11+). Weak to ice and dark; holy and fire barely scratch it.', optional: true },
+const OBJECTIVES = [ // the main thread, in the story's voice. show / after / done are conditions (see cond()); hints switch once done
+  { title: 'The Ashen Wyrm', hint: 'The Elder says its seal is the weakest. The Ashen Cavern lies east of Haven.', done: 'wyrm', doneHint: 'Slain. Its heart is yours, and the northern pass is open.' },
+  { title: 'The Drowned King', hint: 'Morvath stirs in the Sunken Crypt, out in the marsh south of Haven.', done: 'lich', doneHint: 'Slain. Mirewood keeps its lamps lit again.' },
+  { title: 'The Grey Hand', show: 'wyrm|lich', hint: 'The seals were not broken. They were cut. Who would free such things?', done: 's:met', doneHint: 'Sereth, last apprentice of Gemforge. He wants the hearts.' },
+  { title: 'North', after: 'wyrm', hint: 'The pass is open. Frostholm lies beyond it.', done: 'v:frostholm', doneHint: 'Frostholm stands in the shadow of the Frost Spire.' },
+  { title: 'The Walking Mountain', after: 'wyrm', hint: 'The Frost Spire rises north-east of Frostholm. The Titan waits at its summit.', metHint: 'Sereth waits atop the Frost Spire. So does the Titan.', done: 'titan', doneHint: 'The mountain sleeps. Sereth is dust.' },
+  { title: 'Thunder on the Plains', after: 'wyrm', optional: true, hint: 'A drake nests in the Storm Cavern on the Northern Plains. Not for the faint (Lv 11+).', done: 'storm_drake', doneHint: 'Stars over the plains again.' },
+  { title: 'The Sun Pharaoh', optional: true, hint: 'Something asks riddles beneath the Sunscar Ruins, south-east of Haven (Lv 11+).', done: 'sphinx', doneHint: 'The riddle is answered.' },
 ];
 ACT.journal = () => {
-  const done = (o) => (o.visit ? !!G.flags.visited[o.visit] : !!G.flags.bosses[o.id]);
-  const n = OBJECTIVES.filter((o) => o.id !== 'frost' && !o.optional && done(o)).length;
+  const n = ['wyrm', 'lich', 'titan'].filter((k) => G.flags.bosses[k]).length, hearts = Object.keys(KEY_ITEMS).filter((k) => G.flags.qitems[k]).map((k) => KEY_ITEMS[k]);
   const secrets = Object.entries(MAPS).flatMap(([mid, m]) => Object.keys(m.secrets || {}).map((k) => `${mid}:${k}`)), found = secrets.filter((k) => G.flags.chests[k]).length;
-  show(`<h2>📜 Journal</h2><p class="dim">Great evils slain: <b class="gold">${n}/3</b> · Hidden treasures: <b class="gold">${found}/${secrets.length}</b></p>${OBJECTIVES.map((o) => { const locked = o.after && !G.flags.bosses[o.after]; return `<div class="card ${done(o) ? 'done' : ''}"><b>${done(o) ? '✔' : locked ? '🔒' : '◇'} ${o.title}</b><div class="dim">${locked ? 'Blocked for now: the northern pass is closed by a rockslide.' : o.hint}</div></div>`; }).join('')}
+  show(`<h2>📜 Journal</h2><p class="dim">Great evils slain: <b class="gold">${n}/3</b> · Hidden treasures: <b class="gold">${found}/${secrets.length}</b>${hearts.length ? `<br>Carried: <b class="gold">${hearts.join(', ')}</b>` : ''}</p>${OBJECTIVES.filter((o) => cond(o.show)).map((o) => { const dn = cond(o.done), locked = !cond(o.after); return `<div class="card ${dn ? 'done' : ''}"><b>${dn ? '✔' : locked ? '🔒' : '◇'} ${o.optional ? '<span class="dim">Optional:</span> ' : ''}${o.title}</b><div class="dim">${locked ? 'A rockslide buries the northern pass.' : dn ? o.doneHint : o.metHint && cond('s:met') ? o.metHint : o.hint}</div></div>`; }).join('')}
   <h3>Side quests</h3>${(() => { const act = Object.entries(QUESTS).filter(([id]) => qstate(id) === 'active'), dn = Object.entries(QUESTS).filter(([id]) => qstate(id) === 'done');
-    return (act.length ? act.map(([id, q]) => `<div class="card ${questDone(id) ? 'done' : ''}"><b>${questDone(id) ? '❓' : '◇'} ${esc(q.title)}</b> <span class="dim">(${questProgress(id)})</span><div class="dim">${questDone(id) ? 'Return to ' + esc(q.giver) + ' to claim your reward.' : esc(q.lines.active[0])}</div></div>`).join('') : '<div class="dim">No active quests. Talk to townsfolk marked with a yellow <b>!</b>.</div>') + (dn.length ? `<div class="dim">Completed: ${dn.map(([, q]) => '✔ ' + esc(q.title)).join(' · ')}</div>` : ''); })()}
+    return (act.length ? act.map(([id, q]) => `<div class="card ${questDone(id) ? 'done' : ''}"><b>${questDone(id) ? '❓' : '◇'} ${esc(q.title)}</b> <span class="dim">(${questProgress(id)})</span><div class="dim">${questDone(id) ? 'Return to ' + esc(q.giver) + ' to claim your reward.' : esc(q.lines.active[0])}</div></div>`).join('') : '<div class="dim">No active quests. Folk in town sometimes need a hand.</div>') + (dn.length ? `<div class="dim">Completed: ${dn.map(([, q]) => '✔ ' + esc(q.title)).join(' · ')}</div>` : ''); })()}
   <h3>💡 Tips</h3><div class="dim">• Gems rewrite skills: try Wide + a heal, Echo on a big spell, Stun on a fast skill.<br>• Jobs can be changed in any town building; sub jobs lend skills (2 levels behind).<br>• Inns heal and save. Frostholm's shops sell much better gear.<br>• Hermits and oracles roam the wilds. Listen to them, and watch the ground for a faint glint of buried treasure.</div><div class="foot">${btn('menu', 'Back', '', '', 'primary')}</div>`);
 };
 let optBack = 'menu';
@@ -1036,7 +1070,7 @@ async function victory(b, bossId) {
     G.flags.bosses[bossId] = true; const names = [];
     for (const k of ['weapons', 'armors', 'accs', 'gems']) for (const id of def.loot[k] || []) { G.inv[k].push(id); names.push(DB[k][id].name); }
     lines.push(`Found <b class="gold">${names.join(', ')}</b>!`);
-    if (def.unlock) lines.push(`<i>${esc(def.unlock)}</i>`);
+    if (def.heart) { G.flags.qitems[def.heart] = true; lines.push(`Obtained the <b class="gold">${KEY_ITEMS[def.heart]}</b>.`); }
   }
   if (bossId) G.flags.bosses[bossId] = true;
   miniDirty = true;
@@ -1048,6 +1082,7 @@ async function victory(b, bossId) {
     ov.innerHTML = `<div class="win gold anim"><div class="vhead">${ic('trophy')}<h2>${def ? esc(def.name) + ' is slain!' : 'Victory!'}</h2>${ic('trophy')}</div><div class="spoils"><span>${ic('star')}+${r.exp} EXP</span><span class="gold">${ic('coin')}+${r.gold} G</span></div><div class="vparty">${vp}</div><div class="vlines">${lines.map((l) => `<div>${UI.deco(l)}</div>`).join('')}</div><div class="foot">${btn('vdone', 'Continue', '', '', 'primary')}</div></div>`;
     ACT.vdone = () => { hide(); res(); };
   });
+  if (bossId && STORY.after[bossId]) { await scene(STORY.after[bossId]); autosave(); } // aftermath: what the evil left behind, and who was watching
   if (def?.final) await ending();
 }
 function drawEnding(c2, t, W, H) {
@@ -1069,14 +1104,17 @@ async function ending() {
   const left = ['wyrm', 'lich'].filter((k) => !G.flags.bosses[k]).map((k) => BOSSES[k].name);
   const quests = Object.keys(QUESTS).filter((id) => qstate(id) === 'done').length, gemsOn = G.party.reduce((n, c) => n + gemsUsed(c), 0);
   const roll = [
-    ['GEMFORGE CHRONICLES', 'h'], ['', ''], ['THE HEROES', 'h'], ...G.party.map((c) => [`${esc(c.name)}: ${JOBS[c.main].name}${c.sub ? ' / ' + JOBS[c.sub].name : ''}, Lv ${c.level}`, '']), ['', ''],
+    ['GEMFORGE CHRONICLES', 'h'], ['', ''], ['AFTERWARD', 'h'],
+    [left.length ? 'Two hearts sleep in the old bell of Haven. The third is still out in the marsh.' : 'Ember, Grave and Rime: the three hearts sleep in the old bell of Haven, and it rings only for those who answer.', ''],
+    ...G.party.map((c) => [esc(STORY.epilogue[c.main] || '{n} went home.').replace('{n}', esc(c.name)), '']),
+    ['Of Sereth, only the grey stone remains. No smith has dared to set it.', ''], ['', ''], ['THE HEROES', 'h'], ...G.party.map((c) => [`${esc(c.name)}: ${JOBS[c.main].name}${c.sub ? ' / ' + JOBS[c.sub].name : ''}, Lv ${c.level}`, '']), ['', ''],
     ['YOUR JOURNEY', 'h'], [`Time played: ${fmtTime(G.playtime)}`, ''], [`Battles won: ${G.stats?.wins || 0}`, ''], [`Side quests completed: ${quests}/${Object.keys(QUESTS).length}`, ''], [`Gems socketed: ${gemsOn}`, ''], [`Great evils slain: ${3 - left.length}/3`, ''], ['', ''],
     ['MADE WITH', 'h'], ['Claude Code', ''], ['every sprite, tile and song', ''], ['was drawn or composed in code', ''], ['', ''], ['THANK YOU FOR PLAYING', 'h'],
   ];
   await new Promise((res) => {
     show(`<h2>🎉 The Frost Titan falls!</h2><canvas id="endcv" width="512" height="230" class="framed"></canvas>
     <div class="credits"><div class="roll">${roll.map(([t, k]) => `<div class="${k}">${t || '&nbsp;'}</div>`).join('')}</div></div>
-    ${left.length ? `<p class="dim">Still at large: ${left.join(', ')}. Hunt them down for the full legend.</p>` : '<p class="gold">All three great evils are slain. The realm is safe, for now.</p>'}<div class="foot">${btn('edone', 'Keep exploring', '', '', 'primary')}</div>`, '', 'gold');
+    ${left.length ? `<p class="dim">Still sleeping: ${left.join(', ')}. The bell is waiting.</p>` : `<p class="gold">The bell of Haven rings for ${esc(partyNames())}.</p>`}<div class="foot">${btn('edone', 'Keep exploring', '', '', 'primary')}</div>`, '', 'gold');
     const c2 = $('#endcv').getContext('2d'), t0 = performance.now();
     const loop = () => { if (!$('#endcv')) return; drawEnding(c2, (performance.now() - t0) / 1000, 512, 230); requestAnimationFrame(loop); }; loop();
     ACT.edone = () => { hide(); music(musicFor()); res(); };
@@ -1085,7 +1123,7 @@ async function ending() {
 async function defeat() {
   music('gameover');
   await new Promise((res) => {
-    ov.innerHTML = `<div class="win red anim"><div class="vhead">${ic('ko')}<h2 class="bad">Defeated…</h2>${ic('ko')}</div><div class="vparty">${G.party.map((c) => `<div class="vp">${portrait(c.main, 'sm ko')}<div class="vi">${esc(c.name)}</div></div>`).join('')}</div><p>The party is carried back to Haven Town. You lose half your gold.</p><div class="foot">${btn('ddone', 'Wake up', '', '', 'primary')}</div></div>`;
+    ov.innerHTML = `<div class="win red anim"><div class="vhead">${ic('ko')}<h2 class="bad">Defeated…</h2>${ic('ko')}</div><div class="vparty">${G.party.map((c) => `<div class="vp">${portrait(c.main, 'sm ko')}<div class="vi">${esc(c.name)}</div></div>`).join('')}</div><p>Someone carries you back to Haven. Half your gold is gone.</p><div class="foot">${btn('ddone', 'Wake up', '', '', 'primary')}</div></div>`;
     ACT.ddone = () => { G.gold = Math.floor(G.gold / 2); for (const c of G.party) { const s = maxOf(c); c.hp = s.hp; c.mp = s.mp; } goto('haven', 9, 11); hide(); res(); };
   });
 }

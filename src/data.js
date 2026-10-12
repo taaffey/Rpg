@@ -226,9 +226,10 @@ export const DROPS = {}; // filled at the end of this file (every enemy has a ta
 // ===== Expansion content: new jobs, gems, gear, enemies, bosses, shops =====
 // =====================================================================
 export const BOSSES = {
-  wyrm: { name: 'Ashen Wyrm', intro: 'The Ashen Wyrm awakens!', loot: { weapons: ['dragonbane'], armors: ['dragon_mail'] }, unlock: 'The rockslide on the northern pass has been cleared by the Wyrm\'s fall. Frostholm lies beyond.' },
-  lich: { name: 'Lich King Morvath', intro: 'The Lich King rises from his sarcophagus...', loot: { weapons: ['lich_staff'], armors: ['lich_robes'], gems: ['siphon'] } },
-  titan: { name: 'Frost Titan', intro: 'The Frost Titan shakes the spire awake!', loot: { weapons: ['titan_axe'], armors: ['titan_plate'], gems: ['execute'] }, final: true },
+  // heart: the key item each of Gemforge's three evils leaves behind (see STORY below)
+  wyrm: { name: 'Ashen Wyrm', intro: 'The Ashen Wyrm uncoils: "The cutter promised me a feast. You will do."', loot: { weapons: ['dragonbane'], armors: ['dragon_mail'] }, heart: 'ember_heart' },
+  lich: { name: 'Lich King Morvath', intro: 'Morvath rises from his sarcophagus: "The grey one opened my door. And you have come to close it? How dull."', loot: { weapons: ['lich_staff'], armors: ['lich_robes'], gems: ['siphon'] }, heart: 'grave_heart' },
+  titan: { name: 'Frost Titan', intro: 'The Spire shudders as the Frost Titan stands: "SMALL ONES... GEMFORGE SENDS... CHILDREN?"', loot: { weapons: ['titan_axe'], armors: ['titan_plate'], gems: ['execute'] }, final: true, heart: 'rime_heart' },
 };
 
 Object.assign(SKILLS, {
@@ -357,7 +358,7 @@ Object.assign(ENEMIES, {
   storm_drake: E('Storm Drake', '🐲', 2500, 48, 18, 52, 12, 2000, 1800, [['stormclaw', 3], ['thunderbreath', 2], ['claw', 1]], { weak: ['ice'], res: ['bolt'], boss: true }),
 });
 Object.assign(ENCOUNTERS, { storm: [['storm_bat', 'storm_bat'], ['thunder_imp', 'thunder_imp'], ['gale_wraith'], ['storm_bat', 'thunder_imp'], ['gale_wraith', 'storm_bat'], ['thunder_imp', 'gale_wraith', 'storm_bat']] });
-BOSSES.storm_drake = { name: 'Storm Drake', intro: 'Thunder splits the cavern as the Storm Drake descends!', optional: true, loot: { weapons: ['storm_katana'], armors: ['storm_cloak'], gems: ['siphon', 'crit'] } };
+BOSSES.storm_drake = { name: 'Storm Drake', intro: 'Thunder splits the cavern. The Storm Drake drops from the dark, crackling!', optional: true, loot: { weapons: ['storm_katana'], armors: ['storm_cloak'], gems: ['siphon', 'crit'] } };
 SHOPS.mire_general = { title: '🛒 Mirewood Trading Post', stock: { items: ['potion', 'hipotion', 'ether', 'phoenix'], gems: ['fire', 'frost', 'bolt', 'holy', 'shadow', 'chain', 'vamp', 'thrifty', 'venom', 'guard', 'crit'], weapons: ['healing_staff', 'viper_fang', 'serpent_lash', 'thunder_claw', 'bone_scythe', 'battle_axe', 'iron_katana', 'hunter_bow', 'flame_brand'], armors: ['chain', 'mage_cloak', 'yeti_fur'], accs: ['ward_amulet', 'fire_pendant', 'swift_boots'] } };
 
 // ---- side quests. goal: {type:'kill', ids, n} | {type:'find', item} | {type:'boss', id}
@@ -593,3 +594,105 @@ Object.assign(QUESTS, {
   crystalgolem: { title: 'Heart of Crystal', giver: 'Frostholm prospector', goal: { type: 'kill', ids: ['crystal_golem'], n: 1, lure: { table: 'spire', group: ['crystal_golem'], p: 0.12 } }, reward: { gold: 1500, accs: ['prism_band'] },
     lines: { offer: ['Ice golems in the Frost Spire sometimes grow a heart of living crystal. Glows like a lantern.', 'Shatter one of those Crystal Golems and bring me a shard. Bolt and darkness crack them.'], active: ['A Crystal Golem, in the Frost Spire. They walk among the ice golems.'], ready: ['Look at that shard sing! Here, set in silver: a band that holds two gems.'], done: ['I\'m rich! Well, richer. Thanks, friend.'] } },
 });
+
+// =====================================================================
+// ===== Story: scenes, the antagonist, epilogue =====
+// =====================================================================
+// Three hundred years ago the smith Gemforge bound three evils into gems. The seals are not failing: Sereth, his last
+// apprentice, kept alive by a gem cut into his own heart, is cutting them. Only living hands can slay what Gemforge bound,
+// and each slain evil leaves its heart behind, pure power with the malice burnt out. Sereth needs heroes to do the killing,
+// so he wakes the evils and waits. He is glimpsed after the first evil falls, named by Haven's acolyte and the Elder,
+// met at the foot of the Frost Spire, and undone after the Titan: the freed Rime Heart answers the hands that freed it, not his.
+//
+// Scene lines: { s: speaker, t: text, if: condition }. Speakers: 'n' narration, 'h0'..'h3' a party member, or a key of STORY.cast.
+// Text: {0}..{3} = party names, {job0}..{job3} = their callings, {all} = "A, B, C and D".
+// Conditions (also used by npc.textBy and the journal): space-separated tokens, all must hold; '!' negates; 'a|b' = either.
+//   wyrm / lich / titan / storm_drake / sphinx = that boss is slain; v:<map> = visited; s:<flag> = story flag; q:<quest> = quest done.
+export const KEY_ITEMS = { ember_heart: 'Ember Heart', grave_heart: 'Grave Heart', rime_heart: 'Rime Heart' };
+export const STORY = {
+  cast: { sereth: ['Sereth', 'sereth'], guard: ['Guard', 'guard'] },
+  greet: ['{all}... So the bell chose you.', '{0} the {job0}. Gemforge was a smith, not a soldier, and still he bound three evils.', 'The Wyrm\'s seal is the weakest. Arm yourselves, then go east, to the Ashen Cavern.'],
+  // first time a place is entered (set: story flag raised by the scene)
+  area: {
+    cavern: [
+      { s: 'n', t: 'Heat breathes up from the dark. The walls are scored with claw marks, and here and there, the neat bite of a chisel.' },
+      { s: 'h1', t: 'Someone came down here before us.', if: '!lich' },
+      { s: 'h1', t: 'Chisel marks. The same as in the Crypt.', if: 'lich' },
+    ],
+    crypt: [
+      { s: 'n', t: 'Black water laps at the steps. Somewhere beneath it, a drowned bell is tolling.' },
+      { s: 'n', t: 'The seal on the door has not been broken. It has been cut, clean as the facet of a gem.' },
+      { s: 'h2', t: 'Who would open a tomb like this?', if: '!wyrm' },
+      { s: 'h2', t: 'The same hand as in the cavern.', if: 'wyrm' },
+    ],
+    mirewood: [{ s: 'n', t: 'Mirewood. Stilts, smoke and frogsong, and every shutter barred at dusk.' }],
+    frostholm: [
+      { s: 'guard', t: 'Hold! ...You came over the pass? Then the rockslide is gone, and the Wyrm with it.' },
+      { s: 'guard', t: 'Welcome to Frostholm. We have not seen southern faces in a generation.' },
+      { s: 'h3', t: 'Has anyone else come this way?' },
+      { s: 'guard', t: 'One. A man in grey, a month back. He walked up to the Spire alone, and never came down.' },
+    ],
+    spire: { set: 'met', lines: [
+      { s: 'n', t: 'At the foot of the Spire a man in grey is waiting. The snow does not settle on him.' },
+      { s: 'sereth', t: '{0}. I hoped it would be you.' },
+      { s: 'sereth', t: 'I am Sereth, last apprentice of Gemforge. The seals did not fail. I cut them.' },
+      { s: 'h1', t: 'You set those horrors loose?' },
+      { s: 'sereth', t: 'On you. Only living hands can slay what my master bound, and mine stopped living long ago.' },
+      { s: 'sereth', t: 'Each evil you kill leaves its heart behind, clean as river ice. He locked that power away. I mean to wear it.' },
+      { s: 'h2', t: 'And if we turn back?' },
+      { s: 'sereth', t: 'Then the Titan walks south, and Haven is the first thing it steps on. Climb, {0}. I will be at the top.' },
+      { s: 'n', t: 'When the snow clears, he is gone.' },
+    ] },
+    storm: [{ s: 'n', t: 'The air tastes of copper. Every hair on your arms stands up.' }],
+    ruins: [{ s: 'n', t: 'Sand hisses down through the cracks. Something old is listening.' }],
+  },
+  // after a boss falls (before the ending, for the Titan)
+  after: {
+    wyrm: [
+      { s: 'n', t: 'The Wyrm\'s fire gutters out. Among the ashes, a gem the size of a fist still glows: the Ember Heart.' },
+      { s: 'n', t: 'On a ledge above, a figure in grey is watching. When you look again, there is no one.', if: '!lich' },
+      { s: 'h1', t: 'Whoever that was, the Wyrm didn\'t frighten them.', if: '!lich' },
+      { s: 'h2', t: 'Another seal cut clean. Whoever is doing this isn\'t finished.', if: 'lich' },
+      { s: 'n', t: 'Far to the north, the mountain groans and settles. The rockslide on the pass has given way.' },
+    ],
+    lich: [
+      { s: 'n', t: 'Morvath\'s crown rolls across the flagstones and goes dark. In the sarcophagus lies a cold violet gem: the Grave Heart.' },
+      { s: 'n', t: 'Footprints lead away through the silt. Too neat for the dead.', if: '!wyrm' },
+      { s: 'h3', t: 'Someone opened this tomb on purpose.', if: '!wyrm' },
+      { s: 'h3', t: 'Two seals, the same careful hand. The Titan\'s is the last.', if: 'wyrm !titan' },
+      { s: 'n', t: 'With the drowned king gone, Gemforge\'s three are no more. The Grave Heart goes quiet in your hands.', if: 'titan' },
+      { s: 'n', t: 'Across the marsh, Mirewood\'s lamps are lit one by one.' },
+    ],
+    titan: [
+      { s: 'n', t: 'The Titan comes apart like a glacier calving. From the rubble rises a gem of blue fire: the Rime Heart.' },
+      { s: 'n', t: 'A man in grey steps out of the snow.', if: '!s:met' },
+      { s: 'sereth', t: 'Well struck, {0}. My master could not have done it cleaner.' },
+      { s: 'sereth', t: 'Ember, Grave and Rime. Three hearts, freed by living hands. Give them to me.', if: 'lich' },
+      { s: 'sereth', t: 'The Ember Heart, and now the Rime. The drowned king can wait. Give them to me.', if: '!lich' },
+      { s: 'h0', t: 'No.' },
+      { s: 'sereth', t: 'Then I will take them.' },
+      { s: 'n', t: 'He closes his hand around the Rime Heart. Frost races up his arm. In his chest, something cracks.' },
+      { s: 'sereth', t: 'Ah. Gems hold intent... and you freed them. Not I.' },
+      { s: 'sereth', t: 'Master. You always did have the last word.' },
+      { s: 'n', t: 'The wind takes him. Where he stood lies a grey stone, split clean through.' },
+      { s: 'h1', t: 'Let\'s go home.' },
+    ],
+    storm_drake: [{ s: 'n', t: 'The storm breaks apart. Over the plains, for the first time in years, there are stars.' }],
+    sphinx: [{ s: 'n', t: 'The riddle dies unspoken. Somewhere above, the sand stops falling.' }],
+  },
+  // ending: one line per hero, by main calling
+  epilogue: {
+    knight: '{n} kept the watch at Haven\'s gate, and the gate was never shut again.',
+    rogue: '{n} vanished for a year and came back richer. Nobody asked.',
+    mage: '{n} stayed in Frostholm to study the Spire\'s ice, and argues with it nightly.',
+    cleric: '{n} tends Gemforge\'s grave. The grey flowers no longer come.',
+    monk: '{n} climbed the Spire once more, alone, to sit where the Titan fell.',
+    ranger: '{n} walks the Northern Plains with the old hermit, mapping every glint.',
+    hexer: '{n} kept Sereth\'s split stone, and listens to it on quiet nights.',
+    bard: '{n} wrote the song they sing in Haven now. It is mostly true.',
+    berserker: '{n} picked a fight with every yeti in the Frostfields. The yetis moved.',
+    alchemist: '{n} opened a shop in Mirewood. The potions are excellent. The smell is not.',
+    samurai: '{n} took no reward and no student, and left at dawn.',
+    paladin: '{n} rings the old bell each year, on the day the Titan fell.',
+  },
+};

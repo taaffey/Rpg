@@ -303,12 +303,19 @@ const SFX = {
 export function sfx(name) { if (muted || !E || E.ctx.state !== 'running') return; try { SFX[name]?.(); } catch (e) { console.warn('sfx failed', name, e); } }
 
 // ----- analysis hooks (tools/musiccheck.mjs): render a track or sfx offline with the real synth -----
-async function offline(secs, fn, sr = 44100) {
-  const oc = new OfflineAudioContext(2, Math.ceil(sr * secs), sr), saved = E; E = graph(oc, true);
-  let r; try { r = fn(); } finally { E = saved; } const buf = await oc.startRendering(); return { buf, r };
+async function offline(secs, setup, chunk = null, sr = 44100) {
+  const oc = new OfflineAudioContext(2, Math.ceil(sr * secs), sr), saved = E, G = graph(oc, true), use = (fn) => { const s = E; E = G; try { return fn(); } finally { E = s; } };
+  const r = use(setup);
+  if (chunk) { // schedule like the live lookahead scheduler, 1 s at a time (keeps the offline graph small)
+    use(() => chunk(1.5));
+    for (let t = 1; t < secs - 0.5; t += 1) oc.suspend(t).then(() => { use(() => chunk(t + 1.5)); oc.resume(); });
+  }
+  E = saved; const buf = await oc.startRendering(); return { buf, r };
 }
 export async function _render(name, secs, sr) {
-  return offline(secs, () => { const I = instance(name, true), C = I.C; for (const f of [I.dry, I.ech, I.rev]) f.gain.value = 1; setEcho(C, 0); I.t0 = I.next = 0; pump(I, secs - 0.01); return { log: I.log, sd: C.sd, len: C.len, loopSecs: C.len * C.sd }; }, sr);
+  let I = null;
+  return offline(secs, () => { I = instance(name, true); const C = I.C; for (const f of [I.dry, I.ech, I.rev]) f.gain.value = 1; setEcho(C, 0); I.t0 = I.next = 0; return { log: I.log, sd: C.sd, len: C.len, loopSecs: C.len * C.sd }; },
+    (until) => pump(I, Math.min(until, secs - 0.01)), sr);
 }
-export async function _renderSfx(name, sr) { return offline(2.5, () => SFX[name](), sr); }
+export async function _renderSfx(name, sr) { return offline(2.5, () => SFX[name](), null, sr); }
 export const _SFX = Object.keys(SFX), _TRACKS = SCORES, _midi = midi;

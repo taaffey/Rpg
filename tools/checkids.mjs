@@ -1,7 +1,7 @@
 // Every id referenced by shops, chests, drops, bosses, quests, encounters, jobs, weapons and the new-game inventory must exist.
 // usage: node tools/checkids.mjs
 import { readFileSync } from 'node:fs';
-import { WEAPONS, ARMORS, ACCS, GEMS, ITEMS, SKILLS, JOBS, WEAPON_TYPES, ENEMIES, ENCOUNTERS, DROPS, BOSSES, SHOPS, QUESTS, ELEMENTS } from '../src/data.js';
+import { WEAPONS, ARMORS, ACCS, GEMS, ITEMS, SKILLS, JOBS, WEAPON_TYPES, ENEMIES, ENCOUNTERS, DROPS, BOSSES, SHOPS, QUESTS, ELEMENTS, STORY, KEY_ITEMS } from '../src/data.js';
 import { MAPS } from '../src/maps.js';
 const DB = { weapons: WEAPONS, armors: ARMORS, accs: ACCS, gems: GEMS, items: ITEMS };
 const errs = [];
@@ -13,7 +13,7 @@ const loot = (o, where) => {
 for (const [sid, s] of Object.entries(SHOPS)) for (const [k, ids] of Object.entries(s.stock)) for (const id of ids) { has(k, id, `shop ${sid}`); if (DB[k]?.[id] && !(DB[k][id].price > 0)) errs.push(`shop ${sid}: ${id} has no price`); }
 for (const [mid, m] of Object.entries(MAPS)) for (const [pos, c] of Object.entries({ ...(m.chests || {}), ...(m.secrets || {}) })) loot(c, `chest ${mid}@${pos}`);
 // quest items: every find/deliver item has a display name in game.js; every find item sits in some chest; every deliver quest has a recipient
-{ const gsrc = readFileSync(new URL('../src/game.js', import.meta.url), 'utf8'), qi = gsrc.match(/const QITEM = (\{.*\});/), QITEM = qi ? Function(`return (${qi[1]})`)() : {};
+{ const gsrc = readFileSync(new URL('../src/game.js', import.meta.url), 'utf8'), qi = gsrc.match(/const QITEM = (\{.*\});/), QITEM = qi ? Function('KEY_ITEMS', `return (${qi[1]})`)(KEY_ITEMS) : {};
   const inChests = new Set(Object.values(MAPS).flatMap((m) => Object.values({ ...(m.chests || {}), ...(m.secrets || {}) }).map((c) => c.qitem).filter(Boolean)));
   const recv = new Set(Object.values(MAPS).flatMap((m) => (m.npcs || []).map((n) => n.deliver).filter(Boolean)));
   for (const [qid, q] of Object.entries(QUESTS)) { const g = q.goal;
@@ -54,10 +54,21 @@ for (const d of Object.values(DROPS)) for (const s of [d.common, d.rare]) if (s?
 for (const q of Object.values(QUESTS)) for (const id of q.reward.weapons || []) src.add(id);
 for (const wid of Object.keys(WEAPONS)) if (!src.has(wid)) errs.push(`weapon ${wid} cannot be obtained anywhere`);
 // the new-game inventory and party in game.js
-const game = readFileSync(new URL('../src/game.js', import.meta.url), 'utf8'), ng = game.slice(game.indexOf('function newGame()'), game.indexOf('function migrate('));
+const game = readFileSync(new URL('../src/game.js', import.meta.url), 'utf8'), ng = game.slice(game.indexOf('function newGame('), game.indexOf('function migrate('));
 const inv = ng.match(/inv: (\{.*\}),\s*$/m);
 if (!inv) errs.push('could not find the newGame() inventory');
 else { const o = Function(`return (${inv[1]})`)(); loot(o, 'newGame inventory'); }
 for (const m of ng.matchAll(/newChar\('[^']+', '(\w+)', '(\w+)', (null|'(\w+)'), '(\w+)'/g)) { if (!JOBS[m[1]] || !JOBS[m[2]]) errs.push(`newGame: unknown job ${m[1]}/${m[2]}`); if (m[4]) has('weapons', m[4], 'newGame weapon'); has('armors', m[5], 'newGame armor'); }
 if (errs.length) { console.log(errs.map((e) => '✗ ' + e).join('\n')); console.log(`\n${errs.length} problem(s)`); process.exit(1); }
+// story: every condition atom (scenes, npc.textBy) names a real boss / map / quest; speakers exist; hearts are key items
+{ const atom = (a, where) => { const [k, x] = a.includes(':') ? a.split(':') : ['b', a]; const okA = k === 'b' ? !!BOSSES[x] : k === 'v' ? !!MAPS[x] : k === 'q' ? !!QUESTS[x] : k === 's'; if (!okA) errs.push(`${where}: bad condition '${a}'`); };
+  const conds = (c, where) => { if (c) for (const t of c.split(' ')) for (const a of t.replace(/^!/, '').split('|')) atom(a, where); };
+  const scene = (sc, where) => { for (const l of Array.isArray(sc) ? sc : sc.lines) { conds(l.if, where); if (!(['n', 'h0', 'h1', 'h2', 'h3'].includes(l.s) || STORY.cast[l.s])) errs.push(`${where}: unknown speaker ${l.s}`); if (!l.t) errs.push(`${where}: empty line`); } };
+  for (const [id, sc] of Object.entries(STORY.area)) { if (!MAPS[id]) errs.push(`story area ${id}: no such map`); scene(sc, `story area ${id}`); }
+  for (const [id, sc] of Object.entries(STORY.after)) { if (!BOSSES[id]) errs.push(`story after ${id}: no such boss`); scene(sc, `story after ${id}`); }
+  for (const id of Object.keys(STORY.epilogue)) if (!JOBS[id]) errs.push(`epilogue: unknown job ${id}`);
+  for (const id of Object.keys(JOBS)) if (!STORY.epilogue[id]) errs.push(`epilogue: no line for ${id}`);
+  for (const [id, b] of Object.entries(BOSSES)) if (b.heart && !KEY_ITEMS[b.heart]) errs.push(`boss ${id}: heart ${b.heart} is not a key item`);
+  for (const [mid, m] of Object.entries(MAPS)) for (const n of m.npcs || []) for (const [c, lines] of n.textBy || []) { conds(c, `npc ${mid}/${n.name}`); if (!lines?.length) errs.push(`npc ${mid}/${n.name}: empty textBy lines`); }
+}
 console.log(`ids OK: ${Object.keys(WEAPONS).length} weapons, ${Object.keys(ENEMIES).length} enemies with drop tables, ${Object.keys(SHOPS).length} shops, ${Object.values(MAPS).reduce((n, m) => n + Object.keys(m.chests || {}).length, 0)} chests, ${Object.keys(QUESTS).length} quests`);
