@@ -144,7 +144,7 @@ const decorAt = (x, y) => mapDef().decor?.some((d) => d[0] === x && d[1] === y);
 const npcAt = (x, y) => mapDef().npcs?.find((n) => n.x === x && n.y === y);
 const regionOf = () => { if (G.map !== 'world') return null; const t = tileAt(G.x, G.y); return t === ',' || t === 't' ? 'snow' : t === ':' ? 'swamp' : t === 'd' ? 'desert' : G.y <= 13 ? 'plains' : 'green'; };
 const REGION_NAME = { snow: 'Frostfields', swamp: 'Mire Marsh', plains: 'Northern Plains', green: 'Greenmarch', desert: 'Sunscar Sands' };
-function musicFor() { const m = mapDef(); return m.kind === 'outdoor' ? (regionOf() === 'snow' ? 'snow' : 'world') : m.music; }
+function musicFor() { const m = mapDef(); if (m.kind !== 'outdoor') return m.music; const r = regionOf(); return r === 'snow' ? 'snow' : r === 'desert' ? 'desert' : r === 'swamp' ? 'mirewood' : 'world'; }
 function reveal() { // fog of war
   const m = mapDef(); if (!m.fog) return;
   const seen = (G.flags.seen[G.map] ||= m.rows.map((r) => '0'.repeat(r.length))), r = m.fog;
@@ -638,7 +638,7 @@ function title() {
   show(`<div class="tagline">Pick a main job and a sub job. Wield weapons that grant signature skills. Socket gems to rewrite every skill.</div>
   <div class="titlecmd">${btn('new', `${ic('star')}New Game`, '', '', 'primary')}${btn('cont', `${ic('save')}Continue`, '', '', '', !anySave())}${btn('opts', `${ic('options')}Options`)}</div>`, 'title');
   ov.insertAdjacentHTML('beforeend', `<div class="ver">v${VERSION} · made in code</div>`);
-  $('#loc').textContent = ''; $('#gold').textContent = ''; music('town');
+  $('#loc').textContent = ''; $('#gold').textContent = ''; music('title');
 }
 let slotMode = 'new', pendingSlot = null, pendingDel = null;
 function slotScreen(mode) {

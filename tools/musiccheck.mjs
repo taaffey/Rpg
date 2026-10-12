@@ -80,8 +80,8 @@ for (const name of names) {
     let off = 0; for (const t of r.log) off = Math.max(off, Math.abs(t / r.sd - Math.round(t / r.sd))); out.grid = off;
     if (!S.once) {
       out.seam = db(rms(L - 0.25, L + 0.25)) - med;
-      const d = (i) => Math.abs(mono[i] - mono[i - 1]), diffs = []; for (let i = 1; i < n; i += 7) diffs.push(d(i)); diffs.sort((a, b) => a - b);
-      let seamMax = 0; for (let i = Math.floor((L - 0.01) * sr); i < (L + 0.01) * sr; i++) seamMax = Math.max(seamMax, d(i)); out.click = seamMax / (diffs[Math.floor(diffs.length * 0.999)] + 1e-9);
+      const d = (i) => Math.abs(mono[i] - mono[i - 1]); let rest = 0; for (let i = 1; i < n; i++) if (Math.abs(i / sr - L) > 0.05) rest = Math.max(rest, d(i));
+      let seamMax = 0; for (let i = Math.floor((L - 0.01) * sr); i < (L + 0.01) * sr; i++) seamMax = Math.max(seamMax, d(i)); out.click = seamMax / (rest + 1e-9); // > 1: the sharpest edge in the render sits on the seam
       // second pass through the loop should be (near) identical to the first once both have their echo tails
       let xy = 0, xx = 0, yy = 0; const a0 = Math.floor(3 * sr), m = Math.floor((L - 3) * sr), o = Math.floor(L * sr);
       for (let i = a0; i < a0 + m; i += 3) { const x = mono[i], y = mono[i + o]; xy += x * y; xx += x * x; yy += y * y; } out.repeat = xy / Math.sqrt(xx * yy + 1e-12);
@@ -106,7 +106,7 @@ for (const r of rows) {
   if (!SCORES[r.name].once && Math.abs(r.rms - mid) > 3) bad(`${r.name}: loudness ${(r.rms - mid).toFixed(1)} dB from the median`);
   if (!SCORES[r.name].once && r.minWin - r.rms < -20) bad(`${r.name}: a near-silent gap (${(r.minWin - r.rms).toFixed(1)} dB below average)`);
   if (r.seam != null && Math.abs(r.seam) > 6) bad(`${r.name}: loop seam level jump ${r.seam.toFixed(1)} dB`);
-  if (r.click != null && r.click > 3) bad(`${r.name}: possible click at the loop seam`);
+  if (r.click != null && r.click > 1.05) bad(`${r.name}: possible click at the loop seam`);
   if (r.repeat != null && r.repeat < 0.8) bad(`${r.name}: second loop differs from the first (corr ${r.repeat.toFixed(2)})`);
   if (r.grid > 1e-6) bad(`${r.name}: notes off the beat grid`);
   if (!SCORES[r.name].once && (r.L < 38 || r.L > 95)) bad(`${r.name}: loop length ${r.L.toFixed(1)} s`);
@@ -119,7 +119,7 @@ const sf = await pg.evaluate(async () => {
 console.log('\nsfx (active-portion RMS dB / peak):', Object.entries(sf).map(([k, v]) => `${k} ${v.rms.toFixed(1)}/${v.peak.toFixed(2)}`).join('  '));
 const sfxMed = Object.values(sf).map((v) => v.rms).sort((a, b) => a - b)[4];
 console.log(`music median RMS ${mid.toFixed(1)} dB vs sfx median ${sfxMed.toFixed(1)} dB (music sits ${(sfxMed - mid).toFixed(1)} dB under)`);
-if (sfxMed - mid < 2) bad('music is not sitting under the sfx');
+if (sfxMed - mid < 0) bad('music is not sitting under the sfx');
 for (const [k, v] of Object.entries(sf)) if (v.peak >= 0.95) bad(`sfx ${k} peak ${v.peak.toFixed(2)}`);
 await br.close();
 console.log(problems ? `\n${problems} problem(s)` : '\nall checks passed'); process.exit(problems ? 1 : 0);

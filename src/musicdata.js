@@ -103,7 +103,7 @@ const enM = j(en6, 'D5:2 Bb4:2 Eb5:2 G5:2', 'Ab5:3 G5:1 F5:2 D5:2',
 export const SCORES = {
   title: { bpm: 76, sub: 2, beats: 4, key: 'D major', e: 0.24, r: 0.3, echo: 3, fb: 0.3, prog: j(tiA, tiB), parts: [
     { t: 'mel', i: 'strings', v: 0.6, n: tiM },
-    { t: 'mel', i: 'horn', v: 0.42, at: 8, pan: 0.25, n: j('F#4:8', 'G4:8', 'F#4:8', 'E4:8', 'F#4:8', 'B3:8', 'B3:4 C#4:4', 'F#4:8') },
+    { t: 'mel', i: 'horn', v: 0.42, at: 8, pan: 0.25, n: j('F#4:8', 'G4:8', 'F#4:8', 'C#4:8', 'F#4:8', 'B3:8', 'B3:4 C#4:4', 'F#4:8') },
     { t: 'arp', i: 'harp', v: 0.38, pat: '0 1 2 3 4 3 2 1', lo: 50, pan: -0.3, e: 0.3 },
     { t: 'pad', i: 'pad', v: 0.32, c: 60 },
     { t: 'pad', i: 'brass', v: 0.24, c: 62, rh: 'x:2 -:6', bars: [[8, 16]] },
@@ -160,7 +160,7 @@ export const SCORES = {
     { t: 'bass', i: 'bass', v: 0.55, pat: 'R:6 R:4 5:6' },
     { t: 'drum', v: 0.5, p: { b: 'x.....x...x.....', i: '..x.x...x.x.x.xo', j: '....o.......o...' } }] },
 
-  dungeon: { bpm: 88, sub: 4, beats: 4, key: 'C minor', acc: ['B', 'Db'], e: 0.25, r: 0.25, prog: j(dgA, dgB), parts: [
+  dungeon: { gain: 1.2, bpm: 88, sub: 4, beats: 4, key: 'C minor', acc: ['B', 'Db'], e: 0.25, r: 0.25, prog: j(dgA, dgB), parts: [
     { t: 'mel', i: 'strings', v: 0.55, n: dgM },
     { t: 'mel', i: 'horn', v: 0.4, at: 8, pan: -0.25, n: j('C4:16', 'Eb4:16', 'Eb4:16', 'Bb3:16', 'C4:16', 'Db4:16', 'D4:16', 'B3:16') },
     { t: 'arp', i: 'pizz', v: 0.24, pat: '0 1 2 1', lo: 60, pan: 0.3 },
@@ -210,7 +210,7 @@ export const SCORES = {
     { t: 'drum', v: 0.55, p: { k: 'X.....x.X.....x.', s: '....X.......X...', h: 'x.x.x.x.x.x.x.xx', c: 'x' + '.'.repeat(255) }, bars: [[0, 7], [8, 15], [16, 23], [24, 31]] },
     { t: 'drum', v: 0.55, p: { k: 'X.....x.X.......', s: '....X...x.xXxXrr', h: 'x.x.x.x.........' }, bars: [[7, 8], [15, 16], [23, 24], [31, 32]] }] },
 
-  boss: { bpm: 160, sub: 4, beats: 4, key: 'G minor', acc: ['F#', 'Ab'], fast: true, e: 0.14, r: 0.14, prog: j(bsA, bsA, bsB, bsB), parts: [
+  boss: { gain: 0.72, bpm: 160, sub: 4, beats: 4, key: 'G minor', acc: ['F#', 'Ab'], fast: true, e: 0.14, r: 0.14, prog: j(bsA, bsA, bsB, bsB), parts: [
     { t: 'mel', i: 'lead', v: 0.55, n: j(bsMA, bsMA, bsMB, bsMB) },
     { t: 'mel', i: 'horn', v: 0.4, at: 8, pan: -0.3, n: j(bsCA, '-:128', bsCB) },
     { t: 'pad', i: 'brass', v: 0.3, c: 55, rh: 'x:3 x:3 x:2 -:6 x:2' },
@@ -218,7 +218,7 @@ export const SCORES = {
     { t: 'bass', i: 'pbass', v: 0.55, pat: 'R:1 R:1 8:1 R:1' },
     { t: 'drum', v: 0.55, p: { k: 'X...x...X...x.x.', s: '....X.......X...', h: 'x.x.x.x.x.x.x.x.', t: 'X.......X...X.X.', c: 'x' + '.'.repeat(127) } }] },
 
-  victory: { once: true, fast: true, bpm: 140, sub: 4, beats: 4, key: 'G major', e: 0.2, prog: 'G:8 C:4 D:4 G:16', parts: [
+  victory: { gain: 0.8, once: true, fast: true, bpm: 140, sub: 4, beats: 4, key: 'G major', e: 0.2, prog: 'G:8 C:4 D:4 G:16', parts: [
     { t: 'mel', i: 'brass', v: 0.6, n: j('G4:2 B4:2 D5:2 G5:2 G5:3 E5:1 F#5:4', 'G5:4 B5:4 D6:8') },
     { t: 'arp', i: 'harp', v: 0.4, pat: '0 1 2 3 4 5 6 7', lo: 55, pan: 0.3 },
     { t: 'pad', i: 'strings', v: 0.36, c: 62, pan: -0.2 },

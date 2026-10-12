@@ -3,7 +3,7 @@
 //        -> master -> compressor -> out.   sfx -> sfx bus -> master.   Scores live in musicdata.js.
 import { SCORES, FALLBACK } from './musicdata.js';
 
-const MUSIC_LVL = 0.5, SFX_LVL = 0.9, MASTER = 0.8, LOOK = 0.3, TICK = 25, MAXV = 56;
+const MUSIC_LVL = 0.25, SFX_LVL = 0.9, MASTER = 0.8, LOOK = 0.3, TICK = 25, MAXV = 56;
 let E = null; // current graph { ctx, master, music, sfx, echoIn, delay, fb, revIn, noise, waves, voices }
 let musicVol = 1, sfxVol = 1, muted = false; try { muted = localStorage.getItem('gemforge-muted') === '1'; } catch {}
 let wanted = null, T = null, timer = null;
@@ -283,21 +283,21 @@ const SFX = {
   fire: () => { const t = now(); burst(t, 0.45, 0.35, 3000, 400); tone('sawtooth', 300, t, 0.35, 0.08, 120); },
   ice: () => { const t = now(); [1800, 2400, 3000].forEach((f, i) => tone('triangle', f, t + i * 0.05, 0.25, 0.1, f * 0.7)); fm(t + 0.05, 2600, 0.6, E.sfx, 4, 1, 0.5, 0.25); },
   bolt: () => { const t = now(); for (let i = 0; i < 5; i++) tone('square', i % 2 ? 1800 : 500, t + i * 0.035, 0.05, 0.1); burst(t, 0.2, 0.3, 5000); },
-  holy: () => chime(['E5', 'G5', 'B5', 'E6', 'G6'], 0.06, 'celesta', 0.9),
+  holy: () => chime(['E5', 'G5', 'B5', 'E6', 'G6'], 0.06, 'celesta', 0.5),
   dark: () => { const t = now(); tone('sawtooth', 300, t, 0.5, 0.12, 60); tone('square', 150, t, 0.5, 0.08, 40); },
-  heal: () => { chime(['C5', 'E5', 'G5', 'C6', 'E6'], 0.06, 'harp', 1); chime(['G6'], 0.3, 'celesta', 0.6); },
+  heal: () => { chime(['C5', 'E5', 'G5', 'C6', 'E6'], 0.06, 'harp', 0.45); chime(['G6'], 0.3, 'celesta', 0.3); },
   buff: () => arp(['G4', 'C5', 'G5'], 0.07, 'square', 0.09),
   debuff: () => arp(['G4', 'D4', 'A3'], 0.08, 'sawtooth', 0.07),
   swing: () => burst(now(), 0.1, 0.25, 4000, 800),
   ko: () => tone('sawtooth', 400, now(), 0.5, 0.12, 50),
   levelup: () => arp(['C5', 'E5', 'G5', 'C6', 'G5', 'C6', 'E6'], 0.08, 'square', 0.12),
   coin: () => { const t = now(); tone('square', 1318, t, 0.07, 0.09); tone('square', 1760, t + 0.07, 0.15, 0.09); },
-  chest: () => { arp(['C5', 'E5', 'G5', 'C6', 'E6', 'G6'], 0.07, 'square', 0.08); chime(['C6', 'G6'], 0.21, 'celesta', 0.7); },
+  chest: () => { arp(['C5', 'E5', 'G5', 'C6', 'E6', 'G6'], 0.07, 'square', 0.08); chime(['C6', 'G6'], 0.21, 'celesta', 0.35); },
   encounter: () => { const t = now(); for (let i = 0; i < 8; i++) tone('square', 200 + (i % 2) * 150, t + i * 0.045, 0.06, 0.08); burst(t, 0.4, 0.2, 2000, 200); },
   flee: () => arp(['E5', 'C5', 'A4', 'E4'], 0.06, 'square', 0.1),
   poison: () => { const t = now(); tone('sawtooth', 220, t, 0.25, 0.08, 160); tone('sawtooth', 233, t, 0.25, 0.08, 170); },
   door: () => tone('triangle', 300, now(), 0.15, 0.12, 600),
-  rest: () => { chime(['C5', 'G4', 'E5', 'C5', 'G5', 'E5', 'C6'], 0.12, 'harp', 1); chime(['E6', 'C7'], 0.42, 'celesta', 0.7); }, // inn lullaby
+  rest: () => { chime(['C5', 'G4', 'E5', 'C5', 'G5', 'E5', 'C6'], 0.12, 'harp', 0.45); chime(['E6', 'C7'], 0.42, 'celesta', 0.3); }, // inn lullaby
   error: () => tone('square', 150, now(), 0.12, 0.1),
 };
 export function sfx(name) { if (muted || !E || E.ctx.state !== 'running') return; try { SFX[name]?.(); } catch (e) { console.warn('sfx failed', name, e); } }
