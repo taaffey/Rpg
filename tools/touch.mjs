@@ -37,6 +37,7 @@ for (const [name, w, h] of [['iPhone', 390, 844], ['iPad', 820, 1180]]) {
   ok(`${name}: sliding to another arm changes direction without lifting`, end[1] > mid[1], JSON.stringify([mid, end]));
   // 5. battle: tap an enemy on the stage to attack it
   await ev(() => { window.__game.OPT.speed = 'instant'; window.__game.battle(['goblin', 'slime']); }); await pg.waitForSelector('[data-act=c]');
+  ok(`${name}: a new party's battle menu has no Repeat/Auto yet`, !(await pg.$('[data-act=c][data-a=repeat]')) && !(await pg.$('[data-act=c][data-a=auto]')));
   const who = await ev(() => window.__game.BT.ask.p.name);
   const tgt = await ev(() => { const st = window.__game.BT.stage, v = [...st.v.values()].find((v) => v.side === 'e'), r = st.canvas.getBoundingClientRect(); return [r.left + (v.x + (v.bb[0] + v.bb[2]) / 2) * r.width / 256, r.top + (v.y + (v.bb[1] + v.bb[3]) / 2) * r.height / 176]; });
   await pg.touchscreen.tap(...tgt); await pg.waitForTimeout(250);

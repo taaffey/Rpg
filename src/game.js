@@ -26,6 +26,10 @@ root.style.setProperty('--hand', `url(${SP.handURL()})`); UI.installUI();
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const esc = (s) => String(s).replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
 const DB = { weapons: WEAPONS, armors: ARMORS, accs: ACCS, gems: GEMS, items: ITEMS };
+// pacing: systems arrive one at a time instead of all on the first screen
+const gemsOn = () => !!G?.flags?.story?.gems; // gems wake when the first great evil falls; until then they are dull stones
+const lootName = (k, id) => (k === 'gems' && !gemsOn() ? 'Dull Stone' : DB[k][id].name);
+const veteran = () => (G?.stats?.wins || 0) >= 10; // Repeat / Auto join the battle menu once the party has some fights behind it
 
 // ---------- options (persisted separately from saves) ----------
 const OPT = { music: 0.8, sfx: 0.9, speed: 'normal', minimap: true, shake: true };
@@ -96,7 +100,7 @@ function newGame(party = DEFAULT_PARTY) {
     // like FF1: the party starts at level 1, unarmed, with 400 G to arm itself at the Haven Smithy (~205 G for the cheap weapons)
     party: party.map(([n, j]) => newChar(n, j, null, null, LIGHT_ARMOR.has(j) ? 'cloth' : 'leather')),
     gold: 400, difficulty: 'normal', slot: 1,
-    inv: { weapons: [], armors: [], accs: [], gems: ['fire'], items: { potion: 3 } },
+    inv: { weapons: [], armors: [], accs: [], gems: [], items: { potion: 3 } },
     map: 'haven', x: 17, y: 30, flags: { chests: {}, bosses: {}, seen: {}, talked: {}, visited: {}, quests: {}, qprog: {}, qitems: {}, tips: {}, bestiary: {}, story: {} }, playtime: 0,
   };
 }
@@ -110,6 +114,7 @@ function migrate(g) {
   // old saves keep their gear; only ids that no longer exist are dropped (never a crash on load)
   g.inv ||= {}; for (const k of ['weapons', 'armors', 'accs', 'gems']) g.inv[k] = (g.inv[k] || []).filter((id) => DB[k][id]); g.inv.items ||= {};
   for (const id of Object.keys(g.inv.items)) if (!ITEMS[id]) delete g.inv.items[id];
+  g.flags ||= {}; g.flags.story ||= {}; if (g.inv.gems.length || g.party.some((c) => c.gems.some((x) => x.length)) || Object.keys(g.flags.bosses || {}).length) g.flags.story.gems = true; // saves from before gems were paced keep them
   for (const c of g.party) { if (c.weapon && !WEAPONS[c.weapon]) c.weapon = null; if (c.armor && !ARMORS[c.armor]) c.armor = null; if (c.acc && !ACCS[c.acc]) c.acc = null; c.exp = Math.max(0, c.exp || 0); c.level = Math.min(L.MAX_LEVEL, c.level || 1); gainExp(c, 0); } // gainExp(0) settles EXP banked under an older curve
   const m = MAPS[g.map];
   if (!m) { g.map = 'haven'; g.x = 17; g.y = 30; } else if (!WALK.has(m.rows[g.y]?.[g.x] ?? '#') && m.rows[g.y]?.[g.x] !== 'B') { g.x = m.spawn.x; g.y = m.spawn.y; }
@@ -498,7 +503,7 @@ ACT.close = hide;
 function openChest(x, y, secret = null) { // secret: loot of a hidden treasure spot (m.secrets), found by stepping on it
   const c = secret || mapDef().chests?.[`${x},${y}`] || { gold: 50 }; G.flags.chests[chestKey(x, y)] = true; miniDirty = true; sfx('chest');
   const got = [];
-  for (const k of ['weapons', 'armors', 'accs', 'gems']) for (const id of c[k] || []) { G.inv[k].push(id); got.push(DB[k][id].name); }
+  for (const k of ['weapons', 'armors', 'accs', 'gems']) for (const id of c[k] || []) { G.inv[k].push(id); got.push(lootName(k, id)); }
   for (const [id, n] of Object.entries(c.items || {})) { G.inv.items[id] = (G.inv.items[id] || 0) + n; got.push(`${ITEMS[id].name} ×${n}`); }
   if (c.gold) { G.gold += c.gold; got.push(`${c.gold} G`); }
   if (c.qitem) { G.flags.qitems[c.qitem] = true; got.push(`<span class="gold">${QITEM[c.qitem]}</span> (quest item)`); }
@@ -550,7 +555,7 @@ function talk(npc) {
   if (npc.service === 'shop') return shop(npc.shop);
   if (npc.service === 'inn') return inn(npc);
   if (npc.service === 'guild') return guild();
-  if (npc.service === 'socketer') return socketer();
+  if (npc.service === 'socketer') return gemsOn() ? socketer() : talk({ ...npc, service: null, quest: null, textBy: null, text: ['Nothing in your pack worth cutting.', 'Come back when you carry a stone that hums.'] });
   const key = `${G.map}:${npc.x},${npc.y}`, { vid, lines } = npcLines(npc), news = vid && G.flags.talked[key] !== vid ? lines : []; // news: a new reactive line, told once before quest talk
   G.flags.talked[key] = vid || true; curNpc = npc;
   if (npc.deliver && qstate(npc.deliver) === 'active' && !questDone(npc.deliver)) { const q = QUESTS[npc.deliver]; curLines = q.lines.deliver; curFinal = btn('qdeliver', `Hand over: ${esc(QITEM[q.goal.item])}`, npc.deliver, '', 'primary'); return say(0); }
@@ -583,7 +588,7 @@ ACT.qdeliver = (id) => { const g = QUESTS[id].goal; if (qstate(id) !== 'active' 
 function giveReward(r) {
   const got = [];
   if (r.gold) { G.gold += r.gold; got.push(`${r.gold} G`); }
-  for (const k of ['weapons', 'armors', 'accs', 'gems']) for (const id of r[k] || []) { G.inv[k].push(id); got.push(DB[k][id].name); }
+  for (const k of ['weapons', 'armors', 'accs', 'gems']) for (const id of r[k] || []) { G.inv[k].push(id); got.push(lootName(k, id)); }
   for (const [id, n] of Object.entries(r.items || {})) { G.inv.items[id] = (G.inv.items[id] || 0) + n; got.push(`${ITEMS[id].name} ×${n}`); }
   return got;
 }
@@ -620,8 +625,8 @@ function shop(id, msg = '') {
   if (id) curShop = id;
   const def = SHOPS[curShop];
   const who = (id2) => `<span class="who">${G.party.map((c) => `<span class="face ${L.weaponOk(c, id2) ? '' : 'no'}" title="${esc(c.name)}"><img src="${UI.faceURL(c.main)}" alt=""></span>`).join('')}${G.party.some((c) => L.weaponOk(c, id2)) ? '' : '<span class="bad">&nbsp;no one can use it</span>'}</span>`;
-  const buyRows = Object.entries(def.stock).flatMap(([k, ids]) => ids.map((id2) => { const d = DB[k][id2]; return `<div class="slot"><span class="lead">${itemIc(k, id2)}</span><div class="t"><b>${d.name}</b><small>${gearDesc(k, d)}</small>${k === 'weapons' ? who(id2) : ''}</div>${btn('buy', `${d.price} G`, k, id2, '', G.gold < d.price)}</div>`; }));
-  const sellRows = ['weapons', 'armors', 'accs', 'gems'].flatMap((k) => [...new Set(G.inv[k])].map((id2) => { const d = DB[k][id2], p = Math.floor((d.price || 200) / 2); return `<div class="slot"><span class="lead">${itemIc(k, id2)}</span><div class="t"><b>${d.name} <span class="dim">×${G.inv[k].filter((x) => x === id2).length}</span></b></div>${btn('sell', `Sell ${p} G`, k, id2)}</div>`; })).concat(Object.entries(G.inv.items).filter(([, n]) => n > 0).map(([id2, n]) => `<div class="slot"><span class="lead">${itemIc('items', id2)}</span><div class="t"><b>${ITEMS[id2].name} <span class="dim">×${n}</span></b></div>${btn('sell', `Sell ${Math.floor(ITEMS[id2].price / 2)} G`, 'items', id2)}</div>`));
+  const buyRows = Object.entries(def.stock).filter(([k]) => k !== 'gems' || gemsOn()).flatMap(([k, ids]) => ids.map((id2) => { const d = DB[k][id2]; return `<div class="slot"><span class="lead">${itemIc(k, id2)}</span><div class="t"><b>${d.name}</b><small>${gearDesc(k, d)}</small>${k === 'weapons' ? who(id2) : ''}</div>${btn('buy', `${d.price} G`, k, id2, '', G.gold < d.price)}</div>`; }));
+  const sellRows = ['weapons', 'armors', 'accs', ...(gemsOn() ? ['gems'] : [])].flatMap((k) => [...new Set(G.inv[k])].map((id2) => { const d = DB[k][id2], p = Math.floor((d.price || 200) / 2); return `<div class="slot"><span class="lead">${itemIc(k, id2)}</span><div class="t"><b>${d.name} <span class="dim">×${G.inv[k].filter((x) => x === id2).length}</span></b></div>${btn('sell', `Sell ${p} G`, k, id2)}</div>`; })).concat(Object.entries(G.inv.items).filter(([, n]) => n > 0).map(([id2, n]) => `<div class="slot"><span class="lead">${itemIc('items', id2)}</span><div class="t"><b>${ITEMS[id2].name} <span class="dim">×${n}</span></b></div>${btn('sell', `Sell ${Math.floor(ITEMS[id2].price / 2)} G`, 'items', id2)}</div>`));
   show(`<h2>${def.title}</h2><div class="shophead">${npcImg(/smith/.test(curShop) ? 'smith' : 'merchant', 48)}<div class="shoptabs">${btn('tab', 'Buy', 'buy', '', shopTab === 'buy' ? 'sel' : '')}${btn('tab', 'Sell', 'sell', '', shopTab === 'sell' ? 'sel' : '')}</div><div class="gilbox">${coin(G.gold)}<span>G</span></div></div>${msg ? `<p class="gold">${msg}</p>` : ''}${(shopTab === 'buy' ? buyRows : sellRows).join('') || '<p class="dim">Nothing to sell.</p>'}<div class="foot">${btn('close', 'Leave', '', '', 'primary')}</div>`);
 }
 ACT.tab = (t) => { shopTab = t; shop(); };
@@ -635,7 +640,7 @@ ACT.sell = (k, id) => {
 // ---------- title / main menu ----------
 function title() {
   G = null; optBack = 'title';
-  show(`<div class="tagline">Pick a main job and a sub job. Wield weapons that grant signature skills. Socket gems to rewrite every skill.</div>
+  show(`<div class="tagline">Four heroes. Three cracked seals. One old bell.</div>
   <div class="titlecmd">${btn('new', `${ic('star')}New Game`, '', '', 'primary')}${btn('cont', `${ic('save')}Continue`, '', '', '', !anySave())}${btn('opts', `${ic('options')}Options`)}</div>`, 'title');
   ov.insertAdjacentHTML('beforeend', `<div class="ver">v${VERSION} · made in code</div>`);
   $('#loc').textContent = ''; $('#gold').textContent = ''; music('title');
@@ -773,7 +778,7 @@ ACT.journal = () => {
   show(`<h2>📜 Journal</h2><p class="dim">Great evils slain: <b class="gold">${n}/3</b> · Hidden treasures: <b class="gold">${found}/${secrets.length}</b>${hearts.length ? `<br>Carried: <b class="gold">${hearts.join(', ')}</b>` : ''}</p>${OBJECTIVES.filter((o) => cond(o.show)).map((o) => { const dn = cond(o.done), locked = !cond(o.after); return `<div class="card ${dn ? 'done' : ''}"><b>${dn ? '✔' : locked ? '🔒' : '◇'} ${o.optional ? '<span class="dim">Optional:</span> ' : ''}${o.title}</b><div class="dim">${locked ? 'A rockslide buries the northern pass.' : dn ? o.doneHint : o.metHint && cond('s:met') ? o.metHint : o.hint}</div></div>`; }).join('')}
   <h3>Side quests</h3>${(() => { const act = Object.entries(QUESTS).filter(([id]) => qstate(id) === 'active'), dn = Object.entries(QUESTS).filter(([id]) => qstate(id) === 'done');
     return (act.length ? act.map(([id, q]) => `<div class="card ${questDone(id) ? 'done' : ''}"><b>${questDone(id) ? '❓' : '◇'} ${esc(q.title)}</b> <span class="dim">(${questProgress(id)})</span><div class="dim">${questDone(id) ? 'Return to ' + esc(q.giver) + ' to claim your reward.' : esc(q.lines.active[0])}</div></div>`).join('') : '<div class="dim">No active quests. Folk in town sometimes need a hand.</div>') + (dn.length ? `<div class="dim">Completed: ${dn.map(([, q]) => '✔ ' + esc(q.title)).join(' · ')}</div>` : ''); })()}
-  <h3>💡 Tips</h3><div class="dim">• Gems rewrite skills: try Wide + a heal, Echo on a big spell, Stun on a fast skill.<br>• Jobs can be changed in any town building; sub jobs lend skills (2 levels behind).<br>• Inns heal and save. Frostholm's shops sell much better gear.<br>• Hermits and oracles roam the wilds. Listen to them, and watch the ground for a faint glint of buried treasure.</div><div class="foot">${btn('menu', 'Back', '', '', 'primary')}</div>`);
+  <h3>💡 Tips</h3><div class="dim">${gemsOn() ? '• Gems rewrite skills: try Wide + a heal, Echo on a big spell, Stun on a fast skill.<br>' : ''}• Jobs can be changed in any town building; sub jobs lend skills (2 levels behind).<br>• Inns heal and save. Frostholm's shops sell much better gear.<br>• Hermits and oracles roam the wilds. Listen to them, and watch the ground for a faint glint of buried treasure.</div><div class="foot">${btn('menu', 'Back', '', '', 'primary')}</div>`);
 };
 let optBack = 'menu';
 function optionsScreen() {
@@ -800,7 +805,7 @@ ACT.optmute = () => { setMuted(!isMuted()); syncMute(); optionsScreen(); };
 function itemsMenu(msg = '') {
   const it = Object.entries(G.inv.items).filter(([, n]) => n > 0);
   show(`<h2>🎒 Items</h2><div class="card"><div class="gilbox"><span>Gold</span>${coin(G.gold + ' G')}</div></div>${msg ? `<p class="gold">${msg}</p>` : ''}${it.length ? it.map(([id, n]) => `<div class="slot"><span class="lead">${itemIc('items', id)}</span><div class="t"><b>${ITEMS[id].name} <span class="dim">×${n}</span></b><small>${ITEMS[id].desc}</small></div>${btn('useitem', 'Use', id)}</div>`).join('') : '<p class="dim">No consumables.</p>'}
-  <h3>💎 Gems (${G.inv.gems.length})</h3><div>${G.inv.gems.map((g) => gemChip(g)).join('') || '<span class="dim">none</span>'}</div>
+  ${gemsOn() ? `<h3>💎 Gems (${G.inv.gems.length})</h3><div>${G.inv.gems.map((g) => gemChip(g)).join('') || '<span class="dim">none</span>'}</div>` : G.inv.gems.length ? `<h3>Oddments</h3><div class="dim">Dull Stone ×${G.inv.gems.length}</div>` : ''}
   <div class="foot">${btn('menu', 'Back', '', '', 'primary')}</div>`);
 }
 ACT.items = () => itemsMenu(); ACT.menu = mainMenu;
@@ -835,7 +840,7 @@ function buildMain(c) {
   const slotRow = (i) => {
     const sid = slotSkill(c, i), gems = slotGems(c, i);
     const m2 = sid ? skillWithGems(sid, gems) : null;
-    return `<div class="slot"><span class="lead">${m2 ? ic(i === SIG ? 'star' : UI.skillIconName(m2)) : ic('socket')}</span><div class="t"><b><span class="dim">${i === SIG ? 'Weapon' : `Slot ${i + 1}`}</span> ${sid ? `${m2.name} ${gems.map((g) => gemChip(g, true)).join('')}` : '<span class="dim">— empty —</span>'}</b><small>${m2 ? describeSkill(m2) : ''}</small></div>${btn('bslot', 'Edit', i)}</div>`;
+    return `<div class="slot"><span class="lead">${m2 ? ic(i === SIG ? 'star' : UI.skillIconName(m2)) : ic('socket')}</span><div class="t"><b><span class="dim">${i === SIG ? 'Weapon' : `Slot ${i + 1}`}</span> ${sid ? `${m2.name} ${gemsOn() ? gems.map((g) => gemChip(g, true)).join('') : ''}` : '<span class="dim">— empty —</span>'}</b><small>${m2 ? describeSkill(m2) : ''}</small></div>${btn('bslot', 'Edit', i)}</div>`;
   };
   const xpN = expNeeded(c.level), maxed = c.level >= L.MAX_LEVEL;
   show(`<div class="buildhead">${btn('bnav', ic('aleft'), -1, '', 'navbtn')}<div class="who2">${portrait(c.main, 'lg')}<div><h2 style="background:none;padding:0;margin:0">${esc(c.name)}</h2><div class="lv">LV ${c.level}</div></div></div>${btn('bnav', ic('aright'), 1, '', 'navbtn')}</div>
@@ -846,7 +851,7 @@ function buildMain(c) {
     ${statLine(s)}<small>Sub job adds 40% of its stat modifiers and its skills (2 levels behind). Weapon types from either job can be equipped.</small>
   </div>
   <h3>Equipment</h3>${gearRow('Weapon', 'weapon', c.weapon, 'weapons')}${gearRow('Armor', 'armor', c.armor, 'armors')}${gearRow('Acc.', 'acc', c.acc, 'accs')}
-  <h3>Skills &amp; Gems <span class="${used > cap ? 'bad' : 'gold'}">◇ ${used}/${cap}</span></h3>${[0, 1, 2, 3, SIG].map(slotRow).join('')}
+  <h3>${gemsOn() ? `Skills &amp; Gems <span class="${used > cap ? 'bad' : 'gold'}">◇ ${used}/${cap}</span>` : 'Skills'}</h3>${[0, 1, 2, 3, SIG].map(slotRow).join('')}
   <div class="foot">${btn('bclose', 'Done', '', '', 'primary')}</div>`);
 }
 ACT.bview = (v) => { B.view = v; buildScreen(); };
@@ -884,12 +889,12 @@ function slotEdit(c) {
   const final = sid ? skillWithGems(sid, slotGems(c, i)) : null;
   const inv = [...new Set(G.inv.gems)];
   show(`<h2>${i === SIG ? '⭐ Weapon skill' : 'Skill slot ' + (i + 1)} — ${esc(c.name)}</h2>
-  <div class="card"><div class="row">${final ? ic(UI.skillIconName(final)) : ic('socket')}<b>${final ? final.name : '— empty —'}</b>${final ? `<span class="gold">${final.mp} MP</span>` : ''}</div><div>${slotGems(c, i).map((g) => gemChip(g)).join('')}</div><small>${final ? describeSkill(final) : 'Pick a skill below.'}</small></div>
-  ${i === SIG ? `<div class="dim">Granted by your weapon (${c.weapon ? WEAPONS[c.weapon].name : 'unarmed'}). ${c.weapon && WEAPONS[c.weapon].innate ? 'Includes free innate gem: ' + GEMS[WEAPONS[c.weapon].innate].name + '.' : ''}</div>` :
+  <div class="card"><div class="row">${final ? ic(UI.skillIconName(final)) : ic('socket')}<b>${final ? final.name : '— empty —'}</b>${final ? `<span class="gold">${final.mp} MP</span>` : ''}</div><div>${gemsOn() ? slotGems(c, i).map((g) => gemChip(g)).join('') : ''}</div><small>${final ? describeSkill(final) : 'Pick a skill below.'}</small></div>
+  ${i === SIG ? `<div class="dim">Granted by your weapon (${c.weapon ? WEAPONS[c.weapon].name : 'unarmed'}). ${gemsOn() && c.weapon && WEAPONS[c.weapon].innate ? 'Includes free innate gem: ' + GEMS[WEAPONS[c.weapon].innate].name + '.' : ''}</div>` :
     `<h3>Skill</h3><div class="skillpick">${btn('setskill', `<span>${ic('socket')} Empty</span>`, i, '')}${learnable(c).map((s) => btn('setskill', `<span>${ic(UI.skillIconName(SKILLS[s]))} ${SKILLS[s].name}</span><small>${SKILLS[s].mp}mp</small>`, i, s, c.slots[i] === s ? 'sel two' : 'two')).join('')}</div>`}
-  <h3>Socketed ◇ ${gemsUsed(c)}/${gemCapacity(c)} <small>max ${GEMS_PER_SLOT}/skill</small></h3>
+  ${gemsOn() ? `<h3>Socketed ◇ ${gemsUsed(c)}/${gemCapacity(c)} <small>max ${GEMS_PER_SLOT}/skill</small></h3>
   ${gems.map((g, k) => `<div class="slot"><span class="lead">${gemImg(g)}</span><div class="t"><b>${GEMS[g].name}</b><small>${GEMS[g].desc}</small></div>${btn('ungem', `${ic('close')}Remove`, i, k)}</div>`).join('') || '<p class="dim">None socketed.</p>'}
-  <h3>💎 Inventory gems</h3>${inv.map((g) => `<div class="slot"><span class="lead">${gemImg(g)}</span><div class="t"><b>${GEMS[g].name} <span class="dim">×${G.inv.gems.filter((x) => x === g).length}</span></b><small>${GEMS[g].desc}</small></div>${btn('gem', 'Socket', i, g, '', full || !sid)}</div>`).join('') || '<p class="dim">No spare gems. Buy some in the shop or find them in the cavern.</p>'}
+  <h3>💎 Inventory gems</h3>${inv.map((g) => `<div class="slot"><span class="lead">${gemImg(g)}</span><div class="t"><b>${GEMS[g].name} <span class="dim">×${G.inv.gems.filter((x) => x === g).length}</span></b><small>${GEMS[g].desc}</small></div>${btn('gem', 'Socket', i, g, '', full || !sid)}</div>`).join('') || '<p class="dim">No spare gems.</p>'}` : ''}
   <div class="foot">${btn('bmain', 'Back', '', '', 'primary')}</div>`);
 }
 ACT.setskill = (i, sid) => { const c = G.party[B.i]; c.slots[+i] = sid || null; if (!sid) { G.inv.gems.push(...c.gems[+i]); c.gems[+i] = []; } buildScreen(); };
@@ -987,7 +992,7 @@ function playFx(list) {
 }
 function cmdHtml(a) {
   const p = a.p, c = p.ch, head = `<div class="cmdhead">${portrait(c.main, 'sm')}${esc(p.name)}</div>`, back = btn('c', `${ic('back')}BACK`, 'root');
-  if (a.stage === 'root') return `${head}<div class="cmdlist">${btn('c', `${ic('fight')}FIGHT`, 'attack')}${btn('c', `${ic('skill')}SKILL`, 'skills')}${btn('c', `${ic('item')}ITEM`, 'item')}${btn('c', `${ic('guard')}GUARD`, 'defend')}${btn('c', `${ic('repeat')}REPEAT`, 'repeat', '', '', !BT.last.has(p.name))}${btn('c', `${ic('auto')}AUTO`, 'auto')}${btn('c', `${ic('run')}RUN`, 'flee', '', '', BT.b.boss)}</div>`;
+  if (a.stage === 'root') return `${head}<div class="cmdlist">${btn('c', `${ic('fight')}FIGHT`, 'attack')}${btn('c', `${ic('skill')}SKILL`, 'skills')}${btn('c', `${ic('item')}ITEM`, 'item')}${btn('c', `${ic('guard')}GUARD`, 'defend')}${veteran() ? `${btn('c', `${ic('repeat')}REPEAT`, 'repeat', '', '', !BT.last.has(p.name))}${btn('c', `${ic('auto')}AUTO`, 'auto')}` : ''}${btn('c', `${ic('run')}RUN`, 'flee', '', '', BT.b.boss)}</div>`;
   if (a.stage === 'skills') {
     return `${head}<div class="cmdlist">` + [0, 1, 2, 3, SIG].map((i) => {
       const sid = slotSkill(c, i); if (!sid) return '';
@@ -1059,7 +1064,7 @@ async function victory(b, bossId) {
   if (lvSfx) setTimeout(() => sfx('levelup'), 1400);
   for (const d of r.drops) {
     if (d.kind === 'items') G.inv.items[d.id] = (G.inv.items[d.id] || 0) + 1; else G.inv[d.kind].push(d.id);
-    const name = DB[d.kind][d.id].name, from = ENEMIES[d.from]?.name;
+    const name = lootName(d.kind, d.id), from = ENEMIES[d.from]?.name;
     lines.push(d.rare ? `<b class="gold">★ RARE: ${name}!</b>${from ? ` <span class="dim">(${esc(from)})</span>` : ''}` : `Got ${name}!`);
     if (d.from) ((G.flags.bestiary[d.from] ||= { seen: 1, kills: 0 }).got ||= {})[d.id] = true;
   }
@@ -1068,9 +1073,10 @@ async function victory(b, bossId) {
   const def = bossId ? BOSSES[bossId] : null;
   if (def) {
     G.flags.bosses[bossId] = true; const names = [];
-    for (const k of ['weapons', 'armors', 'accs', 'gems']) for (const id of def.loot[k] || []) { G.inv[k].push(id); names.push(DB[k][id].name); }
+    for (const k of ['weapons', 'armors', 'accs', 'gems']) for (const id of def.loot[k] || []) { G.inv[k].push(id); names.push(lootName(k, id)); }
     lines.push(`Found <b class="gold">${names.join(', ')}</b>!`);
-    if (def.heart) { G.flags.qitems[def.heart] = true; lines.push(`Obtained the <b class="gold">${KEY_ITEMS[def.heart]}</b>.`); }
+    if (def.heart) { G.flags.qitems[def.heart] = true; lines.push(`Obtained the <b class="gold">${KEY_ITEMS[def.heart]}</b>.`);
+      if (!gemsOn()) { G.flags.story.gems = true; lines.push(G.inv.gems.length ? 'The heart pulses. The dull stones in your pack wake with it: they were gems all along.' : 'The heart pulses, as if calling to stones like itself.'); } }
   }
   if (bossId) G.flags.bosses[bossId] = true;
   miniDirty = true;

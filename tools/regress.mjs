@@ -43,7 +43,8 @@ ok('bought a potion', (await ev(() => window.__game.G.inv.items.potion)) === pot
 await closeAll();
 
 // --- build screen: socket gems, change job in a town
-await ev(() => window.__game.G.inv.gems.push('chain', 'thrifty')); // the new game starts with a single gem; hand the test two more
+ok('a new game starts with no gems and no gem stock in shops', (await ev(() => window.__game.G.inv.gems.length)) === 0 && (await ev(() => { window.__game.ui.shop('haven_general'); const t = document.getElementById('overlay').textContent; window.__game.ACT.close(); return !/Gem/.test(t); })));
+await ev(() => { window.__game.G.inv.gems.push('chain', 'thrifty'); window.__game.G.flags.story.gems = true; }); // gems wake after the first great evil; switch them on for the build-screen checks
 await openMenu();
 await pg.click('[data-act=build][data-a="1"]'); await pg.click('[data-act=bslot][data-a="0"]'); await pg.click('[data-act=gem][data-b=chain]'); await pg.click('[data-act=gem][data-b=thrifty]');
 ok('gems socketed', JSON.stringify(await ev(() => window.__game.G.party[1].gems[0])) === '["chain","thrifty"]');
