@@ -91,15 +91,17 @@ export const WEAPON_TYPES = {
 };
 
 // ---- Jobs. skills: [skillId, unlockLevel]
+// ---- Callings. skills: [[skillId, rank]] taught as the calling's rank rises (Calling Points, see CP_RANKS in logic.js);
+// trait: [traitId, rank] a passive (TRAITS); master: flat stats every hero keeps for good once the calling reaches rank 6.
 export const JOBS = {
-  knight: { name: 'Knight', icon: '🛡️', desc: 'Tough front-liner with holy blades.', mod: { hp: 1.35, mp: 0.6, atk: 1.2, def: 1.35, mag: 0.6, spd: 0.85 }, weapons: ['sword', 'scythe'], skills: [['bulwark', 1], ['shieldbash', 3], ['holyblade', 5], ['rally', 7], ['judgment', 9]] },
-  rogue: { name: 'Rogue', icon: '🗡️', desc: 'Fast, armor-piercing, poisonous.', mod: { hp: 0.95, mp: 0.8, atk: 1.1, def: 0.9, mag: 0.7, spd: 1.5 }, weapons: ['dagger', 'bow'], skills: [['quickstab', 1], ['venomedge', 3], ['smokebomb', 4], ['shadowstep', 6], ['assassinate', 9]] },
-  mage: { name: 'Mage', icon: '🔮', desc: 'Elemental spells, fragile.', mod: { hp: 0.7, mp: 1.8, atk: 0.55, def: 0.65, mag: 1.5, spd: 1.0 }, weapons: ['staff', 'tome'], skills: [['firebolt', 1], ['chill', 2], ['spark', 3], ['inferno', 5], ['tempest', 8]] },
-  cleric: { name: 'Cleric', icon: '✝️', desc: 'Healing, revival and holy magic.', mod: { hp: 0.95, mp: 1.5, atk: 0.8, def: 1.0, mag: 1.3, spd: 0.95 }, weapons: ['staff', 'fists'], skills: [['heal', 1], ['smite', 2], ['cureall', 4], ['revive', 5], ['aegis', 6]] },
-  monk: { name: 'Monk', icon: '👊', desc: 'Bare-knuckle brawler with great HP.', mod: { hp: 1.4, mp: 0.8, atk: 1.3, def: 1.0, mag: 0.7, spd: 1.2 }, weapons: ['fists', 'whip'], skills: [['palm', 1], ['focus', 2], ['thunderfist', 4], ['innerpeace', 5], ['risingdragon', 7]] },
-  ranger: { name: 'Ranger', icon: '🏹', desc: 'Ranged hunter, hits groups.', mod: { hp: 1.0, mp: 0.9, atk: 1.2, def: 0.95, mag: 0.8, spd: 1.3 }, weapons: ['bow', 'dagger'], skills: [['aimed', 1], ['poisonarrow', 2], ['firearrow', 3], ['rain', 4], ['headshot', 8]] },
-  hexer: { name: 'Hexer', icon: '💀', desc: 'Dark magic, drains life.', mod: { hp: 0.8, mp: 1.6, atk: 0.7, def: 0.75, mag: 1.4, spd: 1.0 }, weapons: ['tome', 'scythe'], skills: [['drain', 1], ['curse', 2], ['shadowbolt', 3], ['deathcoil', 6], ['soulrend', 9]] },
-  bard: { name: 'Bard', icon: '🎵', desc: 'Buffs the party, debuffs foes.', mod: { hp: 0.9, mp: 1.3, atk: 0.8, def: 0.85, mag: 1.1, spd: 1.25 }, weapons: ['whip', 'sword'], skills: [['hymn', 1], ['lullaby', 2], ['mendsong', 3], ['discord', 4], ['crescendo', 7]] },
+  knight: { name: 'Knight', icon: '🛡️', desc: 'Tough front-liner with holy blades.', mod: { hp: 1.35, mp: 0.6, atk: 1.2, def: 1.35, mag: 0.6, spd: 0.85 }, weapons: ['sword', 'scythe'], skills: [['shieldbash', 1], ['bulwark', 2], ['holyblade', 3], ['rally', 5], ['judgment', 6]], trait: ['stalwart', 4], master: { hp: 20, def: 3 } },
+  rogue: { name: 'Rogue', icon: '🗡️', desc: 'Fast, armor-piercing, poisonous.', mod: { hp: 0.95, mp: 0.8, atk: 1.1, def: 0.9, mag: 0.7, spd: 1.5 }, weapons: ['dagger', 'bow'], skills: [['quickstab', 1], ['venomedge', 2], ['smokebomb', 3], ['shadowstep', 5], ['assassinate', 6]], trait: ['firststrike', 4], master: { spd: 3, atk: 2 } },
+  mage: { name: 'Mage', icon: '🔮', desc: 'Elemental spells, fragile.', mod: { hp: 0.7, mp: 1.8, atk: 0.55, def: 0.65, mag: 1.5, spd: 1.0 }, weapons: ['staff', 'tome'], skills: [['firebolt', 1], ['chill', 2], ['inferno', 3], ['spark', 5], ['tempest', 6]], trait: ['thrift', 4], master: { mag: 4, mp: 10 } },
+  cleric: { name: 'Cleric', icon: '✝️', desc: 'Healing, revival and holy magic.', mod: { hp: 0.95, mp: 1.5, atk: 0.8, def: 1.0, mag: 1.3, spd: 0.95 }, weapons: ['staff', 'fists'], skills: [['heal', 1], ['smite', 2], ['revive', 3], ['cureall', 5], ['aegis', 6]], trait: ['regen', 4], master: { hp: 15, mag: 3 } },
+  monk: { name: 'Monk', icon: '👊', desc: 'Bare-knuckle brawler with great HP.', mod: { hp: 1.4, mp: 0.8, atk: 1.3, def: 1.0, mag: 0.7, spd: 1.2 }, weapons: ['fists', 'whip'], skills: [['palm', 1], ['focus', 2], ['thunderfist', 3], ['innerpeace', 5], ['risingdragon', 6]], trait: ['counter', 4], master: { hp: 25, atk: 3 } },
+  ranger: { name: 'Ranger', icon: '🏹', desc: 'Ranged hunter, hits groups.', mod: { hp: 1.0, mp: 0.9, atk: 1.2, def: 0.95, mag: 0.8, spd: 1.3 }, weapons: ['bow', 'dagger'], skills: [['aimed', 1], ['poisonarrow', 2], ['rain', 3], ['firearrow', 5], ['headshot', 6]], trait: ['preempt', 4], master: { atk: 3, spd: 2 } },
+  hexer: { name: 'Hexer', icon: '💀', desc: 'Dark magic, drains life.', mod: { hp: 0.8, mp: 1.6, atk: 0.7, def: 0.75, mag: 1.4, spd: 1.0 }, weapons: ['tome', 'scythe'], skills: [['drain', 1], ['curse', 2], ['shadowbolt', 3], ['deathcoil', 5], ['soulrend', 6]], trait: ['hunger', 4], master: { mag: 4, mp: 8 } },
+  bard: { name: 'Bard', icon: '🎵', desc: 'Buffs the party, debuffs foes.', mod: { hp: 0.9, mp: 1.3, atk: 0.8, def: 0.85, mag: 1.1, spd: 1.25 }, weapons: ['whip', 'sword'], skills: [['hymn', 1], ['mendsong', 2], ['lullaby', 3], ['discord', 5], ['crescendo', 6]], trait: ['encore', 4], master: { mp: 10, spd: 2 } },
 };
 
 // ---- Gems: socketed into a skill slot to rewrite it.
@@ -259,8 +261,8 @@ Object.assign(SKILLS, {
 });
 WEAPON_TYPES.axe = { name: 'Axe', sig: 'chop' };
 Object.assign(JOBS, {
-  berserker: { name: 'Berserker', icon: '🪓', desc: 'Reckless axe fighter with huge damage and lifesteal.', mod: { hp: 1.5, mp: 0.45, atk: 1.45, def: 1.0, mag: 0.4, spd: 0.95 }, weapons: ['axe', 'sword'], skills: [['rage', 1], ['hew', 2], ['whirlwind', 4], ['bloodlust', 6], ['execution', 9]] },
-  alchemist: { name: 'Alchemist', icon: '⚗️', desc: 'Flasks, tonics and elemental concoctions.', mod: { hp: 0.85, mp: 1.4, atk: 0.7, def: 0.8, mag: 1.25, spd: 1.15 }, weapons: ['tome', 'dagger'], skills: [['acidflask', 1], ['tonic', 2], ['frostflask', 3], ['fireflask', 4], ['panacea', 6], ['philosopher', 9]] },
+  berserker: { name: 'Berserker', icon: '🪓', desc: 'Reckless axe fighter with huge damage and lifesteal.', mod: { hp: 1.5, mp: 0.45, atk: 1.45, def: 1.0, mag: 0.4, spd: 0.95 }, weapons: ['axe', 'sword'], skills: [['hew', 1], ['rage', 2], ['whirlwind', 3], ['bloodlust', 5], ['execution', 6]], trait: ['adrenaline', 4], master: { hp: 25, atk: 4 } },
+  alchemist: { name: 'Alchemist', icon: '⚗️', desc: 'Flasks, tonics and elemental concoctions.', mod: { hp: 0.85, mp: 1.4, atk: 0.7, def: 0.8, mag: 1.25, spd: 1.15 }, weapons: ['tome', 'dagger'], skills: [['acidflask', 1], ['tonic', 1], ['frostflask', 2], ['fireflask', 3], ['panacea', 5], ['philosopher', 6]], trait: ['pharmacy', 4], master: { mag: 3, spd: 2 } },
 });
 Object.assign(GEMS, {
   stun: { name: 'Stun Gem', desc: '35% chance to stun foes (skip their next turn)', price: 600 },
@@ -291,7 +293,7 @@ Object.assign(ENEMIES, {
   ghoul: E('Ghoul', '🧟', 300, 50, 11, 8, 11, 118, 58, [['rot', 2], ['bite', 2]], { weak: ['fire', 'holy'], res: ['dark'] }),
   wraith_elder: E('Wraith Elder', '👻', 240, 12, 11, 52, 13, 126, 64, [['hexbolt', 2], ['draintouch', 2]], { weak: ['holy'], res: ['dark'] }),
   bone_mage: E('Bone Mage', '💀', 210, 12, 9, 56, 11, 122, 62, [['hexbolt', 3], ['fireball', 1]], { weak: ['holy'], res: ['dark'] }),
-  lich: E('Lich King Morvath', '☠️', 2250, 43, 17, 56, 10, 1500, 1500, [['hexbolt', 3], ['draintouch', 2], ['soulstorm', 2], ['slam', 1]], { weak: ['holy', 'fire'], res: ['dark'], boss: true }),
+  lich: E('Lich King Morvath', '☠️', 3200, 50, 17, 56, 10, 1500, 1500, [['hexbolt', 3], ['draintouch', 2], ['soulstorm', 2], ['slam', 1]], { weak: ['holy', 'fire'], res: ['dark'], boss: true }),
   ice_wolf: E('Ice Wolf', '🐺', 270, 52, 11, 6, 15, 124, 66, [['frostbite', 3], ['bite', 1]], { weak: ['fire'], res: ['ice'] }),
   yeti: E('Yeti', '🦍', 440, 58, 16, 6, 7, 140, 74, [['slam', 2], ['claw', 2]], { weak: ['fire'], res: ['ice'] }),
   frost_goblin: E('Frost Goblin', '👺', 250, 48, 10, 8, 10, 116, 62, [['tackle', 2], ['frostbite', 1]], { weak: ['fire'], res: ['ice'] }),
@@ -299,7 +301,7 @@ Object.assign(ENEMIES, {
   frost_wraith: E('Frost Wraith', '👻', 360, 14, 14, 66, 14, 210, 96, [['blizzard', 1], ['icebolt', 2], ['draintouch', 1]], { weak: ['fire', 'holy'], res: ['ice'] }),
   ice_imp: E('Ice Imp', '👹', 330, 16, 12, 62, 12, 196, 92, [['icebolt', 3], ['tackle', 1]], { weak: ['fire'], res: ['ice'] }),
   frozen_knight: E('Frozen Knight', '💀', 520, 70, 28, 8, 9, 224, 104, [['slam', 2], ['frostbite', 2]], { weak: ['fire', 'holy'], res: ['ice'] }),
-  titan: E('Frost Titan', '🧊', 3600, 68, 24, 62, 8, 3000, 2500, [['titanfist', 3], ['blizzard', 2], ['icicle', 2]], { weak: ['fire'], res: ['ice'], boss: true }),
+  titan: E('Frost Titan', '🧊', 4200, 70, 24, 62, 8, 3000, 2500, [['titanfist', 3], ['blizzard', 2], ['icicle', 2]], { weak: ['fire'], res: ['ice'], boss: true }),
 });
 // enemy ids that already exist keep BOSS flag
 ENEMIES.wyrm.boss = true;
@@ -343,8 +345,8 @@ Object.assign(SKILLS, {
 });
 WEAPON_TYPES.katana = { name: 'Katana', sig: 'iai' };
 Object.assign(JOBS, {
-  samurai: { name: 'Samurai', icon: '🗾', desc: 'Swift blade master with crits and multi-hit strikes.', mod: { hp: 1.1, mp: 0.7, atk: 1.4, def: 0.95, mag: 0.6, spd: 1.3 }, weapons: ['katana', 'bow'], skills: [['kiai', 1], ['flashcut', 2], ['windblade', 4], ['bladestorm', 6], ['zanshin', 9]] },
-  paladin: { name: 'Paladin', icon: '⚜️', desc: 'Holy warrior who fights, heals and guards.', mod: { hp: 1.3, mp: 1.0, atk: 1.0, def: 1.4, mag: 1.0, spd: 0.8 }, weapons: ['sword', 'staff'], skills: [['holylight', 1], ['layhands', 2], ['divineshield', 4], ['crusade', 6], ['sacredblade', 8], ['divinegrace', 10]] },
+  samurai: { name: 'Samurai', icon: '🗾', desc: 'Swift blade master with crits and multi-hit strikes.', mod: { hp: 1.1, mp: 0.7, atk: 1.4, def: 0.95, mag: 0.6, spd: 1.3 }, weapons: ['katana', 'bow'], skills: [['flashcut', 1], ['kiai', 2], ['windblade', 3], ['bladestorm', 5], ['zanshin', 6]], trait: ['bushido', 4], master: { atk: 4, spd: 2 } },
+  paladin: { name: 'Paladin', icon: '⚜️', desc: 'Holy warrior who fights, heals and guards.', mod: { hp: 1.3, mp: 1.0, atk: 1.0, def: 1.4, mag: 1.0, spd: 0.8 }, weapons: ['sword', 'staff'], skills: [['holylight', 1], ['layhands', 1], ['divineshield', 2], ['crusade', 3], ['sacredblade', 5], ['divinegrace', 6]], trait: ['guardian', 4], master: { def: 3, hp: 20 } },
 });
 Object.assign(ARMORS, { storm_cloak: { name: 'Storm Cloak', def: 18, mp: 28, mag: 8, spd: 3, res: ['bolt'], sockets: 2, price: 0 } });
 Object.assign(ACCS, {
@@ -696,3 +698,23 @@ export const STORY = {
     paladin: '{n} rings the old bell each year, on the day the Titan fell.',
   },
 };
+
+// ---- Calling traits (passives, applied in logic.js). The current calling's learned trait is always on; one more can be set.
+export const TRAITS = {
+  stalwart: { name: 'Stalwart', desc: 'Takes 15% less damage.' },
+  firststrike: { name: 'First Strike', desc: 'Acts first in the opening round.' },
+  thrift: { name: 'MP Thrift', desc: 'Skills cost 25% less MP.' },
+  regen: { name: 'Regen', desc: 'Recovers 5% HP each round.' },
+  counter: { name: 'Counter', desc: '30% chance to strike back when hit.' },
+  preempt: { name: 'Pre-emptive', desc: 'Foes may lose their first turn (25%, not bosses).' },
+  hunger: { name: 'Dark Hunger', desc: 'Drain effects heal 50% more.' },
+  encore: { name: 'Encore', desc: 'The party earns 10% more EXP.' },
+  adrenaline: { name: 'Adrenaline', desc: '+30% damage below 40% HP.' },
+  pharmacy: { name: 'Pharmacy', desc: 'Items used in battle are twice as potent.' },
+  bushido: { name: 'Bushido', desc: '+10% critical chance on physical skills.' },
+  guardian: { name: 'Guardian', desc: 'While standing, allies take 10% less damage.' },
+};
+// ---- Callings wake in batches with the heart-gems (FF5's crystals): the bell, then each great evil's heart.
+export const CALLING_BATCHES = [['knight', 'rogue', 'mage', 'cleric', 'monk', 'ranger'], ['hexer', 'bard', 'berserker'], ['alchemist', 'samurai', 'paladin']];
+// ---- Calling Points: tough foes teach more (1 + exp/80, max 4); the great evils teach a lot.
+for (const [id, n] of Object.entries({ wyrm: 10, lich: 12, titan: 15, storm_drake: 12, sphinx: 12 })) if (ENEMIES[id]) ENEMIES[id].cp = n;

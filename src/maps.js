@@ -173,7 +173,7 @@ MAPS.haven = {
     { x: 15, y: 5, type: 'guard', name: 'Castle Guard', text: ['Halt! The castle is closed while the King holds council.'],
       textBy: [['titan', ['The King would knight the lot of you, if you\'d stand still long enough.']], ['wyrm|lich', ['The King has heard of you. He says the realm is grateful.', '...The castle is still closed. Kings.']]] },
     { x: 19, y: 5, type: 'guard', name: 'Castle Guard', text: ['Haven Castle has guarded this harbour for three hundred years. Since Gemforge\'s day.'] },
-    { x: 26, y: 12, type: 'villager2', name: 'Furrier', quest: 'wolves', text: ['Pro tip: the Guild lets you change jobs. A sub job lends you its skills (two levels behind) and its weapon types!'] },
+    { x: 26, y: 12, type: 'villager2', name: 'Furrier', quest: 'wolves', text: ['Every hunt teaches you something. Change your calling and you keep what you learned; that is how the old heroes did it.'] },
     { x: 10, y: 20, type: 'elder', name: 'Acolyte', quest: 'tombs', text: ['Light keep you, travellers. The temple tends Gemforge\'s grave. Someone leaves grey flowers on it every spring.'],
       textBy: [['s:met', ['Sereth? The temple books name him: Gemforge\'s last apprentice, cast out for cutting a gem into his own heart.', 'That was three hundred years ago. No man lives so long. ...No man should.']],
         ['wyrm|lich', ['Chisel marks on the seals? Gemforge had an apprentice once. The books do not like to say his name.']]] },

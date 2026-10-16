@@ -19,13 +19,14 @@ ok('title focuses New Game', (await ev(() => document.activeElement?.dataset?.ac
 await key('Enter'); await key('Enter'); await key('Enter', 1, 300); // New Game -> slot 1 -> Normal
 ok('prologue shown after picking difficulty', /The Seals/i.test(await overlayTitle()));
 await key('Enter', 3, 200); ok('party creation opens with hero 1 of 4', /1 of 4/i.test(await overlayTitle()));
-await pg.click('[data-act=crjob][data-a=hexer]'); await pg.waitForTimeout(150); await pg.fill('#crname', 'Vex'); await key('Enter', 1, 200); // pick a calling, rename, Enter = next hero
+ok('creation offers the six starting callings only', (await ev(() => document.querySelectorAll('[data-act=crjob]').length)) === 6 && !(await pg.$('[data-act=crjob][data-a=hexer]')));
+await pg.click('[data-act=crjob][data-a=monk]'); await pg.waitForTimeout(150); await pg.fill('#crname', 'Vex'); await key('Enter', 1, 200); // pick a calling, rename, Enter = next hero
 await key('Enter', 3, 200); ok('party review lists the four', /The Four/i.test(await overlayTitle()) && (await ev(() => document.querySelectorAll('[data-act=credit]').length)) === 4);
 await key('Enter', 1, 400); // answer the bell
 await key('Enter', 1, 150); await key('Enter', 1, 150); await key('Enter', 1, 200); // first line, then finish typing the second
-ok('Elder greeting uses the chosen name and calling', /Vex the Hexer/.test(await ev(() => document.getElementById('tt')?.textContent || '')), await ev(() => document.getElementById('tt')?.textContent || ''));
+ok('Elder greeting uses the chosen name and calling', /Vex the Monk/.test(await ev(() => document.getElementById('tt')?.textContent || '')), await ev(() => document.getElementById('tt')?.textContent || ''));
 for (let i = 0; i < 12 && (await ev(() => document.getElementById('overlay').classList.contains('on'))); i++) await key('Enter', 1, 250); // Elder's greeting
-ok('chosen calling and name are used, no sub calling yet', (await ev(() => { const c = window.__game.G.party[0]; return c.name === 'Vex' && c.main === 'hexer' && !c.sub && c.armor === 'cloth'; })));
+ok('chosen calling and name are used, no sub calling yet', (await ev(() => { const c = window.__game.G.party[0]; return c.name === 'Vex' && c.main === 'monk' && !c.sub && c.armor === 'leather' && c.cp.monk === 0; })));
 await ev(() => { for (const m of Object.values(window.__game.MAPS)) m.rate = 0; }); // keep tests deterministic: battles are started explicitly
 await ev(() => { for (const id of ['cavern', 'crypt', 'mirewood', 'frostholm', 'spire', 'storm', 'ruins']) window.__game.G.flags.visited[id] = true; }); // first-visit scenes would cover the teleports below
 ok('game started in Haven', (await ev(() => window.__game.G.map)) === 'haven');
@@ -49,11 +50,14 @@ await openMenu();
 await pg.click('[data-act=build][data-a="1"]'); await pg.click('[data-act=bslot][data-a="0"]'); await pg.click('[data-act=gem][data-b=chain]'); await pg.click('[data-act=gem][data-b=thrifty]');
 ok('gems socketed', JSON.stringify(await ev(() => window.__game.G.party[1].gems[0])) === '["chain","thrifty"]');
 await pg.click('[data-act=bmain]'); await pg.click('[data-act=bview][data-a=jobMain]');
-ok('advanced callings are locked before the Wyrm falls', await ev(() => document.querySelector('[data-act=setjob][data-b=alchemist]').disabled));
-await pg.click('[data-act=bmain]'); await ev(() => { window.__game.G.flags.bosses.wyrm = true; }); await pg.click('[data-act=bview][data-a=jobMain]');
-await pg.click('[data-act=setjob][data-b=alchemist]');
-ok('changed to the new Alchemist job', (await ev(() => window.__game.G.party[1].main)) === 'alchemist');
-await ev(() => { window.__game.G.flags.bosses.wyrm = false; }); // later checks expect the Wyrm alive
+ok('only the six starting callings are listed before any heart is claimed', (await ev(() => document.querySelectorAll('[data-act=setjob]').length)) === 6 && !(await pg.$('[data-act=setjob][data-b=hexer]')) && !(await pg.$('[data-act=setjob][data-b=alchemist]')));
+await pg.click('[data-act=setjob][data-b=ranger]');
+ok('changed calling outside town: Lyra the Ranger at rank 1, mage rank kept', await ev(() => { const c = window.__game.G.party[1]; return c.main === 'ranger' && c.cp.ranger === 0 && c.cp.mage === 0 && c.slots.includes('aimed') && !c.slots.includes('firebolt'); }));
+await pg.click('[data-act=bview][data-a=jobSub]'); await pg.click('[data-act=setjob][data-a=sub][data-b=mage]');
+ok('second calling lends its learned abilities', await ev(() => { const c = window.__game.G.party[1]; return c.sub === 'mage' && c.slots.includes('aimed') && c.slots.includes('firebolt'); }));
+await pg.click('[data-act=bview][data-a=callings]');
+ok('Callings view lists the six with rank stars', (await ev(() => document.querySelectorAll('#overlay .callrow').length)) === 6 && (await ev(() => document.querySelectorAll('#overlay .callrow .stars .pip.on').length)) === 2); // Lyra: Mage 1 + Ranger 1
+await pg.click('[data-act=bmain]');
 await closeAll();
 
 // --- explore the world: fog of war grows; options persist; save + reload + continue
@@ -78,17 +82,22 @@ ok('northern pass blocked before the Wyrm falls', (await ev(() => window.__game.
 await ev(() => { window.__game.G.flags.bosses.wyrm = true; }); await key('ArrowUp', 4, 170);
 ok('pass opens after the Wyrm', (await ev(() => window.__game.G.y)) <= 13);
 const xpKey = () => ev(() => window.__game.G.party.map((c) => c.level * 1e6 + c.exp).join()), xp0 = await xpKey();
+await ev(() => { const c = window.__game.G.party[0]; c.cp.monk = 5; }); const cp0 = await ev(() => window.__game.G.party.map((c) => c.cp[c.main]));
+let vtext = '';
 await ev(() => { window.__game.OPT.speed = 'instant'; window.__game.OPT.minimap = true; window.__game.battle(['frost_goblin', 'ice_wolf']); });
 await pg.waitForSelector('[data-act=c]', { timeout: 8000 });
 await ev(() => window.__game.BT.b.e.forEach((e) => { e.hp = 1; })); // balance is covered by tools/sim.mjs; this checks the flow
 for (let i = 0; i < 120; i++) {
   const st = await ev(() => ({ bt: !!window.__game.BT, act: document.activeElement?.dataset?.act }));
   if (!st.bt) break;
-  if (await pg.$('[data-act=vdone]')) { await key('Enter', 1, 100); break; }
+  if (await pg.$('[data-act=vdone]')) { vtext = await ev(() => document.querySelector('#overlay .win').textContent); await key('Enter', 1, 100); break; }
   if (st.act === 'c' || st.act === 'tgt') await key('Enter', 1, 120); else await pg.waitForTimeout(100);
 }
 await pg.waitForTimeout(300);
 ok('snow battle won via keyboard only', !(await ev(() => !!window.__game.BT)) && (await xpKey()) !== xp0);
+const cp1 = await ev(() => window.__game.G.party.map((c) => c.hp > 0 ? c.cp[c.main] : -1));
+ok('the win awards CP to each standing hero\'s calling (+4 shown)', cp1.every((v, i) => v === -1 || v === cp0[i] + 4) && /\+4 CP/.test(vtext), `${cp0} -> ${cp1}`);
+ok('a rank-up teaches an ability: Monk 2, Focus', await ev(() => { const c = window.__game.G.party[0]; return c.cp.monk >= 6 && c.slots.includes('focus'); }) && /Rank up! Vex: Monk 2 — learned Focus/.test(vtext), vtext.slice(0, 200));
 
 // --- quests: accept, track kills through real battles, find a quest item, claim rewards
 const finishBattle = async () => { // click-driven: Attack the first foe until the battle ends (independent of which button holds focus)
@@ -127,7 +136,14 @@ await ev(() => window.__game.BT.b.e.forEach((e) => { e.hp = 1; })); await finish
 ok('aftermath scene plays after the Wyrm falls', await ev(() => !!document.querySelector('#overlay .saybox.narr')));
 ok('the Wyrm leaves the Ember Heart', (await ev(() => window.__game.G.flags.qitems.ember_heart)) === true);
 for (let i = 0; i < 6 && (await ev(() => !!document.querySelector('#overlay .saybox'))); i++) await key('Escape', 1, 150); // Esc skips to the end, then closes
-ok('Esc skips and closes a scene', !(await ev(() => document.getElementById('overlay').classList.contains('on'))));
+await pg.waitForTimeout(200);
+ok('the first heart wakes three callings (awakening moment)', /Ember Heart wakes/.test(await overlayTitle()) && (await ev(() => [...document.querySelectorAll('#overlay .echo b')].map((e) => e.textContent).join())) === 'Hexer,Bard,Berserker');
+await pg.screenshot({ path: process.env.SHOT_AWAKE || '/tmp/awakening.png' });
+await key('Escape', 1, 200);
+ok('Esc skips and closes the scene and the awakening', !(await ev(() => document.getElementById('overlay').classList.contains('on'))));
+await openMenu(); await pg.click('[data-act=build][data-a="2"]'); await pg.click('[data-act=bview][data-a=jobMain]');
+ok('the awakened callings can now be taken up', (await ev(() => document.querySelectorAll('[data-act=setjob]').length)) === 9 && !!(await pg.$('[data-act=setjob][data-b=berserker]')) && !(await pg.$('[data-act=setjob][data-b=paladin]')));
+await closeAll();
 const guard1 = await guardSays();
 ok('Haven guard\'s dialogue changes after the Wyrm falls', !!guard0 && !!guard1 && guard0 !== guard1, `${guard0.slice(0, 40)} -> ${guard1.slice(0, 40)}`);
 // --- new regions: Mirewood interior NPCs, Storm Cavern boss, ending cinematic

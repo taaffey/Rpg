@@ -1,5 +1,5 @@
 // ===== Gemforge Chronicles: UI, map, menus, battle flow =====
-import { SOCKET_COST, DIFFICULTY, DROPS, STORY, KEY_ITEMS } from './data.js';
+import { SOCKET_COST, DIFFICULTY, DROPS, STORY, KEY_ITEMS, TRAITS, CALLING_BATCHES } from './data.js';
 import { JOBS, SKILLS, GEMS, WEAPONS, ARMORS, ACCS, ITEMS, WEAPON_TYPES, ENEMIES, ENCOUNTERS, ELEM_ICON, BOSSES, SHOPS, QUESTS } from './data.js';
 import { MAPS, WALK } from './maps.js';
 import * as L from './logic.js';
@@ -89,12 +89,15 @@ const npcImg = (type, px = 48) => `<span class="face"><img src="${UI.npcFaceURL(
 
 // ---------- state ----------
 // ---------- callings: four heroes each answer the bell with one calling; more are learned on the road ----------
-const STARTER_JOBS = ['knight', 'rogue', 'mage', 'cleric', 'monk', 'ranger', 'hexer', 'bard'];
-const ADVANCED_JOBS = { berserker: 'wyrm', alchemist: 'wyrm', samurai: 'lich', paladin: 'lich' }; // the Guild teaches these once that evil falls
-const SUB_LEVEL = 5; // the Guild teaches a second (sub) calling to heroes of this level
+// FF5-style: callings rank up with Calling Points (logic.js); new batches wake with each heart-gem held (data.js CALLING_BATCHES)
+const STARTER_JOBS = CALLING_BATCHES[0];
+const heartsHeld = (g = G) => Object.keys(KEY_ITEMS).filter((k) => g?.flags?.qitems?.[k]).length;
+const batchesOpen = (g = G) => Math.min(CALLING_BATCHES.length, 1 + heartsHeld(g));
+const unlockedJobs = () => { const on = new Set([...CALLING_BATCHES.slice(0, batchesOpen()).flat(), ...G.party.flatMap((c) => Object.keys(c.cp || {}))]); return Object.keys(JOBS).filter((j) => on.has(j)); };
+const stars = (c, j) => { const r = L.rankOf(c, j); return `<span class="stars ${r >= L.MAX_RANK ? 'mastered' : ''}" title="Rank ${r}/${L.MAX_RANK}">${Array.from({ length: L.MAX_RANK }, (_, k) => `<i class="pip${k < r ? ' on' : ''}"></i>`).join('')}</span>`; }; // rank pips ◆◆◆◇◇◇
+const traitName = (t) => (t ? TRAITS[t].name : '');
 const DEFAULT_PARTY = [['Aldric', 'knight'], ['Lyra', 'mage'], ['Mira', 'cleric'], ['Kael', 'rogue']];
 const LIGHT_ARMOR = new Set(['mage', 'cleric', 'hexer', 'bard', 'alchemist']);
-const jobLocked = (id) => ADVANCED_JOBS[id] && !G?.flags?.bosses?.[ADVANCED_JOBS[id]];
 function newGame(party = DEFAULT_PARTY) {
   G = {
     // like FF1: the party starts at level 1, unarmed, with 400 G to arm itself at the Haven Smithy (~205 G for the cheap weapons)
@@ -115,10 +118,24 @@ function migrate(g) {
   g.inv ||= {}; for (const k of ['weapons', 'armors', 'accs', 'gems']) g.inv[k] = (g.inv[k] || []).filter((id) => DB[k][id]); g.inv.items ||= {};
   for (const id of Object.keys(g.inv.items)) if (!ITEMS[id]) delete g.inv.items[id];
   g.flags ||= {}; g.flags.story ||= {}; if (g.inv.gems.length || g.party.some((c) => c.gems.some((x) => x.length)) || Object.keys(g.flags.bosses || {}).length) g.flags.story.gems = true; // saves from before gems were paced keep them
+  for (const [b, d] of Object.entries(BOSSES)) if (d.heart && g.flags.bosses[b]) g.flags.qitems[d.heart] = true; // hearts of evils slain before hearts existed
   for (const c of g.party) { if (c.weapon && !WEAPONS[c.weapon]) c.weapon = null; if (c.armor && !ARMORS[c.armor]) c.armor = null; if (c.acc && !ACCS[c.acc]) c.acc = null; c.exp = Math.max(0, c.exp || 0); c.level = Math.min(L.MAX_LEVEL, c.level || 1); gainExp(c, 0); } // gainExp(0) settles EXP banked under an older curve
+  for (const c of g.party) migrateCallings(c, g.inv);
   const m = MAPS[g.map];
   if (!m) { g.map = 'haven'; g.x = 17; g.y = 30; } else if (!WALK.has(m.rows[g.y]?.[g.x] ?? '#') && m.rows[g.y]?.[g.x] !== 'B') { g.x = m.spawn.x; g.y = m.spawn.y; }
   return g;
+}
+// Saves from before Calling Points: skills came from the hero's level (main calling) and a sub calling two levels behind.
+// Grant each calling the rank that keeps every skill the hero had (and anything slotted), and at least what its level would
+// have earned; the sub calling becomes the second calling. Weapons the new calling cannot hold go back to the pack.
+const CP_AT_LEVEL = [0, 0, 3, 8, 14, 22, 32, 40, 50, 60, 75, 95, 115, 130, 150, 170, 190, 210, 230, 250, 270];
+function migrateCallings(c, inv) {
+  if (c.cp) return; if (!JOBS[c.main]) c.main = 'knight'; if (c.sub && !JOBS[c.sub]) c.sub = null;
+  const lv = Math.min(L.MAX_LEVEL, c.level || 1), had = (l) => (l >= 9 ? 5 : l >= 7 ? 4 : l >= 5 ? 3 : l >= 3 ? 2 : l >= 1 ? 1 : 0); // skills the old level tables gave by then
+  const need = (job, n) => { const r = JOBS[job].skills[Math.min(n, JOBS[job].skills.length) - 1]?.[1] || 1; return Math.max(1, ...(c.slots || []).filter((id) => JOBS[job].skills.some(([s]) => s === id)).map((id) => JOBS[job].skills.find(([s]) => s === id)[1]), r); };
+  c.cp = { [c.main]: Math.max(L.CP_RANKS[need(c.main, had(lv)) - 1], CP_AT_LEVEL[lv]) };
+  if (c.sub && c.sub !== c.main) c.cp[c.sub] = L.CP_RANKS[need(c.sub, Math.max(1, had(lv - 2))) - 1]; else c.sub = null;
+  c.trait = null; sanitize(c, inv);
 }
 const readSlot = (i) => { try { const raw = localStorage.getItem(SLOT_KEY(i)); return raw ? JSON.parse(raw) : null; } catch { return null; } };
 const anySave = () => SLOT_IDS.some((i) => readSlot(i));
@@ -380,7 +397,7 @@ function overlayKey(e) {
     if (typing) { finishTyping(); return true; }
   }
   if (e.key === 'Escape' || e.key === 'Backspace') {
-    const b = list.find((x) => /^(close|scend|bmain|leave|menu|bclose|optback)$/.test(x.dataset.act) || (x.dataset.act === 'c' && x.dataset.a === 'root'));
+    const b = list.find((x) => /^(close|scend|bmain|leave|menu|bclose|optback|awdone)$/.test(x.dataset.act) || (x.dataset.act === 'c' && x.dataset.a === 'root'));
     if (b) { b.click(); return true; }
   }
   return false;
@@ -606,7 +623,7 @@ function questLog(lines = []) { // progress notes appended to the victory panel
   }
   return lines;
 }
-function guild() { B.guild = true; show(`<h2>⚔️ ${esc(mapDef().name)}</h2><div class="npc">${npcImg('guildmaster', 48)}<p>Reassign jobs, gear and skills for free. Sub jobs lend their skills two levels behind your main job.</p></div><div class="card menuparty">${G.party.map((c, i) => heroBtn(c, 'build', i)).join('')}</div><div class="foot">${btn('leave', 'Leave', '', '', 'primary')}</div>`); }
+function guild() { B.guild = true; show(`<h2>⚔️ ${esc(mapDef().name)}</h2><div class="npc">${npcImg('guildmaster', 48)}<p>Every battle teaches a calling something, and what is learned stays learned. Change as you please; the road ahead won't wait.</p></div><div class="card menuparty">${G.party.map((c, i) => heroBtn(c, 'build', i)).join('')}</div><div class="foot">${btn('leave', 'Leave', '', '', 'primary')}</div>`); }
 ACT.leave = () => { B.guild = false; hide(); };
 function inn(npc) {
   const cost = npc.cost || 25;
@@ -685,7 +702,7 @@ ACT.prolog = (i) => prologue(+i);
 const STAT_KEYS = [['hp', 'HP'], ['mp', 'MP'], ['atk', 'ATK'], ['def', 'DEF'], ['mag', 'MAG'], ['spd', 'SPD']];
 function creation(i) {
   const h = CR[i], j = JOBS[h.job];
-  const skills = j.skills.slice(0, 3).map(([sid, lv]) => `${SKILLS[sid].name} <span class="dim">Lv${lv}</span>`).join(' · ');
+  const skills = j.skills.slice(0, 3).map(([sid, r]) => `${SKILLS[sid].name} <span class="dim">★${r}</span>`).join(' · ');
   show(`<h2>The Four · ${i + 1} of 4</h2>
   <div class="crhead">${portrait(h.job, 'lg')}<div class="crname"><small>NAME</small><input id="crname" data-in="name" maxlength="10" autocomplete="off" autocapitalize="words" spellcheck="false" value="${esc(h.name)}"></div></div>
   <h3>Calling</h3><div class="crjobs">${STARTER_JOBS.map((id) => btn('crjob', `${portrait(id)}<span>${JOBS[id].name}</span>`, id, '', h.job === id ? 'sel' : '')).join('')}</div>
@@ -701,7 +718,7 @@ ACT.crnext = () => { crName(); if (CR.i < 3) creation(CR.i + 1); else review(); 
 ACT.crback = () => { crName(); if (CR.i > 0) creation(CR.i - 1); else prologue(0); };
 function review() {
   show(`<h2>The Four</h2><div class="crreview">${CR.map((h, i) => `<button data-act="credit" data-a="${i}" class="hero">${portrait(h.job)}<span class="hinfo"><span class="hn">${esc(h.name)}</span><span class="hj">${JOBS[h.job].name}</span></span></button>`).join('')}</div>
-  <p class="dim">Sub callings are taught at the Guild once a hero reaches level ${SUB_LEVEL}. Rarer callings are said to be earned on the road.</p>
+  <p class="dim">Each battle deepens a calling. Other callings are said to sleep in the hearts of Gemforge's evils.</p>
   <div class="foot">${btn('crback2', 'Back', '')}${btn('crbegin', 'Answer the bell', '', '', 'primary', false, 'autofocus')}</div>`, '', 'crwin');
 }
 ACT.credit = (i) => creation(+i);
@@ -718,7 +735,7 @@ function loadSlot(i) {
 function intro() {
   show(`<h2>${ic('house')} Welcome to Haven Town</h2><div class="npc">${npcImg('elder', 48)}<p>Three great evils stir: the <b>Ashen Wyrm</b> in the cavern east of town, a <b>Lich King</b> in the swamp crypt, and a <b>Frost Titan</b> in a spire far to the north.</p></div>
   <p>Your party sets out <b>unarmed</b> with <span class="gold">400 G</span>: arm everyone at the <b>Smithy</b> first (a sword, two staves and a dagger cost about 205 G), then buy a few potions.</p>
-  <p>Visit the <b>Guild</b> to choose jobs, the <b>Smithy</b> for gear, and open the <b>Menu</b> (Esc) to socket gems into skills. Talk to townsfolk: a <span class="gold">!</span> marks someone with news. Check your <b>Journal</b> if you get lost.</p><div class="foot">${btn('close', 'Begin', '', '', 'primary')}</div>`);
+  <p>Open the <b>Menu</b> (Esc) to change callings and skills, and visit the <b>Smithy</b> for gear. Talk to townsfolk: a <span class="gold">!</span> marks someone with news. Check your <b>Journal</b> if you get lost.</p><div class="foot">${btn('close', 'Begin', '', '', 'primary')}</div>`);
 }
 function mainMenu() {
   const menuTip = tipOnce('menu') ? 'TIP: pick a hero, then Edit a skill slot to socket gems. Gems rewrite how a skill works.' : '';
@@ -778,7 +795,7 @@ ACT.journal = () => {
   show(`<h2>📜 Journal</h2><p class="dim">Great evils slain: <b class="gold">${n}/3</b> · Hidden treasures: <b class="gold">${found}/${secrets.length}</b>${hearts.length ? `<br>Carried: <b class="gold">${hearts.join(', ')}</b>` : ''}</p>${OBJECTIVES.filter((o) => cond(o.show)).map((o) => { const dn = cond(o.done), locked = !cond(o.after); return `<div class="card ${dn ? 'done' : ''}"><b>${dn ? '✔' : locked ? '🔒' : '◇'} ${o.optional ? '<span class="dim">Optional:</span> ' : ''}${o.title}</b><div class="dim">${locked ? 'A rockslide buries the northern pass.' : dn ? o.doneHint : o.metHint && cond('s:met') ? o.metHint : o.hint}</div></div>`; }).join('')}
   <h3>Side quests</h3>${(() => { const act = Object.entries(QUESTS).filter(([id]) => qstate(id) === 'active'), dn = Object.entries(QUESTS).filter(([id]) => qstate(id) === 'done');
     return (act.length ? act.map(([id, q]) => `<div class="card ${questDone(id) ? 'done' : ''}"><b>${questDone(id) ? '❓' : '◇'} ${esc(q.title)}</b> <span class="dim">(${questProgress(id)})</span><div class="dim">${questDone(id) ? 'Return to ' + esc(q.giver) + ' to claim your reward.' : esc(q.lines.active[0])}</div></div>`).join('') : '<div class="dim">No active quests. Folk in town sometimes need a hand.</div>') + (dn.length ? `<div class="dim">Completed: ${dn.map(([, q]) => '✔ ' + esc(q.title)).join(' · ')}</div>` : ''); })()}
-  <h3>💡 Tips</h3><div class="dim">${gemsOn() ? '• Gems rewrite skills: try Wide + a heal, Echo on a big spell, Stun on a fast skill.<br>' : ''}• Jobs can be changed in any town building; sub jobs lend skills (2 levels behind).<br>• Inns heal and save. Frostholm's shops sell much better gear.<br>• Hermits and oracles roam the wilds. Listen to them, and watch the ground for a faint glint of buried treasure.</div><div class="foot">${btn('menu', 'Back', '', '', 'primary')}</div>`);
+  <h3>💡 Tips</h3><div class="dim">${gemsOn() ? '• Gems rewrite skills: try Wide + a heal, Echo on a big spell, Stun on a fast skill.<br>' : ''}• Battles earn CP for each hero's calling; ranks teach abilities that are kept for good. Change callings from the menu.<br>• Inns heal and save. Frostholm's shops sell much better gear.<br>• Hermits and oracles roam the wilds. Listen to them, and watch the ground for a faint glint of buried treasure.</div><div class="foot">${btn('menu', 'Back', '', '', 'primary')}</div>`);
 };
 let optBack = 'menu';
 function optionsScreen() {
@@ -827,7 +844,7 @@ let B = { i: 0, view: 'main', slot: 0, guild: false };
 ACT.build = (i) => { B = { i: +i, view: 'main', slot: 0, guild: B.guild && inTown() }; buildScreen(); };
 function buildScreen() {
   const c = G.party[B.i];
-  ({ main: buildMain, jobMain: () => jobPick('main'), jobSub: () => jobPick('sub'), weapon: () => gearPick('weapons'), armor: () => gearPick('armors'), acc: () => gearPick('accs'), slot: slotEdit }[B.view])(c);
+  ({ main: buildMain, jobMain: () => jobPick('main'), jobSub: () => jobPick('sub'), trait: traitPick, callings: callingsView, weapon: () => gearPick('weapons'), armor: () => gearPick('armors'), acc: () => gearPick('accs'), slot: slotEdit }[B.view])(c);
 }
 const back = (v = 'main') => () => { B.view = v; buildScreen(); };
 ACT.bmain = back('main');
@@ -835,7 +852,6 @@ ACT.bnav = (d) => { B.i = (B.i + +d + G.party.length) % G.party.length; B.view =
 ACT.bclose = () => (B.guild ? guild() : mainMenu());
 function buildMain(c) {
   const s = stats(c), m = JOBS[c.main], sj = c.sub ? JOBS[c.sub] : null, cap = gemCapacity(c), used = gemsUsed(c);
-  const jobs = inTown();
   const gearRow = (label, view, id, kind) => `<div class="slot"><span class="lead">${id ? itemIc(kind, id) : ic({ weapons: 'fists', armors: 'armor', accs: 'ring' }[kind], 'dimic')}</span><div class="t"><b><span class="dim">${label}</span> ${id ? DB[kind][id].name : `<span class="dim">— ${kind === 'weapons' ? 'unarmed' : 'none'} —</span>`}</b><small>${id ? gearDesc(kind, DB[kind][id]) : kind === 'weapons' ? 'Fighting bare-handed. Buy a weapon at a Smithy.' : ''}</small></div>${btn('bview', 'Change', view)}</div>`;
   const slotRow = (i) => {
     const sid = slotSkill(c, i), gems = slotGems(c, i);
@@ -845,11 +861,7 @@ function buildMain(c) {
   const xpN = expNeeded(c.level), maxed = c.level >= L.MAX_LEVEL;
   show(`<div class="buildhead">${btn('bnav', ic('aleft'), -1, '', 'navbtn')}<div class="who2">${portrait(c.main, 'lg')}<div><h2 style="background:none;padding:0;margin:0">${esc(c.name)}</h2><div class="lv">LV ${c.level}</div></div></div>${btn('bnav', ic('aright'), 1, '', 'navbtn')}</div>
   <div class="expline"><span>EXP</span>${bar(maxed ? 1 : c.exp, maxed ? 1 : xpN, 'xp')}<span>${maxed ? 'MAX' : `${c.exp}/${xpN}`}</span></div>
-  <div class="card">
-    <div class="jobrow"><span>${portrait(c.main, 'sm')}<span><span class="dim">MAIN</span> ${m.name}</span></span>${btn('bview', 'Change', 'jobMain', '', '', !jobs)}</div><div class="jobrow"><span>${sj ? portrait(c.sub, 'sm') : ic('socket')}<span><span class="dim">SUB</span> ${sj ? sj.name : 'none'}</span></span>${btn('bview', 'Change', 'jobSub', '', '', !jobs)}</div>
-    ${jobs ? '' : `<div class="dim">${ic('lock')} Jobs can only be changed in town (visit the Guild).</div>`}
-    ${statLine(s)}<small>Sub job adds 40% of its stat modifiers and its skills (2 levels behind). Weapon types from either job can be equipped.</small>
-  </div>
+  <div class="card">${callingCard(c)}${statLine(s)}</div>
   <h3>Equipment</h3>${gearRow('Weapon', 'weapon', c.weapon, 'weapons')}${gearRow('Armor', 'armor', c.armor, 'armors')}${gearRow('Acc.', 'acc', c.acc, 'accs')}
   <h3>${gemsOn() ? `Skills &amp; Gems <span class="${used > cap ? 'bad' : 'gold'}">◇ ${used}/${cap}</span>` : 'Skills'}</h3>${[0, 1, 2, 3, SIG].map(slotRow).join('')}
   <div class="foot">${btn('bclose', 'Done', '', '', 'primary')}</div>`);
@@ -857,16 +869,46 @@ function buildMain(c) {
 ACT.bview = (v) => { B.view = v; buildScreen(); };
 ACT.bslot = (i) => { B.slot = +i; B.view = 'slot'; buildScreen(); };
 
+// the calling card: current calling with its rank bar, the second-calling and trait slots (each shown once it can be used)
+function callingCard(c) {
+  const m = JOBS[c.main], r = L.rankOf(c, c.main), cp = c.cp?.[c.main] || 0, sj = L.secondOk(c, c.sub) ? JOBS[c.sub] : null;
+  const others = Object.keys(c.cp || {}).filter((j) => L.secondOk(c, j)), own = L.jobTrait(c.main, r), spare = L.learnedTraits(c).filter((t) => t !== own);
+  const lo = L.CP_RANKS[r - 1] || 0, hi = L.CP_RANKS[r] ?? lo;
+  return `<div class="jobrow"><span>${portrait(c.main, 'sm')}<span><span class="dim">CALLING</span> ${m.name} ${stars(c, c.main)}</span></span>${btn('bview', 'Change', 'jobMain')}</div>
+    <div class="expline"><span>RANK ${r}</span>${bar(r >= L.MAX_RANK ? 1 : cp - lo, r >= L.MAX_RANK ? 1 : hi - lo, 'cp')}<span>${r >= L.MAX_RANK ? 'MASTERED' : `${L.cpToNext(c, c.main)} CP`}</span></div>
+    ${others.length ? `<div class="jobrow"><span>${sj ? portrait(c.sub, 'sm') : ic('socket')}<span><span class="dim">SECOND</span> ${sj ? `${sj.name} ${stars(c, c.sub)}` : '<span class="dim">— none —</span>'}</span></span>${btn('bview', 'Set', 'jobSub')}</div>` : ''}
+    ${own || spare.length ? `<div class="jobrow"><span>${ic('star')}<span><span class="dim">TRAIT</span> ${own ? `${traitName(own)}${c.trait && c.trait !== own ? ` + ${traitName(c.trait)}` : ''}` : c.trait ? traitName(c.trait) : '<span class="dim">— none —</span>'}</span></span>${spare.length ? btn('bview', 'Set', 'trait') : ''}</div>` : ''}
+    <div class="jobrow"><span>${ic('scroll')}<span><span class="dim">CALLINGS</span> ${Object.keys(c.cp || {}).length} learned${L.mastered(c).length ? ` · <span class="gold">${L.mastered(c).length}★</span>` : ''}</span></span>${btn('bview', 'View', 'callings')}</div>`;
+}
+const nextAbility = (c, j) => { const r = L.rankOf(c, j), n = [...JOBS[j].skills.map(([id, k]) => [SKILLS[id].name, k]), ...(JOBS[j].trait ? [[TRAITS[JOBS[j].trait[0]].name, JOBS[j].trait[1]]] : [])].filter(([, k]) => k === r + 1); return n.length ? n.map((x) => x[0]).join(', ') : ''; };
 function jobPick(which) {
-  const c = G.party[B.i];
-  show(`<h2>${which === 'main' ? 'Main' : 'Sub'} job for ${esc(c.name)}</h2>${which === 'sub' && c.level < SUB_LEVEL ? `<p class="dim">The Guild teaches a second calling once a hero reaches level ${SUB_LEVEL}.</p>` : ''}${which === 'sub' ? `<div class="slot"><span class="lead">${ic('socket')}</span><div class="t"><b>No sub job</b></div>${btn('setjob', 'None', which, '')}</div>` : ''}${Object.entries(JOBS).map(([id, j]) => {
-    const lockAdv = jobLocked(id), lockSub = which === 'sub' && c.level < SUB_LEVEL, dis = (which === 'main' && id === c.sub) || (which === 'sub' && id === c.main) || lockAdv || lockSub;
-    return `<div class="slot ${c[which] === id ? 'sel' : ''}">${portrait(id)}<div class="t"><b>${j.name} ${j.weapons.map((w) => ic(UI.gearIconName('weapons', { type: w }))).join('')}${c[which] === id ? ' <span class="chip tag">NOW</span>' : ''}</b><small>${lockAdv ? `<span class="bad">Taught once ${BOSSES[ADVANCED_JOBS[id]].name} falls.</span> ` : ''}${j.desc} Weapons: ${j.weapons.map((w) => WEAPON_TYPES[w].name).join(', ')}. Skills: ${j.skills.map((s) => SKILLS[s[0]].name + ' L' + s[1]).join(', ')}</small></div>${btn('setjob', 'Select', which, id, '', dis)}</div>`;
+  const c = G.party[B.i], list = which === 'main' ? unlockedJobs() : Object.keys(JOBS).filter((j) => L.secondOk(c, j));
+  show(`<h2>${which === 'main' ? 'Calling' : 'Second calling'} · ${esc(c.name)}</h2>${which === 'sub' ? `<div class="slot"><span class="lead">${ic('socket')}</span><div class="t"><b>None</b></div>${btn('setjob', 'Clear', which, '', '', !c.sub)}</div>` : ''}${list.map((id) => {
+    const j = JOBS[id], r = L.rankOf(c, id), now = c[which] === id, learned = L.jobSkills(id, r), nx = nextAbility(c, id);
+    const info = which === 'main' ? `${j.desc} ${!r ? `<span class="gold">New:</span> starts with ${nx}.` : nx ? `Next: ${nx}.` : 'Mastered.'}` : `Lends: ${learned.map((x) => SKILLS[x].name).join(', ')}`;
+    return `<div class="slot ${now ? 'sel' : ''}">${portrait(id)}<div class="t"><b>${j.name} ${which === 'main' ? j.weapons.map((w) => ic(UI.gearIconName('weapons', { type: w }))).join('') : ''} ${r ? stars(c, id) : ''}${now ? ' <span class="chip tag">NOW</span>' : ''}</b><small>${info}</small></div>${btn('setjob', 'Select', which, id, '', now)}</div>`;
   }).join('')}<div class="foot">${btn('bmain', 'Back', '', '', 'primary')}</div>`);
 }
 ACT.setjob = (which, id) => {
-  const c = G.party[B.i]; c[which] = id || null; sanitize(c, G.inv); autofill(c); B.view = 'main'; buildScreen();
+  const c = G.party[B.i]; if (which === 'main') L.setCalling(c, id); else c.sub = id || null;
+  sanitize(c, G.inv); autofill(c); B.view = 'main'; buildScreen();
 };
+function traitPick() {
+  const c = G.party[B.i], own = L.jobTrait(c.main, L.rankOf(c, c.main)), list = L.learnedTraits(c).filter((t) => t !== own);
+  const from = (t) => JOBS[Object.keys(JOBS).find((j) => JOBS[j].trait?.[0] === t)].name;
+  show(`<h2>Trait · ${esc(c.name)}</h2>${own ? `<div class="slot"><span class="lead">${ic('star')}</span><div class="t"><b>${traitName(own)} <span class="chip tag">${JOBS[c.main].name}</span></b><small>${TRAITS[own].desc} Always on.</small></div></div>` : ''}
+  <div class="slot"><span class="lead">${ic('socket')}</span><div class="t"><b>None</b></div>${btn('settrait', 'Clear', '', '', '', !c.trait)}</div>${list.map((t) => `<div class="slot ${c.trait === t ? 'sel' : ''}"><span class="lead">${ic('star')}</span><div class="t"><b>${traitName(t)} <span class="dim">${from(t)}</span></b><small>${TRAITS[t].desc}</small></div>${btn('settrait', 'Set', t, '', '', c.trait === t)}</div>`).join('')}
+  <div class="foot">${btn('bmain', 'Back', '', '', 'primary')}</div>`);
+}
+ACT.settrait = (t) => { const c = G.party[B.i]; c.trait = t || null; sanitize(c, G.inv); B.view = 'main'; buildScreen(); };
+function callingsView() { // every awakened calling: rank stars, abilities learned, the next one (later ones stay unseen)
+  const c = G.party[B.i];
+  show(`<h2>Callings · ${esc(c.name)}</h2>${unlockedJobs().map((id) => {
+    const j = JOBS[id], r = L.rankOf(c, id), got = [...L.jobSkills(id, r).map((x) => SKILLS[x].name), ...(L.jobTrait(id, r) ? [traitName(L.jobTrait(id, r))] : [])], nx = nextAbility(c, id);
+    const master = r >= L.MAX_RANK ? ` · <span class="gold">★ ${Object.entries(j.master).map(([k, v]) => `+${v} ${k.toUpperCase()}`).join(' ')}</span>` : '';
+    return `<div class="slot callrow ${id === c.main ? 'sel' : ''}">${portrait(id, r ? '' : 'ko')}<div class="t"><b>${j.name} ${stars(c, id)}${id === c.main ? ' <span class="chip tag">NOW</span>' : id === c.sub ? ' <span class="chip tag">2ND</span>' : ''}</b><small>${got.length ? got.join(' · ') : '<span class="dim">Not yet taken up.</span>'}${nx ? ` <span class="dim">→ ${nx}${r ? ` (${L.cpToNext(c, id)} CP)` : ''}</span>` : ''}${master}</small></div></div>`;
+  }).join('')}<div class="foot">${btn('bmain', 'Back', '', '', 'primary')}</div>`);
+}
 function gearPick(kind) {
   const c = G.party[B.i], field = { weapons: 'weapon', armors: 'armor', accs: 'acc' }[kind];
   const uniq = [...new Set(G.inv[kind])];
@@ -996,7 +1038,7 @@ function cmdHtml(a) {
   if (a.stage === 'skills') {
     return `${head}<div class="cmdlist">` + [0, 1, 2, 3, SIG].map((i) => {
       const sid = slotSkill(c, i); if (!sid) return '';
-      const gems = slotGems(c, i), s = skillWithGems(sid, gems);
+      const gems = slotGems(c, i), s = skillWithGems(sid, gems); s.mp = L.mpCost(p, s);
       return btn('c', `<span class="sk">${ic(UI.skillIconName(s))}<b>${s.name}</b><i>${s.mp}MP</i></span><small>${s.tags.length ? s.tags.join(' + ') + ' · ' : ''}${describeSkill(s)}</small>`, 'cast', i, 'two', p.mp < s.mp);
     }).join('') + `${back}</div>`;
   }
@@ -1010,7 +1052,7 @@ function cmdHtml(a) {
 }
 function autoCommand(p) { // reuse the hero's last move with sensible targets; fall back to a basic attack
   const b = BT.b, last = BT.last.get(p.name), foes = b.e.filter((x) => x.hp > 0), friends = b.p.filter((x) => x.hp > 0);
-  let cmd = last && last.kind === 'skill' && skillWithGems(last.skillId, last.gems).mp <= p.mp ? { ...last } : { kind: 'skill', skillId: 'attack', gems: [] };
+  let cmd = last && last.kind === 'skill' && L.mpCost(p, skillWithGems(last.skillId, last.gems)) <= p.mp ? { ...last } : { kind: 'skill', skillId: 'attack', gems: [] };
   const s = skillWithGems(cmd.skillId, cmd.gems);
   if (s.tgt === 'one') cmd.target = foes.sort((x, y) => x.hp - y.hp)[0];
   else if (s.tgt === 'ally') cmd.target = s.fx.includes('revive') ? b.p.find((x) => x.hp <= 0) || p : friends.sort((x, y) => x.hp / x.maxhp - y.hp / y.maxhp)[0];
@@ -1061,6 +1103,12 @@ async function victory(b, bossId) {
     lvSfx = true; autofill(c);
     lines.push(`🎉 ${esc(c.name)} reached level ${ups.at(-1)}!${ups.length > 1 ? ` (+${ups.length} levels)` : ''}${learned.length ? ` Learned <b>${learned.map((id) => SKILLS[id].name).join(', ')}</b>.` : ''}`);
   }
+  const cpGot = new Map(); // Calling Points: standing heroes only; each rank teaches the next ability of the calling
+  for (const { c, cp, ranks } of L.awardCP(G.party, r.cp)) {
+    cpGot.set(c, cp); if (ranks.length) { lvSfx = true; autofill(c); }
+    for (const k of ranks) { const got = [...k.skills.map((id) => SKILLS[id].name), ...(k.trait ? [TRAITS[k.trait].name] : [])];
+      lines.push(`✦ Rank up! ${esc(c.name)}: ${JOBS[k.job].name} ${k.rank}${got.length ? ` — learned <b>${got.join(', ')}</b>` : ''}${k.mastered ? ' <b class="gold">★ Mastered</b>' : ''}`); }
+  }
   if (lvSfx) setTimeout(() => sfx('levelup'), 1400);
   for (const d of r.drops) {
     if (d.kind === 'items') G.inv.items[d.id] = (G.inv.items[d.id] || 0) + 1; else G.inv[d.kind].push(d.id);
@@ -1070,13 +1118,15 @@ async function victory(b, bossId) {
   }
   if (r.drops.some((d) => d.rare)) setTimeout(() => sfx('chest'), 900);
   for (const e of b.e) for (const [id, q] of Object.entries(QUESTS)) if (qstate(id) === 'active' && q.goal.type === 'kill' && q.goal.ids.includes(e.id)) G.flags.qprog[id] = Math.min(q.goal.n, (G.flags.qprog[id] || 0) + 1);
-  const def = bossId ? BOSSES[bossId] : null;
+  const def = bossId ? BOSSES[bossId] : null, open0 = batchesOpen(); let awake = null;
   if (def) {
     G.flags.bosses[bossId] = true; const names = [];
     for (const k of ['weapons', 'armors', 'accs', 'gems']) for (const id of def.loot[k] || []) { G.inv[k].push(id); names.push(lootName(k, id)); }
     lines.push(`Found <b class="gold">${names.join(', ')}</b>!`);
     if (def.heart) { G.flags.qitems[def.heart] = true; lines.push(`Obtained the <b class="gold">${KEY_ITEMS[def.heart]}</b>.`);
-      if (!gemsOn()) { G.flags.story.gems = true; lines.push(G.inv.gems.length ? 'The heart pulses. The dull stones in your pack wake with it: they were gems all along.' : 'The heart pulses, as if calling to stones like itself.'); } }
+      const gems = !gemsOn(); if (gems) G.flags.story.gems = true; // the first heart wakes the dull stones too (told in the awakening)
+      if (batchesOpen() > open0) awake = { heart: def.heart, jobs: CALLING_BATCHES[batchesOpen() - 1], gems: gems ? (G.inv.gems.length ? 'stones' : 'call') : '' };
+      else if (gems) lines.push(G.inv.gems.length ? 'The heart pulses. The dull stones in your pack wake with it: they were gems all along.' : 'The heart pulses, as if calling to stones like itself.'); }
   }
   if (bossId) G.flags.bosses[bossId] = true;
   miniDirty = true;
@@ -1084,12 +1134,27 @@ async function victory(b, bossId) {
   if (G.party.some((c) => c.hp > 0 && c.hp < maxOf(c).hp * 0.35) && tipOnce('rest')) lines.push('💡 Low on HP? Inns heal the whole party and save your game. Potions work from the Items menu.');
   questLog(lines);
   await new Promise((res) => {
-    const vp = G.party.map((c) => { const n = expNeeded(c.level), mx = c.level >= L.MAX_LEVEL; return `<div class="vp">${portrait(c.main, 'sm' + (c.hp <= 0 ? ' ko' : ''))}<div class="vi"><div>${esc(c.name)} <span class="gold">LV ${c.level}</span></div>${bar(mx ? 1 : c.exp, mx ? 1 : n, 'xp')}</div></div>`; }).join('');
+    const vp = G.party.map((c) => { const n = expNeeded(c.level), mx = c.level >= L.MAX_LEVEL; return `<div class="vp">${portrait(c.main, 'sm' + (c.hp <= 0 ? ' ko' : ''))}<div class="vi"><div>${esc(c.name)} <span class="gold">LV ${c.level}</span></div>${bar(mx ? 1 : c.exp, mx ? 1 : n, 'xp')}<div class="cpg">${cpGot.get(c) ? `+${cpGot.get(c)} CP` : '<span class="dim">no CP</span>'} ${stars(c, c.main)}</div></div></div>`; }).join('');
     ov.innerHTML = `<div class="win gold anim"><div class="vhead">${ic('trophy')}<h2>${def ? esc(def.name) + ' is slain!' : 'Victory!'}</h2>${ic('trophy')}</div><div class="spoils"><span>${ic('star')}+${r.exp} EXP</span><span class="gold">${ic('coin')}+${r.gold} G</span></div><div class="vparty">${vp}</div><div class="vlines">${lines.map((l) => `<div>${UI.deco(l)}</div>`).join('')}</div><div class="foot">${btn('vdone', 'Continue', '', '', 'primary')}</div></div>`;
     ACT.vdone = () => { hide(); res(); };
   });
   if (bossId && STORY.after[bossId]) { await scene(STORY.after[bossId]); autosave(); } // aftermath: what the evil left behind, and who was watching
+  if (awake) await awakening(awake);
   if (def?.final) await ending();
+}
+// The heart-gem wakes a new batch of callings (FF5's crystal shards): echoes of past heroes, then their callings are yours.
+const HEART_GEM = { ember_heart: 'fire', grave_heart: 'shadow', rime_heart: 'frost' };
+function awakening({ heart, jobs, gems }) {
+  music('victory'); setTimeout(() => sfx('holy'), 350);
+  const echo = jobs.map((j, k) => `<div class="echo" style="animation-delay:${0.5 + k * 0.45}s"><img src="${SP.heroURL(j)}" alt=""><b>${JOBS[j].name}</b><small>${JOBS[j].weapons.map((w) => ic(UI.gearIconName('weapons', { type: w }))).join('')}</small></div>`).join('');
+  const gemLine = gems === 'stones' ? '<p class="lore">The dull stones in your pack answer it. They were gems all along.</p>' : gems === 'call' ? '<p class="lore">It hums, as if calling to stones like itself.</p>' : '';
+  return new Promise((res) => {
+    show(`<h2>The ${esc(KEY_ITEMS[heart].replace(/ Heart$/, ''))} Heart wakes</h2><div class="heartgem"><img src="${SP.gemIcon(HEART_GEM[heart] || 'fire', 6)}" alt=""></div>
+    <p class="lore">It beats once in your hands. In its light stand heroes of an older age, who answered the bell before you.</p>${gemLine}
+    <h3 class="awh">New callings awaken</h3><div class="echoes">${echo}</div>
+    <div class="foot">${btn('awdone', 'Continue', '', '', 'primary', false, 'autofocus')}</div>`, '', 'lorewin awakewin');
+    ACT.awdone = () => { hide(); res(); };
+  });
 }
 function drawEnding(c2, t, W, H) {
   c2.imageSmoothingEnabled = false;
@@ -1148,5 +1213,5 @@ muteBtn.addEventListener('click', () => { setMuted(!isMuted()); syncMute(); if (
 syncMute();
 
 // debug / test hook
-window.__game = { get G() { return G; }, get BT() { return BT; }, get v() { return [vx, vy]; }, camState, TS, get route() { return route; }, battle, step, goto, MAPS, snap, OPT, ACT, ui: { shop, inn, guild, socketer, title, slotScreen, diffScreen, talk, itemsMenu, mainMenu } };
+window.__game = { get G() { return G; }, get BT() { return BT; }, get v() { return [vx, vy]; }, camState, TS, get route() { return route; }, battle, step, goto, MAPS, snap, OPT, ACT, ui: { shop, inn, guild, socketer, title, slotScreen, diffScreen, talk, itemsMenu, mainMenu, awakening } };
 title();

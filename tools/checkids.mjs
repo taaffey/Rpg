@@ -1,7 +1,7 @@
 // Every id referenced by shops, chests, drops, bosses, quests, encounters, jobs, weapons and the new-game inventory must exist.
 // usage: node tools/checkids.mjs
 import { readFileSync } from 'node:fs';
-import { WEAPONS, ARMORS, ACCS, GEMS, ITEMS, SKILLS, JOBS, WEAPON_TYPES, ENEMIES, ENCOUNTERS, DROPS, BOSSES, SHOPS, QUESTS, ELEMENTS, STORY, KEY_ITEMS } from '../src/data.js';
+import { WEAPONS, ARMORS, ACCS, GEMS, ITEMS, SKILLS, JOBS, WEAPON_TYPES, ENEMIES, ENCOUNTERS, DROPS, BOSSES, SHOPS, QUESTS, ELEMENTS, STORY, KEY_ITEMS, TRAITS, CALLING_BATCHES } from '../src/data.js';
 import { MAPS } from '../src/maps.js';
 const DB = { weapons: WEAPONS, armors: ARMORS, accs: ACCS, gems: GEMS, items: ITEMS };
 const errs = [];
@@ -32,7 +32,7 @@ for (const [bid, b] of Object.entries(BOSSES)) { if (!ENEMIES[bid]) errs.push(`b
 for (const [qid, q] of Object.entries(QUESTS)) { loot(q.reward, `quest ${qid}`); if (q.goal.ids) for (const id of q.goal.ids) if (!ENEMIES[id]) errs.push(`quest ${qid}: unknown enemy ${id}`); if (q.goal.type === 'boss' && !ENEMIES[q.goal.id]) errs.push(`quest ${qid}: unknown boss`); }
 for (const [t, grps] of Object.entries(ENCOUNTERS)) for (const g of grps) for (const id of g) if (!ENEMIES[id]) errs.push(`encounter ${t}: unknown enemy ${id}`);
 for (const [mid, m] of Object.entries(MAPS)) { if (m.enc && !ENCOUNTERS[m.enc]) errs.push(`map ${mid}: unknown table ${m.enc}`); for (const t of Object.values(m.encByTile || {})) if (!ENCOUNTERS[t]) errs.push(`map ${mid}: unknown table ${t}`); if (m.boss && !ENEMIES[m.boss.id]) errs.push(`map ${mid}: unknown boss`); for (const n of m.npcs || []) { if (n.shop && !SHOPS[n.shop]) errs.push(`map ${mid}: npc shop ${n.shop}`); if (n.quest && !QUESTS[n.quest]) errs.push(`map ${mid}: npc quest ${n.quest}`); } }
-for (const [jid, j] of Object.entries(JOBS)) { for (const [sk] of j.skills) if (!SKILLS[sk]) errs.push(`job ${jid}: unknown skill ${sk}`); for (const w of j.weapons) if (!WEAPON_TYPES[w]) errs.push(`job ${jid}: unknown weapon type ${w}`); }
+for (const [jid, j] of Object.entries(JOBS)) { for (const [sk, r] of j.skills) { if (!SKILLS[sk]) errs.push(`job ${jid}: unknown skill ${sk}`); if (!(r >= 1 && r <= 6)) errs.push(`job ${jid}: ${sk} rank ${r} outside 1-6`); } if (!TRAITS[j.trait?.[0]]) errs.push(`job ${jid}: unknown trait`); if (!j.master) errs.push(`job ${jid}: no mastery bonus`); if (CALLING_BATCHES.flat().filter((x) => x === jid).length !== 1) errs.push(`job ${jid}: not in exactly one calling batch`); if (!j.skills.some(([, r]) => r === 1)) errs.push(`job ${jid}: nothing at rank 1`); for (const w of j.weapons) if (!WEAPON_TYPES[w]) errs.push(`job ${jid}: unknown weapon type ${w}`); }
 for (const [tid, t] of Object.entries(WEAPON_TYPES)) if (!SKILLS[t.sig]) errs.push(`weapon type ${tid}: unknown sig ${t.sig}`);
 const tiers = {};
 for (const [wid, w] of Object.entries(WEAPONS)) {

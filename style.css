@@ -419,3 +419,22 @@ body:has(#overlay.on) #toast{top:auto;bottom:calc(env(safe-area-inset-bottom,0px
 .crreview button.hero{display:flex;gap:10px;align-items:center;min-height:52px;padding-left:28px}
 @media (min-width:640px){.crreview{grid-template-columns:1fr 1fr}}
 .crwin .card>b{display:block;font-size:11px;margin-bottom:2px}
+/* callings: rank bar, stars, the heart-gem awakening */
+.bar.cp>i{background:linear-gradient(#fffbe0 0 34%,#ffd040 34% 70%,#b07010 70%)}
+.stars{display:inline-flex;gap:3px;vertical-align:1px;margin-left:2px;white-space:nowrap}
+.stars .pip{width:5px;height:5px;transform:rotate(45deg);background:#141850;box-shadow:0 0 0 1px #8088c0}
+.stars .pip.on{background:var(--gold);box-shadow:0 0 0 1px #000,inset -1px -1px 0 #b07010}
+.stars.mastered .pip.on{background:var(--yel);box-shadow:0 0 0 1px #000,0 0 3px var(--yel)}
+.cpg{color:var(--gold);font-size:8px;white-space:nowrap;display:flex;align-items:center;gap:4px}
+.callrow .t small{line-height:1.8}
+.awakewin{text-align:center}
+.awakewin p.lore{margin:6px 2px 8px}
+.heartgem{display:grid;place-items:center;height:84px}
+.heartgem img{width:60px;height:60px;image-rendering:pixelated;animation:heartbeat 1.6s ease-in-out infinite;filter:drop-shadow(0 0 6px rgba(255,240,170,.8))}
+@keyframes heartbeat{0%,100%{transform:scale(1)}12%{transform:scale(1.18)}24%{transform:scale(.96)}36%{transform:scale(1.1)}}
+.awh{text-align:center}
+.echoes{display:flex;justify-content:center;gap:10px;margin:6px 0 4px}
+.echo{display:flex;flex-direction:column;align-items:center;gap:4px;font-size:8px;opacity:0;animation:echoin 1.4s ease-out forwards}
+.echo img{width:64px;height:64px;image-rendering:pixelated}
+@keyframes echoin{0%{opacity:0;filter:brightness(3) blur(2px);transform:translateY(6px)}60%{opacity:.7;filter:brightness(1.6)}100%{opacity:1;filter:none;transform:none}}
+@media (prefers-reduced-motion:reduce){.heartgem img,.echo{animation:none;opacity:1}}

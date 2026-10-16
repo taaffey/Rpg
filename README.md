@@ -28,8 +28,15 @@ keyboard alone, or with the mouse. Options (volumes, battle speed, shake, minima
 - Crash safety: a battle error returns you to the map instead of freezing; progress is autosaved.
 
 ## How builds work (three layered systems)
-1. **Jobs** (12): every character has a *main job* and a *sub job*. The sub job contributes 40% of its stat modifiers,
-   its skills (two levels behind) and its weapon types. Change jobs in any town building.
+1. **Callings** (12, FF5-style job system): every win gives each standing hero **Calling Points** for their current
+   calling (1 per foe, more for tough ones, 10-15 for a great evil; KO'd heroes get none). Each calling has 6 **ranks**
+   (CP 0 / 6 / 18 / 45 / 80 / 130); every rank teaches one ability, rank 4 a passive **trait** (Stalwart, First Strike,
+   MP Thrift, Regen, Counter, Pre-emptive, Dark Hunger, Encore, Adrenaline, Pharmacy, Bushido, Guardian) and rank 6
+   **masters** the calling: a small stat bonus kept whatever the hero does next. Learned abilities are permanent: the
+   current calling's are always usable, plus one **second calling**'s (any calling the hero has taken up) and one extra
+   **trait** slot. Stats and weapon types come from the current calling only; character level still raises stats.
+   Change callings from the menu at any time. Six callings answer the bell; Hexer, Bard and Berserker wake with the
+   first heart-gem claimed, Alchemist, Samurai and Paladin with the second (see CALLING_BATCHES in data.js).
 2. **Weapons** (10 types, 47 weapons, tiers: Haven smithy -> Mirewood -> Frostholm forge -> chests, bosses and rare drops):
    each type grants a **signature skill** (some legendary weapons replace it with their own, e.g. Mend, Raijin, Demon Cut),
    many carry a free **innate gem**, and most have a trait: elemental attacks, extra crit, double blows, armor pierce,

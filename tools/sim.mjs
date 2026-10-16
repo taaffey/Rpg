@@ -8,9 +8,11 @@ const TIER = [
   [['mythril_sword','mythril_mail'],['sage_staff','frost_robe'],['sage_staff','yeti_fur'],['longbow','yeti_fur']],
   [['frostbrand','mythril_mail'],['lich_staff','lich_robes'],['sage_staff','yeti_fur'],['frost_bow','mythril_mail']],
 ];
-const JOBSET = [['knight','rogue'],['mage','cleric'],['cleric','bard'],['ranger','rogue']];
+const JOBSET = ['knight','mage','cleric','ranger'];
+// Calling Points a party that never changed calling has banked by this level (measured by tools/progress.mjs)
+const CP_AT = [0,0,3,8,14,22,32,40,50,60,75,95,115,130,150,170,190,210,230,250,270];
 function party(level,tier){
-  return JOBSET.map(([m,s],i)=>{ const [w,a]=TIER[tier][i]; const c=newChar('ABCD'[i],m,s,w,a,level); c.level=level; c.slots=[null,null,null,null]; learnable(c).slice(0,4).forEach((sk,k)=>c.slots[k]=sk); const st=stats(c); c.hp=st.hp;c.mp=st.mp; return c;});
+  return JOBSET.map((m,i)=>{ const [w,a]=TIER[tier][i]; const c=newChar('ABCD'[i],m,null,w,a,level); c.level=level; c.cp[m]=CP_AT[level]; c.slots=[null,null,null,null]; learnable(c).slice(-4).reverse().forEach((sk,k)=>c.slots[k]=sk); const st=stats(c); c.hp=st.hp;c.mp=st.mp; return c;});
 }
 const pick=(a,r)=>a[Math.floor(r()*a.length)];
 function bot(b,rng){

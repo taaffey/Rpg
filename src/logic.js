@@ -1,5 +1,5 @@
 // ===== Pure game logic (no DOM): stats, build rules, gem rewriting, battle engine =====
-import { JOBS, SKILLS, GEMS, WEAPONS, ARMORS, ACCS, WEAPON_TYPES, ENEMIES, ITEMS, DROPS, ELEMENTS } from './data.js';
+import { JOBS, SKILLS, GEMS, WEAPONS, ARMORS, ACCS, WEAPON_TYPES, ENEMIES, ITEMS, DROPS, ELEMENTS, TRAITS } from './data.js';
 
 export const STAT_KEYS = ['hp', 'mp', 'atk', 'def', 'mag', 'spd'];
 export const MAX_LEVEL = 20;
@@ -12,12 +12,9 @@ export const expNeeded = (lv) => EXP_TABLE[Math.max(1, Math.min(lv, EXP_TABLE.le
 
 // ---------- Character build ----------
 export function stats(c) {
-  const mj = JOBS[c.main], sj = c.sub ? JOBS[c.sub] : null, s = {};
-  for (const k of STAT_KEYS) {
-    const m = mj.mod[k] + (sj ? (sj.mod[k] - 1) * 0.4 : 0); // sub job contributes 40% of its modifiers
-    s[k] = Math.round((BASE[k] + GROW[k] * (c.level - 1)) * m);
-  }
-  for (const g of gear(c)) for (const k of STAT_KEYS) s[k] += g[k] || 0;
+  const mj = JOBS[c.main], s = {};
+  for (const k of STAT_KEYS) s[k] = Math.round((BASE[k] + GROW[k] * (c.level - 1)) * mj.mod[k]); // only the current calling shapes stats
+  for (const g of [...gear(c), ...mastered(c).map((j) => JOBS[j].master)]) for (const k of STAT_KEYS) s[k] += g[k] || 0; // gear + mastery bonuses
   if (!c.weapon && fistJob(c)) s.atk += unarmedBonus(c.level); // martial artists fight well bare-handed
   s.hp = Math.max(1, s.hp);
   return s;
@@ -30,16 +27,48 @@ export const resists = (c) => gear(c).flatMap((g) => g.res || []);
 export function weaponOk(c, wid) {
   if (!WEAPONS[wid]) return false;
   const t = WEAPONS[wid].type;
-  return JOBS[c.main].weapons.includes(t) || (!!c.sub && JOBS[c.sub].weapons.includes(t));
+  return JOBS[c.main].weapons.includes(t); // FF5-style: only the current calling's weapon types
 }
 export const sigSkill = (c) => { const w = c.weapon && WEAPONS[c.weapon]; return w ? w.sig || WEAPON_TYPES[w.type].sig : 'punch'; };
-// skills a character may slot: whole main-job list by level; sub-job skills lag 2 levels behind
-export function learnable(c) {
-  const out = [];
-  for (const [id, lv] of JOBS[c.main].skills) if (lv <= c.level) out.push(id);
-  if (c.sub) for (const [id, lv] of JOBS[c.sub].skills) if (lv + 2 <= c.level && !out.includes(id)) out.push(id);
+// ---------- Callings: ranks, learned abilities, traits (FF5 job levels) ----------
+// c.cp[job] = Calling Points earned in that calling (present = the hero has taken it, rank >= 1). CP_RANKS[r-1] = CP to reach rank r.
+// Everything learned is kept for good; the CURRENT calling's abilities plus one SECOND calling's (c.sub) can be slotted.
+export const CP_RANKS = [0, 6, 18, 45, 80, 130], MAX_RANK = CP_RANKS.length;
+export const rankOf = (c, job) => { const n = c.cp?.[job]; if (n == null) return 0; let r = 0; while (r < MAX_RANK && n >= CP_RANKS[r]) r++; return r; };
+export const cpToNext = (c, job) => { const r = rankOf(c, job); return r >= MAX_RANK ? 0 : CP_RANKS[r] - (c.cp?.[job] || 0); };
+export const mastered = (c) => Object.keys(c.cp || {}).filter((j) => JOBS[j] && rankOf(c, j) >= MAX_RANK);
+export const jobSkills = (job, rank) => JOBS[job].skills.filter(([, r]) => r <= rank).map(([id]) => id);
+export const jobTrait = (job, rank) => { const t = JOBS[job].trait; return t && t[1] <= rank ? t[0] : null; };
+export const learnedTraits = (c) => Object.keys(c.cp || {}).filter((j) => JOBS[j]).map((j) => jobTrait(j, rankOf(c, j))).filter(Boolean);
+export function activeTraits(c) { // the current calling's own trait (once learned) + the one in the trait slot
+  const own = jobTrait(c.main, rankOf(c, c.main)), out = own ? [own] : [];
+  if (c.trait && c.trait !== own && learnedTraits(c).includes(c.trait)) out.push(c.trait);
   return out;
 }
+export const secondOk = (c, job) => !!job && job !== c.main && rankOf(c, job) >= 1;
+// skills a character may slot: the current calling's learned abilities, then the second calling's
+export function learnable(c) {
+  const out = jobSkills(c.main, Math.max(1, rankOf(c, c.main)));
+  if (secondOk(c, c.sub)) for (const id of jobSkills(c.sub, rankOf(c, c.sub))) if (!out.includes(id)) out.push(id);
+  return out;
+}
+// take up a calling: level and every learned ability are kept; CP now flow to the new calling
+export function setCalling(c, job) {
+  c.cp ||= {}; c.main = job; if (c.cp[job] == null) c.cp[job] = 0;
+  if (c.sub === job) c.sub = null;
+}
+// CP to one hero's current calling. Returns the ranks gained: [{ job, rank, skills, trait, mastered }]
+export function gainCP(c, n) {
+  c.cp ||= {}; const job = c.main, before = rankOf(c, job), out = [], st0 = stats(c);
+  c.cp[job] = (c.cp[job] || 0) + Math.max(0, Math.round(n));
+  for (let r = before + 1; r <= rankOf(c, job); r++) out.push({ job, rank: r, skills: JOBS[job].skills.filter(([, k]) => k === r).map(([id]) => id), trait: JOBS[job].trait?.[1] === r ? JOBS[job].trait[0] : null, mastered: r === MAX_RANK });
+  if (out.at(-1)?.mastered) { const st1 = stats(c); if (c.hp > 0) c.hp += st1.hp - st0.hp; c.mp += st1.mp - st0.mp; } // the mastery bonus lands at once
+  return out;
+}
+export const mpCost = (x, s) => (x.tr?.has('thrift') && s.mp > 0 ? Math.max(1, Math.round(s.mp * 0.75)) : s.mp); // Mage trait: MP Thrift
+export const enemyCp = (id) => { const d = ENEMIES[id]; return d.cp ?? Math.min(4, 1 + Math.floor(d.exp / 80)); };
+// Award a battle's CP: every hero still standing gets it in full; KO'd heroes get none. Returns [{ c, cp, ranks }]
+export const awardCP = (party, cp) => party.map((c) => { const n = c.hp > 0 ? cp : 0; return { c, cp: n, ranks: n ? gainCP(c, n) : [] }; });
 export const gemCapacity = (c) => 2 + (c.extra || 0) + gear(c).reduce((n, g) => n + (g.sockets || 0), 0);
 export const gemsUsed = (c) => c.gems.reduce((n, a) => n + a.length, 0);
 export const SLOT_COUNT = 4, SIG = 4, GEMS_PER_SLOT = 3;
@@ -51,6 +80,9 @@ export function slotGems(c, i) {
 }
 // After any job/gear change, return anything that no longer fits to the inventory.
 export function sanitize(c, inv) {
+  c.cp ||= {}; if (c.cp[c.main] == null) c.cp[c.main] = 0;
+  if (c.sub && !secondOk(c, c.sub)) c.sub = null;
+  if (c.trait && !learnedTraits(c).includes(c.trait)) c.trait = null;
   if (c.weapon && !weaponOk(c, c.weapon)) { inv.weapons.push(c.weapon); c.weapon = null; }
   const ok = learnable(c);
   c.slots = c.slots.map((s) => (ok.includes(s) ? s : null));
@@ -127,9 +159,8 @@ export function describeSkill(m) {
 
 // ---------- Characters ----------
 export function newChar(name, main, sub, weapon = null, armor = null, level = 1) {
-  const c = { name, level, exp: 0, main, sub, weapon, armor, acc: null, hp: 1, mp: 1, slots: [null, null, null, null], gems: [[], [], [], [], []] };
-  const ok = learnable(c);
-  const fill = [...JOBS[main].skills.map((s) => s[0]), ...(sub ? JOBS[sub].skills.map((s) => s[0]) : [])].filter((s) => ok.includes(s));
+  const c = { name, level, exp: 0, main, sub: sub || null, trait: null, cp: { [main]: 0, ...(sub ? { [sub]: 0 } : {}) }, weapon, armor, acc: null, hp: 1, mp: 1, slots: [null, null, null, null], gems: [[], [], [], [], []] };
+  const fill = learnable(c);
   c.slots = [0, 1, 2, 3].map((i) => fill[i] || null);
   const st = stats(c); c.hp = st.hp; c.mp = st.mp;
   return c;
@@ -154,7 +185,9 @@ export function gainExp(c, amount) {
 // KO'd heroes earn half EXP: a penalty, but nobody falls hopelessly behind after one bad fight.
 export const KO_EXP_SHARE = 0.5;
 // Award a battle's EXP to the whole party. Returns one entry per hero: { c, exp, ups, learned }.
+export const ENCORE = 1.1; // Bard trait: the whole party earns 10% more EXP while a Bard with Encore stands
 export function awardExp(party, exp) {
+  if (party.some((c) => c.hp > 0 && activeTraits(c).includes('encore'))) exp = Math.round(exp * ENCORE);
   return party.map((c) => {
     const share = Math.round(exp * (c.hp > 0 ? 1 : KO_EXP_SHARE)), before = learnable(c);
     const ups = gainExp(c, share);
@@ -173,7 +206,7 @@ export class Battle {
     this.rng = rng; this.boss = boss; this.over = null; this.turn = 0; this.fx = [];
     this.p = party.map((c) => {
       const s = stats(c);
-      return { side: 'p', ch: c, wpn: WEAPONS[c.weapon] || null, sig: sigSkill(c), name: c.name, hp: c.hp, mp: c.mp, maxhp: s.hp, maxmp: s.mp, atk: s.atk, def: s.def, mag: s.mag, spd: s.spd, weak: [], res: resists(c), st: {}, defending: false };
+      return { side: 'p', ch: c, tr: new Set(activeTraits(c)), wpn: WEAPONS[c.weapon] || null, sig: sigSkill(c), name: c.name, hp: c.hp, mp: c.mp, maxhp: s.hp, maxmp: s.mp, atk: s.atk, def: s.def, mag: s.mag, spd: s.spd, weak: [], res: resists(c), st: {}, defending: false };
     });
     // rare elites: an enemy with elite: [id, chance] is occasionally replaced by its golden/crystal cousin
     enemyIds = enemyIds.map((id) => { const el = !boss && ENEMIES[id]?.elite; return el && ENEMIES[el[0]] && rng() < el[1] ? el[0] : id; });
@@ -182,10 +215,12 @@ export class Battle {
     this.e = enemyIds.map((id) => {
       const d = ENEMIES[id]; seen[id] = (seen[id] || 0) + 1;
       const name = counts[id] > 1 ? `${d.name} ${String.fromCharCode(64 + seen[id])}` : d.name;
-      return { side: 'e', id, def_: d, name, icon: d.icon, hp: Math.round(d.hp * this.mod.hp), mp: Infinity, maxhp: Math.round(d.hp * this.mod.hp), maxmp: 0, atk: Math.round(d.atk * this.mod.atk), def: Math.round(d.def * this.mod.def), mag: Math.round(d.mag * this.mod.mag), spd: d.spd, weak: d.weak, res: d.res, st: {}, defending: false };
+      return { side: 'e', tr: new Set(), id, def_: d, name, icon: d.icon, hp: Math.round(d.hp * this.mod.hp), mp: Infinity, maxhp: Math.round(d.hp * this.mod.hp), maxmp: 0, atk: Math.round(d.atk * this.mod.atk), def: Math.round(d.def * this.mod.def), mag: Math.round(d.mag * this.mod.mag), spd: d.spd, weak: d.weak, res: d.res, st: {}, defending: false };
     });
   }
   side(x) { return x.side === 'p' ? this.p : this.e; }
+  // Ranger trait: a pre-emptive strike costs the foes their first turn (rolled once, never against a boss)
+  get preempt() { if (this._pre == null) this._pre = !this.boss && this.p.some((x) => x.tr.has('preempt')) && this.rng() < 0.25; return this._pre; }
   foes(x) { return x.side === 'p' ? this.e : this.p; }
 
   enemyCmd(e) {
@@ -206,13 +241,14 @@ export class Battle {
   // Generator: yields an array of log lines after every action.
   *round(cmds) {
     this.turn++;
-    const order = [];
+    const order = [], ambush = this.turn === 1 && this.preempt;
+    if (ambush) yield ['Pre-emptive strike! The foes are caught off guard.'];
     for (const x of [...this.p, ...this.e]) {
-      if (!alive(x)) continue;
+      if (!alive(x) || (ambush && x.side === 'e')) continue;
       const cmd = x.side === 'p' ? cmds.get(x) : this.enemyCmd(x);
       if (!cmd) continue;
-      const swift = cmd.kind === 'skill' && skillWithGems(cmd.skillId, cmd.gems).swift;
-      order.push({ x, cmd, pri: (cmd.kind === 'defend' ? 2 : swift ? 1 : 0), spd: this.speed(x) });
+      const swift = cmd.kind === 'skill' && skillWithGems(cmd.skillId, cmd.gems).swift, first = this.turn === 1 && x.tr.has('firststrike');
+      order.push({ x, cmd, pri: (first ? 3 : cmd.kind === 'defend' ? 2 : swift ? 1 : 0), spd: this.speed(x) });
     }
     order.sort((a, b) => b.pri - a.pri || b.spd - a.spd);
     this.p.forEach((x) => (x.defending = false));
@@ -228,6 +264,7 @@ export class Battle {
     for (const x of [...this.p, ...this.e]) {
       if (!alive(x)) continue;
       if (x.st.poison > 0) { const d = Math.max(1, Math.round(x.maxhp * 0.07)); this.hurt(x, d, L, `${x.name} suffers poison`); this.fx.push({ t: 'poison' }); }
+      if (alive(x) && x.tr.has('regen') && x.hp < x.maxhp) { const h = Math.min(x.maxhp - x.hp, Math.max(1, Math.round(x.maxhp * 0.05))); x.hp += h; this.fx.push({ t: 'heal', name: x.name, amount: h }); L.push(`${x.name} regenerates ${h} HP.`); }
       for (const k of Object.keys(x.st)) if (k !== 'stun' && x.st[k] > 0) x.st[k]--;
     }
     this.check();
@@ -251,12 +288,12 @@ export class Battle {
         if (!this.boss && this.rng() < 0.65) { this.over = 'fled'; L.push('The party escapes!'); } else L.push('Couldn’t escape!');
         break;
       case 'item': {
-        const it = ITEMS[cmd.item]; let t = cmd.target || a;
+        const it = ITEMS[cmd.item], pot = a.tr.has('pharmacy') ? 2 : 1; let t = cmd.target || a; // Alchemist trait: double potency
         if (it.revive) { if (alive(t)) { L.push(`${a.name} fumbles the ${it.name}.`); break; } t.hp = Math.round(t.maxhp * it.revive); this.fx.push({ t: 'heal', name: t.name, amount: t.hp, revived: true }); L.push(`${a.name} revives ${t.name}!`); }
         else if (!alive(t)) { L.push(`${a.name}’s ${it.name} has no effect.`); }
         else if (it.cure) { const ks = it.cure === 'all' ? ['poison', 'slow', 'stun'] : [it.cure], had = ks.filter((k) => t.st[k] > 0); ks.forEach((k) => { t.st[k] = 0; }); L.push(had.length ? `${a.name} uses ${it.name}: ${t.name} is cured.` : `${a.name} uses ${it.name}, but nothing happens.`); if (had.length) this.fx.push({ t: 'heal', name: t.name, amount: 0 }); }
-        else if (it.heal) { const h = Math.min(it.heal, t.maxhp - t.hp); t.hp += h; this.fx.push({ t: 'heal', name: t.name, amount: h }); L.push(`${a.name} uses ${it.name}: ${t.name} +${h} HP`); }
-        else if (it.mpr) { const h = Math.min(it.mpr, t.maxmp - t.mp); t.mp += h; L.push(`${a.name} uses ${it.name}: ${t.name} +${h} MP`); }
+        else if (it.heal) { const h = Math.min(it.heal * pot, t.maxhp - t.hp); t.hp += h; this.fx.push({ t: 'heal', name: t.name, amount: h }); L.push(`${a.name} uses ${it.name}: ${t.name} +${h} HP`); }
+        else if (it.mpr) { const h = Math.min(it.mpr * pot, t.maxmp - t.mp); t.mp += h; L.push(`${a.name} uses ${it.name}: ${t.name} +${h} MP`); }
         break;
       }
       case 'skill': this.cast(a, cmd.skillId, cmd.gems || [], cmd.target, L, false, false); break;
@@ -282,13 +319,13 @@ export class Battle {
       if (f === 'slow' && alive(t)) { t.st.slow = 3; L.push(`  ${t.name} is slowed.`); }
       if (f === 'atkup') { t.st.atkup = 4; L.push(`  ${t.name}'s power rises.`); }
       if (f === 'defup') { t.st.defup = 4; L.push(`  ${t.name}'s guard rises.`); }
-      if (f === 'drain' && dealt > 0 && alive(a)) { const h = Math.min(Math.round(dealt * 0.5), a.maxhp - a.hp); if (h > 0) { a.hp += h; this.fx.push({ t: 'heal', name: a.name, amount: h }); L.push(`  ${a.name} drains ${h} HP.`); } }
+      if (f === 'drain' && dealt > 0 && alive(a)) { const h = Math.min(Math.round(dealt * (a.tr.has('hunger') ? 0.75 : 0.5)), a.maxhp - a.hp); if (h > 0) { a.hp += h; this.fx.push({ t: 'heal', name: a.name, amount: h }); L.push(`  ${a.name} drains ${h} HP.`); } }
       if (f === 'revive' && !alive(t)) { t.hp = Math.round(t.maxhp * 0.4); this.fx.push({ t: 'heal', name: t.name, amount: t.hp, revived: true }); L.push(`  ${t.name} is revived!`); }
     }
   }
   proc(a, t, [f, chance], dealt, L) { // weapon on-hit effect
     if (this.rng() >= chance) return;
-    if (f === 'drain') { if (!alive(a)) return; const h = Math.min(Math.round(dealt * 0.5), a.maxhp - a.hp); if (h > 0) { a.hp += h; this.fx.push({ t: 'heal', name: a.name, amount: h }); L.push(`  ${a.name}'s weapon drains ${h} HP.`); } return; }
+    if (f === 'drain') { if (!alive(a)) return; const h = Math.min(Math.round(dealt * (a.tr.has('hunger') ? 0.75 : 0.5)), a.maxhp - a.hp); if (h > 0) { a.hp += h; this.fx.push({ t: 'heal', name: a.name, amount: h }); L.push(`  ${a.name}'s weapon drains ${h} HP.`); } return; }
     if (!alive(t)) return;
     if (f === 'poison' && !(t.st.poison > 0)) { t.st.poison = 4; L.push(`  ${t.name} is poisoned.`); }
     else if (f === 'slow' && !(t.st.slow > 0)) { t.st.slow = 3; L.push(`  ${t.name} is slowed.`); }
@@ -298,12 +335,17 @@ export class Battle {
     const up = a.st.atkup > 0 ? 1.4 : 1, dup = t.st.defup > 0 ? 1.5 : 1;
     let raw = s.kind === 'phys' ? a.atk * up * s.pow - t.def * dup * 0.6 * (1 - s.pierce) : a.mag * up * s.pow - t.def * dup * 0.3 * (1 - s.pierce);
     raw *= (0.9 + this.rng() * 0.2) * elemMult(t, elem) * mult * (t.defending ? 0.5 : 1);
+    if (a.tr.has('adrenaline') && a.hp < a.maxhp * 0.4) raw *= 1.3; // traits (see TRAITS in data.js)
+    if (t.tr.has('stalwart')) raw *= 0.85;
+    if (t.side === 'p' && this.p.some((x) => x !== t && alive(x) && x.tr.has('guardian'))) raw *= 0.9;
     if (s.execute && t.hp < t.maxhp * 0.35) raw *= 1.6;
     this.lastCrit = !!(s.crit && this.rng() < s.crit); if (this.lastCrit) raw *= 1.8;
     return Math.max(1, Math.round(raw));
   }
   cast(a, id, gems, target, L, free, noEcho) {
     const s = a.side === 'p' ? withWeapon(skillWithGems(id, gems), a.wpn, id === 'attack', id === a.sig) : skillWithGems(id, gems);
+    s.mp = mpCost(a, s);
+    if (a.tr.has('bushido') && s.kind === 'phys') s.crit = Math.min(0.9, (s.crit || 0) + 0.1);
     if (!free && a.side === 'p') {
       if (a.mp < s.mp) { L.push(`${a.name} lacks the MP!`); return; }
       a.mp -= s.mp;
@@ -322,6 +364,9 @@ export class Battle {
           this.hurt(t, d, L, `  ${t.name} takes ${d} damage${crit ? ' CRITICAL!' : em > 1 ? ' WEAK!' : em < 1 ? ' resisted' : ''}`, em > 1 || crit);
         }
         if (s.proc && total) this.proc(a, t, s.proc, total, L);
+        if (s.kind === 'phys' && total && alive(t) && alive(a) && t.tr.has('counter') && this.rng() < 0.3) { // Monk trait
+          const cs = withWeapon(skillWithGems('attack', []), t.wpn, true, false), d = this.damage(t, a, cs, 1, cs.elem); this.hurt(a, d, L, `  ${t.name} counters! ${a.name} takes ${d}`);
+        }
         if (s.vamp && total && alive(a)) { const h = Math.min(Math.round(total * s.vamp), a.maxhp - a.hp); if (h > 0) { a.hp += h; this.fx.push({ t: 'heal', name: a.name, amount: h }); L.push(`  ${a.name} siphons ${h} HP.`); } }
         this.applyFx(a, t, s, L, total);
         if (s.stun && alive(t) && !t.def_?.boss && this.rng() < s.stun) { t.st.stun = 1; L.push(`  ${t.name} is stunned!`); }
@@ -350,8 +395,9 @@ export class Battle {
 }
 
 export function rewards(battle) {
-  const r = { exp: 0, gold: 0, drops: [] };
+  const r = { exp: 0, gold: 0, cp: 0, drops: [] };
   for (const e of battle.e) {
+    r.cp += enemyCp(e.id);
     r.exp += Math.round(e.def_.exp * battle.mod.reward); r.gold += Math.round(e.def_.gold * battle.mod.reward);
     const d = DROPS[e.id];
     if (!d) continue;

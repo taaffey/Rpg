@@ -10,7 +10,7 @@ const TABLE = process.argv[3] || 'world', LEVELS = process.argv[2] ? [+process.a
 const KIT = ['iron_sword', 'oak_staff', 'oak_staff', 'bronze_dirk'];
 let LEVEL = 1, ARMED = true;
 const mk = () => [['Aldric', 'knight', 'rogue', 'leather'], ['Lyra', 'mage', 'cleric', 'cloth'], ['Mira', 'cleric', 'bard', 'cloth'], ['Kael', 'rogue', 'ranger', 'leather']]
-  .map(([n, m, s, a], i) => newChar(n, m, s, ARMED ? KIT[i] : null, a, LEVEL));
+  .map(([n, m, , a], i) => newChar(n, m, null, ARMED ? KIT[i] : null, a, LEVEL));
 const pick = (a, r) => a[Math.floor(r() * a.length)];
 function fight(party, grp, rng) {
   const b = new Battle(party, grp, rng, false); let r = 0;

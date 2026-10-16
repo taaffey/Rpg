@@ -3,7 +3,7 @@
 // dungeon chests and fighting each boss. Prints the level reached at every stage, EXP/gold per fight, and
 // boss win rates at the arrival level. Exits non-zero if the curve drifts out of the intended bands.
 // usage: node tools/progress.mjs [runs=24] [verbose]
-import { Battle, newChar, stats, slotSkill, slotGems, skillWithGems, SIG, learnable, rewards, awardExp, expNeeded, MAX_LEVEL } from '../src/logic.js';
+import { Battle, newChar, stats, slotSkill, slotGems, skillWithGems, SIG, learnable, rewards, awardExp, awardCP, rankOf, expNeeded, MAX_LEVEL } from '../src/logic.js';
 import { ENCOUNTERS, WEAPONS, ARMORS, ACCS, ITEMS, DIFFICULTY } from '../src/data.js';
 function mulberry(a){return()=>{a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
 const RUNS = +process.argv[2] || 24, VERBOSE = process.argv.includes('verbose');
@@ -25,16 +25,10 @@ const ROUTE = [
   { name: 'Storm Cavern (opt.)', table: 'storm', fights: 6, boss: 'storm_drake', bossWant: [11, 20], want: [17, 20] },
   { name: 'Sunscar Ruins (opt.)', table: 'ruins', fights: 6, boss: 'sphinx', bossWant: [11, 20], want: [17, 20] },
 ];
-const JOBSET = [['Aldric', 'knight', 'rogue', 'leather'], ['Lyra', 'mage', 'cleric', 'cloth'], ['Mira', 'cleric', 'bard', 'cloth'], ['Kael', 'rogue', 'ranger', 'leather']];
-// a sensible player keeps their newest main-job skills slotted, plus the newest sub-job one
-function reslot(c) {
-  const ok = learnable(c), mains = ok.filter((id) => c.main && ok.includes(id) && learnableMain(c).includes(id)), subs = ok.filter((id) => !mains.includes(id));
-  const pickS = [...mains.slice(-3).reverse(), ...subs.slice(-1)];
-  for (const id of [...mains].reverse()) if (pickS.length < 4 && !pickS.includes(id)) pickS.push(id);
-  c.slots = [0, 1, 2, 3].map((i) => pickS[i] || null);
-}
-import { JOBS } from '../src/data.js';
-const learnableMain = (c) => JOBS[c.main].skills.filter(([, lv]) => lv <= c.level).map(([id]) => id);
+// the party never changes calling: skills come only from that calling's ranks (Calling Points), like an FF5 party that stays put
+const JOBSET = [['Aldric', 'knight', 'leather'], ['Lyra', 'mage', 'cloth'], ['Mira', 'cleric', 'cloth'], ['Kael', 'rogue', 'leather']];
+// a sensible player keeps their newest four abilities slotted
+function reslot(c) { const ok = learnable(c); c.slots = [0, 1, 2, 3].map((i) => ok.slice(-4).reverse()[i] || null); }
 function bot(b, rng) {
   const cmds = new Map();
   for (const p of b.p.filter((x) => x.hp > 0)) {
@@ -74,11 +68,11 @@ function bossTrial(party, boss, n, seed) {
   let w = 0; for (let k = 0; k < n; k++) { const ps = clone(party); heal(ps); const b = fight(ps, [boss], mulberry(seed + k * 101), boss); if (b.over === 'win') w++; } return w / n;
 }
 
-const agg = ROUTE.map(() => ({ lv: 0, end: 0, wins: 0, fights: 0, exp: 0, gold: 0, bossLv: 0, bossWin: 0, drops: 0, rares: 0, goldEnd: 0 }));
+const agg = ROUTE.map(() => ({ rank: 0, cp: 0, lv: 0, end: 0, wins: 0, fights: 0, exp: 0, gold: 0, bossLv: 0, bossWin: 0, drops: 0, rares: 0, goldEnd: 0 }));
 let firstRunLog = [];
 for (let run = 0; run < RUNS; run++) {
   const rng = mulberry(run * 7919 + 13), log = [];
-  const party = JOBSET.map(([n, m, s, a]) => newChar(n, m, s, null, a, 1)); party.forEach(reslot); heal(party);
+  const party = JOBSET.map(([n, m, a]) => newChar(n, m, null, null, a, 1)); party.forEach(reslot); heal(party);
   const G = { gold: 400, potions: 0 };
   ROUTE.forEach((st, si) => {
     const A = agg[si]; log.push(`== ${st.name} (arrive avg Lv ${avgLv(party).toFixed(1)}, ${G.gold}G)`);
@@ -91,7 +85,7 @@ for (let run = 0; run < RUNS; run++) {
       if (st.ramp) tb = tb.slice(0, Math.min(tb.length, 2 + Math.floor(f / 2))); // the encounter ramp around Haven
       const b = fight(party, pick(tb, rng), rng);
       A.fights++;
-      if (b.over === 'win') { A.wins++; const r = rewards(b); A.exp += r.exp; A.gold += r.gold; G.gold += r.gold; A.drops += r.drops.length; A.rares += r.drops.filter((d) => d.rare).length; awardExp(party, r.exp); party.forEach(reslot); }
+      if (b.over === 'win') { A.wins++; const r = rewards(b); A.exp += r.exp; A.gold += r.gold; G.gold += r.gold; A.drops += r.drops.length; A.rares += r.drops.filter((d) => d.rare).length; awardExp(party, r.exp); A.cp += r.cp; awardCP(party, r.cp); party.forEach(reslot); }
       if (f % 3 === 2 || party.some((c) => c.hp <= 0)) heal(party); // walk back to an inn / use items between fights
     }
     equip(party, st.loot, null, false, G, log);
@@ -99,22 +93,22 @@ for (let run = 0; run < RUNS; run++) {
       heal(party); A.bossLv += avgLv(party);
       A.bossWin += bossTrial(party, st.boss, 40, run * 31 + si);
       const b = fight(party, [st.boss], rng, st.boss); // the real attempt (its EXP counts only on a win)
-      const r = b.over === 'win' ? rewards(b) : { exp: 0, gold: 0 }; heal(party); awardExp(party, r.exp); G.gold += r.gold; party.forEach(reslot);
+      const r = b.over === 'win' ? rewards(b) : { exp: 0, gold: 0 }; heal(party); awardExp(party, r.exp); awardCP(party, r.cp || 0); G.gold += r.gold; party.forEach(reslot);
       log.push(`  boss ${st.boss}: ${b.over}`);
     }
-    A.end += avgLv(party); A.goldEnd += G.gold;
+    A.end += avgLv(party); A.goldEnd += G.gold; A.rank += party.reduce((n, c) => n + rankOf(c, c.main), 0) / party.length;
   });
   if (run === 0) firstRunLog = log;
 }
 if (VERBOSE) console.log(firstRunLog.join('\n'));
 console.log(`progression sim: ${RUNS} playthroughs, difficulty ${DIFF}, unarmed level-1 start with 400G`);
-console.log('stage'.padEnd(22), 'arrive  leave  want    fights win%  exp/fight gold/fight drops/fight rare%  gold-left  boss@Lv  boss win%');
+console.log('stage'.padEnd(22), 'arrive  leave  want  rank cp/fight  fights win%  exp/fight gold/fight drops/fight rare%  gold-left  boss@Lv  boss win%');
 let bad = 0;
 ROUTE.forEach((st, i) => {
   const A = agg[i], arrive = A.lv / RUNS, leave = A.end / RUNS, bossLv = A.bossLv / RUNS, bw = A.bossWin / RUNS;
   const okLeave = DIFF !== 'normal' || (leave >= st.want[0] - 0.5 && leave <= st.want[1] + 0.5), okBoss = DIFF !== 'normal' || !st.boss || (bossLv >= st.bossWant[0] - 0.5 && bossLv <= st.bossWant[1] + 0.5 && bw >= 0.5);
   if (!okLeave || !okBoss) bad++;
-  console.log(st.name.padEnd(22), arrive.toFixed(1).padStart(6), leave.toFixed(1).padStart(6), `${st.want[0]}-${st.want[1]}`.padStart(6),
+  console.log(st.name.padEnd(22), arrive.toFixed(1).padStart(6), leave.toFixed(1).padStart(6), `${st.want[0]}-${st.want[1]}`.padStart(6), (A.rank / RUNS).toFixed(1).padStart(5), (A.cp / Math.max(1, A.wins)).toFixed(1).padStart(9),
     String(A.fights / RUNS).padStart(7), (A.wins / A.fights * 100).toFixed(0).padStart(5), (A.exp / Math.max(1, A.wins)).toFixed(0).padStart(10), (A.gold / Math.max(1, A.wins)).toFixed(0).padStart(10),
     (A.drops / Math.max(1, A.wins)).toFixed(2).padStart(11), (A.rares / Math.max(1, A.drops) * 100).toFixed(0).padStart(6), (A.goldEnd / RUNS).toFixed(0).padStart(10),
     st.boss ? `${st.boss} ${bossLv.toFixed(1)}`.padStart(16) : ''.padStart(16), st.boss ? (bw * 100).toFixed(0).padStart(7) : '', okLeave && okBoss ? '' : '  <-- out of band');
