@@ -7,6 +7,7 @@ import { JOBS, SKILLS, ENEMIES, ENCOUNTERS, DROPS, BOSSES, STORY } from './data.
 import { MAPS } from './maps.js';
 
 // ---------------------------------------------------------------- the party
+// Adam: the older brother, calm and genuinely the wiser one (the straight man). Devon: the younger, chaotic, sweet, overconfident.
 // look: art key suffix (job@look) and scene speaker id. Locals join with a calling of their own.
 export const BROS = [['Adam', 'adam'], ['Devon', 'devon']];
 export const LOCALS = {
@@ -76,19 +77,19 @@ for (const k of ['16,33', '17,33', '18,33']) if (MAPS.haven.portals[k]) Object.a
 // The prologue, told over the pub illustrations (pubart.js); {pub} lines are [variant, title, text].
 export const PUB = [
   ['pub', 'The Bell & Anvil', 'Quiz night, 2026. The Bell & Anvil. Two brothers, two beards, one answer sheet with mostly crossings-out.'],
-  ['pub', 'Round Seven', 'ADAM: "Capital of Australia." DEVON: "Sydney." ADAM: "It\'s not Sydney." DEVON: "Write Sydney, bro. Trust the beard."'],
+  ['pub', 'Round Seven', 'ADAM: "Capital of Australia." DEVON: "Sydney." ADAM: "Canberra." DEVON: "Write Sydney, bro. Trust the beard." Adam writes Canberra.'],
   ['ring', 'The Bell', 'Behind the bar hangs a brass bell the landlord bought at a car-boot sale. Devon reaches up. "A ROUND FOR THE HOUSE!"'],
   ['flash', '...', 'Nobody agreed to pay for that round. Nobody gets the chance to. The bell rings once, and keeps ringing, a thousand years deep.'],
 ];
 export const WAKE = [
   { s: 'n', t: 'Hay. Sunlight. A goat, eating Devon\'s shoelace.' },
   { s: 'devon', t: 'Bro. BRO. We\'re in a video game.' },
-  { s: 'adam', t: 'We are not in a video game. We are... in a hay cart. In some sort of Renaissance fair. That I did not pay for.' },
+  { s: 'adam', t: 'We are not in a video game. Check your phone. ...No signal, no date, no pub. Right. Nobody panic. Especially you.' },
   { s: 'elder', t: 'It worked! The bell! After three hundred years, the heroes of legend have... oh.' },
   { s: 'elder', t: 'I rang for the heroes of legend. Four of them. In shining armour. You are two men in what appear to be blankets with sleeves.' },
   { s: 'devon', t: 'It\'s a hoodie. It\'s got a pocket. Look. Pocket.' },
   { s: 'elder', t: 'I am Elder Mott. Three ancient evils are waking, the realm is doomed, and the bell has sent me... these.' },
-  { s: 'adam', t: 'Lovely. Can you un-ring it? I\'ve got a parking ticket at the pub and work on Monday.' },
+  { s: 'adam', t: 'Fair enough. Mistakes were made. Mostly by him. So how do we get home?' },
   { s: 'elder', t: 'The bell rings for those who set right Gemforge\'s seals. Slay the three evils and perhaps it will ring for you again.' },
   { s: 'devon', t: 'Main quest unlocked. Let\'s GO.' },
   { s: 'elder', t: 'You have no calling, no weapons and no idea. Prove you can swing a fist first. The Gilded Goose has a slime problem.' },
@@ -112,7 +113,7 @@ export const GARY_DOWN = [
 ];
 export const CALLED = [
   { s: 'guildmaster', t: 'Right. Callings. No, "influencer" is not one. Neither is "IT support".' },
-  { s: 'adam', t: 'It\'s basically wizardry. You\'d be amazed what turning things off and on again fixes.' },
+  { s: 'adam', t: 'Whatever keeps him alive. I\'ve been doing that job for free since he was four.' },
 ];
 export const CALLED_AFTER = [
   { s: 'guildmaster', t: 'There. Every battle teaches a calling something, and what you learn you keep. Change any time; I won\'t be offended.' },

@@ -3,7 +3,7 @@
 A turn-based JRPG in the spirit of Final Fantasy 1, 5 and Dragon Warrior, built around deep build customization.
 
 ## The story
-Quiz night, 2026, at The Bell & Anvil. Brothers **Adam** and **Devon**, two beards and one answer sheet, ring the old brass bell
+Quiz night, 2026, at The Bell & Anvil. Brothers **Adam** (older, wiser) and **Devon** (younger, louder), ring the old brass bell
 behind the bar ("A round for the house!") and wake up in a hay cart in Haven, a thousand years in the past. Elder Mott rang the
 same bell to summon the heroes of legend. He got two blokes in hoodies. To get home, they have to put right Gemforge's three seals.
 
