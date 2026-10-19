@@ -1046,14 +1046,14 @@ Object.assign(HAIR, {
 });
 Object.assign(HEADS, {
   beanie: { // ribbed knit beanie (Devon, 2026)
-    down: [P(0, 0, ['......KCCc......', '....KCCCCCCc....', '...KCCCCCCCCc...', '..KCCCCCCCCCCc..', '..CCCCCCCCCCCcv.', '.KCKCKCKCKCKCcv.', '.cvcvcvcvcvcvvv.'])],
-    up: [P(0, 0, ['......KCCc......', '....KCCCCCCc....', '...KCCCCCCCCc...', '..KCCCCCCCCCCc..', '..CCCCCCCCCCCcv.', '.KCKCKCKCKCKCcv.', '.cvcvcvcvcvcvvv.'])],
-    right: [P(0, 0, ['.....KCCCc......', '...KCCCCCCCc....', '..KCCCCCCCCCc...', '.KCCCCCCCCCCCc..', '.CCCCCCCCCCCCcv.', '.KCKCKCKCKCKCcv.', '.cvcvcvcvcvcvvv.'])],
+    down: [P(0, -1, ['________________', '______KCCc______', '____KCCCCCCc____', '...KCCCCCCCCc...', '..KCCCCCCCCCCc..', '..CCCCCCCCCCCcv.', '.KCKCKCKCKCKCcv.', '.cvcvcvcvcvcvvv.'])],
+    up: [P(0, -1, ['________________', '______KCCc______', '____KCCCCCCc____', '...KCCCCCCCCc...', '..KCCCCCCCCCCc..', '..CCCCCCCCCCCcv.', '.KCKCKCKCKCKCcv.', '.cvcvcvcvcvcvvv.'])],
+    right: [P(0, -1, ['________________', '_____KCCCc______', '___KCCCCCCCc____', '..KCCCCCCCCCc...', '.KCCCCCCCCCCCc..', '.CCCCCCCCCCCCcv.', '.KCKCKCKCKCKCcv.', '.cvcvcvcvcvcvvv.'])],
   },
   beardAdam: { // full, neat dark beard: sideburns, moustache, 2 rows below the mouth
-    down: [P(0, 8, ['...h........h...', '...hH......Hh...', '...hHYYHHYYHh...', '....hHHooHHh....', '.....hHHHHh.....', '......hhjj......'])],
+    down: [P(0, 8, ['...4........4...', '...hH......Hh...', '...hHYYHHYYHh...', '....hHHooHHh....', '.....hHHHHh.....', '......hhjj......'])],
     up: [],
-    right: [P(0, 8, ['........h.......', '........hH......', '.......hHHHYYH..', '.......hHHHHoHh.', '........hHHHHh..', '.........hhjj...'])],
+    right: [P(0, 8, ['........4.......', '........hH......', '.......hHHHYYH..', '.......hHHHHoHh.', '........hHHHHh..', '.........hhjj...'])],
   },
   beardDevon: { // huge bushy beard, almost to the belt
     down: [P(0, 7, ['..h..........h..', '..hH........Hh..', '..HHh......hHh..', '..HHHYYHHYYHHh..', '..YHHHHooHHHHh..', '...HHHHHHHHHh...', '...YHHHHHHHHh...', '...hHHHHHHHhh...', '....hHHHHHhj....', '.....jhHhhj.....'])],
@@ -1071,6 +1071,7 @@ Object.assign(HEADS, {
     up: [],
     right: [P(0, 6, ['.........HYHh...', '.........Hh.....'])],
   },
+  temples: { down: [P(0, 6, ['..4..........4..', '..4..........4..'])], up: [P(0, 6, ['.4............4.'])], right: [P(0, 6, ['..4.............', '..4.............'])] }, // Adam: first grey at the temples
   freckles: { down: [P(0, 9, ['....x......x....'])], up: [], right: [P(0, 9, ['..........x.....'])] },
 });
 Object.assign(PROPS, {
@@ -1112,7 +1113,7 @@ export const OUTFITS = {
 // per-person looks: hair = HAIR key used where the calling shows hair; face = head parts always added (beards show under helmets);
 // open = parts added only when the calling wears nothing on the head; hood = parts added under a hood
 export const LOOKS = {
-  adam: { hair: 'short', face: ['beardAdam'], ramps: { H: '#5a3a22', S: ['#ffe2c4', '#f3bf92', '#d08d64', '#9a5c40'] } },
+  adam: { hair: 'short', face: ['beardAdam'], open: ['temples'], spec: { 4: '#b4aca8' }, ramps: { H: '#5a3a22', S: ['#ffe2c4', '#f3bf92', '#d08d64', '#9a5c40'] } },
   devon: { hair: 'messy', face: ['beardDevon'], open: ['freckles'], ramps: { H: '#d0702c', S: DEVON_SKIN } },
   brenna: { hair: 'long', open: ['bun'], hood: ['fringe'], ramps: { H: '#a8462a', S: ['#ffe4cc', '#f4c39c', '#d4906a', '#9e5e44'] }, spec: { 1: '#2e7a5a' } },
   wendell: { hair: 'bald', face: ['walrus'], open: ['brows'], ramps: { H: '#e4e4ec', S: ['#ffdcc0', '#f0b48e', '#cc8460', '#965638'] } },
