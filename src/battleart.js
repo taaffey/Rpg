@@ -181,6 +181,12 @@ const HEADS = {
   helm: { ax: 6, rows: ['....AA....', '...HHAa...', '..HHHHAa..', '.HWHHhhAa.', 'HWHHhhhhj.', 'HHHhhhhhjj', 'jjjjhhhhjj', 'FeFFjhhhj.', 'FFFfjhhj..', '.jhhhhj...'] },
   hood: { ax: 6, rows: ['...HHHH...', '..HHHHhhh.', '.HHWhhhhhj', 'HHHhhhhhjj', 'HjjFFFjhjj', 'HjFFFfjhjj', 'jFeFFfjhjj', 'FFeFfgjhj.', '.FFfgjhhj.', '..gjjhhjj.'] },
   hat: { ax: 6, rows: ['........Hj.', '.......HHj.', '......HHhj.', '.....HWhhj.', '....HHhhhj.', '...HHAAAAj.', 'HHHHhhhhhhj', '.jjFFFRrrr.', '..FeFFfRrr.', '.FFeFfgRr..', '..FFfgRr...', '...fgg.....'] },
+  // ----- Bearded Bros looks (hair in H h j W; R r = hair poking out of a beanie or a bald man's fringe) -----
+  short: { ax: 6, rows: ['..HHHHH...', '.HWHHhhhh.', 'HWHhhhhhhj', 'HHhhhhhhjj', 'hFFFhhhhjj', 'FeFFfghhj.', 'FeFFfgjhj.', '.FFffgj...', '..fgg.....'] },
+  messy: { ax: 6, rows: ['.H..H.H...', '..HHHHHHh.', '.HWHHhhhhj', 'HWHhhhhhhj', 'HHhhhhhhjj', 'hFhFhhhhjj', 'FeFFfghhjj', 'FeFFfgjhj.', '.FFffgj...', '..fgg.....'] },
+  beanie: { ax: 6, rows: ['...HHHH...', '..HWHHhhh.', '.HWHhhhhhj', 'HWHhhhhhhj', 'jhjhjhjhjj', 'RFFFFRrrr.', 'FeFFfgRrr.', 'FeFFfgrr..', '.FFffgr...', '..fgg.....'] },
+  bun: { ax: 6, rows: ['......HHh.', '.....HWhhj', '...HHHhhj.', '.HHWhhhhh.', 'HHhhhhhhjj', 'hFFFFhhhjj', 'FeFFfghjj.', 'FeFFfgjhj.', '.FFffgjj..', '..fgg.....'] },
+  bald: { ax: 6, rows: ['...FFFF...', '.FFFFFffg.', 'FFFFFfffgg', 'FFFfffffgg', 'FFFFffrRrg', 'FeFFfgRrr.', 'FeFFfgRr..', '.FFffgr...', '..fgg.....'] },
   cap: { ax: 6, rows: ['.......A..', '......Aa..', '...HHHHa..', '.HHWHHhhh.', 'HHHHhhhhhj', 'jjFFFRrrr.', '.FFFFfRrr.', 'FeFFfgRr..', 'FeFffgr...', '.FFfgg....', '..fg......'] },
 };
 const JOBART = {
@@ -196,14 +202,40 @@ const JOBART = {
   alchemist: { head: 'hood', body: 'robe', weapon: 'flask' },
   samurai: { head: 'topknot', body: 'gi', weapon: 'katana' },
   paladin: { head: 'helm', body: 'armor', weapon: 'sword', cape: true, metalHead: true },
+  bloke: { head: 'short', body: 'tunic', weapon: 'fists' }, // jobless 2026 bloke: bare fists
 };
+// ---------- Bearded Bros: per-person looks over any calling ('job@look') + the modern outfits ----------
+// head: replaces hair-only heads (spiky / topknot / the bloke's); hats and hoods keep their shape but take the look's hair colour
+const BA_LOOKS = {
+  adam: { head: 'short', hair: '#5a3a22', skin: '#f2c8a2', beard: 'adam', beardCol: '#5a3a22' },
+  devon: { head: 'messy', hair: '#d0702c', skin: '#f6caa4', beard: 'devon', beardCol: '#d0702c' },
+  brenna: { head: 'bun', hair: '#a8462a', skin: '#f4c8a2', fringe: true },
+  wendell: { head: 'bald', hair: '#e4e4ec', skin: '#f0bc98', beard: 'walrus', beardCol: '#e4e4ec' },
+};
+const HAIR_HEADS = new Set(['spiky', 'topknot', 'short']);
+// shirt, legs (jeans/shorts), shin ('legs' or bare 'skin'), shoes, belt; plaid = check shirt; tee = open shirt front; short = short sleeves
+const BA_OUTFITS = {
+  bloke: { shirt: '#8a8e98', legs: '#3e5a92', shin: 'legs', shoe: '#e6e6ee', belt: '#3a3036', short: true },
+  'bloke@adam': { shirt: '#b8323a', legs: '#3e5a92', shin: 'legs', shoe: '#ecebf2', belt: '#2a2228', plaid: true, tee: '#2c2a34' },
+  'bloke@devon': { shirt: '#2c3c72', legs: '#b8a274', shin: 'skin', shoe: '#c8ccd6', belt: '#8a7650', hood: true, logo: '#f4d35e', head: 'beanie', hat: '#8e9098' },
+};
+// beard stamps, facing left: rows from (mouth row + dy0), column 0 = front-most face pixel + dx0. L hi, B mid, b shade, d deep, o mouth, g grey
+const BEARDS = {
+  adam: { dx0: -1, dy0: -2, rows: ['.....g', '....bb', '.LLBBb', 'BBoBBb', 'BBBBbd', '.BBbd.'] },
+  devon: { dx0: -2, dy0: -2, rows: ['.......b', '.....Bbb', '.LLLBBbb', 'LBBoBBBb', 'BBBBBBbd', 'BBLBBBbd', '.BBBBbd.', '.BBBbbd.', '..BBbd..', '..bdd...'] },
+  walrus: { dx0: -2, dy0: -2, rows: ['......BB', '.....BBb', 'LLLLBBBb', 'bBBbb.Bb', 'b.b...b.'] },
+};
+export function parseKey(key) { const [job, look] = String(key || '').split('@'); return { job, look: BA_LOOKS[look] ? look : null }; }
 const DEF_STYLE = ['hair', '#8a5a30', '#55341c', '#6a8ac0', '#4a6a98', '#f2f2f2', '#f0c8a0'];
-function heroMats(job) {
-  const [, H, , T, t, A, F] = HERO_STYLE[job] || DEF_STYLE, ja = JOBART[job] || JOBART.knight;
-  const hatCol = ja.hatFrom === 'T' ? T : H, metal = ja.metalHead;
-  return {
+function heroMats(job, LK, O) {
+  let [, H, , T, t, A, F] = HERO_STYLE[job] || DEF_STYLE; const ja = JOBART[job] || JOBART.knight;
+  if (O) { T = O.shirt; A = O.belt; }
+  let hatCol = ja.hatFrom === 'T' ? T : H, hairCol = ja.hair || (ja.hatFrom === 'T' ? H : '#6a4428'); const metal = ja.metalHead;
+  if (LK) { F = LK.skin; hairCol = LK.hair; if (HAIR_HEADS.has(ja.head)) hatCol = LK.hair; }
+  if (O && O.hat) hatCol = O.hat;
+  const m = {
     hat: { r: R(hatCol, 5, metal ? { hi: 0.8, lo: 0.25 } : undefined), spec: metal ? '#ffffff' : undefined },
-    hair: { r: R(ja.hair || (ja.hatFrom === 'T' ? H : '#6a4428'), 4) },
+    hair: { r: R(hairCol, 4) },
     tunic: { r: R(T, 5), tex: ja.body === 'robe' || ja.body === 'gi' ? (x) => ((x % 3) === 0 ? -0.06 : 0) : undefined },
     tunic2: { r: R(t, 4) },
     acc: { r: R(A, 4, { hi: 0.6 }) },
@@ -214,6 +246,14 @@ function heroMats(job) {
     gem: { r: R(A === '#f2f2f2' ? '#7fd8f0' : A, 4, { hi: 0.9 }), glow: true, lift: 0.15 },
     paper: { r: R('#e8e0c8', 3) },
   };
+  if (O) {
+    m.tunic = { r: R(T, 5), tex: O.plaid ? (x, y) => { const a = x % 3 === 0, b = (y + 1) % 3 === 0; return a && b ? -0.75 : a || b ? -0.36 : 0; } : undefined };
+    m.legs = { r: R(O.legs, 5), tex: O.shin === 'legs' ? (x, y) => (hash(x, y, 31) < 0.12 ? -0.1 : 0) : undefined };
+    m.boots = { r: R(O.shoe, 4, { lo: 0.5 }) };
+    if (O.tee) m.tee = { r: R(O.tee, 3) };
+  }
+  if (LK && LK.beardCol) m.beard = { r: R(LK.beardCol, 4, { lo: 0.42 }) };
+  return m;
 }
 const D2R = Math.PI / 180;
 function basePose() {
@@ -246,7 +286,7 @@ function heroPose(name, wtype) {
   return J;
 }
 const add = (a, b, k = 1) => [a[0] + b[0] * k, a[1] + b[1] * k];
-function weaponParts(type, hand, ang, pose) {
+function weaponParts(type, hand, ang, pose, fist = 'acc') {
   const d = [Math.cos(ang * D2R), Math.sin(ang * D2R)], p = [-d[1], d[0]], P = [], Z = 12;
   const C = (a, b, r1, r2, m, z = Z) => P.push(cap(a[0], a[1], b[0], b[1], r1, r2, m, { z }));
   switch (type) {
@@ -260,24 +300,28 @@ function weaponParts(type, hand, ang, pose) {
     case 'flask': C(add(hand, [0, -1.6]), add(hand, [0, -4]), 0.55, 0.55, 'paper'); P.push(ell(hand[0], hand[1] - 0.6, 1.9, 1.8, 'gem', { z: Z })); break;
     case 'bow': { const pts = []; for (let k = -4; k <= 4; k++) { const t = k / 4; pts.push(add(add(hand, [0, 1], t * 6.5), [-1, 0], (1 - t * t) * 2.2)); } for (let k = 0; k < pts.length - 1; k++) C(pts[k], pts[k + 1], 0.55, 0.55, 'wood'); break; }
     case 'whip': { C(add(hand, d, -1), add(hand, d, 2.2), 0.6, 0.55, 'wood'); const len = pose === 'strike' ? 15 : 7, droop = pose === 'strike' ? 0.5 : 2.4; let q = add(hand, d, 2.2); for (let k = 1; k <= 7; k++) { const t = k / 7, n = add(add(add(hand, d, 2.2 + len * t), [0, 1], droop * t * t * 3), p, Math.sin(t * 7) * 0.9); C(q, n, 0.45, 0.4, 'boots'); q = n; } break; }
-    case 'fists': P.push(ell(hand[0], hand[1], 1.5, 1.4, 'acc', { z: Z })); break;
+    case 'fists': P.push(ell(hand[0], hand[1], 1.5, 1.4, fist, { z: Z })); break;
     case 'scythe': { C(add(hand, d, -5), add(hand, d, 10), 0.62, 0.6, 'wood'); const e = add(hand, d, 9.6), q = [-p[0], -p[1]]; P.push(poly([add(e, d, 1), add(add(e, q, 5), d, 0.2), add(add(e, q, 8.5), d, -2.4), add(add(e, q, 5), d, -1.4), add(e, d, -0.8)], 'steel', { z: Z + 1, bev: 1 })); break; }
     default: break;
   }
   return P;
 }
-function heroSpec(job, poseName, wover) {
+function heroSpec(job, poseName, wover, look = null, key = job) {
   const ja = { ...(JOBART[job] || JOBART.knight) }; if (wover) ja.weapon = wover;
-  const mats = heroMats(job), J = heroPose(poseName, ja.weapon), parts = [];
+  const LK = look ? BA_LOOKS[look] : null, O = BA_OUTFITS[key] || BA_OUTFITS[job] || null;
+  if (LK && HAIR_HEADS.has(ja.head)) ja.head = LK.head;
+  if (O && O.head) ja.head = O.head;
+  const mats = heroMats(job, LK, O), J = heroPose(poseName, ja.weapon), parts = [];
   const C = (a, b, r1, r2, m, z) => parts.push(cap(a[0], a[1], b[0], b[1], r1, r2, m, { z }));
-  const sleeve = ja.bare ? 'skin' : ja.body === 'robe' ? 'tunic' : ja.body === 'armor' ? 'tunic' : 'tunic2';
+  const sleeve = O ? 'tunic' : ja.bare ? 'skin' : ja.body === 'robe' ? 'tunic' : ja.body === 'armor' ? 'tunic' : 'tunic2', fore = O && O.short ? 'skin' : ja.bare ? 'skin' : sleeve;
+  const shin = O ? O.shin : 'boots', fist = O ? 'skin' : 'acc';
   // cape / scarf (behind everything)
   if (ja.cape) parts.push(poly([add(J.neck, [0.4, 0.2]), add(J.neck, [3.4, 0.6]), [J.hipB[0] + 5.2, J.ankB[1] - 3.2], [J.hipB[0] + 1.6, J.ankB[1] - 2.2]], 'tunic2', { z: -6, bev: 1.4 }));
   if (ja.scarf) parts.push(poly([add(J.neck, [0.5, -0.6]), add(J.neck, [5.6, 0.6]), add(J.neck, [6.4, 3.4]), add(J.neck, [1.6, 1.4])], 'acc', { z: -6, bev: 1 }));
   // back arm, back leg
-  C(J.shB, J.elB, 1.25, 1.15, sleeve, -2); C(J.elB, J.haB, 1.15, 1.0, ja.bare ? 'skin' : sleeve, -2); parts.push(ell(J.haB[0], J.haB[1], 1.15, 1.15, 'skin', { z: -1.5 }));
-  const legM = ja.body === 'armor' ? 'tunic2' : ja.body === 'bare' ? 'tunic2' : 'tunic2';
-  C(J.hipB, J.kneeB, 1.5, 1.35, legM, -3); C(J.kneeB, J.ankB, 1.35, 1.2, 'boots', -3); parts.push(ell(J.ankB[0] - 1.2, J.ankB[1] + 0.9, 2, 1.15, 'boots', { z: -3, d: 0.7 }));
+  C(J.shB, J.elB, 1.25, 1.15, sleeve, -2); C(J.elB, J.haB, 1.15, 1.0, fore, -2); parts.push(ell(J.haB[0], J.haB[1], 1.15, 1.15, 'skin', { z: -1.5 }));
+  const legM = O ? 'legs' : 'tunic2';
+  C(J.hipB, J.kneeB, 1.5, 1.35, legM, -3); C(J.kneeB, J.ankB, O && O.shin === 'skin' ? 1.1 : 1.35, 1.2, shin, -3); parts.push(ell(J.ankB[0] - 1.2, J.ankB[1] + 0.9, 2, 1.15, 'boots', { z: -3, d: 0.7 }));
   // torso
   if (ja.body === 'robe') {
     const hem = Math.max(J.ankF[1], J.ankB[1]) + 0.6, mx = (J.ankF[0] + J.ankB[0]) / 2;
@@ -292,16 +336,18 @@ function heroSpec(job, poseName, wover) {
     if (ja.body === 'gi') { const top = [J.hipF[0] - 1.2, J.hipF[1] - 0.6], top2 = [J.hipB[0] + 1.3, J.hipB[1] - 0.6]; parts.push(poly([top, top2, [J.ankB[0] + 2.4, J.ankB[1] - 0.6], [J.ankF[0] - 2.3, J.ankF[1] - 0.6]], 'tunic2', { z: 0.5, bev: 1.8 })); }
   }
   // front leg
-  if (ja.body !== 'robe') { C(J.hipF, J.kneeF, 1.55, 1.4, legM, 0.5); C(J.kneeF, J.ankF, 1.4, 1.25, 'boots', 0.6); }
+  if (ja.body !== 'robe') { C(J.hipF, J.kneeF, 1.55, 1.4, legM, 0.5); C(J.kneeF, J.ankF, O && O.shin === 'skin' ? 1.15 : 1.4, 1.25, shin, 0.6); }
+  if (O && O.tee) parts.push(paint(cap(J.chest[0] - 2.7, J.chest[1] - 2.2, J.belly[0] - 2.5, J.belly[1] + 0.2, 0.75, 0.75, 'tee')));
+  if (O && O.hood) parts.push(ell(J.neck[0] + 1.8, J.neck[1] + 0.8, 2.3, 1.7, 'tunic', { z: 2.6 }));
   parts.push(ell(J.ankF[0] - 1.2, J.ankF[1] + 0.9, 2.1, 1.15, 'boots', { z: 0.8, d: 0.7 }));
   if (ja.body === 'armor') parts.push(ell(J.shF[0] + 0.6, J.shF[1] - 0.2, 2.4, 1.9, 'hat', { z: 6, d: 0.8 }));
   // weapon in the back hand goes behind the front arm; front hand weapon in front
   const hand = J.wHand === 'F' ? J.haF : J.haB;
   // front arm
-  C(J.shF, J.elF, 1.3, 1.2, sleeve, 5); C(J.elF, J.haF, 1.2, 1.05, ja.bare ? 'skin' : sleeve, 5.5);
-  parts.push(...weaponParts(ja.weapon, hand, J.wAng, poseName));
+  C(J.shF, J.elF, 1.3, 1.2, sleeve, 5); C(J.elF, J.haF, 1.2, 1.05, fore, 5.5);
+  parts.push(...weaponParts(ja.weapon, hand, J.wAng, poseName, fist));
   parts.push(ell(J.haF[0], J.haF[1], 1.2, 1.2, 'skin', { z: 11 }));
-  if (ja.weapon === 'fists') parts.push(ell(J.haF[0], J.haF[1], 1.5, 1.4, 'acc', { z: 13 }));
+  if (ja.weapon === 'fists') parts.push(ell(J.haF[0], J.haF[1], 1.5, 1.4, fist, { z: 13 }));
   const head = HEADS[ja.head], hx = Math.round(J.neck[0] - head.ax), hy = Math.round(J.neck[1] - head.rows.length + 0.6);
   return { w: 32, h: 32, mats, parts, crease: 1.2, post(api) {
     const m = mats, pal = { H: m.hat.r[3], h: m.hat.r[2], j: m.hat.r[1], W: m.hat.r[4], R: m.hair.r[2], r: m.hair.r[1], F: m.skin.r[3], f: m.skin.r[2], g: m.skin.r[1], e: '#2a1c34', A: m.acc.r[3], a: m.acc.r[1], _ol: m.hat.r[0] };
@@ -312,16 +358,25 @@ function heroSpec(job, poseName, wover) {
     if (J.face === 'x' && eyes.length) { const [ex, ey] = eyes[eyes.length - 1]; api.px(ex, ey, '#2a1c34'); api.px(ex + 1, ey - 1, '#2a1c34'); }
     if (J.face === 'd' && eyes.length) { const [ex, ey] = eyes[eyes.length - 1]; api.px(ex, ey, '#2a1c34'); api.px(ex + 1, ey, '#2a1c34'); }
     if (J.face === 'h' && eyes.length) { const [ex, ey] = eyes[0]; api.px(ex, ey + 1, '#2a1c34'); api.px(ex + 1, ey, '#2a1c34'); }
+    if (LK && LK.fringe && ja.head === 'hood') for (let k = 3; k <= 5; k++) api.px(hx + k, hy + 4, k === 4 ? m.hair.r[3] : m.hair.r[2]);
+    if (LK && LK.beard && eyes.length) { // beard stamped under the mouth: reads on every pose, under helmets and hoods too
+      const my = Math.max(...eyes.map((e) => e[1])) + 1 - hy, row = head.rows[my] || '', fx = Math.max(0, [...row].findIndex((ch) => 'Ffg'.includes(ch))), bd = BEARDS[LK.beard], br = m.beard.r;
+      const bp = { L: br[3], B: br[2], b: br[1], d: br[0], o: '#2a1418', g: '#b4aca8', _ol: br[0] };
+      api.stamp(bd.rows, bp, hx + fx + bd.dx0, hy + my + bd.dy0);
+    }
+    if (O && O.logo && poseName !== 'ko') api.px(Math.round(J.chest[0] - 1.6), Math.round(J.chest[1]), O.logo);
     if (ja.weapon === 'bow' && poseName !== 'ko') { const top = add(hand, [0, -6.5]), bot = add(hand, [0, 6.5]), pull = poseName === 'windup' || poseName === 'strike' ? J.haB : [hand[0] + 1.6, hand[1]]; api.line(Math.round(top[0]), Math.round(top[1]), Math.round(pull[0]), Math.round(pull[1]), '#e8e0c8'); api.line(Math.round(pull[0]), Math.round(pull[1]), Math.round(bot[0]), Math.round(bot[1]), '#e8e0c8'); if (poseName === 'windup' || poseName === 'strike') { api.line(Math.round(hand[0] - 3), Math.round(J.haB[1]), Math.round(J.haB[0]), Math.round(J.haB[1]), '#c8a070'); api.px(Math.round(hand[0] - 4), Math.round(J.haB[1]), '#e8e8f0'); } }
   } };
 }
 export const HERO_POSES = ['idle', 'ready', 'windup', 'strike', 'cast', 'hurt', 'kneel', 'victory', 'ko'];
 const HCACHE = new Map();
 // weapon: a WEAPON_TYPES id to show instead of the job's signature weapon ('none' = empty hands)
+// job: a calling id or 'job@look' ('knight@adam', 'bloke@devon', 'cleric@brenna'); unknown looks/jobs fall back to the plain art
 export function heroFrame(job, pose = 'idle', weapon = null) {
-  if (weapon === 'staff' && job === 'cleric') weapon = 'rod';
-  const k = job + ':' + pose + ':' + (weapon || ''); if (HCACHE.has(k)) return HCACHE.get(k);
-  const spec = heroSpec(HERO_STYLE[job] ? job : 'knight', pose, weapon); if (pose === 'ko') spec.tint = 0.45;
+  const key = String(job), { job: j0, look } = parseKey(key), jb = HERO_STYLE[j0] ? j0 : 'knight';
+  if (weapon === 'staff' && jb === 'cleric') weapon = 'rod';
+  const k = key + ':' + pose + ':' + (weapon || ''); if (HCACHE.has(k)) return HCACHE.get(k);
+  const spec = heroSpec(jb, pose, weapon, look, look ? jb + '@' + look : jb); if (pose === 'ko') spec.tint = 0.45;
   let c = render(spec);
   if (pose === 'ko') { const [x0, y0, x1, y1] = bbox(c); c = rot90(c, false); BBOX.set(c, [c.width - 1 - y1, x0, c.width - 1 - y0, x1]); } // lie on the back: pixel-exact quarter turn
   HCACHE.set(k, c); return c;
@@ -354,10 +409,12 @@ function glowEye(api, x, y, c1, c2 = '#ffffff', w = 2) { for (let k = 0; k < w; 
 function fangs(api, pts, col = '#f4f0e0') { for (const [x, y, l = 1] of pts) for (let k = 0; k < l; k++) api.px(x, y + k, col); }
 
 const MODELS = {
-  slime: { col: { goo: '#4fbe4a', eye: '#ffffff', mouth: '#1a3a20' }, build(P) {
-    return { w: 38, h: 30, mats: { goo: mat(P.goo, 6, { spec: '#ffffff', specAt: 0.86, lift: 0.06, ramp: { hi: 0.75 } }) },
-      parts: [ell(19, 20.5, 16, 9, 'goo', { d: 0.9 }), ell(18, 14, 10, 9, 'goo', { z: 1 }), cap(17, 9, 20.5, 3.5, 4, 1.2, 'goo', { z: 2 }), ell(6, 26.5, 3, 2.2, 'goo', { z: 2 }), ell(31, 27, 3.4, 2, 'goo', { z: 2 })],
+  slime: { col: { goo: '#4fbe4a', eye: '#ffffff', mouth: '#1a3a20', foam: '#f4ecd8' }, build(P, V = {}) {
+    return { w: 38, h: 30, mats: { goo: mat(P.goo, 6, { spec: '#ffffff', specAt: 0.86, lift: 0.06, ramp: { hi: 0.75 } }), foam: mat(P.foam, 4, { tex: 'wart', ramp: { lo: 0.62, hi: 0.7 } }) },
+      parts: [ell(19, 20.5, 16, 9, 'goo', { d: 0.9 }), ell(18, 14, 10, 9, 'goo', { z: 1 }), V.foam ? null : cap(17, 9, 20.5, 3.5, 4, 1.2, 'goo', { z: 2 }), ell(6, 26.5, 3, 2.2, 'goo', { z: 2 }), ell(31, 27, 3.4, 2, 'goo', { z: 2 }),
+        ...(V.foam ? [ell(11.5, 8.5, 4.6, 3.4, 'foam', { z: 3 }), ell(18, 6, 5.6, 4.2, 'foam', { z: 3.6 }), ell(24.5, 8, 4.8, 3.4, 'foam', { z: 3.2 }), ell(15, 3, 3, 2.4, 'foam', { z: 4 }), ell(8.6, 12, 1.6, 2.6, 'foam', { z: 3.4 }), ell(27.6, 11.6, 1.4, 2.2, 'foam', { z: 3.4 })] : [])],
       post(a) {
+        if (V.foam) { for (const [bx, by] of [[12, 22], [16, 26], [26, 25], [31, 21], [8, 20], [20, 24], [14, 17]]) { a.px(bx, by, a.ramp('goo', -1)); a.px(bx + 1, by + 1, a.ramp('goo', -2)); } a.px(17, 2, '#ffffff'); a.px(11, 7, '#ffffff'); }
         a.rect(21, 13, 3, 5, '#ffffff'); a.rect(28, 13, 3, 5, '#ffffff'); a.rect(22, 15, 2, 3, '#18101c'); a.rect(29, 15, 2, 3, '#18101c'); a.px(22, 15, '#ffffff'); a.px(29, 15, '#ffffff');
         for (let x = 22; x <= 30; x++) a.px(x, 21 + (x > 23 && x < 29 ? 1 : 0), P.mouth); a.px(25, 23, P.mouth); a.px(26, 23, P.mouth);
         a.rect(9, 12, 2, 3, '#ffffff'); a.px(11, 10, '#ffffff'); a.px(8, 16, a.ramp('goo', -1));
@@ -575,6 +632,7 @@ const ENEMY_VARIANTS = {
   thunder_imp: ['imp', { skin: '#e0b030', wing: '#7a5a10', horn: '#ffffff', eye: '#ffffff', fire: '#a8f0ff' }],
   ice_golem: ['golem', { rock: '#8ab8e0', dark: '#5a7aa8', glow: '#c8f4ff' }, { ice: true }],
   bog_slime: ['slime', { goo: '#9a5ad0', mouth: '#2a1040' }],
+  ale_slime: ['slime', { goo: '#e09a2a', mouth: '#4a2208' }, { foam: true }], // Bearded Bros: a foamy pint come to life
   mire_wolf: ['wolf', { fur: '#6a8a5a', mane: '#3e5a3a', belly: '#a8b890', eye: '#ffd23a' }],
   ice_wolf: ['wolf', { fur: '#d8ecf8', mane: '#8ac0e0', belly: '#ffffff', eye: '#3ad0ff' }],
   frost_goblin: ['goblin', { skin: '#8ad0e8', cloth: '#4a5a8a', hair: '#e8f4ff', club: '#a8d8f0', eye: '#ffffff' }, { ice: true }],
@@ -984,6 +1042,53 @@ Object.assign(ENEMY_VARIANTS, {
   sand_golem: ['golem', { rock: '#d0a868', dark: '#9a7440', moss: '#ecd090', glow: '#40d0ff' }],
   dust_wraith: ['wraith', { cloak: '#c8a070', inner: '#2a1a10', hand: '#f0dcb0', eye: '#ffb040' }],
 });
+
+// ---------- Bearded Bros: the tavern cellar ----------
+Object.assign(MODELS, {
+  cellar_rat: { col: { fur: '#7a5a40', belly: '#c8a888', tail: '#e0a0a0', nose: '#2a1418', eye: '#100810', tooth: '#fff4e0' }, build(P) {
+    const m = { fur: mat(P.fur, 5, { tex: 'fur' }), belly: mat(P.belly, 4, { tex: 'fur' }), tail: mat(P.tail, 4, { tex: 'ribs' }), nose: mat(P.nose, 3) };
+    return { w: 42, h: 28, mats: m, parts: [
+      ...chain([[9, 21], [4, 20], [1.5, 15], [3, 10], [6, 8.5]], [1.3, 1.1, 0.9, 0.7, 0.5], 'tail', -4),
+      cap(11, 20, 9, 25, 1.8, 1.4, 'fur', { z: -3 }), ell(9.5, 25.6, 2.3, 1, 'tail', { z: -3, d: 0.5 }), cap(25, 21, 25, 25, 1.4, 1.1, 'fur', { z: -3 }),
+      ell(18, 17, 11.5, 8, 'fur', { z: 0 }), paint(ell(20, 22.5, 9, 3.2, 'belly')),
+      cap(13, 21, 13, 25, 2.2, 1.5, 'fur', { z: 2 }), ell(14, 25.6, 2.6, 1.1, 'tail', { z: 2, d: 0.5 }),
+      ell(30, 15, 6.2, 5.4, 'fur', { z: 3 }), cap(32, 16, 38, 17.4, 3.2, 1.4, 'fur', { z: 4 }), ell(39, 17.4, 1.3, 1.2, 'nose', { z: 6 }),
+      ell(27, 8.6, 3.2, 3.4, 'fur', { z: 5 }), paint(ell(27.2, 8.8, 1.7, 2.1, 'tail')), ell(31.6, 9.6, 2.4, 2.6, 'fur', { z: 4.5 }), paint(ell(31.8, 9.8, 1.2, 1.5, 'tail')),
+      cap(31, 20, 33, 24.6, 1.5, 1.2, 'fur', { z: 5 }), ell(34, 25.3, 1.9, 0.9, 'tail', { z: 5, d: 0.5 }),
+    ], post(a) {
+      a.px(33, 13, P.eye); a.px(34, 13, P.eye); a.px(33, 12, '#ffffff'); a.px(34, 14, a.ramp('fur', 0));
+      a.px(37, 19, P.tooth); a.px(37, 20, P.tooth); a.px(36, 19, a.ramp('fur', 0));
+      for (const [dx, dy] of [[0, -1], [1, 1], [0, 2]]) a.line(38, 17 + dy, 41, 17 + dy * 2 - 1 + dx, '#e8e0d0');
+      a.line(12, 11, 20, 10, a.ramp('fur', -1)); a.px(15, 13, a.ramp('fur', 0)); a.px(22, 12, a.ramp('fur', 0));
+    } };
+  } },
+  big_gary: { big: true, col: { goo: '#c47816', foam: '#f6eedc', tank: '#7a5030', band: '#9aa0ae', eye: '#ffffff', mouth: '#4a1c08', cheek: '#f0603a' }, build(P) {
+    const m = { goo: mat(P.goo, 7, { spec: '#fff4d0', specAt: 0.93, lift: -0.08, ramp: { hi: 0.6, lo: 0.4 } }), foam: mat(P.foam, 5, { tex: 'wart', ramp: { lo: 0.6, hi: 0.7 } }),
+      tank: mat(P.tank, 5, { tex: 'grain' }), band: mat(P.band, 5, { spec: '#ffffff', ramp: { hi: 0.8 } }), bub: mat('#ffe8b0', 4, { spec: '#ffffff', specAt: 0.8, lift: 0.1 }) };
+    const foam = [[22, 26, 9, 6], [34, 20, 10, 7], [48, 17, 11, 8], [62, 20, 10, 7], [74, 27, 9, 6], [40, 11, 6, 5], [56, 10, 6, 5], [48, 5, 5, 4.5], [30, 14, 4.5, 4], [66, 13, 4.5, 4]];
+    const drips = [[18, 34, 2.4, 5], [29, 32, 2, 4], [70, 34, 2.2, 6], [80, 36, 2, 4.5], [58, 31, 1.8, 3.4]];
+    return { w: 106, h: 92, mats: m, parts: [
+      ell(52, 66, 46, 24, 'goo', { d: 0.85 }), ell(50, 48, 34, 28, 'goo', { z: 1 }), ell(14, 84, 7, 4, 'goo', { z: 2 }), ell(92, 85, 7.5, 3.6, 'goo', { z: 2 }), ell(30, 88, 6, 2.6, 'goo', { z: 2 }),
+      ...foam.map(([x, y, rx, ry], i) => ell(x, y, rx, ry, 'foam', { z: 4 + (i % 3) * 0.6 })), ...drips.map(([x, y, rx, ry]) => ell(x, y, rx, ry, 'foam', { z: 4.4 })),
+      // a pewter-banded tankard stuck in his side, foam still on it
+      poly([[74, 62], [92, 56], [98, 78], [80, 84]], 'tank', { z: 34, bev: 2 }), paint(poly([[75, 66], [93, 60], [94, 63.5], [76, 69.5]], 'band')), paint(poly([[78, 77], [96, 71], [97, 74.5], [79, 80.5]], 'band')),
+      cap(94, 62, 101, 64, 1.4, 1.4, 'band', { z: 35 }), cap(101, 64, 102, 72, 1.4, 1.4, 'band', { z: 35 }), cap(102, 72, 97, 74, 1.4, 1.4, 'band', { z: 35 }),
+      ell(83, 58, 7, 3.6, 'foam', { z: 36 }), ell(78, 56.5, 3, 2.4, 'foam', { z: 36.5 }),
+      // burp bubbles drifting up
+      ell(14, 30, 4, 4, 'bub', { z: 40 }), ell(8, 18, 2.8, 2.8, 'bub', { z: 40 }), ell(15, 9, 2, 2, 'bub', { z: 40 }), ell(90, 22, 3, 3, 'bub', { z: 40 }), ell(96, 12, 2, 2, 'bub', { z: 40 }),
+    ], post(a) {
+      const dk = a.ramp('goo', 1), dd = a.ramp('goo', 0);
+      // sleepy, tipsy eyes: heavy lids, one higher than the other
+      for (const [ex, ey, lid] of [[50, 44, 3], [66, 42, 2]]) { a.rect(ex, ey, 8, 9, '#ffffff'); a.rect(ex + 2, ey + 3, 4, 5, '#18101c'); a.px(ex + 2, ey + 3, '#ffffff'); a.px(ex + 3, ey + 3, '#ffffff'); a.rect(ex - 1, ey - 1, 10, lid + 1, dk); a.line(ex - 1, ey + lid, ex + 8, ey + lid, dd); }
+      for (const [cx2, cy2] of [[45, 57], [76, 55]]) for (let j = 0; j < 3; j++) for (let k = -3; k <= 3; k++) if (((k + j) & 1) === 0 && Math.abs(k) + j < 5) a.px(cx2 + k, cy2 + j, P.cheek); // rosy cheeks
+      for (let x = 51; x <= 73; x++) { const t = (x - 51) / 22, y = 61 + Math.round(Math.sin(t * Math.PI) * 5); for (let j = 0; j < 2 + Math.round(Math.sin(t * Math.PI) * 3); j++) a.px(x, y + j - 1, j ? '#2a0c04' : P.mouth); } // big daft grin
+      a.rect(57, 64, 3, 2, '#fff4e0'); a.rect(64, 65, 3, 2, '#fff4e0'); a.rect(60, 67, 4, 2, '#e05a5a');
+      for (const [bx, by] of [[30, 60], [36, 72], [22, 66], [44, 78], [60, 80], [70, 76], [28, 50], [82, 70], [40, 68], [18, 74]]) { a.px(bx, by, a.ramp('goo', -1)); a.px(bx + 1, by, a.ramp('goo', -2)); a.px(bx, by + 1, a.ramp('goo', -2)); }
+      for (let y = 66; y < 82; y++) for (let x = 24; x < 30; x++) { const neck = y < 70, w = neck ? 1.2 : 3; if (Math.abs(x + 0.5 - 27) < w && a.mat(x, y) === 'goo') a.px(x, y, dk); } // a swallowed bottle
+      a.px(16, 27, '#ffffff'); a.px(9, 16, '#ffffff'); a.px(89, 20, '#ffffff'); a.rect(30, 34, 3, 4, '#fff8e8'); a.px(34, 32, '#fff8e8');
+    } };
+  } },
+});
 const ECACHE = new Map();
 export function enemyArt(id) {
   if (ECACHE.has(id)) return ECACHE.get(id);
@@ -1000,7 +1105,7 @@ export const enemyIds = () => [...Object.keys(MODELS), ...Object.keys(ENEMY_VARI
 // ===== Painted backdrops =====
 // =====================================================================
 export const BW = 256, BH = 176;
-export const BACKDROPS = ['world', 'desert', 'forest', 'snow', 'swamp', 'dungeon', 'crypt', 'spire', 'storm', 'ruins', 'boss', 'crypt:boss', 'spire:boss', 'storm:boss', 'ruins:boss'];
+export const BACKDROPS = ['world', 'desert', 'forest', 'snow', 'swamp', 'dungeon', 'crypt', 'spire', 'storm', 'ruins', 'boss', 'crypt:boss', 'spire:boss', 'storm:boss', 'ruins:boss', 'cellar', 'cellar:boss'];
 function painter(w, h, seed) {
   const img = new Uint8ClampedArray(w * h * 4), r = rng(seed);
   const P = {
@@ -1112,6 +1217,28 @@ function torch(P, x, y, flame, lights) { // bracket + glow; the flame itself is 
   lights.push([x, y - 1, flame]);
 }
 function pool(P, cx, cy, rw, rh, cols, skyCol) { const C = RG(cols), S = skyCol ? hex2rgb(skyCol) : null; for (let y = Math.floor(cy - rh); y <= cy + rh; y++) for (let x = Math.floor(cx - rw); x <= cx + rw; x++) { const q = ((x - cx) / rw) ** 2 + ((y - cy) / rh) ** 2; if (q > 1 + (hash(x, y, 7) - 0.5) * 0.1) continue; let c = P.pick(C, clamp(0.3 + (y - cy) / rh * -0.3 + (q > 0.75 ? 0.35 : 0), 0, 1), x, y); if (S && q < 0.7 && hash(Math.floor(x / 3), y, 9) < 0.12 && (x % 3)) c = S; P.set(x, y, c); } }
+
+// ---------- tavern cellar props (Bearded Bros) ----------
+const WOODC = ['#1a0e08', '#2e1a0e', '#4a2c16', '#6a4022', '#8a5630', '#a86e40', '#c48a56'], IRONC = ['#14121a', '#2a2834', '#4a4858', '#7a7888', '#a8a8b8'];
+function barrelUp(P, cx, by, w, h, seed = 1) { // upright barrel: bulging staves, two iron hoops, lit lid
+  const C = RG(WOODC), I = RG(IRONC), top = by - h;
+  for (let y = Math.floor(top); y <= by; y++) { const t = (y - top) / h, half = (w / 2) * (0.86 + 0.14 * Math.sin(Math.PI * t));
+    for (let x = Math.floor(cx - half); x <= cx + half; x++) { const u = (x + 0.5 - cx) / half, stave = Math.floor((u + 1) * 4.5 + 0.5) !== Math.floor((u + 1) * 4.5 + 0.5 + 0.12);
+      let v = clamp(0.62 - u * 0.42 - Math.abs(u) ** 3 * 0.25 + (hash(x, y, seed) - 0.5) * 0.12 - (t > 0.92 ? 0.25 : 0), 0, 1);
+      if (Math.abs(t - 0.18) < 0.05 || Math.abs(t - 0.8) < 0.05) P.set(x, y, P.pick(I, clamp(v + 0.1, 0, 1), x, y)); else P.set(x, y, P.pick(C, stave ? v - 0.25 : v, x, y)); } }
+  for (let y = Math.floor(top - w * 0.18); y <= top + w * 0.18; y++) for (let x = Math.floor(cx - w / 2); x <= cx + w / 2; x++) { const q = ((x + 0.5 - cx) / (w * 0.43)) ** 2 + ((y + 0.5 - top) / (w * 0.17)) ** 2; if (q > 1) continue; P.set(x, y, P.pick(C, q > 0.7 ? 0.2 : 0.72 - ((x - cx) & 3 ? 0 : 0.12), x, y)); }
+}
+function barrelEnd(P, cx, cy, r, seed = 1) { // a cask on its side, end-on: growth rings, iron rim, bung and a little brass tap
+  const C = RG(WOODC), I = RG(IRONC);
+  for (let y = Math.floor(cy - r); y <= cy + r; y++) for (let x = Math.floor(cx - r); x <= cx + r; x++) { const d = Math.hypot(x + 0.5 - cx, y + 0.5 - cy) / r; if (d > 1) continue;
+    if (d > 0.84) { P.set(x, y, P.pick(I, clamp(0.55 - (x - cx + y - cy) / (r * 3), 0, 1), x, y)); continue; }
+    const ring = (d * 7 + hash(seed, 1) * 3) % 1 < 0.18 ? -0.18 : 0, plank = Math.abs(((x - cx) / r * 3.5 + 10) % 1) < 0.08 ? -0.22 : 0;
+    P.set(x, y, P.pick(C, clamp(0.6 - (x - cx + y - cy) / (r * 4) + ring + plank, 0, 1), x, y)); }
+  P.set(cx, cy, hex2rgb('#140a06')); P.set(cx + 1, cy, hex2rgb('#2a1a0e'));
+  if (r > 5) { const G = RG(['#4a2e06', '#a07018', '#e8c050', '#fff0a0']); for (let k = 0; k < 3; k++) P.set(cx - 1 + k, cy + r * 0.55, G[k === 0 ? 3 : 2]); P.set(cx, cy + r * 0.55 + 1, G[1]); P.set(cx, cy + r * 0.55 + 2, G[0]); }
+}
+function cobweb(P, x0, y0, sd, r) { for (let a = 0; a <= 5; a++) { const t = (a / 5) * Math.PI / 2; for (let k = 0; k < r; k++) if (bayer(k, a) < 0.8) P.blend(x0 + sd * Math.round(Math.cos(t) * k), y0 + Math.round(Math.sin(t) * k), [220, 216, 200], 0.4); }
+  for (const rr of [r * 0.35, r * 0.6, r * 0.85]) for (let k = 0; k <= rr * 1.6; k++) { const t = (k / (rr * 1.6)) * Math.PI / 2; P.blend(x0 + sd * Math.round(Math.cos(t) * rr), y0 + Math.round(Math.sin(t) * rr), [230, 226, 210], 0.35); } }
 
 const BDCACHE = new Map();
 export function backdrop(kind) {
@@ -1257,4 +1384,43 @@ const BD_FNS = {
     scatter(P, hy + 8, 40, 84, (x, y, s) => rock(P, x, y, s, ['#14080a', '#3a1a14', '#5a2a1a', '#8a4a2a'], x));
     vignette(P, 0.4); L.push(['lava']);
   },
+};
+
+BD_FNS.cellar = function (P, hy, L, boss) { // the Bell & Anvil's cellar: brick vaults, stacked casks, a wine rack, warm lantern light
+  const BR = ['#1c0e0c', '#2e1812', '#44241a', '#5a3222', '#70402c', '#86503a', '#9a6248'];
+  bricks(P, 0, 0, P.w, hy + 12, BR, 131, 12, 5);
+  const A = RG(['#0a0506', '#140a08', '#20120e', '#2c1a14']), S = RG(['#2a1610', '#5a3424', '#8a5a40', '#b07a58']);
+  const vaults = boss ? [[128, 44]] : [[42, 30], [128, 32], [214, 30]];
+  for (const [ax, aw] of vaults) { const top = boss ? 6 : 14;
+    for (let y = top; y < hy + 12; y++) for (let x = ax - aw; x <= ax + aw; x++) { const ry = y - (top + aw); if (ry < 0 && Math.hypot((x - ax) / aw, ry / aw) > 1) continue; P.set(x, y, P.pick(A, clamp(0.15 + (y - top) / (hy + 12 - top) * 0.7 + (bayer(x, y) - 0.5) * 0.12, 0, 1), x, y)); }
+    for (let k = 0; k <= 180; k++) { const t = Math.PI * (k / 180), ex = ax - Math.cos(t) * (aw + 2), ey = top + aw - Math.sin(t) * (aw + 2); for (let j = 0; j < 3; j++) P.set(ex - Math.cos(t) * j, ey - Math.sin(t) * j, S[j === 0 ? 3 : j === 1 ? 2 : 0]); } // arch voussoirs
+    for (let y = top + aw; y < hy + 12; y++) for (const dx of [-aw - 4, aw + 2]) for (let k = 0; k < 3; k++) P.set(ax + dx + k, y, S[k === 0 ? 2 : k === 1 ? 3 : 1]);
+  }
+  if (!boss) {
+    // left vault: casks stacked end-on in a pyramid
+    for (const [cx, cy, r] of [[30, hy + 2, 9], [50, hy + 2, 9], [40, hy - 14, 9], [22, hy - 14, 6], [58, hy - 14, 6], [40, hy - 28, 6]]) barrelEnd(P, cx, cy, r, cx + cy);
+    // middle vault: a wine rack (diamond lattice full of bottle ends)
+    const R2 = RG(WOODC), GL = RG(['#0a1a10', '#16321e', '#2a5a34', '#5a9a5a']), RD = RG(['#1a060a', '#3a0c14', '#6a1a24', '#a04050']);
+    for (let y = 26; y < hy + 8; y++) for (let x = 104; x < 152; x++) { const u = (x - 104 + y) % 10, v = (x - 104 - y + 200) % 10;
+      if (u < 1 || v < 1) P.set(x, y, P.pick(R2, 0.55 - (x - 104) / 120, x, y));
+      else if (u > 3 && u < 7 && v > 3 && v < 7) { const red = hash(Math.floor((x - 104 + y) / 10), Math.floor((x - 104 - y + 200) / 10), 5) < 0.45; P.set(x, y, (red ? RD : GL)[u === 4 && v === 4 ? 3 : u + v > 11 ? 0 : 2]); } }
+    for (let x = 102; x < 154; x++) { P.set(x, 25, R2[5]); P.set(x, hy + 8, R2[1]); }
+    // right vault: an upright keg row with copper taps, sacks of hops
+    for (const [cx, w, h] of [[200, 16, 26], [222, 16, 30]]) barrelUp(P, cx, hy + 10, w, h, cx);
+    for (const cx of [200, 222]) { const G = RG(['#4a2408', '#9a5a1c', '#e09040', '#ffd090']); for (let k = 0; k < 4; k++) P.set(cx + k - 1, hy - 4, G[2]); P.set(cx + 2, hy - 3, G[1]); P.set(cx + 2, hy - 2, G[3]); }
+  } else { // boss vault: the great vat, burst and frothing
+    for (let y = 18; y < hy + 12; y++) for (let x = 92; x <= 164; x++) { const u = (x - 128) / 36; if (Math.abs(u) > 1) continue; const C = RG(WOODC), I = RG(IRONC), hoop = (y - 18) % 14 < 2;
+      P.set(x, y, P.pick(hoop ? I : C, clamp(0.6 - u * 0.4 - u * u * 0.2 + ((x - 92) % 6 === 0 && !hoop ? -0.25 : 0), 0, 1), x, y)); }
+    const F = RG(['#c8b898', '#e8dcc0', '#f8f0dc', '#ffffff']); for (let i = 0; i < 40; i++) { const bx = 96 + hash(i, 1, 9) * 64, by = 14 + hash(i, 2, 9) * 8, br = 2 + hash(i, 3, 9) * 4; for (let y = Math.floor(by - br); y <= by + br; y++) for (let x = Math.floor(bx - br); x <= bx + br; x++) if (Math.hypot(x - bx, y - by) < br) P.set(x, y, P.pick(F, clamp(0.85 - (y - by + br) / (br * 3) - (x - bx) / (br * 6), 0, 1), x, y)); }
+    const AM = RG(['#6a3a08', '#a8600e', '#d88a1c', '#f0b440']); for (let y = 24; y < hy + 12; y++) for (const sx of [104, 140, 150]) { const w = 1.5 + Math.sin(y * 0.3 + sx) * 0.6; for (let x = Math.floor(sx - w); x <= sx + w; x++) P.set(x, y, AM[x < sx ? 3 : 2]); } // ale running down the staves
+    glow(P, 128, 40, 60, '#ffb040', 0.35);
+  }
+  for (const [lx, ly] of boss ? [[64, 36], [192, 36]] : [[84, 36], [172, 36]]) { torch(P, lx, ly, '#ffb04a', L); glow(P, lx, ly + 6, 34, '#ff9a3a', 0.4); }
+  ground(P, hy + 12, ['#1a100c', '#2a1a12', '#3c281a', '#503622', '#664630', '#7c5a40'], (X, Z) => { const fx = ((X * 0.32) % 1 + 1) % 1, fz = ((Z * 0.45) % 1 + 1) % 1, row = Math.floor(Z * 0.45), fx2 = ((X * 0.32 + row * 0.5) % 1 + 1) % 1; const grout = fx2 < 0.05 || fz < 0.07 ? -0.32 : 0; return 0.4 + grout + (fbm(X * 1.3, Z * 1.7, 31, 3) - 0.5) * 0.4 + (hash(Math.floor(X * 0.32 + row * 0.5), row, 3) - 0.5) * 0.2; }, { haze: '#3a2416', hazeMax: 0.45 });
+  for (let y = hy + 12; y < P.h; y++) for (let x = 0; x < P.w; x++) { const d = Math.hypot((x - 128) / 150, (y - hy - 12) / 70); if (bayer(x, y) < (1 - d) * 0.22) P.blend(x, y, [255, 170, 80], 0.18); } // warm light pooling on the flags
+  for (const [cx, cy, rw, rh] of boss ? [[128, 128, 70, 12], [60, 160, 30, 6]] : [[150, 140, 26, 5]]) pool(P, cx, cy, rw, rh, ['#3a1e06', '#7a4410', '#b8701c', '#f0b040'], '#ffd070'); // spilt ale
+  barrelUp(P, 12, hy + 64, 26, 40, 7); barrelUp(P, 246, hy + 58, 24, 36, 9); // foreground kegs framing the shot
+  scatter(P, hy + 12, 30, 87, (x, y, s, k) => { if (k < 0.4) rock(P, x, y, s * 0.7, ['#1a100c', '#3a281c', '#5a4430', '#7a6048'], x); else if (k < 0.55 && s > 0.3) { const G = RG(['#0a1a10', '#2a5a34', '#7ab07a']); for (let j = 0; j < 3; j++) P.set(x + j, y, G[j === 0 ? 2 : 1]); P.set(x + 3, y, G[0]); } }); // pebbles, a dropped bottle
+  cobweb(P, 0, 0, 1, 22); cobweb(P, P.w - 1, 0, -1, 18);
+  shadowBand(P, hy + 12, hy + 24, 0.3); vignette(P, 0.42);
 };

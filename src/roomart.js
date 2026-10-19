@@ -105,9 +105,13 @@ const PAL = {
   sstone: ramp('#2a170c #3f2412 #573419 #704522 #8a582c #a46d38 #bb8446 #cf9c58 #e0b46e #eecb8a'),
   sand: ramp('#8a6034 #a2763f #b98c4e #cca260 #dcb874 #e9cc8c #f4dfaa'),
   lapis: ramp('#0e1840 #182a6a #24409a #3a5cc0 #5a80dc #8aa8f0'),
+  // tavern cellar (Bearded Bros)
+  cbrick: ramp('#120806 #1e0e0a #2c1610 #3c2016 #4e2a1c #603624 #72422c #865036 #9a6042 #b07452'),
+  cflag: ramp('#1a100a #261810 #342216 #422c1c #523824 #62442c #725236 #846242 #987452'),
+  ale: ramp('#3a1e06 #6a3a0c #9a5a14 #c87e1e #e8a034 #f8c460'),
 };
 const POTS = [['#5a0e14', '#a01c24', '#e04a4a', '#ffb0a0'], ['#0e1a5a', '#2040b0', '#4a7ae8', '#b0d0ff'], ['#0e4a1a', '#1e8a34', '#4ac860', '#b8f8c0'], ['#4a2a06', '#a06a10', '#e8b030', '#fff0a0'], ['#3a0e4a', '#7a2a9a', '#b85ae0', '#f0c0ff']].map((r) => r.map(pk));
-const THEMES = new Set(['interior', 'cavern', 'crypt', 'spire', 'storm', 'ruins']);
+const THEMES = new Set(['interior', 'cavern', 'crypt', 'spire', 'storm', 'ruins', 'cellar']);
 export const isTheme = (theme) => THEMES.has(theme);
 export const drawsDecor = (m) => THEMES.has(m.theme);
 const VOID = pk('#07050a');
@@ -226,6 +230,16 @@ function buildRoom(m) {
       S(x, y, c);
     } }
   if (kind === 'smith') for (let y = 16; y < 64; y++) for (let x = 40; x < 136; x++) { const d = Math.hypot((x - 88) / 46, (y - 14) / 40); if (d < 1 && hash(x, y, 9) < (1 - d) * 0.7) D(x, y, 0.7); } // soot
+  // trapdoors: flush with the floor (baked, never depth-sorted) so the party can step onto them
+  for (const [tx, ty, k] of m.decor || []) if (k === 'trapdoor') { const X = tx * 16, Y = ty * 16;
+    for (let v = 0; v < 15; v++) for (let u = 0; u < 15; u++) { const x = X + 1 + u, y = Y + 1 + v, e = Math.min(u, v, 14 - u, 14 - v); let c;
+      if (e === 0) c = pick(PAL.timber, 0.05, x, y); else if (e === 1) c = pick(PAL.timber, v === 1 || u === 1 ? 0.55 : 0.25, x, y);
+      else { const pl = (u - 2) % 4; c = pick(PAL.oak, cl((pl === 0 ? 0.22 : 0.66 + (hash(Math.floor((u - 2) / 4), v, tx) - 0.5) * 0.2) - v * 0.012 + (vnoise(x, y * 4, 5, 3) - 0.5) * 0.15), x, y); }
+      if ((v === 4 || v === 11) && u > 1 && u < 13) c = pick(PAL.iron, u === 2 || u === 12 ? 0.75 : 0.45, x, y); // iron straps
+      S(x, y, c); }
+    for (const [u, v, b] of [[6, 6, 0.9], [7, 5, 1], [8, 6, 0.7], [6, 7, 0.75], [8, 7, 0.45], [6, 8, 0.6], [7, 9, 0.3], [8, 8, 0.35], [5, 7, 0.85], [9, 7, 0.4]]) S(X + 1 + u, Y + 1 + v, pick(PAL.steel, b * 0.8, u, v)); S(X + 8, Y + 6, pick(PAL.iron, 0.2, 0, 0)); // ring pull
+    S(X + 8, Y + 8, pick(PAL.oak, 0.12, 0, 0)); for (let u = 1; u < 16; u++) { D(X + u, Y + 16, 0.6); D(X + 16, Y + u, 0.7); }
+  }
   // doormat inside each door
   for (const dx of doors) for (let y = Y1 - 7; y < Y1 - 1; y++) for (let x = dx * 16 + 2; x < dx * 16 + 14; x++) S(x, y, pick(PAL.timber, (y === Y1 - 7 || y === Y1 - 2) ? 0.25 : ((x + y) & 1) ? 0.7 : 0.5, x, y));
   // ambient occlusion along the walls
@@ -293,7 +307,7 @@ function buildRoom(m) {
   }
   // drop shadows of the furniture (baked)
   for (const [tx, ty, k] of m.decor || []) {
-    const cx = tx * 16 + 8, cy = ty * 16 + (k === 'bed' ? 12 : 14), rx = k === 'counter' ? 0 : k === 'bed' ? 8 : 7, ry = k === 'bed' ? 5 : 2.6;
+    const cx = tx * 16 + 8, cy = ty * 16 + (k === 'bed' ? 12 : 14), rx = k === 'counter' || k === 'trapdoor' ? 0 : k === 'bed' ? 8 : 7, ry = k === 'bed' ? 5 : 2.6;
     if (rx) for (let y = Math.floor(cy - ry); y <= cy + ry; y++) for (let x = Math.floor(cx - rx); x <= cx + rx + 1; x++) if (((x + 0.5 - cx - 1) / rx) ** 2 + ((y + 0.5 - cy) / ry) ** 2 <= 1) D(x, y, 0.62);
   }
   for (const c of counters(m)) for (let y = c.y * 16 + 14; y < c.y * 16 + 18; y++) for (let x = c.x * 16; x < (c.x + c.w) * 16 + 2; x++) D(x, y, y < c.y * 16 + 16 ? 0.55 : 0.75);
@@ -326,6 +340,7 @@ function cylinder(p, x0, y0, w, h, R, hoops = []) {
       if (y === y0 + h - 1) v -= 0.2; p.set(x, y, pick(R, cl(v), x, y)); } }
   for (let y = y0 - 2; y <= y0 + 1; y++) for (let x = x0; x < x0 + w; x++) { const u = (x + 0.5 - cx) / (w / 2 - 0.7), vv = (y + 0.5 - y0) / 2; if (u * u + vv * vv > 1) continue; p.set(x, y, pick(R, u * u + vv * vv > 0.55 ? 0.22 : 0.78 - vv * 0.1 + ((x - x0) % 3 === 0 ? -0.1 : 0), x, y)); }
 }
+const candlePix = () => once('candle', () => { const p = new Pix(5, 9); for (let y = 2; y < 7; y++) { p.set(1, y, pk('#f4ecd8')); p.set(2, y, pk('#e0d4b8')); p.set(3, y, pk('#b8a888')); } p.set(1, 1, pk('#f8f0e0')); p.set(2, 2, pk('#fffaf0')); for (let x = 0; x < 5; x++) p.set(x, 7, pick(PAL.iron, x < 2 ? 0.7 : 0.4, x, 7)); p.set(2, 8, pick(PAL.iron, 0.3, 0, 0)); return p.canvas(); });
 const barrelPix = () => once('barrel', () => { const p = new Pix(16, 17); cylinder(p, 3, 4, 10, 11, PAL.wood, [2, 8]); outline(p, 0.4); return p.canvas(); });
 function bedPix(q) {
   return once('bed' + q, () => { const p = new Pix(18, 30), Q0 = pk(STY[q].quilt[0]), Q1 = pk(STY[q].quilt[1]), W = PAL.wood;
@@ -519,6 +534,27 @@ DUN.ruins = {
     return sd > 0.52 ? mix(c, PAL.sand[3], (sd - 0.52) / 0.08 * 0.6) : c; },
   rim: PAL.sstone, rimV: 0.92, accent: '#ffc840', glow: '255,200,90',
 };
+
+// The Bell & Anvil's cellar: brick barrel-vaults, worn flagstones with sawdust and ale stains (casks, racks, candles and cobwebs are added in buildDungeon)
+DUN.cellar = {
+  top: (x, y) => { const row = Math.floor(y / 4), u = ((x + (row & 1) * 4) % 8 + 8) % 8, v = ((y % 4) + 4) % 4, n = fbmP(x, y, 51);
+    return pick(PAL.cbrick, cl(u === 0 || v === 3 ? 0.04 : 0.1 + n * 0.14 + (hash(w64(x) >> 3, w64(y) >> 2, 52) - 0.5) * 0.06), x, y); },
+  face: (x, y, fy, tx, ty) => { const row = Math.floor(fy / 3), xx = x + ((row + ty) & 1) * 3, u = ((xx % 6) + 6) % 6, v = fy % 3;
+    let s = 0.5 + (hash(Math.floor(xx / 6), row + ty * 4, 53) - 0.5) * 0.28 + (fbm(x, y, 54) - 0.5) * 0.16 - fy * 0.02;
+    if (u === 0 || v === 2) s = 0.14; else if (v === 0 || u === 1) s += 0.12; if (fy === 0) s = 0.82; else if (fy === 1) s += 0.08;
+    if (hash(x, y, 55) < 0.025) s -= 0.18; // chipped bricks
+    return pick(PAL.cbrick, cl(s, 0.05, 0.95), x, y); },
+  floor: (x, y) => { const row = Math.floor(y / 8), off = (row & 1) * 6, cx = Math.floor((x + off) / 12), u = ((x + off) % 12 + 12) % 12, v = ((y % 8) + 8) % 8, n = fbm(x, y, 56);
+    const st = vnoise(x, y, 15, 57) + (n - 0.5) * 0.2;
+    if (u === 0 || v === 0) return pick(PAL.cflag, 0.08, x, y);
+    let s = 0.46 + (hash(cx, row, 58) - 0.5) * 0.24 + (n - 0.5) * 0.2; if (u === 1 || v === 1) s += 0.14; else if (u === 11 || v === 7) s -= 0.12;
+    if (hash(cx, row, 59) < 0.1 && Math.abs(u - v * 1.5) < 0.8) s -= 0.2; // cracked flags
+    let c = pick(PAL.cflag, cl(s, 0.08, 0.95), x, y);
+    if (st > 0.7) c = mix(c, PAL.ale[1], cl((st - 0.7) * 5) * 0.5); // old ale stains
+    if (hash(x, y, 60) < 0.025) c = mix(c, pk('#c8a060'), 0.55); // sawdust
+    return c; },
+  rim: PAL.cbrick, rimV: 0.62, accent: '#ffb040', glow: '255,180,90',
+};
 const GLYPHS = [['.##.', '#..#', '.##.', '####', '.##.', '.##.'], ['.##.', '###.', '.##.', '.###', '.##.', '#..#'], ['#.#.', '.#.#', '....', '#.#.', '.#.#', '....'], ['.##.', '####', '####', '.##.', '#..#', '....'], ['#...', '##..', '#.#.', '#...', '#...', '#...'], ['....', '.##.', '#..#', '.##.', '..#.', '.##.']];
 // ice / storm crystal clusters (tile-local, bottom at y 15)
 const CLUSTERS = [[[7.5, 10, 3, 0], [4.5, 6, 2, -0.3], [11, 7, 2, 0.35]], [[6, 8, 3, -0.15], [10, 10, 3, 0.15], [13, 5, 2, 0.4]], [[8, 11, 4, 0.05], [4, 5, 2, -0.45]]];
@@ -553,7 +589,7 @@ function buildDungeon(m) {
     P.d[py * GW + px] = col;
   }
   const S = (x, y, c) => P.set(x + O, y + O, c), G = (x, y) => P.get(x + O, y + O), D = (x, y, f) => { const c = G(x, y); if (cA(c)) S(x, y, dk(c, f)); }, B = (x, y, c, t) => { const o = G(x, y); if (cA(o)) S(x, y, mix(o, c, t)); };
-  const anim = { cryst: [], floor: [], walls: [] }, ACC = pk(T.accent);
+  const anim = { cryst: [], floor: [], walls: [], casks: [] }, ACC = pk(T.accent);
   for (let ty = 0; ty < H; ty++) for (let tx = 0; tx < W; tx++) {
     const c = ch(tx, ty), X = tx * 16, Y = ty * 16, h = hash(tx, ty, 77);
     if (c !== '#') anim.floor.push([tx, ty]);
@@ -591,8 +627,30 @@ function buildDungeon(m) {
       if (c === '.' && h > 0.95) { const bx = X + 4 + Math.floor(hash(tx, ty, 3) * 6), by = Y + 6 + Math.floor(hash(tx, ty, 4) * 6); for (const [u, v, k] of [[0, 0, 'w'], [1, 0, 'w'], [2, 0, 'w'], [0, 1, 'k'], [1, 1, 'w'], [2, 1, 'k'], [1, 2, 'g'], [4, 2, 'w'], [5, 2, 'g'], [6, 2, 'w'], [3, 1, 'g']]) S(bx + u, by + v, pk(k === 'w' ? '#e8e4d0' : k === 'g' ? '#a8a490' : '#202018')); }
     }
     if (c === 'C') for (let y = Y + 12; y < Y + 17; y++) for (let x = X + 2; x < X + 16; x++) if (((x + 0.5 - X - 9) / 7) ** 2 + ((y + 0.5 - Y - 14.5) / 2.4) ** 2 <= 1) D(x, y, 0.55);
+    if (th === 'cellar' && faceRun && h < 0.5) { // casks end-on in a niche, or a wine rack, built into the wall face
+      const F = (lx, fy, c2) => S(X + lx, Y + CAPH + fy, c2);
+      for (let fy = 0; fy < 12; fy++) for (let lx = 1; lx < 15; lx++) F(lx, fy, pick(PAL.cbrick, fy === 0 || lx === 1 ? 0.12 : 0.03, lx, fy));
+      if (h < 0.28) for (const [cx, cy, r] of [[5, 8, 3.6], [11, 8, 3.6], [8, 3.6, 3.2]]) for (let fy = Math.floor(cy - r); fy <= cy + r; fy++) for (let lx = Math.floor(cx - r); lx <= cx + r; lx++) {
+        const d = Math.hypot(lx + 0.5 - cx, fy + 0.5 - cy) / r; if (d > 1 || fy < 0 || fy > 11) continue;
+        F(lx, fy, d > 0.78 ? pick(PAL.iron, cl(0.55 - (lx - cx + fy - cy) / (r * 3)), lx, fy) : Math.round(d * 6) % 2 && d > 0.3 ? pick(PAL.wood, 0.42 - (lx - cx) * 0.03, lx, fy) : pick(PAL.wood, cl(0.6 - (lx - cx + fy - cy) / (r * 4)), lx, fy));
+        if (d < 0.2) F(lx, fy, pk('#140a06')); }
+      else for (let fy = 1; fy < 11; fy++) for (let lx = 2; lx < 14; lx++) { const a2 = (lx + fy) % 4, b2 = (lx - fy + 40) % 4; // diamond lattice with bottle ends
+        if (a2 === 0 || b2 === 0) F(lx, fy, pick(PAL.wood, 0.55 - fy * 0.02, lx, fy)); else if (a2 === 2 && b2 === 2) F(lx, fy, hash(lx + tx * 3, fy, 61) < 0.45 ? pk('#a03848') : pk('#3a7a46')); }
+    }
+    if (th === 'cellar' && c === '#' && !isW(tx, ty + 1) && !faceRun && h > 0.6 && !torch(tx, ty)) anim.walls.push([tx, ty, 'candle']); // candle stubs on brick ledges
+    if (th === 'cellar' && c !== '#') { // cobwebs in the corners, straw, a corner cask (solid) where it can never block the way
+      for (const sd of [-1, 1]) if (isW(tx, ty - 1) && isW(tx + sd, ty) && hash(tx, ty, 62 + sd) < 0.8) { const cx0 = sd < 0 ? X : X + 15;
+        for (let r = 1; r < 10; r++) for (let a = 0; a <= 4; a++) { const t = (a / 4) * Math.PI / 2; B(cx0 - sd * Math.round(Math.cos(t) * r), Y + Math.round(Math.sin(t) * r), pk('#e0d8c8'), r % 3 === 0 ? 0.5 : 0.25); }
+        for (const r of [3, 6, 9]) for (let k = 0; k <= r * 1.6; k++) { const t = (k / (r * 1.6)) * Math.PI / 2; B(cx0 - sd * Math.round(Math.cos(t) * r), Y + Math.round(Math.sin(t) * r), pk('#ece4d4'), 0.4); } }
+      if (c === '.' && h > 0.9) for (let k = 0; k < 7; k++) { const sx = X + 2 + Math.floor(hash(tx, ty, 70 + k) * 12), sy = Y + 3 + Math.floor(hash(tx, ty, 80 + k) * 10); S(sx, sy, pk('#d8b060')); S(sx + 1, sy + (k & 1 ? 1 : -1), pk('#b08a40')); }
+      const wl = isW(tx - 1, ty), wr = isW(tx + 1, ty), wu = isW(tx, ty - 1), wd = isW(tx, ty + 1), corner = (wl || wr) && (wu || wd) && !(wl && wr) && !(wu && wd);
+      const ox = wl ? 1 : -1, oy = wu ? 1 : -1, open3 = ch(tx + ox, ty) === '.' && ch(tx, ty + oy) === '.' && ch(tx + ox, ty + oy) === '.';
+      const near = (k) => { for (let j = -1; j <= 1; j++) for (let i = -1; i <= 1; i++) if ('ECX'.includes(ch(tx + i, ty + j))) return true; return false; };
+      const reserved = (m.spawn && m.spawn.x === tx && m.spawn.y === ty) || (m.portals && m.portals[`${tx},${ty}`]) || (m.npcs || []).some((n) => n.x === tx && n.y === ty) || (m.boss && Math.abs(m.boss.x - tx) + Math.abs(m.boss.y - ty) < 3);
+      if (c === '.' && corner && open3 && !near() && !reserved && hash(tx, ty, 90) < 0.55) { anim.casks.push([tx, ty]); for (let y = Y + 12; y < Y + 17; y++) for (let x = X + 1; x < X + 16; x++) if (((x + 0.5 - X - 9) / 7.5) ** 2 + ((y + 0.5 - Y - 14.5) / 2.4) ** 2 <= 1) D(x, y, 0.58); }
+    }
     if (c === 'E') { // stairs up to daylight: an arched passage in the wall above, steps down onto the floor
-      const day = pk('#fff2c8'), stone = th === 'spire' ? PAL.icef : th === 'crypt' ? PAL.cstone : th === 'storm' ? PAL.slate : th === 'ruins' ? PAL.sstone : PAL.basalt;
+      const day = pk('#fff2c8'), stone = th === 'spire' ? PAL.icef : th === 'crypt' ? PAL.cstone : th === 'storm' ? PAL.slate : th === 'ruins' ? PAL.sstone : th === 'cellar' ? PAL.cbrick : PAL.basalt;
       if (isW(tx, ty - 1)) for (let ly = CAPH - 2; ly < 16; ly++) for (let lx = 1; lx < 15; lx++) { const fy = ly - CAPH + 2, ar = fy < 4 && Math.abs(lx + 0.5 - 8) > 7 - [5, 3, 1.5, 0.5][fy]; if (ar) continue;
         const jamb = lx < 3 || lx > 12, k = (ly - CAPH + 2) / 14;
         S(X + lx, Y - 16 + ly, jamb ? pick(stone, lx === 1 || lx === 13 ? 0.85 : 0.5, lx, ly) : mix(pick(stone, ((ly + 1) % 3 === 0 ? 0.15 : (ly + 1) % 3 === 1 ? 0.8 : 0.55), lx, ly), day, cl(0.7 - k * 0.8))); }
@@ -604,6 +662,8 @@ function buildDungeon(m) {
     const x = px - O, y = py - O, tx = x >> 4, ty = y >> 4, ly = y & 15; if (isW(tx, ty) || !isW(tx, ty - 1) || ly > 9) continue;
     const src = P.get(px, py - 2 * ly - 1); if (cA(src)) P.d[py * GW + px] = mix(P.d[py * GW + px], src, 0.42 * (1 - ly / 10));
   }
+  if (th === 'cellar') for (let py = 0; py < GH; py++) for (let px = 0; px < GW; px++) { const c2 = P.d[py * GW + px]; if (c2 && c2 !== VOID && hash(px, py, 91) < 0.5) P.d[py * GW + px] = rgba(cR(c2) * 1.04 + 2, cG(c2) * 1.0, cB(c2) * 0.9, 255); } // warm cast
+  if (th === 'cellar' && anim.casks.length) { m.blocks ||= new Set(); for (const [tx, ty] of anim.casks) m.blocks.add(`${tx},${ty}`); } // corner casks are solid (never on a path: both neighbours and their diagonal stay open)
   const boss = m.boss;
   if (boss && th === 'ruins') { // sun-disc altar: a gold disc inlaid in the floor, sixteen rays, a lapis ring, and a stepped sandstone dais
     const cx = boss.x * 16 + 8, cy = boss.y * 16 + 9, fl = (x, y) => !isW(x >> 4, y >> 4);
@@ -691,6 +751,14 @@ export function mapObjects(m, t, out) {
     out.push({ x: 0, y: 0, w: 1, h: 1, z: 2, draw: (ctx, X, Y, TS) => { const q = TS / 16; for (let i = 0; i < 56; i++) { const [tx, ty] = F[Math.floor(hash(i, 11, 5) * F.length)], T0 = 3 + hash(i, 12, 5) * 3, u = (t / T0 + hash(i, 13, 5)) % 1;
       const ex = X + (tx - 1 + u * 3) * TS, ey = Y + (ty + 0.4 + Math.sin(u * 9 + i) * 0.25 + u * 0.3) * TS; if (ex < -4 || ey < -4 || ex > ctx.canvas.width + 4 || ey > ctx.canvas.height + 4) continue;
       ctx.fillStyle = u < 0.15 || u > 0.85 ? 'rgba(240,210,150,.3)' : 'rgba(252,228,172,.75)'; ctx.fillRect(Math.round(ex), Math.round(ey), q * (i % 5 ? 1 : 2), q); } } });
+  } else if (th === 'cellar') { // corner casks, guttering candles, dust motes drifting in the lantern light
+    for (const [tx, ty] of A.casks) out.push(place(barrelPix(), tx, ty));
+    for (const [tx, ty, k] of A.walls) if (k === 'candle') { const fl = 0.8 + Math.sin(t * 9 + tx * 3) * 0.12 + Math.sin(t * 23 + ty) * 0.08;
+      out.push({ img: candlePix(), x: tx + 6 / 16, y: ty + 7 / 16, z: 0 }); out.push({ img: flamePix(Math.floor(t * 5 + tx) % 2), x: tx + 5.5 / 16, y: ty + 0 / 16, z: 0 }); out.push(glowItem('255,170,80', tx + 0.5, ty + 0.55, 1.6, 0.42 * fl, 0)); }
+    const F = A.floor;
+    out.push({ x: 0, y: 0, w: 1, h: 1, z: 2, draw: (ctx, X, Y, TS) => { const q = TS / 16; for (let i = 0; i < 40; i++) { const [tx, ty] = F[Math.floor(hash(i, 21, 7) * F.length)], T0 = 6 + hash(i, 22, 7) * 6, u = (t / T0 + hash(i, 23, 7)) % 1;
+      const ex = X + (tx + 0.5 + Math.sin(u * 5 + i) * 0.6) * TS, ey = Y + (ty + 0.8 - u * 1.2) * TS; if (ex < -4 || ey < -4 || ex > ctx.canvas.width + 4 || ey > ctx.canvas.height + 4) continue;
+      ctx.fillStyle = u < 0.2 || u > 0.8 ? 'rgba(255,220,160,.25)' : 'rgba(255,230,180,.6)'; ctx.fillRect(Math.round(ex), Math.round(ey), q, q); } } });
   } else if (th === 'storm') {
     const f = stormFlash(t);
     for (const [tx, ty, pal, v] of A.cryst) { const a = Math.max(f, 0.3 + 0.25 * Math.sin(t * 1.7 + tx * 1.3 + ty * 0.7)); out.push({ img: crystalPix(pal, v), x: tx, y: ty, z: 0, draw: (ctx, X, Y, TS) => { ctx.globalAlpha = a; ctx.drawImage(crystalPix(pal, v), X, Y, TS, TS); ctx.globalAlpha = 1; } }); out.push(glowItem(pal === 'pstal' ? '190,130,255' : T.glow, tx + 0.5, ty + 0.65, 1.1, a * 0.5, 0)); }

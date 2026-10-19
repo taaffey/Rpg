@@ -38,6 +38,7 @@ const ART = {
   torchA: ['................', '................', '.......y........', '......yoy.......', '......yoy.......', '.......o........', '......kNk.......', '......kNk.......', '......kNk.......', '.....kkkkk......', '................', '................', '................', '................', '................', '................'],
   torchB: ['................', '.......y........', '......yoy.......', '.....yoyoy......', '......yoy.......', '.......o........', '......kNk.......', '......kNk.......', '......kNk.......', '.....kkkkk......', '................', '................', '................', '................', '................', '................'],
   lamp: ['................', '.....kkkkk......', '....kyyyyyk.....', '....kyywyyk.....', '....kyyyyyk.....', '.....kkkkk......', '......kSk.......', '......kSk.......', '......kSk.......', '......kSk.......', '......kSk.......', '.....kSSSk......', '....kSSSSSk.....', '................', '................', '................'],
+  trapdoor: ['................', '.kkkkkkkkkkkkkk.', '.kNnnNnnnNnnnNk.', '.kNnnNnnnNnnnNk.', '.kSSSSSSSSSSSSk.', '.kNnnNnnnNnnnNk.', '.kNnnNnSSNnnnNk.', '.kNnnNnSnSnnnNk.', '.kNnnNnSSNnnnNk.', '.kNnnNnnnNnnnNk.', '.kNnnNnnnNnnnNk.', '.kSSSSSSSSSSSSk.', '.kNnnNnnnNnnnNk.', '.kNnnNnnnNnnnNk.', '.kkkkkkkkkkkkkk.', '................'], // flat on the floor
   exit: ['................', '.....yyyy.......', '....yyyyyy......', '....yyyyyy......', '....yyyyyy......', '..yyyyyyyyyy....', '...yyyyyyyy.....', '....yyyyyy......', '.....yyyy.......', '......yy........', '................', '................', '................', '................', '................', '................'],
 };
 // ---------- enemies ----------
@@ -82,7 +83,9 @@ export const HERO_STYLE = { // job -> [head, H, h, T, t, A, F]
   samurai: ['hair', '#202030', '#101018', '#c04040', '#802020', '#f2f2f2', '#f0c8a0'],
   paladin: ['helm', '#e8e8f0', '#a8a8c0', '#f2f2f2', '#c8c8d8', '#f4d35e', '#f0c8a0'],
   bard: ['pointy', '#d94a4a', '#8a2430', '#2aa0a0', '#1a7070', '#f4d35e', '#f0c8a0'],
+  bloke: ['hair', '#6a4428', '#4a2c18', '#8a8e98', '#3e5a92', '#3a3036', '#f0c8a0'], // jobless 2026 bloke (grey tee, jeans)
 };
+const jobOf = (key) => { const j = String(key).split('@')[0]; return HERO_STYLE[j] ? j : 'knight'; }; // 'job@look' -> job
 function rowsFor(h, frame = 0) {
   const rows = [...HEAD[h], ...BODY];
   if (frame === 1) { rows[13] = '..kttk....kttk..'; rows[14] = '..kkkk....kkkk..'; }
@@ -154,12 +157,12 @@ export function enemy(id) {
   cache.set('e' + id, c); return c;
 }
 export const baseOf = (id) => (VARIANT[id] ? VARIANT[id][0] : id);
-export function hero(job, frame = 0) { const k = `h${job}${frame}`; if (!cache.has(k)) cache.set(k, sprite(heroRows(job, frame), heroPal(job))); return cache.get(k); }
+export function hero(job, frame = 0) { job = jobOf(job); const k = `h${job}${frame}`; if (!cache.has(k)) cache.set(k, sprite(heroRows(job, frame), heroPal(job))); return cache.get(k); }
 const TORCH_PAL = { cavern: undefined, storm: { y: '#fff6a0', o: '#ffd22a' }, crypt: { y: '#c8ffb0', o: '#4aff7a' }, spire: { y: '#ffffff', o: '#7fd8f0' } };
 export const torch = (frame, theme = 'cavern') => { const k = `torch${frame}${theme}`; if (!cache.has(k)) cache.set(k, sprite(ART[frame ? 'torchB' : 'torchA'], TORCH_PAL[theme])); return cache.get(k); };
-const DECOR_ART = { lamp: () => ART.lamp, tree: () => ART.tree, banner: () => ART.guild, ...Object.fromEntries(Object.keys(FURN).map((k) => [k, () => FURN[k]])) };
+const DECOR_ART = { lamp: () => ART.lamp, trapdoor: () => ART.trapdoor, tree: () => ART.tree, banner: () => ART.guild, ...Object.fromEntries(Object.keys(FURN).map((k) => [k, () => FURN[k]])) };
 export function decor(kind) { const k = 'd' + kind; if (!cache.has(k)) cache.set(k, sprite(DECOR_ART[kind]())); return cache.get(k); }
-export function npc(type, frame = 0) { const k = `n${type}${frame}`; if (!cache.has(k)) { const [h, H, hh, Tt, t, A, F] = NPC_STYLE[type]; cache.set(k, sprite(rowsFor(h, frame), { H, h: hh, T: Tt, t, A, F })); } return cache.get(k); }
+export function npc(type, frame = 0) { const k = `n${type}${frame}`; if (!cache.has(k)) { const [h, H, hh, Tt, t, A, F] = NPC_STYLE[type] || NPC_STYLE.villager; cache.set(k, sprite(rowsFor(h, frame), { H, h: hh, T: Tt, t, A, F })); } return cache.get(k); }
 export const lamp = () => { if (!cache.has('lamp')) cache.set('lamp', sprite(ART.lamp)); return cache.get('lamp'); };
 export const treeSprite = () => { if (!cache.has('tree')) cache.set('tree', sprite(ART.tree)); return cache.get('tree'); };
 // 10x10 faceted gem icon, recolored per gem type
@@ -176,7 +179,7 @@ export function gemIcon(id, scale = 2) {
 }
 export function url(canvas, scale = 4) { const c = mk(canvas.width * scale, canvas.height * scale), x = c.getContext('2d'); x.imageSmoothingEnabled = false; x.drawImage(canvas, 0, 0, c.width, c.height); return c.toDataURL(); }
 export const enemyURL = (id) => { const k = 'eu' + id; if (!cache.has(k)) { const c = enemy(id); cache.set(k, url(c, Math.max(1, Math.round(128 / Math.max(c.width, c.height))))); } return cache.get(k); };
-export const heroURL = (job) => { const k = 'hu' + job; if (!cache.has(k)) cache.set(k, url(HERO_STYLE[job] ? BA.heroPortrait(job) : hero(job), 3)); return cache.get(k); }; // square crop of the side-view battle sprite
+export const heroURL = (job) => { const k = 'hu' + job; if (!cache.has(k)) cache.set(k, url(BA.heroPortrait(job), 3)); return cache.get(k); }; // job or 'job@look' // square crop of the side-view battle sprite
 // tile lookup: variant picked by position so textures don't tile obviously
 export function tile(map, ch, x, y, frame = 0) {
   if (!T.world) buildTiles();
