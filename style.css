@@ -438,3 +438,6 @@ body:has(#overlay.on) #toast{top:auto;bottom:calc(env(safe-area-inset-bottom,0px
 .echo img{width:64px;height:64px;image-rendering:pixelated}
 @keyframes echoin{0%{opacity:0;filter:brightness(3) blur(2px);transform:translateY(6px)}60%{opacity:.7;filter:brightness(1.6)}100%{opacity:1;filter:none;transform:none}}
 @media (prefers-reduced-motion:reduce){.heartgem img,.echo{animation:none;opacity:1}}
+/* ---------- Bearded Bros: pub illustrations (prologue, ending) ---------- */
+img.pubart{display:block;width:100%;max-width:512px;margin:6px auto 4px;aspect-ratio:16/9;image-rendering:pixelated;border:2px solid #0a0820;box-shadow:0 0 0 2px #c8b8ff55;background:#1a1432}
+.crname b{font-size:13px;display:block;margin-top:4px}

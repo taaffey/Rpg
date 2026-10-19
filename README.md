@@ -1,6 +1,20 @@
-# Gemforge Chronicles
+# Bearded Bros (and the Bell of Gemforge)
 
-A turn-based JRPG in the spirit of Final Fantasy 1 and Dragon Warrior, built around deep build customization.
+A turn-based JRPG in the spirit of Final Fantasy 1, 5 and Dragon Warrior, built around deep build customization.
+
+## The story
+Quiz night, 2026, at The Bell & Anvil. Brothers **Adam** and **Devon**, two beards and one answer sheet, ring the old brass bell
+behind the bar ("A round for the house!") and wake up in a hay cart in Haven, a thousand years in the past. Elder Mott rang the
+same bell to summon the heroes of legend. He got two blokes in hoodies. To get home, they have to put right Gemforge's three seals.
+
+- **No calling yet**: the bros start as *Blokes* (bare fists, Headbutt, Banter). The gate won't let them out until they clear the
+  slimes from the Gilded Goose's cellar (trapdoor in the tavern's corner) and beat **Big Gary**, a giant slime that drank the cellar.
+- **Brenna**, the Goose's sarcastic barmaid, joins after the cellar (cleric). Then the bros choose callings at the Adventurer's Guild.
+- **Sir Wendell**, who has guarded the Ashen Cavern for eleven years because nobody told him he could stop, joins at its mouth (knight).
+- Every NPC, quest, boss and scene is played for laughs on top of the real story. The ending sends the bros back to the pub.
+- Until all four have joined, random fights scale to the party's size (`PARTY_SCALE` in `src/bros.js`).
+- The intro lives in `src/bros.js`; the pub illustrations in `src/pubart.js`. Characters keep their faces (beards!) whatever their
+  calling: art is keyed `job@look` (e.g. `knight@adam`). Balance: `node tools/introsim.mjs` (cellar) and `node tools/progress.mjs`.
 Plain HTML/JS modules, no build step, no asset files: all art and audio are generated in code.
 
 ## Run

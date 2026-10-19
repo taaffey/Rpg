@@ -3,8 +3,10 @@
 // dungeon chests and fighting each boss. Prints the level reached at every stage, EXP/gold per fight, and
 // boss win rates at the arrival level. Exits non-zero if the curve drifts out of the intended bands.
 // usage: node tools/progress.mjs [runs=24] [verbose]
-import { Battle, newChar, stats, slotSkill, slotGems, skillWithGems, SIG, learnable, rewards, awardExp, awardCP, rankOf, expNeeded, MAX_LEVEL } from '../src/logic.js';
+import { Battle, newChar, stats, slotSkill, slotGems, skillWithGems, SIG, learnable, rewards, awardExp, awardCP, rankOf, expNeeded, MAX_LEVEL, setCalling } from '../src/logic.js';
+const CP_AT_LEVEL = [0, 0, 3, 8, 14, 22, 32, 40, 50, 60, 75, 95, 115, 130, 150, 170, 190, 210, 230, 250, 270];
 import { ENCOUNTERS, WEAPONS, ARMORS, ACCS, ITEMS, DIFFICULTY } from '../src/data.js';
+import { PARTY_SCALE } from '../src/bros.js';
 function mulberry(a){return()=>{a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
 const RUNS = +process.argv[2] || 24, VERBOSE = process.argv.includes('verbose');
 const DIFF = process.argv.find((a) => DIFFICULTY[a]) || 'normal';
@@ -15,18 +17,20 @@ const DB = { weapons: WEAPONS, armors: ARMORS, accs: ACCS };
 // shop: [heroIndex, kind, id] wish list bought in order when affordable; loot: chest gear handed to heroes.
 // want: [lo, hi] acceptable average party level on arriving at the boss / leaving the stage.
 const ROUTE = [
-  { name: 'Haven grassland', table: 'world', ramp: true, fights: 16, shop: [[0, 'weapons', 'iron_sword'], [1, 'weapons', 'oak_staff'], [2, 'weapons', 'oak_staff'], [3, 'weapons', 'bronze_dirk']], want: [4, 6] },
-  { name: 'Haven again', table: 'world', fights: 6, shop: [[0, 'armors', 'chain'], [3, 'weapons', 'hunter_bow'], [0, 'weapons', 'flame_brand'], [1, 'weapons', 'storm_rod']], want: [5, 7] },
+  { name: 'Goose Cellar (2 blokes)', table: 'cellar', fights: 5, boss: 'big_gary', bossWant: [2, 3], want: [2, 4] }, // then Brenna joins and the bros take callings
+  { name: 'Haven grassland', table: 'world', ramp: true, fights: 16, shop: [[0, 'weapons', 'iron_sword'], [1, 'weapons', 'oak_staff'], [2, 'weapons', 'oak_staff'], ], want: [4, 6] },
+  { name: 'Haven again', table: 'world', fights: 6, shop: [[0, 'armors', 'chain'], [3, 'weapons', 'flame_brand'], [0, 'weapons', 'flame_brand'], [1, 'weapons', 'storm_rod']], want: [5, 7] },
   { name: 'Mire Marsh', table: 'swamp', fights: 12, shop: [[2, 'weapons', 'healing_staff'], [1, 'armors', 'mage_cloak'], [2, 'armors', 'leather']], want: [7, 9] },
-  { name: 'Ashen Cavern', table: 'dungeon', fights: 10, loot: [[3, 'weapons', 'shadow_edge'], [1, 'weapons', 'archmage_staff']], boss: 'wyrm', bossWant: [8, 10], want: [9, 11] },
-  { name: 'Plains+Frostfields', table: 'snow', fights: 10, pre: [[0, 'weapons', 'dragonbane'], [0, 'armors', 'dragon_mail']], shop: [[2, 'weapons', 'sage_staff'], [3, 'weapons', 'longbow'], [3, 'armors', 'yeti_fur'], [2, 'armors', 'frost_robe']], want: [11, 13] },
-  { name: 'Sunken Crypt', table: 'crypt', fights: 10, loot: [[3, 'weapons', 'stiletto'], [1, 'armors', 'frost_robe']], boss: 'lich', bossWant: [12, 14], want: [13, 15] },
-  { name: 'Frost Spire', table: 'spire', fights: 14, pre: [[1, 'weapons', 'lich_staff'], [1, 'armors', 'lich_robes']], shop: [[0, 'armors', 'mythril_mail'], [2, 'accs', 'life_charm']], loot: [[3, 'weapons', 'frost_bow']], boss: 'titan', bossWant: [16, 18], want: [17, 19] },
+  { name: 'Ashen Cavern', table: 'dungeon', fights: 10, loot: [[1, 'weapons', 'archmage_staff']], join: true, boss: 'wyrm', bossWant: [8, 10], want: [9, 11] },
+  { name: 'Plains+Frostfields', table: 'snow', fights: 10, pre: [[0, 'weapons', 'dragonbane'], [0, 'armors', 'dragon_mail']], shop: [[2, 'weapons', 'sage_staff'], [3, 'weapons', 'mythril_sword'], [3, 'armors', 'yeti_fur'], [2, 'armors', 'frost_robe']], want: [11, 13] },
+  { name: 'Sunken Crypt', table: 'crypt', fights: 10, loot: [[1, 'armors', 'frost_robe']], boss: 'lich', bossWant: [12, 14], want: [13, 15] },
+  { name: 'Frost Spire', table: 'spire', fights: 14, pre: [[1, 'weapons', 'lich_staff'], [1, 'armors', 'lich_robes']], shop: [[0, 'armors', 'mythril_mail'], [2, 'accs', 'life_charm']], loot: [], boss: 'titan', bossWant: [16, 18], want: [17, 19] },
   { name: 'Storm Cavern (opt.)', table: 'storm', fights: 6, boss: 'storm_drake', bossWant: [11, 20], want: [17, 20] },
   { name: 'Sunscar Ruins (opt.)', table: 'ruins', fights: 6, boss: 'sphinx', bossWant: [11, 20], want: [17, 20] },
 ];
 // the party never changes calling: skills come only from that calling's ranks (Calling Points), like an FF5 party that stays put
-const JOBSET = [['Aldric', 'knight', 'leather'], ['Lyra', 'mage', 'cloth'], ['Mira', 'cleric', 'cloth'], ['Kael', 'rogue', 'leather']];
+// Adam and Devon start as blokes; after the cellar they take knight and mage, Brenna (cleric) joins; Sir Wendell (knight, own sword) at the Ashen Cavern
+const JOBSET = [['Adam', 'knight', 'leather'], ['Devon', 'mage', 'cloth'], ['Brenna', 'cleric', 'cloth'], ['Wendell', 'knight', 'leather']];
 // a sensible player keeps their newest four abilities slotted
 function reslot(c) { const ok = learnable(c); c.slots = [0, 1, 2, 3].map((i) => ok.slice(-4).reverse()[i] || null); }
 function bot(b, rng) {
@@ -49,7 +53,8 @@ function bot(b, rng) {
   return cmds;
 }
 function fight(party, grp, rng, boss = null) {
-  const b = new Battle(party, grp, rng, !!boss, DIFFICULTY[DIFF].mod); let r = 0;
+  const mod = { ...DIFFICULTY[DIFF].mod }, ps = !boss && PARTY_SCALE[party.length]; if (ps) { mod.hp *= ps.hp; mod.atk *= ps.atk; mod.mag *= ps.atk; }
+  const b = new Battle(party, grp, rng, !!boss, mod); let r = 0;
   while (!b.over && r++ < 80) for (const _ of b.round(bot(b, rng)));
   b.p.forEach((x) => { x.ch.hp = x.hp; x.ch.mp = x.mp; });
   return b;
@@ -60,8 +65,9 @@ const clone = (party) => party.map((c) => JSON.parse(JSON.stringify(c)));
 function equip(party, list, inv, buy, G, log) {
   for (const [i, kind, id] of list || []) {
     const field = { weapons: 'weapon', armors: 'armor', accs: 'acc' }[kind], d = DB[kind][id];
+    if (!party[i]) continue;
     if (buy) { if (G.gold < d.price) { log.push(`  (could not afford ${d.name} ${d.price}G)`); continue; } G.gold -= d.price; log.push(`  bought ${d.name} for ${party[i].name} (${d.price}G)`); }
-    party[i][field] = id;
+    if (!party[i]) continue; party[i][field] = id;
   }
 }
 function bossTrial(party, boss, n, seed) {
@@ -72,13 +78,15 @@ const agg = ROUTE.map(() => ({ rank: 0, cp: 0, lv: 0, end: 0, wins: 0, fights: 0
 let firstRunLog = [];
 for (let run = 0; run < RUNS; run++) {
   const rng = mulberry(run * 7919 + 13), log = [];
-  const party = JOBSET.map(([n, m, a]) => newChar(n, m, null, null, a, 1)); party.forEach(reslot); heal(party);
+  const party = JOBSET.slice(0, 2).map(([n, , a]) => newChar(n, 'bloke', null, null, 'cloth', 1)); party.forEach(reslot); heal(party);
+  const join = (i) => { const lv = Math.max(1, Math.round(avgLv(party))), [n, m, a] = JOBSET[i]; const c = newChar(n, m, null, i === 3 ? 'iron_sword' : null, a, lv); c.cp[m] = CP_AT_LEVEL[lv]; reslot(c); party.push(c); };
   const G = { gold: 400, potions: 0 };
   ROUTE.forEach((st, si) => {
     const A = agg[si]; log.push(`== ${st.name} (arrive avg Lv ${avgLv(party).toFixed(1)}, ${G.gold}G)`);
     A.lv += avgLv(party);
+    if (st.join) { join(3); heal(party); }
     equip(party, st.pre, null, false, G, log); equip(party, st.shop, null, true, G, log);
-    if (si === 0) { const n = Math.floor(Math.min(G.gold, 120) / ITEMS.potion.price); G.gold -= n * ITEMS.potion.price; log.push(`  bought ${n} potions`); }
+    if (si === 1) { const n = Math.floor(Math.min(G.gold, 120) / ITEMS.potion.price); G.gold -= n * ITEMS.potion.price; log.push(`  bought ${n} potions`); }
     heal(party);
     for (let f = 0; f < st.fights; f++) {
       let tb = ENCOUNTERS[st.table];
@@ -96,6 +104,7 @@ for (let run = 0; run < RUNS; run++) {
       const r = b.over === 'win' ? rewards(b) : { exp: 0, gold: 0 }; heal(party); awardExp(party, r.exp); awardCP(party, r.cp || 0); G.gold += r.gold; party.forEach(reslot);
       log.push(`  boss ${st.boss}: ${b.over}`);
     }
+    if (si === 0) { party.forEach((c, i) => { setCalling(c, JOBSET[i][1]); delete c.cp.bloke; c.armor = JOBSET[i][2]; reslot(c); }); join(2); heal(party); }
     A.end += avgLv(party); A.goldEnd += G.gold; A.rank += party.reduce((n, c) => n + rankOf(c, c.main), 0) / party.length;
   });
   if (run === 0) firstRunLog = log;

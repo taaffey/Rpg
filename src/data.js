@@ -229,9 +229,9 @@ export const DROPS = {}; // filled at the end of this file (every enemy has a ta
 // =====================================================================
 export const BOSSES = {
   // heart: the key item each of Gemforge's three evils leaves behind (see STORY below)
-  wyrm: { name: 'Ashen Wyrm', intro: 'The Ashen Wyrm uncoils: "The cutter promised me a feast. You will do."', loot: { weapons: ['dragonbane'], armors: ['dragon_mail'] }, heart: 'ember_heart' },
-  lich: { name: 'Lich King Morvath', intro: 'Morvath rises from his sarcophagus: "The grey one opened my door. And you have come to close it? How dull."', loot: { weapons: ['lich_staff'], armors: ['lich_robes'], gems: ['siphon'] }, heart: 'grave_heart' },
-  titan: { name: 'Frost Titan', intro: 'The Spire shudders as the Frost Titan stands: "SMALL ONES... GEMFORGE SENDS... CHILDREN?"', loot: { weapons: ['titan_axe'], armors: ['titan_plate'], gems: ['execute'] }, final: true, heart: 'rime_heart' },
+  wyrm: { name: 'Ashen Wyrm', intro: 'The Ashen Wyrm uncoils: "The cutter promised me a feast. Two hairy ones? ...You will do."', loot: { weapons: ['dragonbane'], armors: ['dragon_mail'] }, heart: 'ember_heart' },
+  lich: { name: 'Lich King Morvath', intro: 'Morvath rises from his sarcophagus: "The grey one opened my door. And you have come to close it? In SHORTS? How dull."', loot: { weapons: ['lich_staff'], armors: ['lich_robes'], gems: ['siphon'] }, heart: 'grave_heart' },
+  titan: { name: 'Frost Titan', intro: 'The Spire shudders as the Frost Titan stands: "SMALL ONES... GEMFORGE SENDS... HAIRY CHILDREN?"', loot: { weapons: ['titan_axe'], armors: ['titan_plate'], gems: ['execute'] }, final: true, heart: 'rime_heart' },
 };
 
 Object.assign(SKILLS, {
@@ -360,25 +360,25 @@ Object.assign(ENEMIES, {
   storm_drake: E('Storm Drake', '🐲', 2500, 48, 18, 52, 12, 2000, 1800, [['stormclaw', 3], ['thunderbreath', 2], ['claw', 1]], { weak: ['ice'], res: ['bolt'], boss: true }),
 });
 Object.assign(ENCOUNTERS, { storm: [['storm_bat', 'storm_bat'], ['thunder_imp', 'thunder_imp'], ['gale_wraith'], ['storm_bat', 'thunder_imp'], ['gale_wraith', 'storm_bat'], ['thunder_imp', 'gale_wraith', 'storm_bat']] });
-BOSSES.storm_drake = { name: 'Storm Drake', intro: 'Thunder splits the cavern. The Storm Drake drops from the dark, crackling!', optional: true, loot: { weapons: ['storm_katana'], armors: ['storm_cloak'], gems: ['siphon', 'crit'] } };
+BOSSES.storm_drake = { name: 'Storm Drake', intro: 'Thunder splits the cavern. The Storm Drake drops from the dark, crackling! Devon\'s phone does not charge.', optional: true, loot: { weapons: ['storm_katana'], armors: ['storm_cloak'], gems: ['siphon', 'crit'] } };
 SHOPS.mire_general = { title: '🛒 Mirewood Trading Post', stock: { items: ['potion', 'hipotion', 'ether', 'phoenix'], gems: ['fire', 'frost', 'bolt', 'holy', 'shadow', 'chain', 'vamp', 'thrifty', 'venom', 'guard', 'crit'], weapons: ['healing_staff', 'viper_fang', 'serpent_lash', 'thunder_claw', 'bone_scythe', 'battle_axe', 'iron_katana', 'hunter_bow', 'flame_brand'], armors: ['chain', 'mage_cloak', 'yeti_fur'], accs: ['ward_amulet', 'fire_pendant', 'swift_boots'] } };
 
 // ---- side quests. goal: {type:'kill', ids, n} | {type:'find', item} | {type:'boss', id}
 export const QUESTS = {
-  slimes: { title: 'Slime Trouble', giver: 'Haven villager', goal: { type: 'kill', ids: ['slime'], n: 6 }, reward: { gold: 150, items: { potion: 3 }, gems: ['thrifty'] },
-    lines: { offer: ['Slimes keep oozing into the cellars and ruining the grain!', 'Could you clear out six of them on the grassland?'], active: ['Slimes, on the grass outside town. Six of them, please!'], ready: ['You did it! My cellars are safe again. Take this, with my thanks!'], done: ['Not a single slime in my cellar since you passed through. Thank you.'] } },
+  slimes: { title: 'Slime Time', giver: 'Haven villager', goal: { type: 'kill', ids: ['slime'], n: 6 }, reward: { gold: 150, items: { potion: 3 }, gems: ['thrifty'] },
+    lines: { offer: ['Slimes keep oozing into the cellars and ruining the grain! Not ale-slimes. Grain-slimes. Totally different.', 'After what you did to Big Gary, six little ones on the grassland should be nothing. Could you?'], active: ['Slimes, on the grass outside town. Six of them, please! No, they do not "respawn". I hope.'], ready: ['You did it! My cellars are safe again. Take this, with my thanks! And maybe a wash.'], done: ['Not a single slime in my cellar since you passed through. Thank you.'] } },
   heirloom: { title: 'The Lost Heirloom', giver: 'Haven fisher', goal: { type: 'find', item: 'heirloom', where: 'Ashen Cavern' }, reward: { gold: 100, accs: ['family_ring'] },
-    lines: { offer: ['My grandmother\'s ring... I dropped it fleeing the Ashen Cavern years ago.', 'If you find it in some hidden corner of the cavern, I\'d be forever grateful.'], active: ['The ring should be in a dead end of the Ashen Cavern, far from the entrance.'], ready: ['That\'s it! That\'s her ring! Please, take this family heirloom of my own.'], done: ['Grandmother\'s ring is back on the mantel. Bless you.'] } },
+    lines: { offer: ['My grandmother\'s ring... I dropped it fleeing the Ashen Cavern years ago. Fleeing quite fast.', 'If you find it in some hidden corner of the cavern, I\'d be forever grateful.'], active: ['The ring should be in a dead end of the Ashen Cavern, far from the entrance. Far, far from it.'], ready: ['That\'s it! That\'s her ring! Please, take this family heirloom of my own. Gran would\'ve liked you. She loved a beard.'], done: ['Grandmother\'s ring is back on the mantel. Bless you.'] } },
   wolves: { title: 'Pelts for the Furrier', giver: 'Haven traveler', goal: { type: 'kill', ids: ['wolf', 'mire_wolf'], n: 5 }, reward: { gold: 200, accs: ['wolf_fang'] },
-    lines: { offer: ['I\'m a furrier by trade. Wolf pelts are in short supply since the Wyrm woke.', 'Bring me proof of five wolves, from the plains or the marsh, and I\'ll pay well.'], active: ['Five wolves, plains or marsh. I\'ll know the pelts when I see them.'], ready: ['Fine work! These are prime pelts. Here: a fang charm I carved myself.'], done: ['Business is booming thanks to you.'] } },
+    lines: { offer: ['I\'m a furrier by trade. Wolf pelts are in short supply since the Wyrm woke.', 'Bring me proof of five wolves, from the plains or the marsh, and I\'ll pay well. Nice hat, by the way. What beast is a "beanie"?'], active: ['Five wolves, plains or marsh. I\'ll know the pelts when I see them.'], ready: ['Fine work! These are prime pelts. Here: a fang charm I carved myself. "Artisanal", your brother called it.'], done: ['Business is booming thanks to you. I\'ve started a "loyalty card". Nobody knows what it is. Sales doubled.'] } },
   marsh: { title: 'Cleanse the Marsh', giver: 'Mirewood warden', goal: { type: 'kill', ids: ['bog_slime', 'zombie'], n: 8 }, reward: { gold: 400, gems: ['guard'], items: { elixir: 1 } },
-    lines: { offer: ['Mirewood stands on stilts, but the bog creatures climb up anyway.', 'Slay eight bog slimes or zombies and the village will rest easier.'], active: ['Eight bog slimes or zombies. They lurk in the marsh around the village.'], ready: ['The marsh is quiet tonight. The village is in your debt.'], done: ['The village sleeps soundly. You are always welcome here.'] } },
+    lines: { offer: ['Mirewood stands on stilts, but the bog creatures climb up anyway. Cheeky beggars.', 'Slay eight bog slimes or zombies and the village will rest easier.'], active: ['Eight bog slimes or zombies. They lurk in the marsh around the village.'], ready: ['The marsh is quiet tonight. The village is in your debt. Not literally. Please don\'t send us an invoice.'], done: ['The village sleeps soundly. You are always welcome here.'] } },
   lantern: { title: 'The Lost Lantern', giver: 'Mirewood boatwright', goal: { type: 'find', item: 'lantern', where: 'Sunken Crypt' }, reward: { gold: 300, accs: ['swamp_lantern'] },
-    lines: { offer: ['My late brother\'s lantern fell from his boat into the Sunken Crypt\'s flooded entrance.', 'It would mean everything to have it back. Look for a chest deep in the crypt.'], active: ['The lantern is in a chest somewhere in the Sunken Crypt.'], ready: ['His lantern! It still shines. Please, take this charm it inspired.'], done: ['I light it every night, in his memory.'] } },
+    lines: { offer: ['My late brother\'s lantern fell from his boat into the Sunken Crypt\'s flooded entrance.', 'It would mean everything to have it back. Look for a chest deep in the crypt.'], active: ['The lantern is in a chest somewhere in the Sunken Crypt. Your friend offered his "phone torch". On three percent, he said.'], ready: ['His lantern! It still shines. Please, take this charm it inspired.'], done: ['I light it every night, in his memory.'] } },
   yetis: { title: 'Yeti Hunt', giver: 'Frostholm hunter', goal: { type: 'kill', ids: ['yeti'], n: 4 }, reward: { gold: 600, accs: ['frost_amulet'] },
-    lines: { offer: ['Yetis raid our storehouses every winter night.', 'Slay four of the great beasts and the village will reward you.'], active: ['Four yetis. They roam the Frostfields. Bring fire!'], ready: ['Four yetis down! Take this amulet. It has kept our hunters warm for generations.'], done: ['The storehouses are safe. Thank you, friend.'] } },
+    lines: { offer: ['Yetis raid our storehouses every winter night. They take the cheese. Only ever the good cheese.', 'Slay four of the great beasts and the village will reward you.'], active: ['Four yetis. They roam the Frostfields. Bring fire! And trousers!'], ready: ['Four yetis down! Take this amulet. It has kept our hunters warm for generations. Give it to the one in shorts.'], done: ['The storehouses are safe. Thank you, friend.'] } },
   stormdrake: { title: 'Slay the Storm Drake', giver: 'Frostholm old hunter', goal: { type: 'boss', id: 'storm_drake' }, reward: { gold: 1500, gems: ['stun', 'echo'] },
-    lines: { offer: ['A great drake nests in a cavern on the northern plains. Lightning plagues the sky for miles.', 'Slay the Storm Drake and I will pay the village\'s whole reserve. Ice is its weakness.'], active: ['The Storm Cavern, on the Northern Plains. Ice magic, friend.'], ready: ['The skies are clear for the first time in years! The village\'s reserve is yours.'], done: ['Clear skies at last. You are a legend.'] } },
+    lines: { offer: ['A great drake nests in a cavern on the northern plains. Lightning plagues the sky for miles.', 'Slay the Storm Drake and I will pay the village\'s whole reserve. Ice is its weakness. Not fire. ICE. Write it on your hand.'], active: ['The Storm Cavern, on the Northern Plains. Ice magic, friend. And whatever "charging your phone off it" means: don\'t.'], ready: ['The skies are clear for the first time in years! The village\'s reserve is yours.'], done: ['Clear skies at last. You are a legend. A very hairy legend.'] } },
 };
 
 // gem-wright: price of each successive bonus socket (per hero)
@@ -572,7 +572,7 @@ Object.assign(ENEMIES, {
   sphinx: E('Sphinx Pharaoh', '🦁', 2500, 47, 17, 50, 11, 2100, 1900, [['sphinxclaw', 3], ['sunray', 2], ['riddle', 2], ['sandstorm', 1]], { weak: ['ice', 'dark'], res: ['holy', 'fire'], boss: true }),
 });
 ENCOUNTERS.ruins = [['royal_mummy'], ['ruin_scorpion', 'ruin_scorpion'], ['sand_golem'], ['cobra', 'cobra'], ['dust_wraith', 'royal_mummy'], ['cobra', 'ruin_scorpion'], ['dust_wraith', 'dust_wraith'], ['sand_golem', 'cobra'], ['mummy', 'mummy', 'dust_wraith'], ['scorpion', 'cobra', 'desert_bandit']];
-BOSSES.sphinx = { name: 'Sphinx Pharaoh', intro: 'Sand pours from the altar as the Sphinx Pharaoh rises: "Answer, or be buried!"', optional: true, loot: { weapons: ['khopesh'], accs: ['sun_disc'], gems: ['overcharge'] } };
+BOSSES.sphinx = { name: 'Sphinx Pharaoh', intro: 'Sand pours from the altar as the Sphinx Pharaoh rises: "Answer, or be buried! ...And no phoning a friend."', optional: true, loot: { weapons: ['khopesh'], accs: ['sun_disc'], gems: ['overcharge'] } };
 Object.assign(DROPS, {
   royal_mummy: D('items', 'remedy', 0.3, 'gems', 'holy', 0.07), ruin_scorpion: D('items', 'antidote', 0.35, 'gems', 'venom', 0.07), sand_golem: D('items', 'hipotion', 0.35, 'gems', 'guard', 0.07),
   cobra: D('items', 'antidote', 0.3, 'accs', 'scarab_charm', 0.04), dust_wraith: D('items', 'ether', 0.3, 'gems', 'shadow', 0.07),
@@ -582,19 +582,19 @@ Object.assign(DROPS, {
 // deliver: the giver hands over a quest item on accept; the NPC with deliver: id takes it and pays the reward.
 Object.assign(QUESTS, {
   tombs: { title: 'Rest for the Restless', giver: 'Haven acolyte', goal: { type: 'kill', ids: ['mummy', 'royal_mummy'], n: 5 }, reward: { gold: 500, weapons: ['dawn_cestus'], items: { remedy: 2 } },
-    lines: { offer: ['The dead walk the Sunscar Sands, wrapped in linen and old grudges.', 'Lay five mummies to rest and the temple will reward you. Fire and holy light free them best.'], active: ['Five mummies, in the desert south-east of town, or in the ruins beneath it.'], ready: ['Five souls at peace. Take these blessed wraps; they were made for this work.'], done: ['I pray for them every evening now. And for you.'] } },
+    lines: { offer: ['The dead walk the Sunscar Sands, wrapped in linen and old grudges.', 'Lay five mummies to rest and the temple will reward you. Fire and holy light free them best.'], active: ['Five mummies, in the desert south-east of town, or in the ruins beneath it. No, they are not "loo-roll cosplay".'], ready: ['Five souls at peace. Take these blessed wraps; they were made for this work.'], done: ['I pray for them every evening now. And for you.'] } },
   goldboar: { title: 'The Golden Boar', giver: 'Haven huntress', goal: { type: 'kill', ids: ['golden_boar'], n: 1, lure: { table: 'world', group: ['golden_boar'], p: 0.07 } }, reward: { gold: 600, accs: ['golden_tusk'] },
-    lines: { offer: ['Ever seen a boar with a hide of pure gold? I have. Once. It laughed at my arrows.', 'Hunt it down on the Greenmarch grass and bring me a tusk. Watch out: it shrugs off fire.'], active: ['The Golden Boar roams the open grassland. Keep walking the plains; it will find you.'], ready: ['A golden tusk! I\'ll carve you a charm from the other one. Hunter\'s honour.'], done: ['Every hunter in Haven is jealous of you.'] } },
+    lines: { offer: ['Ever seen a boar with a hide of pure gold? I have. Once. It laughed at my arrows. Then at my hat.', 'Hunt it down on the Greenmarch grass and bring me a tusk. Watch out: it shrugs off fire.'], active: ['The Golden Boar roams the open grassland. Keep walking the plains; it will find you. It\'s "shiny-rare", your mate says.'], ready: ['A golden tusk! I\'ll carve you a charm from the other one. Hunter\'s honour.'], done: ['Every hunter in Haven is jealous of you. Two of them have started growing beards.'] } },
   corsair: { title: 'Redwake\'s Buried Gold', giver: 'Haven old sailor', goal: { type: 'find', item: 'doubloon', where: 'south coast, under the waterfall' }, reward: { gold: 400, accs: ['corsair_ring'] },
-    lines: { offer: ['Captain Redwake buried his last haul where the marsh river tumbles off the cliffs into the sea.', 'Stand at the foot of that waterfall and dig. Bring me his gold doubloon and I\'ll give you his ring.'], active: ['West of the river mouth, in the south marsh, where the water falls into the sea. Just walk onto the spot.'], ready: ['Redwake\'s doubloon! Sixty years I waited. Here, the old pirate\'s ring is yours.'], done: ['Fair winds, treasure hunter.'] } },
+    lines: { offer: ['Captain Redwake buried his last haul where the marsh river tumbles off the cliffs into the sea.', 'Stand at the foot of that waterfall and dig. Bring me his gold doubloon and I\'ll give you his ring.'], active: ['West of the river mouth, in the south marsh, where the water falls into the sea. Just walk onto the spot.'], ready: ['Redwake\'s doubloon! Sixty years I waited. Here, the old pirate\'s ring is yours. Arr. Sorry. I\'m emotional.'], done: ['Fair winds, treasure hunter.'] } },
   stingers: { title: 'Stingers for the Apothecary', giver: 'Mirewood apothecary', goal: { type: 'kill', ids: ['scorpion', 'ruin_scorpion'], n: 6 }, reward: { gold: 450, weapons: ['scorpion_lash'], items: { antidote: 5, hipotion: 2 } },
-    lines: { offer: ['Scorpion venom, properly brewed, is the base of every good antidote.', 'Bring me the stingers of six scorpions from the Sunscar Sands and I\'ll make it worth your while.'], active: ['Six scorpions. The Sunscar Sands, east of the marsh. Bring ice; their shells laugh at fire.'], ready: ['Lovely, lovely stingers. And here is something the leftovers were good for: a lash with a sting.'], done: ['My shelves are full of antidotes, thanks to you.'] } },
+    lines: { offer: ['Scorpion venom, properly brewed, is the base of every good antidote. Also clears the sinuses something wonderful.', 'Bring me the stingers of six scorpions from the Sunscar Sands and I\'ll make it worth your while.'], active: ['Six scorpions. The Sunscar Sands, east of the marsh. Bring ice; their shells laugh at fire.'], ready: ['Lovely, lovely stingers. And here is something the leftovers were good for: a lash with a sting.'], done: ['My shelves are full of antidotes, thanks to you.'] } },
   letter: { title: 'A Letter Home', giver: 'Mirewood child', goal: { type: 'deliver', item: 'letter', to: 'the apprentice at the Frostholm Forge' }, reward: { gold: 300, weapons: ['snowfall'] },
-    lines: { offer: ['My big brother is an apprentice at the forge in Frostholm. He hasn\'t written in ages.', 'Could you bring him my letter? The road north is blocked by rocks, but you\'re heroes, right?'], active: ['Please give my letter to my brother at the Frostholm Forge!'], deliver: ['A letter... from my little sister? In Mirewood?', 'She drew our boat on it. Ha! I miss that bog more than I thought.', 'Please, take this blade. My first real katana. Tell her I\'ll write back. Every week!'], ready: ['Thank you, thank you!'], done: ['My brother writes every week now! He says you\'re heroes.'] } },
+    lines: { offer: ['My big brother is an apprentice at the forge in Frostholm. He hasn\'t written in ages.', 'Could you bring him my letter? The road north is blocked by rocks, but you\'re heroes, right?', 'The ginger one said "just text him". What\'s a text? Is it a letter, but sad?'], active: ['Please give my letter to my brother at the Frostholm Forge!'], deliver: ['A letter... from my little sister? In Mirewood?', 'She drew our boat on it. Ha! And two hairy blobs. That\'s you two, isn\'t it? I miss that bog more than I thought.', 'Please, take this blade. My first real katana. Tell her I\'ll write back. Every week!'], ready: ['Thank you, thank you!'], done: ['My brother writes every week now! He says you\'re heroes. He drew your beards. Very big.'] } },
   sphinx: { title: 'The Sphinx\'s Riddle', giver: 'Desert oracle', goal: { type: 'boss', id: 'sphinx' }, reward: { gold: 2000, gems: ['echo', 'crit'], items: { elixir: 2 } },
-    lines: { offer: ['Beneath the broken stones east of here lies the tomb of the Sun Pharaoh, who bargained with a sphinx for eternal rule.', 'Now the two are one, and it asks every traveller a riddle. None have answered. Will you silence it?'], active: ['Sunscar Ruins, just east. The Sphinx Pharaoh shrugs off holy and fire; ice and darkness bite. Come at level 11 or more.'], ready: ['The riddle is answered at last. The sands are quiet. Take what the oracle has kept for this day.'], done: ['The sun sets kindly on the ruins now.'] } },
+    lines: { offer: ['Beneath the broken stones east of here lies the tomb of the Sun Pharaoh, who bargained with a sphinx for eternal rule.', 'Now the two are one, and it asks every traveller a riddle. None have answered. No, you may not "look it up". Will you silence it?'], active: ['Sunscar Ruins, just east. The Sphinx Pharaoh shrugs off holy and fire; ice and darkness bite. Come at level 11 or more.'], ready: ['The riddle is answered at last. The sands are quiet. Take what the oracle has kept for this day.'], done: ['The sun sets kindly on the ruins now.'] } },
   crystalgolem: { title: 'Heart of Crystal', giver: 'Frostholm prospector', goal: { type: 'kill', ids: ['crystal_golem'], n: 1, lure: { table: 'spire', group: ['crystal_golem'], p: 0.12 } }, reward: { gold: 1500, accs: ['prism_band'] },
-    lines: { offer: ['Ice golems in the Frost Spire sometimes grow a heart of living crystal. Glows like a lantern.', 'Shatter one of those Crystal Golems and bring me a shard. Bolt and darkness crack them.'], active: ['A Crystal Golem, in the Frost Spire. They walk among the ice golems.'], ready: ['Look at that shard sing! Here, set in silver: a band that holds two gems.'], done: ['I\'m rich! Well, richer. Thanks, friend.'] } },
+    lines: { offer: ['Ice golems in the Frost Spire sometimes grow a heart of living crystal. Glows like a lantern.', 'Shatter one of those Crystal Golems and bring me a shard. Bolt and darkness crack them.'], active: ['A Crystal Golem, in the Frost Spire. They walk among the ice golems.'], ready: ['Look at that shard sing! Here, set in silver: a band that holds two gems.'], done: ['I\'m rich! Well, richer. Your mate says I should "diversify my portfolio". I bought a second pickaxe.'] } },
 });
 
 // =====================================================================
@@ -606,96 +606,184 @@ Object.assign(QUESTS, {
 // so he wakes the evils and waits. He is glimpsed after the first evil falls, named by Haven's acolyte and the Elder,
 // met at the foot of the Frost Spire, and undone after the Titan: the freed Rime Heart answers the hands that freed it, not his.
 //
-// Scene lines: { s: speaker, t: text, if: condition }. Speakers: 'n' narration, 'h0'..'h3' a party member, or a key of STORY.cast.
+// Scene lines: { s: speaker, t: text, if: condition }. Speakers: 'n' narration, 'adam' / 'devon' / 'brenna' / 'wendell' (skipped if not in the party), or a key of STORY.cast.
 // Text: {0}..{3} = party names, {job0}..{job3} = their callings, {all} = "A, B, C and D".
 // Conditions (also used by npc.textBy and the journal): space-separated tokens, all must hold; '!' negates; 'a|b' = either.
 //   wyrm / lich / titan / storm_drake / sphinx = that boss is slain; v:<map> = visited; s:<flag> = story flag; q:<quest> = quest done.
 export const KEY_ITEMS = { ember_heart: 'Ember Heart', grave_heart: 'Grave Heart', rime_heart: 'Rime Heart' };
 export const STORY = {
-  cast: { sereth: ['Sereth', 'sereth'], guard: ['Guard', 'guard'] },
-  greet: ['{all}... So the bell chose you.', '{0} the {job0}. Gemforge was a smith, not a soldier, and still he bound three evils.', 'The Wyrm\'s seal is the weakest. Arm yourselves, then go east, to the Ashen Cavern.'],
+  cast: { sereth: ['Sereth', 'sereth'], guard: ['Guard', 'guard'], elder: ['Elder', 'elder'], landlord: ['Landlord', 'barkeep'] },
+  greet: ['{all}... So the bell chose you. I asked it for heroes of legend. The bell, it seems, has a sense of humour.', '{0} the {job0}. Gemforge was a smith, not a soldier, and still he bound three evils. So there is hope. Some.', 'The Wyrm\'s seal is the weakest. Arm yourselves, then go east, to the Ashen Cavern.'],
   // first time a place is entered (set: story flag raised by the scene)
   area: {
     cavern: [
       { s: 'n', t: 'Heat breathes up from the dark. The walls are scored with claw marks, and here and there, the neat bite of a chisel.' },
-      { s: 'h1', t: 'Someone came down here before us.', if: '!lich' },
-      { s: 'h1', t: 'Chisel marks. The same as in the Crypt.', if: 'lich' },
+      { s: 'devon', t: 'Proper dungeon, bro. Bats, chests, boss at the bottom. I can feel it in my beard.', if: '!lich' },
+      { s: 'adam', t: 'Someone came down here before us. With a chisel. Who brings a chisel to a dragon?', if: '!lich' },
+      { s: 'adam', t: 'Chisel marks. Same as in the Crypt. Somebody\'s doing this on purpose.', if: 'lich' },
     ],
     crypt: [
       { s: 'n', t: 'Black water laps at the steps. Somewhere beneath it, a drowned bell is tolling.' },
+      { s: 'devon', t: 'A bell. Bells are bad news, bro. Last time someone rang a bell, we ended up here.' },
+      { s: 'adam', t: 'YOU rang it, Devon.' },
+      { s: 'devon', t: 'Allegedly.' },
       { s: 'n', t: 'The seal on the door has not been broken. It has been cut, clean as the facet of a gem.' },
-      { s: 'h2', t: 'Who would open a tomb like this?', if: '!wyrm' },
-      { s: 'h2', t: 'The same hand as in the cavern.', if: 'wyrm' },
+      { s: 'adam', t: 'Who would open a tomb like this?', if: '!wyrm' },
+      { s: 'brenna', t: 'Someone who doesn\'t have to mop up after it.', if: '!wyrm' },
+      { s: 'adam', t: 'Same hand as in the cavern. Lovely clean cuts. Good tools, no hobbies.', if: 'wyrm' },
     ],
-    mirewood: [{ s: 'n', t: 'Mirewood. Stilts, smoke and frogsong, and every shutter barred at dusk.' }],
+    mirewood: [
+      { s: 'n', t: 'Mirewood. Stilts, smoke and frogsong, and every shutter barred at dusk.' },
+      { s: 'devon', t: 'It\'s like Venice, bro.' },
+      { s: 'adam', t: 'It is nothing like Venice.' },
+      { s: 'brenna', t: 'Smells like the Goose\'s cellar. Homely.' },
+    ],
     frostholm: [
       { s: 'guard', t: 'Hold! ...You came over the pass? Then the rockslide is gone, and the Wyrm with it.' },
-      { s: 'guard', t: 'Welcome to Frostholm. We have not seen southern faces in a generation.' },
-      { s: 'h3', t: 'Has anyone else come this way?' },
+      { s: 'guard', t: 'Welcome to Frostholm. We have not seen southern faces in a generation. Or knees. Lad, why are your knees out?' },
+      { s: 'devon', t: 'Shorts are a lifestyle, mate.' },
+      { s: 'adam', t: 'Sorry about him. Has anyone else come this way?' },
       { s: 'guard', t: 'One. A man in grey, a month back. He walked up to the Spire alone, and never came down.' },
+      { s: 'devon', t: 'Lonely tower, mysterious bloke in grey. That\'s the final boss, bro. Textbook.' },
+      { s: 'wendell', t: 'A villain who skulks up towers! The worst kind. Lazy about stairs, I expect.' },
     ],
     spire: { set: 'met', lines: [
       { s: 'n', t: 'At the foot of the Spire a man in grey is waiting. The snow does not settle on him.' },
-      { s: 'sereth', t: '{0}. I hoped it would be you.' },
-      { s: 'sereth', t: 'I am Sereth, last apprentice of Gemforge. The seals did not fail. I cut them.' },
-      { s: 'h1', t: 'You set those horrors loose?' },
+      { s: 'sereth', t: 'Adam. Devon. I hoped it would be you. Well. I hoped it would be heroes. You will have to do.' },
+      { s: 'devon', t: 'Gandalf?! Mate! Massive fan!' },
+      { s: 'sereth', t: 'I am not... I am SERETH, last apprentice of Gemforge. The seals did not fail. I cut them.' },
+      { s: 'adam', t: 'Hang on. You set those horrors loose? On purpose?' },
       { s: 'sereth', t: 'On you. Only living hands can slay what my master bound, and mine stopped living long ago.' },
       { s: 'sereth', t: 'Each evil you kill leaves its heart behind, clean as river ice. He locked that power away. I mean to wear it.' },
-      { s: 'h2', t: 'And if we turn back?' },
-      { s: 'sereth', t: 'Then the Titan walks south, and Haven is the first thing it steps on. Climb, {0}. I will be at the top.' },
+      { s: 'devon', t: 'So you get us to do all the work and then take the credit. You\'re basically Gandalf\'s accountant.' },
+      { s: 'sereth', t: 'Gandalf\'s... ACCOUNTANT? I have studied the deep facets for three hundred years!' },
+      { s: 'brenna', t: 'Three hundred years and still an apprentice. No wonder he\'s cross.' },
+      { s: 'adam', t: 'And if we just... don\'t? If we turn back?' },
+      { s: 'sereth', t: 'Then the Titan walks south, and Haven is the first thing it steps on. Climb, heroes. I will be at the top.' },
       { s: 'n', t: 'When the snow clears, he is gone.' },
+      { s: 'wendell', t: 'Have at thee, knave! ...Ah. He has gone. I was mid-flourish.' },
+      { s: 'devon', t: 'Should\'ve filmed that. Phone\'s on 2% now, bro. That\'s how you know it\'s serious.' },
     ] },
-    storm: [{ s: 'n', t: 'The air tastes of copper. Every hair on your arms stands up.' }],
-    ruins: [{ s: 'n', t: 'Sand hisses down through the cracks. Something old is listening.' }],
+    storm: [
+      { s: 'n', t: 'The air tastes of copper. Every hair on your arms stands up. Devon\'s beard achieves a perfect sphere.' },
+      { s: 'devon', t: 'Bro. Free charging.' },
+      { s: 'adam', t: 'Do NOT put your phone in the lightning.' },
+    ],
+    ruins: [
+      { s: 'n', t: 'Sand hisses down through the cracks. Something old is listening.' },
+      { s: 'adam', t: 'Nobody say anything stupid.' },
+      { s: 'devon', t: 'Anything stupid.' },
+    ],
   },
   // after a boss falls (before the ending, for the Titan)
   after: {
     wyrm: [
       { s: 'n', t: 'The Wyrm\'s fire gutters out. Among the ashes, a gem the size of a fist still glows: the Ember Heart.' },
+      { s: 'devon', t: 'LOOT DROP! It\'s orange, bro. Orange means legendary.' },
       { s: 'n', t: 'On a ledge above, a figure in grey is watching. When you look again, there is no one.', if: '!lich' },
-      { s: 'h1', t: 'Whoever that was, the Wyrm didn\'t frighten them.', if: '!lich' },
-      { s: 'h2', t: 'Another seal cut clean. Whoever is doing this isn\'t finished.', if: 'lich' },
+      { s: 'adam', t: 'Did anyone else see a bloke on that ledge? Grey robe. Very judgy face.', if: '!lich' },
+      { s: 'wendell', t: 'A shadowy watcher! I shall add him to my list of foes. It is a short list. It is mostly yetis.', if: '!lich' },
+      { s: 'adam', t: 'Another seal cut clean. Whoever is doing this isn\'t finished.', if: 'lich' },
+      { s: 'brenna', t: 'Tidier than most of my customers, I\'ll give him that.', if: 'lich' },
       { s: 'n', t: 'Far to the north, the mountain groans and settles. The rockslide on the pass has given way.' },
+      { s: 'devon', t: 'New area unlocked.' },
     ],
     lich: [
       { s: 'n', t: 'Morvath\'s crown rolls across the flagstones and goes dark. In the sarcophagus lies a cold violet gem: the Grave Heart.' },
+      { s: 'devon', t: 'Bro, he dropped his crown. Can I keep his crown?' },
+      { s: 'brenna', t: 'No.' },
       { s: 'n', t: 'Footprints lead away through the silt. Too neat for the dead.', if: '!wyrm' },
-      { s: 'h3', t: 'Someone opened this tomb on purpose.', if: '!wyrm' },
-      { s: 'h3', t: 'Two seals, the same careful hand. The Titan\'s is the last.', if: 'wyrm !titan' },
+      { s: 'adam', t: 'Someone opened this tomb on purpose. Zombies don\'t wipe their feet.', if: '!wyrm' },
+      { s: 'adam', t: 'Two seals, the same careful hand. That leaves the Titan\'s.', if: 'wyrm !titan' },
+      { s: 'wendell', t: 'The Titan! In the north! Where it is cold! ...I shall need my second vest.', if: 'wyrm !titan' },
       { s: 'n', t: 'With the drowned king gone, Gemforge\'s three are no more. The Grave Heart goes quiet in your hands.', if: 'titan' },
       { s: 'n', t: 'Across the marsh, Mirewood\'s lamps are lit one by one.' },
     ],
     titan: [
       { s: 'n', t: 'The Titan comes apart like a glacier calving. From the rubble rises a gem of blue fire: the Rime Heart.' },
       { s: 'n', t: 'A man in grey steps out of the snow.', if: '!s:met' },
-      { s: 'sereth', t: 'Well struck, {0}. My master could not have done it cleaner.' },
+      { s: 'sereth', t: 'Well struck. My master could not have done it cleaner. And by you, of all people.' },
       { s: 'sereth', t: 'Ember, Grave and Rime. Three hearts, freed by living hands. Give them to me.', if: 'lich' },
       { s: 'sereth', t: 'The Ember Heart, and now the Rime. The drowned king can wait. Give them to me.', if: '!lich' },
-      { s: 'h0', t: 'No.' },
+      { s: 'devon', t: 'Gandalf\'s accountant! You came back!' },
+      { s: 'sereth', t: 'I am the LAST APPRENTICE OF... no. No. I will not be drawn. The hearts.' },
+      { s: 'adam', t: 'No.' },
+      { s: 'devon', t: 'What he said. But louder. NO.' },
       { s: 'sereth', t: 'Then I will take them.' },
       { s: 'n', t: 'He closes his hand around the Rime Heart. Frost races up his arm. In his chest, something cracks.' },
       { s: 'sereth', t: 'Ah. Gems hold intent... and you freed them. Not I.' },
-      { s: 'sereth', t: 'Master. You always did have the last word.' },
+      { s: 'devon', t: 'It\'s like trying to return stuff without the receipt, mate. Never works.' },
+      { s: 'sereth', t: 'Three hundred years of planning, undone by a man in cargo shorts. Master. You always did have the last word.' },
       { s: 'n', t: 'The wind takes him. Where he stood lies a grey stone, split clean through.' },
-      { s: 'h1', t: 'Let\'s go home.' },
+      { s: 'brenna', t: 'I\'m not sweeping that up.' },
+      { s: 'wendell', t: 'Rest now, apprentice. Even villains deserve to stop. I am told I do, too.' },
+      { s: 'adam', t: 'Come on. Let\'s go home.' },
+      { s: 'devon', t: 'Yeah. Home.' },
     ],
-    storm_drake: [{ s: 'n', t: 'The storm breaks apart. Over the plains, for the first time in years, there are stars.' }],
-    sphinx: [{ s: 'n', t: 'The riddle dies unspoken. Somewhere above, the sand stops falling.' }],
+    storm_drake: [
+      { s: 'n', t: 'The storm breaks apart. Over the plains, for the first time in years, there are stars.' },
+      { s: 'devon', t: 'Phone\'s still on 3%. Lightning\'s a scam, bro.' },
+    ],
+    sphinx: [
+      { s: 'n', t: 'The riddle dies unspoken. Somewhere above, the sand stops falling.' },
+      { s: 'adam', t: 'For the record, I knew the answer.' },
+      { s: 'devon', t: 'It was "a towel", wasn\'t it.' },
+      { s: 'brenna', t: 'It was not a towel.' },
+    ],
   },
-  // ending: one line per hero, by main calling
+  // the very end, after the Titan's aftermath: the bell rings the bros home
+  finale: [
+    { s: 'n', t: 'Back in Haven, at dusk, the old bell begins to ring. Nobody is touching the rope.' },
+    { s: 'elder', t: 'The seals are set right. It rings for you, just as I said it would. I was... nearly sure.' },
+    { s: 'brenna', t: 'So that\'s it. You two just leave. Typical hero, running off without settling the tab.' },
+    { s: 'brenna', t: '...Look after each other, idiots. Somebody has to, and I won\'t be there.' },
+    { s: 'wendell', t: 'Brothers of the Beard! You taught an old knight he may sit down. I shall do so at once. Farewell!' },
+    { s: 'adam', t: 'Thank you. For everything. Genuinely. Even the yetis.' },
+    { s: 'devon', t: 'Love you lot. Proper love. Bring it in. Mind the beards.' },
+    { s: 'n', t: 'The bell swells to a roar. White light. The smell of hay, then of crisps.' },
+    { s: 'n', t: 'Two bearded men jolt upright on two bar stools. The Bell & Anvil. Quiz night. 2026.' },
+    { s: 'adam', t: 'Devon. What time is it.' },
+    { s: 'devon', t: 'Two minutes past. We had a whole adventure, bro, and it\'s two minutes past.' },
+    { s: 'landlord', t: 'Last orders, lads! And whoever rang my bell is paying for that round.' },
+    { s: 'landlord', t: 'Final quiz question: which legendary smith bound three evils into gems? Bonus point for spelling.' },
+    { s: 'adam', t: 'Gemforge. G-E-M... Devon, why is there a glowing blue gem in your hoodie?' },
+    { s: 'devon', t: 'Souvenir. Also, phone\'s on 3%. It never moved. Not once. Same again?' },
+  ],
+  // ending: one line per hero, by character, then by main calling (default if the calling has none)
   epilogue: {
-    knight: '{n} kept the watch at Haven\'s gate, and the gate was never shut again.',
-    rogue: '{n} vanished for a year and came back richer. Nobody asked.',
-    mage: '{n} stayed in Frostholm to study the Spire\'s ice, and argues with it nightly.',
-    cleric: '{n} tends Gemforge\'s grave. The grey flowers no longer come.',
-    monk: '{n} climbed the Spire once more, alone, to sit where the Titan fell.',
-    ranger: '{n} walks the Northern Plains with the old hermit, mapping every glint.',
-    hexer: '{n} kept Sereth\'s split stone, and listens to it on quiet nights.',
-    bard: '{n} wrote the song they sing in Haven now. It is mostly true.',
-    berserker: '{n} picked a fight with every yeti in the Frostfields. The yetis moved.',
-    alchemist: '{n} opened a shop in Mirewood. The potions are excellent. The smell is not.',
-    samurai: '{n} took no reward and no student, and left at dawn.',
-    paladin: '{n} rings the old bell each year, on the day the Titan fell.',
+    adam: {
+      default: '{n} went back to IT. When the printer jams, he stares at it until it remembers the Frost Titan.',
+      knight: '{n} now stands between his team and every bad deployment. He calls it "holding the gate".',
+      mage: '{n} still points at broken laptops and whispers "Firebolt". It has not worked yet. He keeps trying.',
+      cleric: '{n} became the office first-aider. His bedside manner is legendary. His potions are paracetamol.',
+      rogue: '{n} paid the parking ticket. Then, very quietly, he picked the lock on the barrier. Old habits.',
+      monk: '{n} took up yoga, and told the class he once punched a lich. Nobody believed him. He was fine with that.',
+      paladin: '{n} wins the pub quiz every week now. His fantasy football team is still bottom of the league.',
+    },
+    devon: {
+      default: '{n} told everyone he went back in time. Nobody believed him. His phone, still on 3%, had no photos.',
+      berserker: '{n} joined a Sunday league side and was sent off in the first minute for "an overhead axe motion".',
+      bard: '{n} plays one song at every open mic: a forty-minute ballad about a yeti. It\'s a cult hit.',
+      ranger: '{n} took up archery, then orienteering, then got lost in a supermarket car park. Some things never change.',
+      monk: '{n} started a beard-based fitness channel. Three subscribers. One of them is Adam.',
+      samurai: '{n} grew his beard down to his belt and insists everyone at the pub calls him "Sensei Dev".',
+    },
+    brenna: {
+      default: '{n} took over the Gilded Goose. Prices up, fights down, and a brass plaque behind the bar: NO BELLS.',
+      cleric: '{n} still patches up drunks at the Goose. Now she charges them for it. Business has never been better.',
+      mage: '{n} lights the Goose\'s fires with a flick of her finger, and pretends she isn\'t showing off.',
+      alchemist: '{n} brews the Goose\'s own ale. It heals minor wounds. It also takes the paint off doors.',
+      rogue: '{n} runs the Goose and, it is whispered, half of Haven. Nobody skips their tab twice.',
+      bard: '{n} wrote the song they sing at the Goose now. It is mostly true. The beards get bigger every verse.',
+    },
+    wendell: {
+      default: '{n} finally took a day off. Then another. He is now in his fourth year of a well-earned sit-down.',
+      knight: '{n} went back to the cavern door out of habit, realised nobody needed guarding, and went fishing.',
+      paladin: '{n} rings the old bell each year, on the day the Titan fell, and toasts two bearded lads from far away.',
+      berserker: '{n} picked a fight with every yeti in the Frostfields. The yetis moved. He considers it a draw.',
+      samurai: '{n} took no reward and no student, and left at dawn. He came back at noon for his moustache comb.',
+      monk: '{n} climbed the Spire once more, alone, to sit where the Titan fell. He brought a cushion. He has earned a cushion.',
+    },
   },
 };
 

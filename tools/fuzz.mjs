@@ -10,7 +10,7 @@ for (let run = 0; run < RUNS; run++) {
   const pg = await ctx.newPage(); const errs = [];
   pg.on('pageerror', (e) => errs.push('PAGEERR ' + e.message)); pg.on('console', (m) => m.type() === 'error' && !/fonts|ERR_|Failed to load/.test(m.text()) && errs.push('CONSOLE ' + m.text()));
   await pg.goto(URL_); await pg.waitForTimeout(400);
-  await pg.click('[data-act=new]'); await pg.click('[data-act=slotpick][data-a="1"]'); await pg.click('[data-act=diff][data-b=normal]'); await pg.waitForTimeout(200); await pg.evaluate(() => { window.__game.ACT.crbegin(); window.__game.ACT.close(); });
+  await pg.click('[data-act=new]'); await pg.click('[data-act=slotpick][data-a="1"]'); await pg.click('[data-act=diff][data-b=normal]'); await pg.waitForTimeout(200); await pg.evaluate(() => { window.__game.ACT.crbegin(); window.__game.ACT.close(); window.__game.testParty(); });
   const result = await pg.evaluate(async ([steps, seed, strong]) => {
     const g = window.__game; g.OPT.speed = 'instant'; g.OPT.shake = false;
     if (strong) g.G.party.forEach((c) => { c.level = 20; c.hp = c.mp = 9999; }); // endgame-strength party: wins fights, reaches bosses and the ending

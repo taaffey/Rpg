@@ -14,19 +14,38 @@ const closeAll = async () => { for (let i = 0; i < 8 && (await ev(() => document
 const openMenu = async () => { await closeAll(); await key('Escape', 1, 120); };
 const overlayTitle = () => ev(() => (document.querySelector('#overlay h2') || document.querySelector('#overlay .sayname'))?.textContent || '');
 
-// --- start, keyboard only
+// --- start, keyboard only: quiz night at the pub, the bell, waking up in Haven
+const sayText = () => ev(() => document.getElementById('tt')?.textContent || '');
+const sayThrough = async (max = 30) => { const seen = []; for (let i = 0; i < max && (await ev(() => !!document.querySelector('#overlay .saybox'))); i++) { await key('Enter', 1, 60); seen.push((await ev(() => (document.querySelector('#overlay .sayname')?.textContent || '') + ': ' + (document.getElementById('tt')?.textContent || '')))); await key('Enter', 1, 60); } return seen.join('\n'); };
 ok('title focuses New Game', (await ev(() => document.activeElement?.dataset?.act)) === 'new');
 await key('Enter'); await key('Enter'); await key('Enter', 1, 300); // New Game -> slot 1 -> Normal
-ok('prologue shown after picking difficulty', /The Seals/i.test(await overlayTitle()));
-await key('Enter', 3, 200); ok('party creation opens with hero 1 of 4', /1 of 4/i.test(await overlayTitle()));
-ok('creation offers the six starting callings only', (await ev(() => document.querySelectorAll('[data-act=crjob]').length)) === 6 && !(await pg.$('[data-act=crjob][data-a=hexer]')));
-await pg.click('[data-act=crjob][data-a=monk]'); await pg.waitForTimeout(150); await pg.fill('#crname', 'Vex'); await key('Enter', 1, 200); // pick a calling, rename, Enter = next hero
-await key('Enter', 3, 200); ok('party review lists the four', /The Four/i.test(await overlayTitle()) && (await ev(() => document.querySelectorAll('[data-act=credit]').length)) === 4);
-await key('Enter', 1, 400); // answer the bell
-await key('Enter', 1, 150); await key('Enter', 1, 150); await key('Enter', 1, 200); // first line, then finish typing the second
-ok('Elder greeting uses the chosen name and calling', /Vex the Monk/.test(await ev(() => document.getElementById('tt')?.textContent || '')), await ev(() => document.getElementById('tt')?.textContent || ''));
-for (let i = 0; i < 12 && (await ev(() => document.getElementById('overlay').classList.contains('on'))); i++) await key('Enter', 1, 250); // Elder's greeting
-ok('chosen calling and name are used, no sub calling yet', (await ev(() => { const c = window.__game.G.party[0]; return c.name === 'Vex' && c.main === 'monk' && !c.sub && c.armor === 'leather' && c.cp.monk === 0; })));
+ok('prologue opens at The Bell & Anvil', /Bell & Anvil/i.test(await overlayTitle()));
+ok('new game: Adam and Devon, both blokes with no calling', await ev(() => { const p = window.__game.G.party; return p.length === 2 && p[0].name === 'Adam' && p[1].name === 'Devon' && p.every((c) => c.main === 'bloke' && c.look); }));
+await key('Enter', 4, 220);
+const wake = await sayThrough();
+ok('waking in Haven: the Elder expected heroes of legend', /legend/i.test(wake) && /Devon/.test(wake), wake.slice(0, 120));
+ok('game started in Haven', (await ev(() => window.__game.G.map)) === 'haven');
+await ev(() => { for (const m of Object.values(window.__game.MAPS)) m.rate = 0; });
+await ev(() => window.__game.goto('haven', 17, 32)); await pg.waitForTimeout(300); await key('ArrowDown', 1, 400);
+ok('the gate turns two blokes away until they have callings', (await ev(() => window.__game.G.map)) === 'haven' && /Guard/.test(await overlayTitle())); await sayThrough();
+await ev(() => window.__game.goto('haven_inn', 2, 6)); await pg.waitForTimeout(300); await key('ArrowLeft', 1, 600);
+ok('the trapdoor in the Goose leads to the cellar', (await ev(() => window.__game.G.map)) === 'cellar'); await sayThrough();
+await ev(() => window.__game.battle(['big_gary'], 'big_gary')); await pg.waitForSelector('[data-act=c]', { timeout: 8000 });
+ok('Big Gary scales for a party of two: boss HP is as tuned', (await ev(() => window.__game.BT.b.e[0].maxhp)) === 200);
+await ev(() => window.__game.BT.b.e.forEach((e) => { e.hp = 1; })); await key('Enter', 1, 200); await key('Enter', 1, 200);
+for (let i = 0; i < 30 && !(await ev(() => !!document.querySelector('#overlay .saybox'))); i++) await key('Enter', 1, 200);
+const gary = await sayThrough();
+ok('Brenna joins after Big Gary', /Brenna/.test(gary) && (await ev(() => window.__game.G.party.length)) === 3 && (await ev(() => window.__game.G.party[2].main)) === 'cleric', gary.slice(0, 100));
+await closeAll();
+await ev(() => window.__game.goto('haven_guild', 5, 6)); await pg.waitForTimeout(300); await sayThrough();
+ok('the Guild offers callings to the two blokes', /calling for Adam · 1 of 2/i.test(await overlayTitle()) && (await ev(() => document.querySelectorAll('[data-act=crjob]').length)) === 6 && !(await pg.$('[data-act=crjob][data-a=hexer]')));
+await pg.click('[data-act=crjob][data-a=monk]'); await pg.waitForTimeout(150); await key('Enter', 1, 200);
+ok('Devon second', /calling for Devon · 2 of 2/i.test(await overlayTitle())); await pg.click('[data-act=crjob][data-a=mage]'); await pg.waitForTimeout(150); await key('Enter', 1, 200);
+ok('review lists both', (await ev(() => document.querySelectorAll('[data-act=credit]').length)) === 2); await key('Enter', 1, 300); await sayThrough();
+ok('chosen callings stick, bloke CP dropped, light armour for the mage', await ev(() => { const [a, d] = window.__game.G.party; return a.main === 'monk' && d.main === 'mage' && !a.cp.bloke && d.armor === 'cloth' && a.cp.monk === 0 && !a.sub; }));
+await ev(() => window.__game.goto('cavern', 2, 1)); await pg.waitForTimeout(300); const wen = await sayThrough();
+ok('Sir Wendell joins at the Ashen Cavern', (await ev(() => window.__game.G.party.length)) === 4 && /Wendell/.test(wen) && (await ev(() => window.__game.G.party[3].main)) === 'knight');
+await closeAll(); await ev(() => { window.__game.testParty(); window.__game.goto('haven', 17, 30); }); await pg.waitForTimeout(200); await closeAll();
 await ev(() => { for (const m of Object.values(window.__game.MAPS)) m.rate = 0; }); // keep tests deterministic: battles are started explicitly
 await ev(() => { for (const id of ['cavern', 'crypt', 'mirewood', 'frostholm', 'spire', 'storm', 'ruins']) window.__game.G.flags.visited[id] = true; }); // first-visit scenes would cover the teleports below
 ok('game started in Haven', (await ev(() => window.__game.G.map)) === 'haven');
@@ -97,7 +116,7 @@ await pg.waitForTimeout(300);
 ok('snow battle won via keyboard only', !(await ev(() => !!window.__game.BT)) && (await xpKey()) !== xp0);
 const cp1 = await ev(() => window.__game.G.party.map((c) => c.hp > 0 ? c.cp[c.main] : -1));
 ok('the win awards CP to each standing hero\'s calling (+4 shown)', cp1.every((v, i) => v === -1 || v === cp0[i] + 4) && /\+4 CP/.test(vtext), `${cp0} -> ${cp1}`);
-ok('a rank-up teaches an ability: Monk 2, Focus', await ev(() => { const c = window.__game.G.party[0]; return c.cp.monk >= 6 && c.slots.includes('focus'); }) && /Rank up! Vex: Monk 2 — learned Focus/.test(vtext), vtext.slice(0, 200));
+ok('a rank-up teaches an ability: Monk 2, Focus', await ev(() => { const c = window.__game.G.party[0]; return c.cp.monk >= 6 && c.slots.includes('focus'); }) && /Rank up! Adam: Monk 2 — learned Focus/.test(vtext), vtext.slice(0, 200));
 
 // --- quests: accept, track kills through real battles, find a quest item, claim rewards
 const finishBattle = async () => { // click-driven: Attack the first foe until the battle ends (independent of which button holds focus)
@@ -215,7 +234,7 @@ await pg.reload(); await pg.waitForTimeout(400);
 await pg.click('[data-act=new]'); await pg.click('[data-act=slotpick][data-a="1"]'); await pg.waitForTimeout(100);
 ok('overwriting an existing slot needs a second tap', /Tap to overwrite/.test(await ev(() => document.getElementById('overlay').textContent)));
 await pg.click('[data-act=slotpick][data-a="2"]'); await pg.waitForTimeout(100); // empty slot 2 -> difficulty
-await pg.click('[data-act=diff][data-b=hard]'); await pg.waitForTimeout(200); await ev(() => { window.__game.ACT.crbegin(); window.__game.ACT.close(); }); await pg.waitForTimeout(200);
+await pg.click('[data-act=diff][data-b=hard]'); await pg.waitForTimeout(200); await ev(() => { window.__game.ACT.crbegin(); window.__game.ACT.close(); window.__game.testParty(); }); await pg.waitForTimeout(200);
 ok('new game in slot 2 on Hard', (await ev(() => window.__game.G.slot)) === 2 && (await ev(() => window.__game.G.difficulty)) === 'hard');
 await ev(() => { for (const m of Object.values(window.__game.MAPS)) m.rate = 0; });
 await ev(() => { window.__game.battle(['goblin']); }); await pg.waitForSelector('[data-act=c]', { timeout: 8000 });
