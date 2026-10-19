@@ -58,7 +58,7 @@ export class Stage {
     });
     battle.p.forEach((p, i) => {
       const [cx, feet] = HERO_POS[i] || HERO_POS[3], wt = wtypeOf(p);
-      const frames = Object.fromEntries(BA.HERO_POSES.map((k) => [k, BA.heroFrame(p.ch.main, k, wt)]));
+      const frames = Object.fromEntries(BA.HERO_POSES.map((k) => [k, BA.heroFrame(p.ch.look ? `${p.ch.main}@${p.ch.look}` : p.ch.main, k, wt)]));
       this.v.set(p.name, { c: p, side: 'p', frames, spr: frames.idle, x: cx - 16, y: feet - HERO_FEET, feet, bb: [10, 4, 23, 29], w: 32, h: 32, dead: p.hp <= 0, deadT: p.hp <= 0 ? 9 : 0, t: 0, flash: 0, lunge: 0, cast: 0, atk: 0, step: 0, seed: i * 1.3 });
     });
     this.born = performance.now(); this.zoom = 0; this.cardT = -1; this.cardText = ''; this.cardDur = 2; this.won = false; this.ease = 0;

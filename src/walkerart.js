@@ -38,17 +38,32 @@ function paint(buf, part, dx = 0, dy = 0, map) {
     if (by < 0 || by >= BH) continue;
     for (let c = 0; c < row.length; c++) {
       const ch = row[c], bx = x + c + dx; if (ch === '.' || ch === ' ' || bx < 0 || bx >= BW) continue;
-      buf[by * BW + bx] = ch === '_' ? null : (map && map[ch]) || ch;
+      buf[by * BW + bx] = ch === '_' ? null : (typeof map === 'function' ? map(ch, y + r + dy) : map && map[ch]) || ch;
     }
   }
 }
 const P = (x, y, rows) => ({ x, y, rows });
 export { P as part };
 
-import { FACE, EAR, TORSO, ARM, LEGS, ROBE, HAIR, HEADS, PROPS, HEROES, TOWNS } from './walkerdata.js';
+import { FACE, EAR, TORSO, ARM, LEGS, ROBE, HAIR, HEADS, PROPS, HEROES, TOWNS, LOOKS, OUTFITS } from './walkerdata.js';
 
 export const CHARS = HEROES, NPCS = {};
 for (const [k, v] of Object.entries(TOWNS)) NPCS[k] = { ...v, npc: true };
+
+// ---------- looks: 'job' or 'job@look' -> recipe (the calling's outfit, the person's hair / skin / beard) ----------
+const OPEN_HEADS = new Set(['monk', 'cowlick']), HOODED = new Set(['cleric', 'rogue']);
+const LOOKC = new Map();
+export function cfgFor(key, table = CHARS, fallback = 'knight') {
+  key = String(key || ''); let c = LOOKC.get(key); if (c) return c;
+  const [job, look] = key.split('@'), L = LOOKS[look], base = OUTFITS[key] || table[job] || table[fallback] || CHARS.knight;
+  if (!L) { LOOKC.set(key, base); return base; }
+  const heads = [].concat(base.head || []), open = !heads.length || heads.every((h) => OPEN_HEADS.has(h)), hood = heads.some((h) => HOODED.has(h));
+  c = { ...base, ramps: { ...(base.ramps || {}), ...L.ramps }, spec: { ...(base.spec || {}), ...(L.spec || {}) } };
+  if (base.hair && !OUTFITS[key]) c.hair = L.hair;
+  c.head = [...heads, ...(base.hair && open ? L.open || [] : []), ...(hood ? L.hood || [] : []), ...(L.face || [])];
+  LOOKC.set(key, c); return c;
+}
+for (const who of ['adam', 'devon']) NPCS[who] = { ...cfgFor('bloke@' + who), npc: true }; // the bros as standing townsfolk
 
 const rampCache = new WeakMap();
 function rampsFor(cfg) {
@@ -102,6 +117,10 @@ export function compose(cfg, dir, f, blink = false) {
   const buf = new Array(BW * BH).fill(null);
   for (const [p, dy, m] of layers(cfg, dir, f)) paint(buf, p, 0, dy, m);
   if (cfg.kid) kidSquash(buf);
+  if (cfg.plaid) for (let y = 0; y < BH; y++) for (let x = 0; x < BW; x++) { // check shirt: dark stripes every 3 px on the main cloth
+    const i = y * BW + x, ch = buf[i]; if (!ch || CODE[ch]?.[0] !== 'T') continue; const vx = (x + 1) % 3 === 0, hy = (y + 2) % 3 === 0;
+    if (vx && hy) buf[i] = '1'; else if (vx || hy) buf[i] = { W: 'T', T: 't', t: 'u', u: '1' }[ch];
+  }
   if (blink) for (let i = 0; i < buf.length; i++) { if (buf[i] === 'e') buf[i] = 's'; else if (buf[i] === 'E') buf[i] = 'e'; }
   const R = rampsFor(cfg), col = new Array(BW * BH).fill(null), out = new Array(BW * BH).fill(null);
   for (let i = 0; i < buf.length; i++) {

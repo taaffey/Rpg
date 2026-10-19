@@ -959,3 +959,166 @@ export const TOWNS = {
   sereth: { head: 'chaperon', hair: 'long', body: 'robe', ramps: { C: '#6a6a7a', T: '#5a5a6a', A: '#9ae0ff', H: '#c8c8d4', B: '#2a2a34', F: '#d8d8e0' }, props: ['hem'], spec: { 1: '#7fd8f0' } }, // the grey apprentice (story scenes)
   fisher: { head: 'fisherhat', hair: 'short', h: 30, ramps: { C: '#4a8ae0', H: '#2a2a30', T: '#e8e8f0', P: '#4a5a7a', B: '#4a3a2a', A: '#2a5aa0', R: '#9a7040' }, props: ['vest', 'rod'], hold: true, spec: { 1: '#d0d8e0' } },
 };
+
+// =====================================================================================================
+// ---------- Bearded Bros: modern outfits, per-person "looks" and the pub folk ----------
+// A look ('job@look') keeps the calling's outfit and swaps the face: hair (when the calling shows hair), skin, beard.
+// Under helmets/hoods only the beard or moustache shows (they are drawn after the headgear).
+Object.assign(HAIR, {
+  messy: { // Devon: shaggy ginger mop with tufts
+    down: P(0, -1, [
+      '.....Y...H......',
+      '...Y.YH.YHh.h...',
+      '....YYHHHHHhh...',
+      '...HYYHHHHHHHh..',
+      '..HYHHHHHHHHHHh.',
+      '.HYHHYYYHHHHHhh.',
+      '.hHHHhHHHhHHhhh.',
+      'hHHhHHhHHhHHHhhj',
+      '.HHhhHhHHhHhHhj.',
+      '.HHh..h.h..hhhj.',
+      '.hHh.........hj.',
+      '.hj..........jj.',
+      '..j..........j..']),
+    up: P(0, -1, [
+      '.....Y...H......',
+      '...Y.YH.YHh.h...',
+      '....YYHHHHHhh...',
+      '...HYYHHHHHHHh..',
+      '..HYHHHHHHHHHHh.',
+      '.HYHHYYYHHHHHhh.',
+      '.hHHHHHHHHHHHhh.',
+      'hHHHHHHHHHHHHHhj',
+      '.HHHHhHHHHhHHhh.',
+      '.HHHhhHHHhhHhhj.',
+      'hhHhhjhHhjhhhjjj',
+      '.jhjjhjjhjjhjjj.',
+      '..jj.jjjjjj.jj..']),
+    right: P(0, -1, [
+      '....Y...H.......',
+      '..Y.YH.YHh.h....',
+      '...YYHHHHHhh....',
+      '..HYYHHHHHHHh...',
+      '.HYHHHHHHHHHHh..',
+      '.HYHHYYYHHHHHhh.',
+      'hHHHHHHHHHHHHhh.',
+      'hHHHHHHHHHHhHHhh',
+      '.HHHHHHHhHHhHh..',
+      '.hHHHHh..h......',
+      '.hHHHh..........',
+      '.jhHhj..........',
+      '..jhj...........',
+      '...j............']),
+  },
+  crop: { // close crop / stubble ring on a shaved head (pub landlord)
+    down: P(0, 0, [
+      '................',
+      '......SSss......',
+      '....SSSSSSss....',
+      '...SSwSSSSSsx...',
+      '..SSwSSSSSSSsx..',
+      '.hSSSSSSSSSSsxj.',
+      '.hhsSSSSSSSSxhj.',
+      '.hh..........hj.',
+      '.hj..........jj.']),
+    up: P(0, 0, [
+      '................',
+      '......SSss......',
+      '....SSSSSSss....',
+      '...SSwSSSSSsx...',
+      '..SSwSSSSSSSsx..',
+      '.hSSSSSSSSSSsxj.',
+      '.hhsSSSSSSSsxhj.',
+      '.hhhhssssssxhhj.',
+      '.hhhhhhhhhhhhjj.',
+      '..jjjjjjjjjjjj..']),
+    right: P(0, 0, [
+      '................',
+      '.....SSSss......',
+      '...SSSSSSSsx....',
+      '..SSwSSSSSSSx...',
+      '.SSwSSSSSSSSSx..',
+      '.hSSSSSSSSSSSs..',
+      '.hhSSSSSSSSSSs..',
+      '.hhhhhs.........',
+      '.jhhj...........']),
+  },
+});
+Object.assign(HEADS, {
+  beanie: { // ribbed knit beanie (Devon, 2026)
+    down: [P(0, 0, ['......KCCc......', '....KCCCCCCc....', '...KCCCCCCCCc...', '..KCCCCCCCCCCc..', '..CCCCCCCCCCCcv.', '.KCKCKCKCKCKCcv.', '.cvcvcvcvcvcvvv.'])],
+    up: [P(0, 0, ['......KCCc......', '....KCCCCCCc....', '...KCCCCCCCCc...', '..KCCCCCCCCCCc..', '..CCCCCCCCCCCcv.', '.KCKCKCKCKCKCcv.', '.cvcvcvcvcvcvvv.'])],
+    right: [P(0, 0, ['.....KCCCc......', '...KCCCCCCCc....', '..KCCCCCCCCCc...', '.KCCCCCCCCCCCc..', '.CCCCCCCCCCCCcv.', '.KCKCKCKCKCKCcv.', '.cvcvcvcvcvcvvv.'])],
+  },
+  beardAdam: { // full, neat dark beard: sideburns, moustache, 2 rows below the mouth
+    down: [P(0, 8, ['...h........h...', '...hH......Hh...', '...hHYYHHYYHh...', '....hHHooHHh....', '.....hHHHHh.....', '......hhjj......'])],
+    up: [],
+    right: [P(0, 8, ['........h.......', '........hH......', '.......hHHHYYH..', '.......hHHHHoHh.', '........hHHHHh..', '.........hhjj...'])],
+  },
+  beardDevon: { // huge bushy beard, almost to the belt
+    down: [P(0, 7, ['..h..........h..', '..hH........Hh..', '..HHh......hHh..', '..HHHYYHHYYHHh..', '..YHHHHooHHHHh..', '...HHHHHHHHHh...', '...YHHHHHHHHh...', '...hHHHHHHHhh...', '....hHHHHHhj....', '.....jhHhhj.....'])],
+    up: [P(0, 9, ['.h............h.', '.hh..........hh.', '..h..........h..'])],
+    right: [P(0, 7, ['........h.......', '.......hH.......', '.......hHH......', '......hHHHHYYYH.', '......hHHHHHHoHh', '......hHHHHHHHHh', '.......hHHYHHHh.', '.......hHHHHHh..', '........hHHHhj..', '.........jhj....'])],
+  },
+  walrus: { // enormous white walrus moustache + mutton chops
+    down: [P(0, 7, ['..H..........H..', '..HH........HH..', '..HHh......hHH..', '..HHYYYHHYYYHH..', '..hHHHHhhHHHHh..', '...hHh....hHh...'])],
+    up: [P(0, 8, ['.H............H.', '.HH..........HH.'])],
+    right: [P(0, 7, ['........H.......', '.......HH.......', '.......HHh......', '.......hHHYYYYH.', '........hHhHHHHh', '...........hHh..'])],
+  },
+  brows: { down: [P(0, 7, ['....HH....HH....'])], up: [], right: [P(0, 7, ['..........HHH...'])] },
+  fringe: { // a lock of hair peeking out of a hood
+    down: [P(0, 6, ['....HYHHHHhh....', '....Hh....hh....'])],
+    up: [],
+    right: [P(0, 6, ['.........HYHh...', '.........Hh.....'])],
+  },
+  freckles: { down: [P(0, 9, ['....x......x....'])], up: [], right: [P(0, 9, ['..........x.....'])] },
+});
+Object.assign(PROPS, {
+  opentee: { // open flannel over a dark tee
+    down: { z: 'mid', parts: [P(7, 12, ['22', '22', '22', '22'])] },
+    up: { z: 'mid', parts: [] },
+    right: { z: 'mid', parts: [P(10, 12, ['2', '2', '2'])] },
+  },
+  hoodie: { // bunched hood at the neck, drawstrings, kangaroo pocket, tiny chest logo
+    down: { z: 'mid', parts: [P(4, 11, ['.tTTTTu.']), P(6, 12, ['1..1', '1..1']), P(5, 15, ['.tttu.']), P(9, 13, ['3'])] },
+    up: { z: 'mid', parts: [P(5, 11, ['.TTTt.', 'TWTTtu', 'tTTttu', '.uttu.'])] },
+    right: { z: 'mid', parts: [P(5, 11, ['TTt', 'Ttu', '.u.']), P(11, 12, ['1', '1']), P(9, 15, ['tttu'])] },
+  },
+  polo: { // polo collar + placket
+    down: { z: 'mid', parts: [P(5, 11, ['22..22', '.2..2.']), P(7, 12, ['.2', '.2'])] },
+    up: { z: 'mid', parts: [P(5, 11, ['222222'])] },
+    right: { z: 'mid', parts: [P(8, 11, ['222', '..2'])] },
+  },
+  towel: { // bar towel slung over the shoulder
+    down: { z: 'mid', parts: [P(11, 11, ['OF', 'FF', '1f', 'FF', 'Ff', '1N'])] },
+    up: { z: 'mid', parts: [P(3, 11, ['OF', 'FF', '1f', 'FF', 'fN'])] },
+    right: { z: 'top', parts: [P(7, 11, ['OFf', 'F1N', 'Ff.', '1N.'])] },
+  },
+  dents: { // rust and dents on old plate
+    down: { z: 'top', parts: [P(5, 13, ['3...']), P(9, 15, ['.3']), P(3, 6, ['3'])] },
+    up: { z: 'top', parts: [P(6, 14, ['3..3'])] },
+    right: { z: 'top', parts: [P(8, 14, ['3']), P(4, 4, ['3'])] },
+  },
+});
+// arm / leg remaps can be functions of the sprite row: short sleeves, cargo shorts
+const TEE = (ch, y) => (y >= 14 && BARE[ch]) || ch, SHORTS = (ch, y) => (y >= 20 && BAREL[ch]) || ch;
+const DEVON_SKIN = ['#ffe6cc', '#f6c49c', '#d8946c', '#a46446'];
+HEROES.bloke = { hair: 'short', ramps: { T: '#8a8e98', P: '#3e5a92', B: '#e6e6ee', A: '#3a3036', H: '#6a4428' }, remap: { arms: TEE } }; // jobless 2026 bloke: grey tee, jeans, trainers
+// full replacements of the bloke recipe for one person (their own 2026 clothes)
+export const OUTFITS = {
+  'bloke@adam': { hair: 'short', ramps: { T: '#b8323a', P: '#3e5a92', B: '#ecebf2', A: '#2a2228' }, props: ['opentee'], plaid: true, spec: { 1: '#2a1418', 2: '#2c2a34' } },
+  'bloke@devon': { hair: 'messy', head: 'beanie', ramps: { T: '#2c3c72', C: '#8e9098', P: '#b8a274', B: '#c8ccd6', A: '#8a7650' }, props: ['hoodie'], remap: { legs: SHORTS }, spec: { 1: '#e8e8f0', 3: '#f4d35e' } },
+};
+// per-person looks: hair = HAIR key used where the calling shows hair; face = head parts always added (beards show under helmets);
+// open = parts added only when the calling wears nothing on the head; hood = parts added under a hood
+export const LOOKS = {
+  adam: { hair: 'short', face: ['beardAdam'], ramps: { H: '#5a3a22', S: ['#ffe2c4', '#f3bf92', '#d08d64', '#9a5c40'] } },
+  devon: { hair: 'messy', face: ['beardDevon'], open: ['freckles'], ramps: { H: '#d0702c', S: DEVON_SKIN } },
+  brenna: { hair: 'long', open: ['bun'], hood: ['fringe'], ramps: { H: '#a8462a', S: ['#ffe4cc', '#f4c39c', '#d4906a', '#9e5e44'] }, spec: { 1: '#2e7a5a' } },
+  wendell: { hair: 'bald', face: ['walrus'], open: ['brows'], ramps: { H: '#e4e4ec', S: ['#ffdcc0', '#f0b48e', '#cc8460', '#965638'] } },
+};
+Object.assign(TOWNS, {
+  brenna: { head: 'bun', hair: 'long', body: 'robe', ramps: { H: '#a8462a', T: '#3a5a4a', F: '#f8f4ec', A: '#6a3a2a', B: '#4a2a22', S: LOOKS.brenna.ramps.S }, props: ['apron'], spec: { 1: '#2e7a5a' }, remap: { arms: { W: 'O', T: 'F', t: 'f', u: 'N' } } },
+  wendell: { head: ['knight', 'walrus'], ramps: { T: '#8a3a34', M: '#a08a78', C: '#c8b070', P: '#7a6a5c', B: '#4a3a32', A: '#c8a050', R: '#6a4a2a', H: '#e4e4ec', S: LOOKS.wendell.ramps.S }, props: ['pauldrons', 'dents'], remap: { legs: { P: 'M', p: 'm', q: 'n', Q: 'L' } }, spec: { 3: '#7a4024' } },
+  barkeep: { hair: 'crop', ramps: { H: '#8a6a58', T: '#2e5a4a', P: '#3a3a48', B: '#2a2228', A: '#2a2a30', F: '#f2f2f6', S: ['#ffdcc0', '#f0b890', '#cc8864', '#96583c'] }, props: ['polo', 'towel'], remap: { arms: TEE }, spec: { 1: '#4a7ae0', 2: '#e8e8e0' } },
+});
