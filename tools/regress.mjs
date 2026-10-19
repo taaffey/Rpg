@@ -30,7 +30,7 @@ await ev(() => window.__game.goto('haven', 17, 32)); await pg.waitForTimeout(300
 ok('the gate turns two blokes away until they have callings', (await ev(() => window.__game.G.map)) === 'haven' && /Guard/.test(await overlayTitle())); await sayThrough();
 await ev(() => window.__game.goto('haven_inn', 2, 6)); await pg.waitForTimeout(300); await key('ArrowLeft', 1, 600);
 ok('the trapdoor in the Goose leads to the cellar', (await ev(() => window.__game.G.map)) === 'cellar'); await sayThrough();
-await ev(() => window.__game.battle(['big_gary'], 'big_gary')); await pg.waitForSelector('[data-act=c]', { timeout: 8000 });
+await ev(() => { window.__game.battle(['big_gary'], 'big_gary'); }); await pg.waitForSelector('[data-act=c]', { timeout: 8000 });
 ok('Big Gary scales for a party of two: boss HP is as tuned', (await ev(() => window.__game.BT.b.e[0].maxhp)) === 200);
 await ev(() => window.__game.BT.b.e.forEach((e) => { e.hp = 1; })); await key('Enter', 1, 200); await key('Enter', 1, 200);
 for (let i = 0; i < 30 && !(await ev(() => !!document.querySelector('#overlay .saybox'))); i++) await key('Enter', 1, 200);
@@ -39,12 +39,12 @@ ok('Brenna joins after Big Gary', /Brenna/.test(gary) && (await ev(() => window.
 await closeAll();
 await ev(() => window.__game.goto('haven_guild', 5, 6)); await pg.waitForTimeout(300); await sayThrough();
 ok('the Guild offers callings to the two blokes', /calling for Adam · 1 of 2/i.test(await overlayTitle()) && (await ev(() => document.querySelectorAll('[data-act=crjob]').length)) === 6 && !(await pg.$('[data-act=crjob][data-a=hexer]')));
-await pg.click('[data-act=crjob][data-a=monk]'); await pg.waitForTimeout(150); await key('Enter', 1, 200);
-ok('Devon second', /calling for Devon · 2 of 2/i.test(await overlayTitle())); await pg.click('[data-act=crjob][data-a=mage]'); await pg.waitForTimeout(150); await key('Enter', 1, 200);
+await pg.click('[data-act=crjob][data-a=monk]'); await pg.waitForTimeout(150); await pg.click('[data-act=crnext]'); await pg.waitForTimeout(150);
+ok('Devon second', /calling for Devon · 2 of 2/i.test(await overlayTitle())); await pg.click('[data-act=crjob][data-a=mage]'); await pg.waitForTimeout(150); await pg.click('[data-act=crnext]'); await pg.waitForTimeout(150);
 ok('review lists both', (await ev(() => document.querySelectorAll('[data-act=credit]').length)) === 2); await key('Enter', 1, 300); await sayThrough();
 ok('chosen callings stick, bloke CP dropped, light armour for the mage', await ev(() => { const [a, d] = window.__game.G.party; return a.main === 'monk' && d.main === 'mage' && !a.cp.bloke && d.armor === 'cloth' && a.cp.monk === 0 && !a.sub; }));
 await ev(() => window.__game.goto('cavern', 2, 1)); await pg.waitForTimeout(300); const wen = await sayThrough();
-ok('Sir Wendell joins at the Ashen Cavern', (await ev(() => window.__game.G.party.length)) === 4 && /Wendell/.test(wen) && (await ev(() => window.__game.G.party[3].main)) === 'knight');
+ok('Sir Wendell joins at the Ashen Cavern', (await ev(() => window.__game.G.party.length)) === 4 && (await ev(() => window.__game.G.party[3].name)) === 'Wendell' && /old knight/.test(wen) && (await ev(() => window.__game.G.party[3].main)) === 'knight', (await ev(() => window.__game.G.party.length + ' ' + window.__game.G.map)) + ' ' + wen.slice(0, 200));
 await closeAll(); await ev(() => { window.__game.testParty(); window.__game.goto('haven', 17, 30); }); await pg.waitForTimeout(200); await closeAll();
 await ev(() => { for (const m of Object.values(window.__game.MAPS)) m.rate = 0; }); // keep tests deterministic: battles are started explicitly
 await ev(() => { for (const id of ['cavern', 'crypt', 'mirewood', 'frostholm', 'spire', 'storm', 'ruins']) window.__game.G.flags.visited[id] = true; }); // first-visit scenes would cover the teleports below
@@ -56,7 +56,7 @@ await ev(() => window.__game.goto('haven', 10, 18)); await key('ArrowUp', 1, 450
 ok('entered the shop interior', (await ev(() => window.__game.G.map)) === 'haven_shop');
 await key('ArrowUp', 3, 160);
 ok('shop UI opened by bumping the merchant', /General Store/.test(await overlayTitle()));
-ok('new game: unarmed party, 400 G', (await ev(() => window.__game.G.party.every((c) => c.weapon === null && c.level === 1))) && (await ev(() => window.__game.G.gold)) === 400);
+ok('after the cellar: unarmed bros, Wendell brings his own sword, 400 G + Big Gary\'s 120 G', (await ev(() => window.__game.G.party.every((c) => (c.look === 'wendell' ? c.weapon === 'iron_sword' : c.weapon === null)))) && (await ev(() => window.__game.G.gold)) === 520);
 const potBefore = await ev(() => window.__game.G.inv.items.potion || 0), goldBefore0 = await ev(() => window.__game.G.gold);
 await ev(() => document.querySelector('[data-act=buy][data-b=potion]').click()); await pg.waitForTimeout(100);
 ok('bought a potion', (await ev(() => window.__game.G.inv.items.potion)) === potBefore + 1 && (await ev(() => window.__game.G.gold)) === goldBefore0 - 30);
@@ -206,7 +206,8 @@ await pg.waitForTimeout(300);
 ok('finale scene: Sereth comes for the hearts', /Sereth/.test(await ev(async () => { let t = ''; for (let i = 0; i < 4; i++) { t += document.getElementById('overlay').textContent; document.querySelector('[data-act=say]')?.click(); await new Promise((r) => setTimeout(r, 60)); } return t; })));
 for (let i = 0; i < 6 && !(await pg.$('[data-act=edone]')); i++) await key('Escape', 1, 200);
 await pg.waitForTimeout(300);
-ok('ending cinematic shown after the Titan', /Frost Titan falls/.test(await overlayTitle()));
+for (let i = 0; i < 40 && (await ev(() => !!document.querySelector('#overlay .saybox'))); i++) { await ev(() => { window.__game.ACT.skiptype(); document.querySelector('.sayrow [data-act]')?.click(); }); await pg.waitForTimeout(60); } // the finale: back to the pub
+ok('ending shown after the Titan: last orders at the pub', /Last orders/.test(await overlayTitle()) && !!(await pg.$('#overlay img.pubart')));
 await pg.screenshot({ path: process.env.SHOT || '/tmp/ending.png' });
 await pg.click('[data-act=edone]'); await pg.waitForTimeout(200);
 

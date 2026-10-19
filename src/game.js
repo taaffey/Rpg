@@ -11,6 +11,7 @@ import * as RA from './roomart.js';
 import * as WK from './walkers.js';
 import { Stage, FX } from './stage.js';
 import * as UI from './uiart.js';
+import * as PA from './pubart.js';
 import { music, sfx, unlock, isMuted, setMuted, setVolumes, setBackgrounded } from './audio.js';
 const { stats, newChar, learnable, slotSkill, slotGems, gemCapacity, gemsUsed, sanitize, skillWithGems, describeSkill, gainExp, expNeeded, Battle, rewards, SIG, GEMS_PER_SLOT } = L;
 
@@ -196,7 +197,7 @@ addEventListener('orientationchange', () => setTimeout(layoutView, 250));
 // ---------- minimap / map screen ----------
 let miniDirty = true; const miniCache = { id: null, canvas: document.createElement('canvas'), sc: 2 };
 const MINI = { d: '#e0c070', r: '#3c94f0', '.': '#2aa83a', ',': '#eef4fc', ':': '#4a6a38', _: '#e0c070', '=': '#9a9a9a', '~': '#3c94f0', T: '#0c6a18', t: '#9ab0c8', M: '#a07848', B: '#c0a060', H: '#ffffff', D: '#c04040', E: '#f4d35e' };
-const MINI_FLOOR = { cavern: '#5a566a', crypt: '#4a5a50', spire: '#8aa8d0', storm: '#5a5c8a' }, MINI_WALL = { cavern: '#22202a', crypt: '#16221c', spire: '#2a4a78', storm: '#1c1e40' };
+const MINI_FLOOR = { cellar: '#6a4a34', cavern: '#5a566a', crypt: '#4a5a50', spire: '#8aa8d0', storm: '#5a5c8a' }, MINI_WALL = { cellar: '#2a1610', cavern: '#22202a', crypt: '#16221c', spire: '#2a4a78', storm: '#1c1e40' };
 function drawMini(c2, id, scale, ox, oy, t, noPlayer = false) {
   const m = MAPS[id], seen = G.flags.seen[id]; if (!seen) return;
   for (let y = 0; y < m.rows.length; y++) for (let x = 0; x < m.rows[0].length; x++) {
@@ -229,7 +230,7 @@ const plr = { x: 256, y: 192 };
 let face = 'down', vx = 0, vy = 0, trans = 0, lastT = 0, trail = [], fv = [];
 const snap = () => { vx = G.x; vy = G.y; trail = [{ x: G.x, y: G.y }]; fv = [0, 1, 2].map(() => ({ x: G.x, y: G.y, d: face, mv: false })); reveal(); };
 const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
-const LIGHT = { ruins: { glow: '255,190,100', dark: 0.74, r: 205 }, storm: { glow: '255,230,90', dark: 0.8, r: 180 }, cavern: { glow: '255,150,50', dark: 0.88, r: 175 }, crypt: { glow: '90,255,140', dark: 0.9, r: 165 }, spire: { glow: '130,210,255', dark: 0.5, r: 250 } };
+const LIGHT = { cellar: { glow: '255,180,90', dark: 0.8, r: 185 }, ruins: { glow: '255,190,100', dark: 0.74, r: 205 }, storm: { glow: '255,230,90', dark: 0.8, r: 180 }, cavern: { glow: '255,150,50', dark: 0.88, r: 175 }, crypt: { glow: '90,255,140', dark: 0.9, r: 165 }, spire: { glow: '130,210,255', dark: 0.5, r: 250 } };
 function draw(t = performance.now() / 1000) {
   if (!G) return;
   const m = mapDef(), W = m.rows[0].length, H = m.rows.length, frame = Math.floor(t / 0.6) % 2;
@@ -697,8 +698,7 @@ function diffScreen(slot) {
 }
 ACT.diff = (slot, d) => { newGame(); G.slot = +slot; G.difficulty = d; G.flags.visited.haven = true; snap(); prologue(0); };
 // ---------- prologue: quiz night at The Bell & Anvil, 2026 (illustrations in pubart.js) ----------
-let PA = null; import('./pubart.js').then((m) => { PA = m; }).catch(() => {});
-const pubImg = (v) => { try { return PA ? `<img class="pubart" src="${PA.pubURL(v, 1)}" alt="">` : ''; } catch { return ''; } };
+const pubImg = (v) => { try { return `<img class="pubart" src="${PA.pubURL(v, 1)}" alt="">`; } catch { return ''; } };
 function prologue(i) {
   if (i >= PUB.length) return ACT.crbegin();
   const [v, head, text] = PUB[i];
@@ -982,7 +982,7 @@ ACT.ungem = (i, k) => { const c = G.party[B.i]; G.inv.gems.push(...c.gems[+i].sp
 // ---------- battle ----------
 let BT = null;
 function stageKind(bossId) {
-  if (bossId) return { wyrm: 'boss', lich: 'crypt', storm_drake: 'storm', sphinx: 'ruins' }[bossId] || 'spire';
+  if (bossId) return { big_gary: 'cellar', wyrm: 'boss', lich: 'crypt', storm_drake: 'storm', sphinx: 'ruins' }[bossId] || 'spire';
   const m = mapDef();
   if (m.kind === 'dungeon') return m.theme === 'cavern' ? 'dungeon' : m.theme;
   const r = regionOf(), woods = [[1, 0], [-1, 0], [0, 1], [0, -1]].some(([a, b2]) => tileAt(G.x + a, G.y + b2) === 'T'); // fighting at a forest's edge
@@ -1257,7 +1257,7 @@ function testParty(jobs = { adam: 'monk', devon: 'mage', brenna: 'cleric', wende
   Object.assign(G.flags.story, { woke: true, cellar: true, called: true }); G.flags.bosses.big_gary = true;
   if (!G.party.some((c) => c.look === 'brenna')) joinLocal('brenna'); if (!G.party.some((c) => c.look === 'wendell')) joinLocal('wendell');
   for (const c of G.party) { if (jobs[c.look] && c.main !== jobs[c.look]) { L.setCalling(c, jobs[c.look]); delete c.cp.bloke; c.cp[c.main] = 0; c.weapon = null; c.armor = LIGHT_ARMOR.has(c.main) ? 'cloth' : 'leather'; c.slots = [null, null, null, null]; sanitize(c, G.inv); autofill(c); } const st = maxOf(c); c.hp = st.hp; c.mp = st.mp; }
-  for (const c of G.party) { if (c.look === 'brenna' || c.look === 'wendell') { c.cp[c.main] = 0; c.weapon = null; c.slots = [null, null, null, null]; sanitize(c, G.inv); autofill(c); } }
+  for (const c of G.party) { if (c.look === 'brenna' || c.look === 'wendell') { c.cp[c.main] = 0; c.weapon = LOCALS[c.look].weapon || null; c.slots = [null, null, null, null]; sanitize(c, G.inv); autofill(c); } }
 }
 window.__game = { testParty, get G() { return G; }, get BT() { return BT; }, get v() { return [vx, vy]; }, camState, TS, get route() { return route; }, battle, step, goto, MAPS, snap, OPT, ACT, ui: { shop, inn, guild, socketer, title, slotScreen, diffScreen, talk, itemsMenu, mainMenu, awakening } };
 title();
