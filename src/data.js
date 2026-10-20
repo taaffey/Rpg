@@ -787,6 +787,83 @@ export const STORY = {
   },
 };
 
+// Party Chat (menu > CHAT): short skits. The first unseen match plays (specific `at` beats general), then they cycle.
+// at (optional): a map id ('haven', 'haven_inn', 'cellar', 'cavern', 'crypt', 'spire', 'frostholm', 'mirewood', 'storm', 'ruins', 'world', 'haven_guild', 'frost_inn', 'mire_inn', ...)
+//   or 'region:green' | 'region:plains' | 'region:snow' | 'region:swamp' | 'region:desert' (overworld regions), or 'kind:dungeon' | 'kind:town' | 'kind:interior'.
+// if: the usual condition string (wyrm, lich, titan, storm_drake, sphinx, big_gary, s:cellar, s:called, s:wendell, s:met, s:gems, v:<map>, q:<quest>, p:brenna, p:wendell; ! negates, a|b either).
+const C = (s, t) => ({ s, t });
+STORY.chat = [
+  // ---- the intro: two blokes, no callings
+  { id: 'goat', at: 'haven', if: '!s:cellar', lines: [C('devon', 'Bro, a goat ate my shoelace and nobody here even blinked.'), C('adam', 'They\'ve got bigger problems. Three ancient evils, for a start.'), C('devon', 'Bigger than my shoelace?'), C('adam', 'Slightly bigger.')] },
+  { id: 'nosignal', at: 'haven', if: '!s:called', lines: [C('devon', 'Phone\'s on 3%. No signal. Not even one bar.'), C('adam', 'It\'s a thousand years ago, Dev. The nearest phone mast is a millennium away.'), C('devon', 'So... roaming charges, then.')] },
+  { id: 'gethome', at: 'haven', if: '!s:called s:cellar', lines: [C('devon', 'Ad... are we actually gonna get home?'), C('adam', 'Yes. Fix the seals, the bell rings us back. So we fix the seals.'), C('devon', 'You always say stuff like it\'s easy.'), C('adam', 'That\'s my job. Big brother. Says it on the tin.')] },
+  { id: 'goose', at: 'haven_inn', if: '!s:cellar', lines: [C('devon', 'It\'s a pub, bro. We\'ve travelled a thousand years and ended up in a pub.'), C('adam', 'Very on brand for us.'), C('devon', 'Do you reckon they do a quiz?')] },
+  { id: 'cellar_smell', at: 'cellar', if: '!big_gary', lines: [C('devon', 'Something down here smells like a Wetherspoons carpet.'), C('adam', 'Stay behind me.'), C('devon', 'You haven\'t got a weapon either!'), C('adam', 'Still. Behind me.')] },
+  { id: 'blokes', at: 'cellar', if: '!s:called', lines: [C('devon', 'No weapons, no armour, no calling. We\'re level one blokes, bro.'), C('adam', 'Then we fight like blokes. Carefully. Then we go to the pub, which is upstairs.')] },
+  { id: 'gary_down', if: 'big_gary !s:called', lines: [C('devon', 'We beat Big Gary! First boss! I\'m putting that on my CV.'), C('adam', 'Under what heading?'), C('devon', '"Slime management". Ten years\' experience.'), C('adam', 'It was ten minutes.')] },
+  { id: 'brenna_why', if: 'p:brenna !s:called', lines: [C('brenna', 'Let\'s be clear. I\'m coming because if you two die, I\'m the one who has to mop it up.'), C('devon', 'That\'s love, that is.'), C('brenna', 'It is not.')] },
+  // ---- callings
+  { id: 'callings', at: 'haven_guild', if: 's:called', lines: [C('adam', 'Right. Calling sorted. Picked one that covers our weak spots.'), C('devon', 'I asked for "Dragon Wizard Ninja". She said that\'s not a calling.'), C('adam', 'It\'s three callings, Dev.'), C('devon', 'So three times better.')] },
+  { id: 'calling_swap', if: 's:called', lines: [C('devon', 'Can I change my calling again? This one hasn\'t got a cape.'), C('adam', 'Any Guild will swap it, and you keep what you\'ve learned. So yes. But it won\'t have a cape.'), C('devon', 'I\'ll keep looking. Somewhere out there is a cape calling.')] },
+  { id: 'grind', if: 's:called !wyrm', lines: [C('adam', 'Tougher fights rank our callings up faster. Worth remembering.'), C('devon', 'So you\'re telling me to grind.'), C('adam', 'I\'m telling you to stop fighting the same slime because you like the noise it makes.')] },
+  { id: 'it_job', if: 's:called', lines: [C('devon', 'What would your IT lot make of all this?'), C('adam', 'Magic bell, no documentation, ancient systems, and one bloke with admin rights who\'s gone rogue.'), C('adam', 'Honestly? Tuesday.')] },
+  { id: 'gems_wake', if: 's:gems', lines: [C('devon', 'The heart LIT UP, bro! New callings unlocked! Like a fruit machine!'), C('adam', 'They\'re waking with the hearts. Worth trying a new one at the Guild.'), C('devon', 'Berserker. Has to be. It\'s got "berserk" in the name.'), C('adam', 'That\'s not the selling point you think it is.')] },
+  // ---- towns
+  { id: 'famous', at: 'haven', if: 'wyrm', lines: [C('devon', 'Everyone\'s waving at us now. Is this what being famous feels like?'), C('adam', 'Enjoy it. Last week they thought you were a bear.'), C('devon', 'Still might be, bro.')] },
+  { id: 'goose_wall', at: 'haven_inn', if: 'wyrm p:brenna', lines: [C('brenna', 'Dad\'s put your names on the wall. He spelled Devon with two Vs.'), C('devon', 'Devvon. Honestly? Better.'), C('adam', 'Don\'t encourage him, Brenna.')] },
+  { id: 'knees', at: 'frostholm', lines: [C('devon', 'It\'s fine. My knees are fine. My knees are made of fire.'), C('adam', 'Your knees are blue, Dev.'), C('devon', 'Blue fire. The hottest kind.')] },
+  { id: 'mead', at: 'frost_inn', lines: [C('devon', 'Hot mead, bro. It\'s like mulled wine but angrier.'), C('adam', 'One. We\'ve got a tower to climb.'), C('devon', 'You sound like Mum.'), C('adam', 'Mum would say two. I\'m stricter than Mum.')] },
+  { id: 'frogs', at: 'mirewood', lines: [C('devon', 'Ad, the frogs are looking at me.'), C('adam', 'They\'re frogs.'), C('devon', 'They\'re looking at me like they KNOW something.')] },
+  { id: 'soggy_frog', at: 'mire_inn', if: 'p:brenna', lines: [C('brenna', 'Damp beds, frogs in the ale, and a landlord who calls it "rustic". I could run this place blindfolded.'), C('devon', 'You\'re like a pub inspector!'), C('brenna', 'I\'m a barmaid on a day off. Every day. With you.')] },
+  { id: 'loyalty', at: 'kind:interior', if: 's:called', lines: [C('devon', 'Bro, do you think they do a loyalty card here?'), C('adam', 'They barely do doors.')] },
+  // ---- the overworld
+  { id: 'openworld', at: 'region:green', if: 's:called !wyrm', lines: [C('devon', 'Open world, bro. We can go anywhere we want.'), C('adam', 'East, to the Ashen Cavern. That\'s where the Wyrm is. Bring ice.'), C('devon', 'Anywhere we want... as long as it\'s east.')] },
+  { id: 'plains', at: 'region:plains', lines: [C('devon', 'Massive empty plains. Proper epic-walking-music vibes.'), C('adam', 'Watch the ground. The hermit said treasure glimmers. North-west, under the twin peaks.')] },
+  { id: 'snowfields', at: 'region:snow', lines: [C('adam', 'Fire for the yetis. Stay close, Dev.'), C('devon', 'Close to you or close to the fire?'), C('adam', 'Both. Ideally at once.'), C('wendell', 'I once wrestled a yeti on these very fields! Or a large man in a coat. It was dark.')] },
+  { id: 'bogshoes', at: 'region:swamp', lines: [C('devon', 'My shoes are full of bog.'), C('brenna', 'That\'s what you get for wearing cargo shorts to the end of the world.'), C('adam', 'The Crypt\'s out here somewhere. Holy light and fire for the dead.')] },
+  { id: 'desert', at: 'region:desert', lines: [C('devon', 'It\'s like a beach but somebody forgot the sea.'), C('adam', 'The Oracle said ice and darkness for the Sphinx, and not to go in under-levelled. And drink water.')] },
+  // ---- dungeons
+  { id: 'sauna', at: 'cavern', if: '!wyrm', lines: [C('devon', 'It\'s roasting in here, bro. Like, sauna roasting.'), C('adam', 'There\'s a fire-breathing Wyrm at the bottom. It hates the cold. Bring ice.'), C('devon', 'Or we bring the sauna to it.'), C('adam', 'That isn\'t a plan, Dev. That\'s a sentence.')] },
+  { id: 'door_years', at: 'cavern', if: 'p:wendell !wyrm', lines: [C('wendell', 'Eleven years I stood at that door. Not once did I come inside.'), C('devon', 'Why not, mate?'), C('wendell', 'Nobody told me I could.'), C('adam', 'Well. We\'re telling you. Welcome in, Sir Wendell.')] },
+  { id: 'skull', at: 'crypt', if: '!lich', lines: [C('devon', 'Skeletons, bro. Actual skeletons. Can I keep a skull?'), C('adam', 'No.'), C('devon', 'A small one?'), C('adam', 'Holy light, fire, and no skulls. That\'s the rule.')] },
+  { id: 'dust', at: 'crypt', if: 'p:brenna', lines: [C('brenna', 'Three hundred years of dust. I\'ve seen worse behind the Goose\'s bar.'), C('adam', 'That\'s genuinely worrying, Brenna.'), C('brenna', 'You drank there.')] },
+  { id: 'music', at: 'spire', if: '!titan', lines: [C('devon', 'Last dungeon. I can tell. The music\'s gone all serious.'), C('adam', 'What music?'), C('devon', 'The music in my head, bro. It\'s got choirs now.')] },
+  { id: 'hunch', at: 'spire', if: 's:met !titan', lines: [C('adam', 'He needs us to do the killing. It\'s the one thing he can\'t do himself. Remember that at the top.'), C('devon', 'You\'ve got a plan?'), C('adam', 'I\'ve got a hunch. And you. Usually that\'s enough.')] },
+  { id: 'static', at: 'storm', lines: [C('devon', 'My beard\'s full of static. I\'m a human balloon.'), C('adam', 'Ice for the drake. And don\'t touch anything metal.'), C('devon', '...I am touching something metal.')] },
+  { id: 'curse', at: 'ruins', lines: [C('devon', 'Pyramid, bro! Reckon there\'s a curse?'), C('adam', 'I reckon there\'s a Sphinx. Ice and darkness, and be level eleven or so.'), C('devon', 'So a curse with stats.')] },
+  { id: 'dungeon_dark', at: 'kind:dungeon', lines: [C('devon', 'Dark, damp, full of monsters. Bit like the cellar at Gaz\'s house party.'), C('adam', 'That was also a dungeon, yes.')] },
+  // ---- story beats
+  { id: 'dragon', if: 'wyrm !lich', lines: [C('devon', 'We killed a dragon. Bro. A DRAGON. Mum is never gonna believe this.'), C('adam', 'Mum still doesn\'t believe you passed your driving test.'), C('devon', 'Fair. Neither does the examiner.')] },
+  { id: 'ledge', if: 'wyrm !s:met', lines: [C('adam', 'That man on the ledge. He wasn\'t scared of the Wyrm. He was waiting for it to die.'), C('devon', 'Spooky. Maybe he\'s a fan.'), C('adam', 'Maybe he\'s the problem.')] },
+  { id: 'crown', if: 'lich', lines: [C('devon', 'He had a crown, bro. A whole crown. And I wasn\'t allowed it.'), C('brenna', 'Correct.'), C('adam', 'Mirewood can sleep tonight. That\'s worth more than a crown.'), C('devon', '...It was a really nice crown.')] },
+  { id: 'accountant', if: 's:met', lines: [C('devon', '"Gandalf\'s accountant", though. I\'m proud of that one.'), C('adam', 'It was good.'), C('devon', 'You laughed!'), C('adam', 'Inside. I laughed inside.')] },
+  { id: 'delivery', if: 's:met !titan', lines: [C('adam', 'He cut the seals so we\'d kill the evils and leave him the hearts. We\'re his delivery service.'), C('devon', 'Like Deliveroo, but with dragons.'), C('adam', '...Yes, Dev. Exactly like that.'), C('wendell', 'What is a Deliveroo? Is it a kind of horse? I could use a horse.')] },
+  { id: 'all_three', if: 'titan', lines: [C('devon', 'Ad. We did it. All three.'), C('adam', 'We did.'), C('devon', 'Do you think the bell\'ll really take us home?'), C('adam', 'It brought us here for a reason. Job\'s done. It\'ll send us back. I promise.')] },
+  { id: 'drake_phone', if: 'storm_drake', lines: [C('devon', 'Fought a lightning dragon. Phone\'s still on 3%. Not one percent of charge. Not one.'), C('adam', 'That isn\'t how electricity works, Dev.'), C('devon', 'Electricity is a coward.')] },
+  { id: 'riddle', if: 'sphinx', lines: [C('devon', 'I would\'ve got that riddle, you know.'), C('adam', 'You said "a towel".'), C('devon', 'Towels are very mysterious, bro.')] },
+  { id: 'gold_pig', if: 'q:goldboar', lines: [C('devon', 'We hunted a golden pig. That\'s a whole Instagram account, that.'), C('adam', 'No signal, 3% battery.'), C('devon', 'A private Instagram account.')] },
+  { id: 'letter_home', if: 'q:letter', lines: [C('devon', 'That apprentice nearly cried at his sister\'s letter.'), C('adam', 'Yeah. He did.'), C('devon', 'When we get back... we should go and see Mum.'), C('adam', 'Sunday. I\'ll drive. You bring the biscuits.')] },
+  { id: 'slime_pros', if: 'q:slimes', lines: [C('devon', 'Six more slimes. We\'re basically slime professionals now.'), C('adam', 'There\'s no money in it back home.'), C('devon', 'There\'s no slimes back home, bro. Untapped market.')] },
+  // ---- the party
+  { id: 'horse', if: 'p:wendell', lines: [C('devon', 'Wendell, what happened to your horse?'), C('wendell', 'Clarence left in year three. He said nothing. Horses rarely do.'), C('adam', 'I\'m sure he\'s alright.'), C('wendell', 'He serves a younger knight now. I saw them once, at a fair. They looked very happy.')] },
+  { id: 'moustache', if: 'p:wendell', lines: [C('wendell', 'Gentlemen. I propose a Brotherhood of the Beard.'), C('devon', 'Your moustache counts, mate. It\'s a beard that stopped halfway.'), C('wendell', 'It stopped NOWHERE, sir. It is precisely where it intends to be.')] },
+  { id: 'no_bells', if: 'p:brenna', lines: [C('devon', 'Brenna, when we go home, what\'ll you do?'), C('brenna', 'Put a sign up. NO BELLS. Then have a very long sit-down.'), C('adam', 'Seems fair, after us.')] },
+  { id: 'closing_time', if: 'p:brenna wyrm', lines: [C('brenna', 'Patching you two up is just closing time at the Goose. Same cuts, same whining.'), C('devon', 'I don\'t whine.'), C('brenna', 'You cried at a goose.'), C('devon', 'It was a really mean goose.')] },
+  { id: 'cave_flagon', if: 'p:brenna p:wendell', lines: [C('wendell', 'Fair barmaid! A flagon for a knight of the realm!'), C('brenna', 'We\'re in the middle of nowhere, Wendell.'), C('wendell', 'Then a nowhere flagon!'), C('brenna', 'No.')] },
+  { id: 'quiz', if: 's:called', lines: [C('devon', 'Do you reckon the quiz is still going, back home?'), C('adam', 'If it is, I knew question nine. Battle of Hastings. 1066.'), C('devon', 'Bro, that hasn\'t even happened yet.'), C('adam', 'Then we\'re early. Good. We\'re never early.')] },
+  { id: 'roasties', if: 'wyrm', lines: [C('devon', 'I miss Mum\'s roast potatoes.'), C('adam', 'Me too.'), C('devon', 'I\'d miss you as well. If you weren\'t right here.'), C('adam', 'I\'m not going anywhere without you, Dev. That\'s a promise.')] },
+];
+STORY.chatIdle = [
+  [C('devon', 'Phone check... 3%. Still 3%. Respect, honestly.')],
+  [C('devon', 'Are we nearly there yet?'), C('adam', 'No.')],
+  [C('devon', 'Bro. Bro. ...Nothing. Just bro.'), C('adam', 'Good chat.')],
+  [C('adam', 'Check the Journal if you\'re lost, Dev. That\'s what it\'s for.')],
+  [C('brenna', 'If anyone says "side quest" again, I\'m walking home.')],
+  [C('wendell', 'Onward! ...Which way is onward?'), C('adam', 'That way, Wendell.')],
+  [C('devon', 'I would honestly fight a dragon for a cheese toastie.'), C('adam', 'You have fought a dragon. No toastie.')],
+  [C('devon', 'Do you think Mum\'s fed the cat?'), C('adam', 'It\'s been two minutes back home, Dev. The cat\'s fine.')],
+];
+
 // ---- Calling traits (passives, applied in logic.js). The current calling's learned trait is always on; one more can be set.
 export const TRAITS = {
   stalwart: { name: 'Stalwart', desc: 'Takes 15% less damage.' },

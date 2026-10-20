@@ -182,6 +182,7 @@ const HEADS = {
   hood: { ax: 6, rows: ['...HHHH...', '..HHHHhhh.', '.HHWhhhhhj', 'HHHhhhhhjj', 'HjjFFFjhjj', 'HjFFFfjhjj', 'jFeFFfjhjj', 'FFeFfgjhj.', '.FFfgjhhj.', '..gjjhhjj.'] },
   hat: { ax: 6, rows: ['........Hj.', '.......HHj.', '......HHhj.', '.....HWhhj.', '....HHhhhj.', '...HHAAAAj.', 'HHHHhhhhhhj', '.jjFFFRrrr.', '..FeFFfRrr.', '.FFeFfgRr..', '..FFfgRr...', '...fgg.....'] },
   // ----- Bearded Bros looks (hair in H h j W; R r = hair poking out of a beanie or a bald man's fringe) -----
+  openhelm: { ax: 6, rows: ['....AA....', '...HHAa...', '..HHHHAa..', '.HWHHhhAa.', 'HWHHhhhhj.', 'jjjjjhhhjj', 'FFFFfhhhjj', 'FeFFfghhj.', 'FeFFfgjhj.', '.FFffgj...', '..fgg.....'] }, // visor up: the face shows (looks)
   short: { ax: 6, rows: ['..HHHHH...', '.HWHHhhhh.', 'HWHhhhhhhj', 'HHhhhhhhjj', 'hFFFhhhhjj', 'FeFFfghhj.', 'FeFFfgjhj.', '.FFffgj...', '..fgg.....'] },
   messy: { ax: 6, rows: ['.H..H.H...', '..HHHHHHh.', '.HWHHhhhhj', 'HWHhhhhhhj', 'HHhhhhhhjj', 'hFhFhhhhjj', 'FeFFfghhjj', 'FeFFfgjhj.', '.FFffgj...', '..fgg.....'] },
   beanie: { ax: 6, rows: ['...HHHH...', '..HWHHhhh.', '.HWHhhhhhj', 'HWHhhhhhhj', 'jhjhjhjhjj', 'RFFFFRrrr.', 'FeFFfgRrr.', 'FeFFfgrr..', '.FFffgr...', '..fgg.....'] },
@@ -207,8 +208,8 @@ const JOBART = {
 // ---------- Bearded Bros: per-person looks over any calling ('job@look') + the modern outfits ----------
 // head: replaces hair-only heads (spiky / topknot / the bloke's); hats and hoods keep their shape but take the look's hair colour
 const BA_LOOKS = {
-  adam: { head: 'short', hair: '#5a3a22', skin: '#f2c8a2', beard: 'adam', beardCol: '#5a3a22' },
-  devon: { head: 'messy', hair: '#d0702c', skin: '#f6caa4', beard: 'devon', beardCol: '#d0702c' },
+  adam: { head: 'short', hair: '#5a3a22', skin: '#f2c8a2', beard: 'adam', beardCol: '#5a3a22', fringe: true },
+  devon: { head: 'messy', hair: '#d0702c', skin: '#f6caa4', beard: 'devon', beardCol: '#d0702c', fringe: true },
   brenna: { head: 'bun', hair: '#a8462a', skin: '#f4c8a2', fringe: true },
   wendell: { head: 'bald', hair: '#e4e4ec', skin: '#f0bc98', beard: 'walrus', beardCol: '#e4e4ec' },
 };
@@ -223,7 +224,7 @@ const BA_OUTFITS = {
 const BEARDS = {
   adam: { dx0: -1, dy0: -2, rows: ['.....g', '....bb', '.LLBBb', 'BBoBBb', 'BBBBbd', '.BBbd.'] },
   devon: { dx0: -2, dy0: -2, rows: ['.......b', '.....Bbb', '.LLLBBbb', 'LBBoBBBb', 'BBBBBBbd', 'BBLBBBbd', '.BBBBbd.', '.BBBbbd.', '..BBbd..', '..bdd...'] },
-  walrus: { dx0: -2, dy0: -2, rows: ['......BB', '.....BBb', 'LLLLBBBb', 'bBBbb.Bb', 'b.b...b.'] },
+  walrus: { dx0: -1, dy0: -3, rows: ['.....BB', '....BBb', '....BBb', 'LLLLBBb', 'BBBb.Bb', 'Bb...b.', 'b......'] },
 };
 export function parseKey(key) { const [job, look] = String(key || '').split('@'); return { job, look: BA_LOOKS[look] ? look : null }; }
 const DEF_STYLE = ['hair', '#8a5a30', '#55341c', '#6a8ac0', '#4a6a98', '#f2f2f2', '#f0c8a0'];
@@ -310,6 +311,7 @@ function heroSpec(job, poseName, wover, look = null, key = job) {
   const ja = { ...(JOBART[job] || JOBART.knight) }; if (wover) ja.weapon = wover;
   const LK = look ? BA_LOOKS[look] : null, O = BA_OUTFITS[key] || BA_OUTFITS[job] || null;
   if (LK && HAIR_HEADS.has(ja.head)) ja.head = LK.head;
+  if (LK && ja.head === 'helm') ja.head = 'openhelm'; // a person under the helmet: visor up so face and beard read
   if (O && O.head) ja.head = O.head;
   const mats = heroMats(job, LK, O), J = heroPose(poseName, ja.weapon), parts = [];
   const C = (a, b, r1, r2, m, z) => parts.push(cap(a[0], a[1], b[0], b[1], r1, r2, m, { z }));
@@ -358,7 +360,8 @@ function heroSpec(job, poseName, wover, look = null, key = job) {
     if (J.face === 'x' && eyes.length) { const [ex, ey] = eyes[eyes.length - 1]; api.px(ex, ey, '#2a1c34'); api.px(ex + 1, ey - 1, '#2a1c34'); }
     if (J.face === 'd' && eyes.length) { const [ex, ey] = eyes[eyes.length - 1]; api.px(ex, ey, '#2a1c34'); api.px(ex + 1, ey, '#2a1c34'); }
     if (J.face === 'h' && eyes.length) { const [ex, ey] = eyes[0]; api.px(ex, ey + 1, '#2a1c34'); api.px(ex + 1, ey, '#2a1c34'); }
-    if (LK && LK.fringe && ja.head === 'hood') for (let k = 3; k <= 5; k++) api.px(hx + k, hy + 4, k === 4 ? m.hair.r[3] : m.hair.r[2]);
+    if (LK && LK.fringe && ja.head === 'hood') for (let k = 3; k <= 5; k++) api.px(hx + k, hy + 4, k === 4 ? m.hair.r[3] : m.hair.r[2]); // a lock of hair out of the hood
+    if (LK && LK.fringe && ja.head === 'openhelm') for (let k = 1; k <= 3; k++) api.px(hx + k, hy + 6, k === 2 ? m.hair.r[3] : m.hair.r[2]);
     if (LK && LK.beard && eyes.length) { // beard stamped under the mouth: reads on every pose, under helmets and hoods too
       const my = Math.max(...eyes.map((e) => e[1])) + 1 - hy, row = head.rows[my] || '', fx = Math.max(0, [...row].findIndex((ch) => 'Ffg'.includes(ch))), bd = BEARDS[LK.beard], br = m.beard.r;
       const bp = { L: br[3], B: br[2], b: br[1], d: br[0], o: '#2a1418', g: '#b4aca8', _ol: br[0] };

@@ -45,6 +45,13 @@ ok('review lists both', (await ev(() => document.querySelectorAll('[data-act=cre
 ok('chosen callings stick, bloke CP dropped, light armour for the mage', await ev(() => { const [a, d] = window.__game.G.party; return a.main === 'monk' && d.main === 'mage' && !a.cp.bloke && d.armor === 'cloth' && a.cp.monk === 0 && !a.sub; }));
 await ev(() => window.__game.goto('cavern', 2, 1)); await pg.waitForTimeout(300); const wen = await sayThrough();
 ok('Sir Wendell joins at the Ashen Cavern', (await ev(() => window.__game.G.party.length)) === 4 && (await ev(() => window.__game.G.party[3].name)) === 'Wendell' && /old knight/.test(wen) && (await ev(() => window.__game.G.party[3].main)) === 'knight', (await ev(() => window.__game.G.party.length + ' ' + window.__game.G.map)) + ' ' + wen.slice(0, 200));
+await closeAll(); await ev(() => window.__game.goto('haven_inn', 3, 4)); await pg.waitForTimeout(300); await key('ArrowUp', 1, 400);
+ok('Brenna has left her post behind the bar once she joins', !/Brenna/.test(await overlayTitle()) && (await ev(() => window.__game.G.y)) === 3);
+await closeAll();
+const chatN = await ev(() => Object.keys(window.__game.G.flags.chat).length);
+await openMenu(); await pg.click('[data-act=chat]'); await pg.waitForTimeout(300);
+ok('CHAT plays a party skit', !!(await pg.$('#overlay .saybox')) && (await ev(() => Object.keys(window.__game.G.flags.chat).length)) === chatN + 1, await sayText());
+await sayThrough(); await closeAll();
 await closeAll(); await ev(() => { window.__game.testParty(); window.__game.goto('haven', 17, 30); }); await pg.waitForTimeout(200); await closeAll();
 await ev(() => { for (const m of Object.values(window.__game.MAPS)) m.rate = 0; }); // keep tests deterministic: battles are started explicitly
 await ev(() => { for (const id of ['cavern', 'crypt', 'mirewood', 'frostholm', 'spire', 'storm', 'ruins']) window.__game.G.flags.visited[id] = true; }); // first-visit scenes would cover the teleports below

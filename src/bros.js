@@ -4,7 +4,7 @@
 // Brenna joins and they choose callings at the Guild. Sir Wendell joins at the mouth of the Ashen Cavern.
 // Story flags: s:woke (arrival scene seen), s:cellar (Big Gary beaten), s:called (callings chosen), s:wendell (he joined).
 import { JOBS, SKILLS, ENEMIES, ENCOUNTERS, DROPS, BOSSES, STORY } from './data.js';
-import { MAPS } from './maps.js';
+import { MAPS, WALK } from './maps.js';
 
 // ---------------------------------------------------------------- the party
 // Adam: the older brother, calm and genuinely the wiser one (the straight man). Devon: the younger, chaotic, sweet, overconfident.
@@ -134,3 +134,9 @@ STORY.area.cellar = CELLAR_IN;
 STORY.after.big_gary = GARY_DOWN;
 // fewer heroes, softer foes: random fights scale to the party's size until all four have joined (bosses are tuned as they are)
 export const PARTY_SCALE = { 1: { hp: 0.5, atk: 0.75 }, 2: { hp: 0.62, atk: 0.82 }, 3: { hp: 0.8, atk: 0.9 } };
+// Sir Wendell at his post beside the Ashen Cavern's mouth (talk to him, or walk in, and he joins)
+{
+  const w = MAPS.world, [cx, cy] = w.places.find((p) => p[2] === 'Ashen Cavern'), at = (x, y) => w.rows[y]?.[x];
+  const spot = [[-1, 0], [1, 0], [0, 1], [-1, 1], [1, 1]].map(([dx, dy]) => [cx + dx, cy + dy]).find(([x, y]) => WALK.has(at(x, y)) && !w.portals[`${x},${y}`]);
+  if (spot) w.npcs.push({ x: spot[0], y: spot[1], type: 'wendell', name: 'Sir Wendell', local: 'wendell', text: ['HALT! None shall pass! ...Unless you are my relief.'] });
+}

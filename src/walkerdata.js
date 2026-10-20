@@ -1113,8 +1113,8 @@ export const OUTFITS = {
 // per-person looks: hair = HAIR key used where the calling shows hair; face = head parts always added (beards show under helmets);
 // open = parts added only when the calling wears nothing on the head; hood = parts added under a hood
 export const LOOKS = {
-  adam: { hair: 'short', face: ['beardAdam'], open: ['temples'], spec: { 4: '#b4aca8' }, ramps: { H: '#5a3a22', S: ['#ffe2c4', '#f3bf92', '#d08d64', '#9a5c40'] } },
-  devon: { hair: 'messy', face: ['beardDevon'], open: ['freckles'], ramps: { H: '#d0702c', S: DEVON_SKIN } },
+  adam: { hair: 'short', face: ['beardAdam'], open: ['temples'], hood: ['fringe'], spec: { 4: '#b4aca8' }, ramps: { H: '#5a3a22', S: ['#ffe2c4', '#f3bf92', '#d08d64', '#9a5c40'] } },
+  devon: { hair: 'messy', face: ['beardDevon'], open: ['freckles'], hood: ['fringe'], ramps: { H: '#d0702c', S: DEVON_SKIN } },
   brenna: { hair: 'long', open: ['bun'], hood: ['fringe'], ramps: { H: '#a8462a', S: ['#ffe4cc', '#f4c39c', '#d4906a', '#9e5e44'] }, spec: { 1: '#2e7a5a' } },
   wendell: { hair: 'bald', face: ['walrus'], open: ['brows'], ramps: { H: '#e4e4ec', S: ['#ffdcc0', '#f0b48e', '#cc8460', '#965638'] } },
 };

@@ -108,14 +108,14 @@ function newGame(party = DEFAULT_PARTY) {
     party: party.map(([n, j, look]) => Object.assign(newChar(n, j, null, null, LIGHT_ARMOR.has(j) || j === 'bloke' ? 'cloth' : 'leather'), look ? { look } : {})),
     gold: 400, difficulty: 'normal', slot: 1,
     inv: { weapons: [], armors: [], accs: [], gems: [], items: { potion: 3 } },
-    map: 'haven', x: 17, y: 30, flags: { chests: {}, bosses: {}, seen: {}, talked: {}, visited: {}, quests: {}, qprog: {}, qitems: {}, tips: {}, bestiary: {}, story: {} }, playtime: 0,
+    map: 'haven', x: 17, y: 30, flags: { chests: {}, bosses: {}, seen: {}, talked: {}, visited: {}, quests: {}, qprog: {}, qitems: {}, tips: {}, bestiary: {}, story: {}, chat: {} }, playtime: 0,
   };
 }
 // ---------- saves: 3 slots, autosave, migration ----------
 const VERSION = '2.0.0', LEGACY_SAVE = 'gemforge-save-v2', SLOT_KEY = (i) => `gemforge-save-v3-${i}`, SLOT_IDS = [1, 2, 3];
 function migrate(g) {
   g.v = 3; g.flags ||= {};
-  for (const k of ['chests', 'bosses', 'seen', 'talked', 'visited', 'quests', 'qprog', 'qitems', 'tips', 'bestiary', 'story']) g.flags[k] ||= {};
+  for (const k of ['chests', 'bosses', 'seen', 'talked', 'visited', 'quests', 'qprog', 'qitems', 'tips', 'bestiary', 'story', 'chat']) g.flags[k] ||= {};
   g.playtime ||= 0; g.stats ||= { wins: 0 }; g.difficulty = DIFFICULTY[g.difficulty] ? g.difficulty : 'normal';
   for (const c of g.party) { c.extra ||= 0; c.gems ||= []; while (c.gems.length < 5) c.gems.push([]); }
   // old saves keep their gear; only ids that no longer exist are dropped (never a crash on load)
@@ -168,7 +168,8 @@ const gateOpen = () => { const g = mapDef().gate; return !g || !!G.flags.bosses[
 const walkable = (t) => WALK.has(t) || (t === 'B' && gateOpen());
 const FLAT_DECOR = new Set(['trapdoor']); // drawn on the floor: walk right over it
 const decorAt = (x, y) => mapDef().decor?.some((d) => d[0] === x && d[1] === y && !FLAT_DECOR.has(d[2]));
-const npcAt = (x, y) => mapDef().npcs?.find((n) => n.x === x && n.y === y);
+const here = (n) => !(n.local && G.party.some((c) => c.look === n.local)); // locals leave their post once they join
+const npcAt = (x, y) => mapDef().npcs?.find((n) => n.x === x && n.y === y && here(n));
 const regionOf = () => { if (G.map !== 'world') return null; const t = tileAt(G.x, G.y); return t === ',' || t === 't' ? 'snow' : t === ':' ? 'swamp' : t === 'd' ? 'desert' : G.y <= 13 ? 'plains' : 'green'; };
 const REGION_NAME = { snow: 'Frostfields', swamp: 'Mire Marsh', plains: 'Northern Plains', green: 'Greenmarch', desert: 'Sunscar Sands' };
 function musicFor() { const m = mapDef(); if (m.kind !== 'outdoor') return m.music; const r = regionOf(); return r === 'snow' ? 'snow' : r === 'desert' ? 'desert' : r === 'swamp' ? 'mirewood' : 'world'; }
@@ -284,7 +285,7 @@ function draw(t = performance.now() / 1000) {
     cx.drawImage(img, X, fy - h + u, TS, h); return h + u; };
   const sorted = items.filter((it) => it.z === 1).map((it) => ({ k: it.sy ?? it.y + (it.h ?? it.img.height / 16), f: () => put(it) }));
   if (m.boss && !defeated(m.boss.id)) sorted.push({ k: m.boss.y + 1, f: () => { const bob = Math.round(Math.sin(t * 2) * 1.5); const img = SP.enemy(m.boss.id), sc = Math.min(2 * TS / img.width, 2 * TS / img.height), w = img.width * sc, h = img.height * sc; cx.drawImage(img, sx(m.boss.x) + TS / 2 - w / 2, sy(m.boss.y) + TS - h + bob, w, h); } }); // bosses loom over their lair, up to 2x2 tiles
-  for (const n of m.npcs || []) sorted.push({ k: n.y + 1, f: () => {
+  for (const n of (m.npcs || []).filter(here)) sorted.push({ k: n.y + 1, f: () => {
     const nx0 = sx(n.x), ny0 = sy(n.y), fr = Math.floor(t * 1.6 + n.x) % 8 === 0 ? 1 : 0, bob = Math.round(Math.sin(t * 4 + n.x) * 1.5); // only the '!' bobs
     const h = stand(WK.npcWalker(n.type, n.dir || 'down', fr), nx0, ny0);
   } });
@@ -583,6 +584,7 @@ function talk(npc) {
   if (npc.service === 'inn') return inn(npc);
   if (npc.service === 'guild') return guild();
   if (npc.service === 'socketer') return gemsOn() ? socketer() : talk({ ...npc, service: null, quest: null, textBy: null, text: ['Nothing in your pack worth cutting.', 'Come back when you carry a stone that hums.'] });
+  if (npc.local === 'wendell' && G.party.length < 4 && G.flags.story.called) return scene(WENDELL).then(() => joinLocal('wendell'));
   const key = `${G.map}:${npc.x},${npc.y}`, { vid, lines } = npcLines(npc), news = vid && G.flags.talked[key] !== vid ? lines : []; // news: a new reactive line, told once before quest talk
   G.flags.talked[key] = vid || true; curNpc = npc;
   if (npc.deliver && qstate(npc.deliver) === 'active' && !questDone(npc.deliver)) { const q = QUESTS[npc.deliver]; curLines = q.lines.deliver; curFinal = btn('qdeliver', `Hand over: ${esc(QITEM[q.goal.item])}`, npc.deliver, '', 'primary'); return say(0); }
@@ -769,9 +771,25 @@ function intro() {
   <p>Your party sets out <b>unarmed</b> with <span class="gold">400 G</span>: arm everyone at the <b>Smithy</b> first (a sword, two staves and a dagger cost about 205 G), then buy a few potions.</p>
   <p>Open the <b>Menu</b> (Esc) to change callings and skills, and visit the <b>Smithy</b> for gear. Talk to townsfolk: a <span class="gold">!</span> marks someone with news. Check your <b>Journal</b> if you get lost.</p><div class="foot">${btn('close', 'Begin', '', '', 'primary')}</div>`);
 }
+// ---------- party chat (menu > CHAT): skits about where you are and what just happened (STORY.chat) ----------
+function chatHere(at) { // how well a skit's place fits: 2 = this map, 1 = this region / kind of place, 0 = anywhere, -1 = elsewhere
+  if (!at) return 0; const m = mapDef(), [k, v] = at.includes(':') ? at.split(':') : ['map', at];
+  return k === 'map' ? (G.map === v ? 2 : -1) : k === 'region' ? (regionOf() === v ? 1 : -1) : k === 'kind' ? (m.kind === v ? 1 : -1) : -1;
+}
+function pickChat() {
+  const ok = (STORY.chat || []).map((c) => ({ c, w: chatHere(c.at) })).filter(({ c, w }) => w >= 0 && cond(c.if) && c.lines.some((l) => !PEOPLE.has(l.s) || G.party.some((p) => p.look === l.s)));
+  const fresh = ok.filter(({ c }) => !G.flags.chat[c.id]).sort((a, b) => b.w - a.w);
+  if (fresh.length) return fresh[0].c;
+  const idle = STORY.chatIdle || []; return idle.length ? { id: '', lines: idle[Math.floor(Math.random() * idle.length)] } : null;
+}
+ACT.chat = async () => {
+  const c = pickChat(); if (!c) return hide();
+  if (c.id) G.flags.chat[c.id] = true;
+  await scene(c.lines);
+};
 function mainMenu() {
   const menuTip = tipOnce('menu') ? 'TIP: pick a hero, then Edit a skill slot to socket gems. Gems rewrite how a skill works.' : '';
-  const cmds = [['items', 'ITEM', 'bag'], ['mapscreen', 'MAP', 'map'], ['journal', 'JOURNAL', 'journal'], ['bestiary', 'BESTIARY', 'bestiary'], ['opts', 'OPTIONS', 'options'], ['save', 'SAVE', 'save'], ['title', 'TITLE', 'title'], ['close', 'CLOSE', 'close']];
+  const cmds = [['items', 'ITEM', 'bag'], ['chat', 'CHAT', 'hero'], ['mapscreen', 'MAP', 'map'], ['journal', 'JOURNAL', 'journal'], ['bestiary', 'BESTIARY', 'bestiary'], ['opts', 'OPTIONS', 'options'], ['save', 'SAVE', 'save'], ['title', 'TITLE', 'title'], ['close', 'CLOSE', 'close']];
   show(`<div class="menugrid"><div class="menuside"><div class="pane menucmd"><div class="cmdlist">${cmds.map(([a, l, n]) => btn(a, ic(n) + l, '', '', a === 'close' ? 'primary' : '')).join('')}</div></div>
   <div class="pane menuinfo"><span class="dim">TIME</span><span>${fmtTime(G.playtime)}</span><span class="dim">WINS</span><span>${G.stats?.wins || 0}</span><span class="g">${ic('coin')}GOLD</span><span class="gold">${G.gold}</span></div></div>
   <div class="pane menuparty">${G.party.map((c, i) => heroBtn(c, 'build', i)).join('')}</div></div>
