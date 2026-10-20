@@ -1095,6 +1095,11 @@ Object.assign(PROPS, {
     up: { z: 'mid', parts: [P(3, 11, ['OF', 'FF', '1f', 'FF', 'fN'])] },
     right: { z: 'top', parts: [P(7, 11, ['OFf', 'F1N', 'Ff.', '1N.'])] },
   },
+  tabard: { // faded surcoat down the front of the plate
+    down: { z: 'mid', parts: [P(6, 12, ['KCCc', 'CCCc', 'CCcv', '....', 'CCcv', 'Ccvv'])] },
+    up: { z: 'mid', parts: [P(6, 12, ['CCCc', 'CCcc', 'Cccv', '....', 'Cccv', 'ccvv'])] },
+    right: { z: 'mid', parts: [P(9, 12, ['KC', 'Cc', 'Cc', '..', 'Cv', 'cv'])] },
+  },
   dents: { // rust and dents on old plate
     down: { z: 'top', parts: [P(5, 13, ['3...']), P(9, 15, ['.3']), P(3, 6, ['3'])] },
     up: { z: 'top', parts: [P(6, 14, ['3..3'])] },
@@ -1120,6 +1125,6 @@ export const LOOKS = {
 };
 Object.assign(TOWNS, {
   brenna: { head: 'bun', hair: 'long', body: 'robe', ramps: { H: '#a8462a', T: '#3a5a4a', F: '#f8f4ec', A: '#6a3a2a', B: '#4a2a22', S: LOOKS.brenna.ramps.S }, props: ['apron'], spec: { 1: '#2e7a5a' }, remap: { arms: { W: 'O', T: 'F', t: 'f', u: 'N' } } },
-  wendell: { head: ['knight', 'walrus'], ramps: { T: '#8a3a34', M: '#a08a78', C: '#c8b070', P: '#7a6a5c', B: '#4a3a32', A: '#c8a050', R: '#6a4a2a', H: '#e4e4ec', S: LOOKS.wendell.ramps.S }, props: ['pauldrons', 'dents'], remap: { legs: { P: 'M', p: 'm', q: 'n', Q: 'L' } }, spec: { 3: '#7a4024' } },
+  wendell: { hair: 'bald', head: ['brows', 'walrus'], ramps: { M: '#8e96a4', C: '#8e3a2c', A: '#6a4428', P: '#7a6a5c', B: '#3e3430', R: '#6a4a2a', H: '#f0f0f6', S: ['#ffd4b4', '#e8a882', '#c07a58', '#8a4e36'] }, props: ['tabard', 'pauldrons', 'dents'], remap: { torso: { W: 'L', T: 'M', t: 'm', u: 'n' }, arms: { W: 'L', T: 'M', t: 'm', u: 'n' }, legs: { P: 'M', p: 'm', q: 'n', Q: 'L' } }, spec: { 3: '#a04a22' } }, // old Sir Wendell: bald, walrus moustache, rust-spotted grey plate
   barkeep: { hair: 'crop', ramps: { H: '#8a6a58', T: '#2e5a4a', P: '#3a3a48', B: '#2a2228', A: '#2a2a30', F: '#f2f2f6', S: ['#ffdcc0', '#f0b890', '#cc8864', '#96583c'] }, props: ['polo', 'towel'], remap: { arms: TEE }, spec: { 1: '#4a7ae0', 2: '#e8e8e0' } },
 });

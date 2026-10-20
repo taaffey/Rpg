@@ -211,7 +211,7 @@ const BA_LOOKS = {
   adam: { head: 'short', hair: '#5a3a22', skin: '#f2c8a2', beard: 'adam', beardCol: '#5a3a22', fringe: true },
   devon: { head: 'messy', hair: '#d0702c', skin: '#f6caa4', beard: 'devon', beardCol: '#d0702c', fringe: true },
   brenna: { head: 'bun', hair: '#a8462a', skin: '#f4c8a2', fringe: true },
-  wendell: { head: 'bald', hair: '#e4e4ec', skin: '#f0bc98', beard: 'walrus', beardCol: '#e4e4ec' },
+  wendell: { head: 'bald', hair: '#e4e4ec', skin: '#e4a47e', beard: 'walrus', beardCol: '#eeeef4', brows: true },
 };
 const HAIR_HEADS = new Set(['spiky', 'topknot', 'short']);
 // shirt, legs (jeans/shorts), shin ('legs' or bare 'skin'), shoes, belt; plaid = check shirt; tee = open shirt front; short = short sleeves
@@ -224,7 +224,7 @@ const BA_OUTFITS = {
 const BEARDS = {
   adam: { dx0: -1, dy0: -2, rows: ['.....g', '....bb', '.LLBBb', 'BBoBBb', 'BBBBbd', '.BBbd.'] },
   devon: { dx0: -2, dy0: -2, rows: ['.......b', '.....Bbb', '.LLLBBbb', 'LBBoBBBb', 'BBBBBBbd', 'BBLBBBbd', '.BBBBbd.', '.BBBbbd.', '..BBbd..', '..bdd...'] },
-  walrus: { dx0: -1, dy0: -3, rows: ['.....BB', '....BBb', '....BBb', 'LLLLBBb', 'BBBb.Bb', 'Bb...b.', 'b......'] },
+  walrus: { dx0: -2, dy0: -3, rows: ['......BB', '.....BBb', '.....BBb', 'LLLLLBBb', 'BBBBBbBb', 'dBBbd.bd', '.d..d...'] },
 };
 export function parseKey(key) { const [job, look] = String(key || '').split('@'); return { job, look: BA_LOOKS[look] ? look : null }; }
 const DEF_STYLE = ['hair', '#8a5a30', '#55341c', '#6a8ac0', '#4a6a98', '#f2f2f2', '#f0c8a0'];
@@ -366,6 +366,7 @@ function heroSpec(job, poseName, wover, look = null, key = job) {
       const my = Math.max(...eyes.map((e) => e[1])) + 1 - hy, row = head.rows[my] || '', fx = Math.max(0, [...row].findIndex((ch) => 'Ffg'.includes(ch))), bd = BEARDS[LK.beard], br = m.beard.r;
       const bp = { L: br[3], B: br[2], b: br[1], d: br[0], o: '#2a1418', g: '#b4aca8', _ol: br[0] };
       api.stamp(bd.rows, bp, hx + fx + bd.dx0, hy + my + bd.dy0);
+      if (LK.brows) { const [ex, ey] = eyes.reduce((a, e) => (e[1] < a[1] ? e : a)); for (let k = -1; k <= 1; k++) api.px(ex + k, ey - 1, k < 1 ? br[3] : br[2]); } // bushy white brows
     }
     if (O && O.logo && poseName !== 'ko') api.px(Math.round(J.chest[0] - 1.6), Math.round(J.chest[1]), O.logo);
     if (ja.weapon === 'bow' && poseName !== 'ko') { const top = add(hand, [0, -6.5]), bot = add(hand, [0, 6.5]), pull = poseName === 'windup' || poseName === 'strike' ? J.haB : [hand[0] + 1.6, hand[1]]; api.line(Math.round(top[0]), Math.round(top[1]), Math.round(pull[0]), Math.round(pull[1]), '#e8e0c8'); api.line(Math.round(pull[0]), Math.round(pull[1]), Math.round(bot[0]), Math.round(bot[1]), '#e8e0c8'); if (poseName === 'windup' || poseName === 'strike') { api.line(Math.round(hand[0] - 3), Math.round(J.haB[1]), Math.round(J.haB[0]), Math.round(J.haB[1]), '#c8a070'); api.px(Math.round(hand[0] - 4), Math.round(J.haB[1]), '#e8e8f0'); } }
