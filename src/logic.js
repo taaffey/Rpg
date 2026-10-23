@@ -301,10 +301,11 @@ export class Battle {
         const p = cmd.partner, s = SKILLS[cmd.skillId], ca = mpCost(a, s), cp = mpCost(p, s);
         if (!alive(p) || p.st.stun > 0) { L.push(`${p.name} isn't ready! ${a.name} goes it alone.`); this.cast(a, 'attack', [], cmd.target, L, false, false); break; }
         if (a.mp < ca || p.mp < cp) { L.push(`Not enough MP for ${s.name}!`); break; }
-        a.mp -= ca; p.mp -= cp; L.push(`${a.name} and ${p.name} team up!`);
+        a.mp -= ca; p.mp -= cp;
         this.fx.push({ t: 'cast', actor: p.name, kind: s.kind, side: p.side, targets: [] });
         const atk = a.atk, mag = a.mag; a.atk += p.atk; a.mag += p.mag;
-        try { this.cast(a, cmd.skillId, [], cmd.target, L, true, true); } finally { a.atk = atk; a.mag = mag; }
+        const at = L.length; try { this.cast(a, cmd.skillId, [], cmd.target, L, true, true); } finally { a.atk = atk; a.mag = mag; }
+        if (L[at]?.startsWith(`${a.name} uses`)) L[at] = `${a.name} & ${p.name}: ${s.name}!`; // credit both brothers
         break;
       }
     }

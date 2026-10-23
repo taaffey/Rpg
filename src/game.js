@@ -585,7 +585,7 @@ function talk(npc) {
   if (npc.service === 'inn') return inn(npc);
   if (npc.service === 'guild') return guild();
   if (npc.service === 'socketer') return gemsOn() ? socketer() : talk({ ...npc, service: null, quest: null, textBy: null, text: ['Nothing in your pack worth cutting.', 'Come back when you carry a stone that hums.'] });
-  if (npc.local === 'wendell' && G.party.length < 4 && G.flags.story.called) return scene(WENDELL).then(() => joinLocal('wendell'));
+  if (npc.local === 'wendell' && G.party.length < 4 && G.flags.story.called) { joinLocal('wendell'); return scene(WENDELL); } // he joins first, so his own lines play
   const key = `${G.map}:${npc.x},${npc.y}`, { vid, lines } = npcLines(npc), news = vid && G.flags.talked[key] !== vid ? lines : []; // news: a new reactive line, told once before quest talk
   G.flags.talked[key] = vid || true; curNpc = npc;
   if (npc.deliver && qstate(npc.deliver) === 'active' && !questDone(npc.deliver)) { const q = QUESTS[npc.deliver]; curLines = q.lines.deliver; curFinal = btn('qdeliver', `Hand over: ${esc(QITEM[q.goal.item])}`, npc.deliver, '', 'primary'); return say(0); }
@@ -784,7 +784,7 @@ function joinLocal(id) {
 }
 async function arrive(id, first) { // story beats tied to entering a place
   if (id === 'haven_guild' && G.flags.story.cellar && !G.flags.story.called) { await scene(CALLED); return chooseCallings(); }
-  if (id === 'cavern' && !G.flags.story.wendell && G.party.length < 4) { await scene(WENDELL); joinLocal('wendell'); }
+  if (id === 'cavern' && !G.flags.story.wendell && G.party.length < 4) { joinLocal('wendell'); await scene(WENDELL); }
   if (first && STORY.area[id]) await scene(STORY.area[id]); // a few lines the first time the party sets foot somewhere
 }
 function loadSlot(i) {
@@ -1048,7 +1048,7 @@ async function battleInner(groupIds, bossId = null) {
   if (ps) { mod.hp *= ps.hp; mod.atk *= ps.atk; mod.mag *= ps.atk; }
   const b = new Battle(G.party, groupIds, Math.random, !!bossId, mod);
   await transition(); music(bossId ? 'boss' : 'battle');
-  BT = { b, boss: bossId, logBig: false, log: [bossId ? BOSSES[bossId].intro : `${b.e.map((e) => e.name).join(', ')} appear!`], ask: null };
+  BT = { b, boss: bossId, logBig: false, log: [bossId ? BOSSES[bossId].intro : `${b.e.map((e) => e.name).join(', ')} ${b.e.length > 1 ? 'appear' : 'appears'}!`], ask: null };
   BT.last = new Map(); BT.auto = false;
   for (const e of b.e) G.flags.bestiary[e.id] = G.flags.bestiary[e.id] || { seen: 1, kills: 0 };
   BT.stage = new Stage(b, stageKind(bossId));
@@ -1094,7 +1094,7 @@ function renderBattle() {
   <div class="stagewrap"><div id="stagehost"></div>${msg && !BT.logBig ? `<div class="bmsg">${msg}</div>` : ''}<button class="logtoggle" data-tap="logsize" tabindex="-1" title="Battle log (L)">${BT.logBig ? 'CLOSE' : 'LOG'}</button></div>
   ${BT.logBig ? `<div class="logwrap"><div class="log big" id="log">${BT.log.map(line).join('')}</div></div>` : ''}</div>
   <div class="br"><div class="pane cmdwin"><div id="cmd">${ask ? cmdHtml(ask) : enemyWin}</div></div>
-  <div class="pane partywin">${b.p.map((p) => { const r = p.hp / p.maxhp; return `<div data-n="${p.name}" class="pm ${p.hp <= 0 ? 'dead' : ''} ${ask?.p === p ? 'active' : ''}">${portrait(p.ch.main, 'sm' + (p.hp <= 0 ? ' ko' : ''))}<span class="pn">${esc(p.name)}${UI.statusIcons(p.st)}</span><span class="ph ${r < 0.25 ? 'low' : r < 0.5 ? 'mid' : ''}">${p.hp}<small>/${p.maxhp}</small></span><span class="pg">${bar(p.hp, p.maxhp, 'hp')}</span><span class="pmp">MP ${p.mp}</span></div>`; }).join('')}</div></div></div>`;
+  <div class="pane partywin">${b.p.map((p) => { const r = p.hp / p.maxhp; return `<div data-n="${p.name}" class="pm ${p.hp <= 0 ? 'dead' : ''} ${ask?.p === p ? 'active' : ''}">${portrait(ak(p.ch), 'sm' + (p.hp <= 0 ? ' ko' : ''))}<span class="pn">${esc(p.name)}${UI.statusIcons(p.st)}</span><span class="ph ${r < 0.25 ? 'low' : r < 0.5 ? 'mid' : ''}">${p.hp}<small>/${p.maxhp}</small></span><span class="pg">${bar(p.hp, p.maxhp, 'hp')}</span><span class="pmp">MP ${p.mp}</span></div>`; }).join('')}</div></div></div>`;
   ov.className = 'on';
   $('#stagehost').appendChild(BT.stage.canvas);
   const lg = $('#log'); if (lg) lg.scrollTop = lg.scrollHeight;
@@ -1122,9 +1122,11 @@ function playFx(list) {
 const comboPartner = (p) => { const b = BT.b, bro = (x) => BROS.some(([, l]) => l === x.ch.look); if (!bro(p)) return null; const q = b.p.find((x) => x !== p && bro(x)); return q && q.hp > 0 && !q.st.stun && b.p.indexOf(q) > b.p.indexOf(p) ? q : null; };
 const combosKnown = () => COMBOS.filter((c) => cond(c.if));
 // a line of banter after a fight (QUIPS in data.js), from someone actually in the party
+const recentQuips = [];
 function quip(kind, chance) {
   const pool = (DATA.QUIPS?.[kind] || []).filter(([who]) => G.party.some((c) => c.look === who)); if (!pool.length || Math.random() > chance) return '';
-  const [who, t] = pool[Math.floor(Math.random() * pool.length)], c = G.party.find((x) => x.look === who);
+  const fresh = pool.filter(([, t]) => !recentQuips.includes(t)), [who, t] = (fresh.length ? fresh : pool)[Math.floor(Math.random() * (fresh.length || pool.length))], c = G.party.find((x) => x.look === who);
+  recentQuips.push(t); if (recentQuips.length > 12) recentQuips.shift(); // no repeats for a good while
   return `<span class="quip">${esc(c.name)}: “${esc(t)}”</span>`;
 }
 function cmdHtml(a) {
@@ -1208,7 +1210,7 @@ async function victory(b, bossId) {
   const cpGot = new Map(); // Calling Points: standing heroes only; each rank teaches the next ability of the calling
   for (const { c, cp, ranks } of L.awardCP(G.party, r.cp)) {
     cpGot.set(c, cp); if (ranks.length) { lvSfx = true; autofill(c); }
-    for (const k of ranks) { const got = [...k.skills.map((id) => SKILLS[id].name), ...(k.trait ? [TRAITS[k.trait].name] : [])];
+    for (const k of ranks) { const got = [...k.skills.map((id) => SKILLS[id].name), ...(k.trait ? [TRAITS[k.trait].name] : [])]; if (!got.length && !k.mastered && k.job === 'bloke') continue;
       lines.push(`✦ Rank up! ${esc(c.name)}: ${JOBS[k.job].name} ${k.rank}${got.length ? ` — learned <b>${got.join(', ')}</b>` : ''}${k.mastered ? ' <b class="gold">★ Mastered</b>' : ''}`); }
   }
   if (lvSfx) setTimeout(() => sfx('levelup'), 1400);
@@ -1301,7 +1303,7 @@ async function defeat() {
   music('gameover');
   await new Promise((res) => {
     ov.innerHTML = `<div class="win red anim"><div class="vhead">${ic('ko')}<h2 class="bad">Defeated…</h2>${ic('ko')}</div><div class="vparty">${G.party.map((c) => `<div class="vp">${portrait(ak(c), 'sm ko')}<div class="vi">${esc(c.name)}</div></div>`).join('')}</div><p>Someone carries you back to Haven. Half your gold is gone.</p><div class="foot">${btn('ddone', 'Wake up', '', '', 'primary')}</div></div>`;
-    ACT.ddone = () => { G.gold = Math.floor(G.gold / 2); for (const c of G.party) { const s = maxOf(c); c.hp = s.hp; c.mp = s.mp; } goto('haven', 9, 11); hide(); res(); };
+    ACT.ddone = () => { G.gold = Math.floor(G.gold / 2); for (const c of G.party) { const s = maxOf(c); c.hp = s.hp; c.mp = s.mp; } goto('haven', 11, 12); hide(); res(); };
   });
 }
 

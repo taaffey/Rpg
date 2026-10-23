@@ -804,7 +804,7 @@ STORY.chat = [
   { id: 'brenna_why', if: 'p:brenna !s:called', lines: [C('brenna', 'Let\'s be clear. I\'m coming because if you two die, I\'m the one who has to mop it up.'), C('devon', 'That\'s love, that is.'), C('brenna', 'It is not.')] },
   // ---- callings
   { id: 'callings', at: 'haven_guild', if: 's:called', lines: [C('adam', 'Right. Calling sorted. Picked one that covers our weak spots.'), C('devon', 'I asked for "Dragon Wizard Ninja". She said that\'s not a calling.'), C('adam', 'It\'s three callings, Dev.'), C('devon', 'So three times better.')] },
-  { id: 'calling_swap', if: 's:called', lines: [C('devon', 'Can I change my calling again? This one hasn\'t got a cape.'), C('adam', 'Any Guild will swap it, and you keep what you\'ve learned. So yes. But it won\'t have a cape.'), C('devon', 'I\'ll keep looking. Somewhere out there is a cape calling.')] },
+  { id: 'calling_swap', if: 's:called', lines: [C('devon', 'Can I change my calling again? This one hasn\'t got a cape.'), C('adam', 'Any time, from the menu, and you keep what you\'ve learned. So yes. But it won\'t have a cape.'), C('devon', 'I\'ll keep looking. Somewhere out there is a cape calling.')] },
   { id: 'grind', if: 's:called !wyrm', lines: [C('adam', 'Tougher fights rank our callings up faster. Worth remembering.'), C('devon', 'So you\'re telling me to grind.'), C('adam', 'I\'m telling you to stop fighting the same slime because you like the noise it makes.')] },
   { id: 'it_job', if: 's:called', lines: [C('devon', 'What would your IT lot make of all this?'), C('adam', 'Magic bell, no documentation, ancient systems, and one bloke with admin rights who\'s gone rogue.'), C('adam', 'Honestly? Tuesday.')] },
   { id: 'gems_wake', if: 's:gems', lines: [C('devon', 'The heart LIT UP, bro! New callings unlocked! Like a fruit machine!'), C('adam', 'They\'re waking with the hearts. Worth trying a new one at the Guild.'), C('devon', 'Berserker. Has to be. It\'s got "berserk" in the name.'), C('adam', 'That\'s not the selling point you think it is.')] },
@@ -854,7 +854,6 @@ STORY.chat = [
   { id: 'roasties', if: 'wyrm', lines: [C('devon', 'I miss Mum\'s roast potatoes.'), C('adam', 'Me too.'), C('devon', 'I\'d miss you as well. If you weren\'t right here.'), C('adam', 'I\'m not going anywhere without you, Dev. That\'s a promise.')] },
 ];
 STORY.chatIdle = [
-  [C('devon', 'Phone check... 3%. Still 3%. Respect, honestly.')],
   [C('devon', 'Are we nearly there yet?'), C('adam', 'No.')],
   [C('devon', 'Bro. Bro. ...Nothing. Just bro.'), C('adam', 'Good chat.')],
   [C('adam', 'Check the Journal if you\'re lost, Dev. That\'s what it\'s for.')],
@@ -940,7 +939,6 @@ export const QUIPS = {
     ['adam', 'I saw it, Dev. Very impressive. Now pick up the gold.'],
     ['brenna', 'Lovely. Now who\'s cleaning that up?'],
     ['wendell', 'Huzzah! Another foe falls before the Brotherhood of the Beard!'],
-    ['devon', 'Phone\'s still on 3%. I\'d have filmed that.'],
     ['adam', 'Clean work. Nobody got hurt. Let\'s keep it that way.'],
     ['devon', 'Level up incoming. I can feel it in my beard.'],
     ['brenna', 'Closing time at the Goose is rougher than that.'],
@@ -970,8 +968,7 @@ export const QUIPS = {
     ['adam', 'That\'s one off the list. Everyone breathe.'],
     ['brenna', 'Right. That one I\'m not mopping up either.'],
     ['wendell', 'A foe worthy of song! I shall compose one. It will be long.'],
-    ['devon', 'Phone dropped to 2% during that. Then went back to 3%. Respect.'],
-    ['adam', 'Well fought, all of you. Dev, you can stop doing the dance now.'],
+    ['adam', 'Well fought. Dev, you can stop doing the dance now.'],
     ['devon', 'Did it drop anything shiny? Tell me it dropped something shiny.'],
     ['brenna', 'Big, scary, dead. My favourite kind of customer.'],
   ],

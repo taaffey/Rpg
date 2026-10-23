@@ -324,7 +324,7 @@ body:has(#overlay.on) #toast{top:auto;bottom:calc(env(safe-area-inset-bottom,0px
 .battle .stagewrap{position:relative;border:8px solid transparent;border-image:var(--frame) 8 stretch;background:#000;background-clip:padding-box;border-radius:6px}
 .battle canvas.stage{display:block;width:100%;image-rendering:pixelated;background:#000}
 .battle .bmsg{position:absolute;left:4px;right:4px;top:4px;padding:5px 8px;font-size:9px;line-height:1.7;border:4px solid transparent;border-image:var(--chip) 4 stretch;background:var(--winbg);background-clip:padding-box;pointer-events:none;text-shadow:var(--shadow)}
-.battle .bmsg div{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.battle .bmsg div{display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden}
 .battle .bmsg .ic{margin-right:4px}
 .autobtn{margin-left:auto;font-size:8px;padding:2px 8px;min-height:28px;border:4px solid transparent;border-image:var(--chip-on) 4 stretch;background:linear-gradient(#5a78f8,#2238a8);background-clip:padding-box;color:var(--yel);text-align:center}
 .autobtn::before{display:none}

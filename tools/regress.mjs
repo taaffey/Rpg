@@ -84,7 +84,7 @@ await ev(() => window.__game.goto('haven', 10, 18)); await key('ArrowUp', 1, 450
 ok('entered the shop interior', (await ev(() => window.__game.G.map)) === 'haven_shop');
 await key('ArrowUp', 3, 160);
 ok('shop UI opened by bumping the merchant', /General Store/.test(await overlayTitle()));
-ok('after the cellar: unarmed bros, Wendell brings his own sword, 400 G + Big Gary\'s 120 G', (await ev(() => window.__game.G.party.every((c) => (c.look === 'wendell' ? c.weapon === 'iron_sword' : c.weapon === null)))) && (await ev(() => window.__game.G.gold)) === 520);
+ok('after the cellar: unarmed bros, Wendell brings his own sword, 400 G + Big Gary\'s 60 G', (await ev(() => window.__game.G.party.every((c) => (c.look === 'wendell' ? c.weapon === 'iron_sword' : c.weapon === null)))) && (await ev(() => window.__game.G.gold)) === 460);
 const potBefore = await ev(() => window.__game.G.inv.items.potion || 0), goldBefore0 = await ev(() => window.__game.G.gold);
 await ev(() => document.querySelector('[data-act=buy][data-b=potion]').click()); await pg.waitForTimeout(100);
 ok('bought a potion', (await ev(() => window.__game.G.inv.items.potion)) === potBefore + 1 && (await ev(() => window.__game.G.gold)) === goldBefore0 - 30);

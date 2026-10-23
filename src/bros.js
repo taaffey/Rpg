@@ -30,7 +30,7 @@ const E = (name, icon, hp, atk, def, mag, spd, exp, gold, skills, x = {}) => ({ 
 Object.assign(ENEMIES, {
   cellar_rat: E('Cellar Rat', '🐀', 34, 10, 1, 2, 9, 9, 5, [['bite', 1]]),
   ale_slime: E('Ale Slime', '🍺', 52, 11, 1, 5, 4, 12, 7, [['tackle', 2], ['slosh', 1]], { weak: ['fire'] }),
-  big_gary: E('Big Gary', '🍻', 200, 14, 2, 9, 5, 60, 120, [['slosh', 3], ['belch', 2], ['tackle', 2]], { weak: ['fire'], boss: true, cp: 4 }),
+  big_gary: E('Big Gary', '🍻', 200, 14, 2, 9, 5, 60, 60, [['slosh', 3], ['belch', 2], ['tackle', 2]], { weak: ['fire'], boss: true, cp: 4 }),
 });
 if (!SKILLS.bite) SKILLS.bite = { name: 'Bite', mp: 0, tgt: 'one', kind: 'phys', pow: 1.0 };
 ENCOUNTERS.cellar = [['cellar_rat'], ['ale_slime'], ['cellar_rat', 'cellar_rat'], ['ale_slime', 'cellar_rat']];
@@ -114,7 +114,7 @@ export const GARY_DOWN = [
 ];
 export const CALLED = [
   { s: 'guildmaster', t: 'Right. Callings. No, "influencer" is not one. Neither is "IT support".' },
-  { s: 'adam', t: 'Whatever keeps him alive. I\'ve been doing that job for free since he was four.' },
+  { s: 'adam', t: 'Fair. Something sensible for me, then. And for him, whatever keeps him alive. I\'ve done that job since he was four.' },
 ];
 export const CALLED_AFTER = [
   { s: 'guildmaster', t: 'There. Every battle teaches a calling something, and what you learn you keep. Change any time; I won\'t be offended.' },
@@ -128,6 +128,8 @@ export const WENDELL = [
   { s: 'wendell', t: 'Sir Wendell of Haven, at your service. I have guarded this cave for eleven years. Nobody told me I could stop.' },
   { s: 'devon', t: 'Eleven YEARS? Mate, that\'s not a job, that\'s a hostage situation.' },
   { s: 'wendell', t: 'I see you also honour the old ways of the beard. Splendid. Then I ride with you! Well. Walk. The horse left in year three.' },
+  { s: 'wendell', t: 'A word of counsel: the stone golems within laugh at fire. Bolt and good steel crack them. And bring potions. Many potions.' },
+  { s: 'adam', t: 'Noted. If it gets ugly, we come back out, rest, and get a few levels first. No heroics.' },
   { s: 'brenna', t: 'Great. Now there are three of them.' },
 ];
 export const NO_LEAVE_CELLAR = [{ s: 'adam', t: 'Not yet. The cellar first, then the Guild.' }];
@@ -153,7 +155,7 @@ export const PARTY_SCALE = { 1: { hp: 0.5, atk: 0.75 }, 2: { hp: 0.62, atk: 0.82
 }
 // Devon's phone (Items > Key items): 3%, no signal, forever
 export const PHONE = [
-  [{ s: 'devon', t: '3%. Still 3%. It\'s been 3% for a week, bro. I think it\'s scared to go lower.' }, { s: 'adam', t: 'Or time works differently here. Either way, stop checking it.' }],
+  [{ s: 'devon', t: '3%. Still 3%. It\'s been 3% since we got here, bro. I think it\'s scared to go lower.' }, { s: 'adam', t: 'Or time works differently here. Either way, stop checking it.' }],
   [{ s: 'devon', t: 'Trying to post a selfie with a goblin. "Uploading..." It\'s been uploading since Haven.' }],
   [{ s: 'devon', t: 'Camera roll. That\'s us at the pub. That\'s the bell. That\'s... my thumb. Twelve photos of my thumb.' }, { s: 'adam', t: 'Delete those. You need the space.' }],
   [{ s: 'devon', t: 'Mum\'s last text: "Don\'t let your brother drive." I didn\'t, Mum. We teleported.' }],
