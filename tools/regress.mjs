@@ -88,6 +88,15 @@ ok('after the cellar: unarmed bros, Wendell brings his own sword, 400 G + Big Ga
 const potBefore = await ev(() => window.__game.G.inv.items.potion || 0), goldBefore0 = await ev(() => window.__game.G.gold);
 await ev(() => document.querySelector('[data-act=buy][data-b=potion]').click()); await pg.waitForTimeout(100);
 ok('bought a potion', (await ev(() => window.__game.G.inv.items.potion)) === potBefore + 1 && (await ev(() => window.__game.G.gold)) === goldBefore0 - 30);
+await ev(() => { window.__game.ui.shop('haven_smith'); }); await pg.waitForTimeout(100);
+const g0 = await ev(() => window.__game.G.gold);
+await ev(() => document.querySelector('[data-act=buy][data-b=oak_staff]').click()); await pg.waitForTimeout(80);
+ok('gear needs a second tap to buy', (await ev(() => window.__game.G.gold)) === g0 && /Tap to buy/.test(await ev(() => document.querySelector('[data-act=buy][data-b=oak_staff]').textContent)));
+await ev(() => document.querySelector('[data-act=buy][data-b=oak_staff]').click()); await pg.waitForTimeout(80);
+ok('after buying, Equip now offers whoever can wield it', (await ev(() => window.__game.G.gold)) < g0 && !!(await pg.$('[data-act=shopequip]')));
+await ev(() => document.querySelector('[data-act=shopequip]').click()); await pg.waitForTimeout(80);
+ok('Equip now puts it in their hand', await ev(() => window.__game.G.party.some((c) => c.weapon === 'oak_staff')));
+await ev((g) => { const G = window.__game.G; for (const c of G.party) if (c.weapon === 'oak_staff') c.weapon = null; G.inv.weapons = G.inv.weapons.filter((w) => w !== 'oak_staff'); G.gold = g; }, g0);
 await closeAll();
 
 // --- build screen: socket gems, change job in a town

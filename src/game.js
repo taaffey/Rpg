@@ -679,12 +679,24 @@ function shop(id, msg = '') {
   if (id) curShop = id;
   const def = SHOPS[curShop];
   const who = (id2) => `<span class="who">${G.party.map((c) => `<span class="face ${L.weaponOk(c, id2) ? '' : 'no'}" title="${esc(c.name)}"><img src="${UI.faceURL(ak(c))}" alt=""></span>`).join('')}${G.party.some((c) => L.weaponOk(c, id2)) ? '' : '<span class="bad">&nbsp;no one can use it</span>'}</span>`;
-  const buyRows = Object.entries(def.stock).filter(([k]) => k !== 'gems' || gemsOn()).flatMap(([k, ids]) => ids.map((id2) => { const d = DB[k][id2]; return `<div class="slot"><span class="lead">${itemIc(k, id2)}</span><div class="t"><b>${d.name}</b><small>${gearDesc(k, d)}</small>${k === 'weapons' ? who(id2) : ''}</div>${btn('buy', `${d.price} G`, k, id2, '', G.gold < d.price)}</div>`; }));
+  const buyRows = Object.entries(def.stock).filter(([k]) => k !== 'gems' || gemsOn()).flatMap(([k, ids]) => ids.map((id2) => { const d = DB[k][id2]; return `<div class="slot"><span class="lead">${itemIc(k, id2)}</span><div class="t"><b>${d.name}</b><small>${gearDesc(k, d)}</small>${k === 'weapons' ? who(id2) : ''}</div>${btn('buy', shopPending === `${k}:${id2}` ? 'Tap to buy' : `${d.price} G`, k, id2, shopPending === `${k}:${id2}` ? 'primary' : '', G.gold < d.price)}</div>`; }));
   const sellRows = ['weapons', 'armors', 'accs', ...(gemsOn() ? ['gems'] : [])].flatMap((k) => [...new Set(G.inv[k])].map((id2) => { const d = DB[k][id2], p = Math.floor((d.price || 200) / 2); return `<div class="slot"><span class="lead">${itemIc(k, id2)}</span><div class="t"><b>${d.name} <span class="dim">×${G.inv[k].filter((x) => x === id2).length}</span></b></div>${btn('sell', `Sell ${p} G`, k, id2)}</div>`; })).concat(Object.entries(G.inv.items).filter(([, n]) => n > 0).map(([id2, n]) => `<div class="slot"><span class="lead">${itemIc('items', id2)}</span><div class="t"><b>${ITEMS[id2].name} <span class="dim">×${n}</span></b></div>${btn('sell', `Sell ${Math.floor(ITEMS[id2].price / 2)} G`, 'items', id2)}</div>`));
   show(`<h2>${def.title}</h2><div class="shophead">${npcImg(/smith/.test(curShop) ? 'smith' : 'merchant', 48)}<div class="shoptabs">${btn('tab', 'Buy', 'buy', '', shopTab === 'buy' ? 'sel' : '')}${btn('tab', 'Sell', 'sell', '', shopTab === 'sell' ? 'sel' : '')}</div><div class="gilbox">${coin(G.gold)}<span>G</span></div></div>${msg ? `<p class="gold">${msg}</p>` : ''}${(shopTab === 'buy' ? buyRows : sellRows).join('') || '<p class="dim">Nothing to sell.</p>'}<div class="foot">${btn('close', 'Leave', '', '', 'primary')}</div>`);
 }
-ACT.tab = (t) => { shopTab = t; shop(); };
-ACT.buy = (k, id) => { const d = DB[k][id]; if (G.gold < d.price) return; G.gold -= d.price; sfx('coin'); if (k === 'items') G.inv.items[id] = (G.inv.items[id] || 0) + 1; else G.inv[k].push(id); shop(null, `Bought ${d.name}.`); };
+ACT.tab = (t) => { shopTab = t; shopPending = null; shop(); };
+ACT.buy = (k, id) => { // gear takes a second tap to buy (an easy mis-tap costs a lot), then offers to equip it on the spot
+  const d = DB[k][id]; if (G.gold < d.price) return;
+  if (k !== 'items' && shopPending !== `${k}:${id}`) { shopPending = `${k}:${id}`; sfx('click'); return shop(); }
+  shopPending = null; G.gold -= d.price; sfx('coin'); if (k === 'items') G.inv.items[id] = (G.inv.items[id] || 0) + 1; else G.inv[k].push(id);
+  const field = { weapons: 'weapon', armors: 'armor', accs: 'acc' }[k], can = field ? G.party.map((c, i) => [c, i]).filter(([c]) => (k !== 'weapons' || L.weaponOk(c, id)) && c[field] !== id) : [];
+  shop(null, `Bought ${d.name}.${can.length ? `<span class="equipnow"><small>Equip now:</small>${can.map(([c, i]) => btn('shopequip', `<img src="${UI.faceURL(ak(c))}" alt="">${esc(c.name)}${c[field] ? ` <small class="dim">(${esc(DB[k][c[field]].name)})</small>` : ''}`, k, `${id}|${i}`)).join('')}</span>` : ''}`);
+};
+let shopPending = null;
+ACT.shopequip = (k, x) => {
+  const [id, i] = x.split('|'), c = G.party[+i], field = { weapons: 'weapon', armors: 'armor', accs: 'acc' }[k]; if (!c || !G.inv[k].includes(id)) return shop();
+  if (c[field]) G.inv[k].push(c[field]); G.inv[k].splice(G.inv[k].indexOf(id), 1); c[field] = id; sanitize(c, G.inv); sfx('chest');
+  shop(null, `${esc(c.name)} equips the ${DB[k][id].name}.`);
+};
 ACT.sell = (k, id) => {
   const d = DB[k][id], p = Math.floor((d.price || 200) / 2);
   if (k === 'items') G.inv.items[id]--; else G.inv[k].splice(G.inv[k].indexOf(id), 1);
@@ -827,7 +839,7 @@ ACT.bestiary = () => {
   show(`<h2>📖 Bestiary</h2><p class="dim">Foes discovered: <b class="gold">${seen.length}/${ids.length}</b>. Defeat a creature to learn its weaknesses.</p><div class="grid">${ids.map((id) => {
     const r = G.flags.bestiary[id], d = ENEMIES[id];
     if (!r) return '';
-    return `<div class="card beast"><div class="bh"><span class="bimg"><img src="${SP.enemyURL(id)}" alt=""></span><div><div class="bn">${d.name}</div>${d.boss ? `<span class="chip tag">${ic('trophy')} Boss</span>` : ''}<div class="dim">Defeated ${r.kills}</div></div></div><div>HP <b>${d.hp}</b> · ATK <b>${d.atk}</b> · MAG <b>${d.mag}</b></div>${r.kills ? `<div>WEAK ${els(d.weak)}&nbsp; RES ${els(d.res)}</div>` : '<div class="dim">Weaknesses unknown</div>'}${r.kills && DROPS[id]?.common ? `<div>${[DROPS[id].common, DROPS[id].rare].filter(Boolean).map(([k, did], j) => (j ? (r.got?.[did] ? `<span class="gold">${ic('star')}${itemIc(k, did)} ${DB[k][did].name}</span>` : `<span class="dim">${ic('star')} ???</span>`) : `${itemIc(k, did)} ${DB[k][did].name}`)).join('<br>')}</div>` : ''}</div>`;
+    return `<div class="card beast"><div class="bh"><span class="bimg"><img src="${SP.enemyURL(id)}" alt=""></span><div><div class="bn">${d.name}</div>${d.boss ? `<span class="chip tag">${ic('trophy')} Boss</span>` : ''}<div class="dim">Defeated ${r.kills}</div></div></div><div>HP <b>${foeStat(d, 'hp')}</b> · ATK <b>${foeStat(d, 'atk')}</b> · MAG <b>${foeStat(d, 'mag')}</b></div>${r.kills ? `<div>WEAK ${els(d.weak)}&nbsp; RES ${els(d.res)}</div>` : '<div class="dim">Weaknesses unknown</div>'}${r.kills && DROPS[id]?.common ? `<div>${[DROPS[id].common, DROPS[id].rare].filter(Boolean).map(([k, did], j) => (j ? (r.got?.[did] ? `<span class="gold">${ic('star')}${itemIc(k, did)} ${DB[k][did].name}</span>` : `<span class="dim">${ic('star')} ???</span>`) : `${itemIc(k, did)} ${DB[k][did].name}`)).join('<br>')}</div>` : ''}</div>`;
   }).join('')}</div>${ids.length - seen.length ? `<div class="card dim" style="text-align:center">❔ ${ids.length - seen.length} more creatures are still undiscovered</div>` : ''}<div class="foot">${btn('menu', 'Back', '', '', 'primary')}</div>`);
 };
 ACT.title = title;
@@ -1029,6 +1041,8 @@ ACT.ungem = (i, k) => { const c = G.party[B.i]; G.inv.gems.push(...c.gems[+i].sp
 
 // ---------- battle ----------
 let BT = null;
+// a foe's stat as you'd meet it now: difficulty, and (outside boss fights) the small-party scaling
+const foeStat = (d, k) => { const m = DIFFICULTY[G.difficulty || 'normal'].mod, ps = !d.boss && PARTY_SCALE[G.party.length]; return Math.round(d[k] * (m[k] ?? 1) * (ps ? (k === 'hp' ? ps.hp : ps.atk) : 1)); };
 function stageKind(bossId) {
   if (bossId) return { big_gary: 'cellar', wyrm: 'boss', lich: 'crypt', storm_drake: 'storm', sphinx: 'ruins' }[bossId] || 'spire';
   const m = mapDef();

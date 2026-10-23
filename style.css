@@ -443,3 +443,13 @@ img.pubart{display:block;width:100%;max-width:512px;margin:6px auto 4px;aspect-r
 .crname b{font-size:13px;display:block;margin-top:4px}
 .quip{display:block;margin-top:6px;color:#c8d4ff;font-style:italic}
 .cmdlist button.combo .sk b{white-space:normal;overflow:visible}
+.equipnow{display:flex;flex-wrap:wrap;gap:4px;align-items:center;margin-top:6px}
+.equipnow button{display:inline-flex;align-items:center;gap:4px;padding:4px 8px;min-height:36px;font-size:9px}
+.equipnow button img{width:20px;height:20px;image-rendering:pixelated}
+/* portrait phones: the battle fills the screen; bigger thumb targets under the stage */
+@media (orientation:portrait) and (max-width:600px){
+  .battle .cmdlist button{min-height:54px;font-size:11px}
+  .battle .cmdlist button.two{min-height:0}
+  .battle .partywin .pm{padding-top:7px;padding-bottom:7px}
+  .battle .cmdhead{font-size:11px;margin-bottom:6px}
+}
