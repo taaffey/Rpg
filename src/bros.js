@@ -14,7 +14,7 @@ export const LOCALS = {
   brenna: { name: 'Brenna', job: 'cleric', armor: 'cloth', flag: 'cellar' },
   wendell: { name: 'Wendell', job: 'knight', armor: 'leather', weapon: 'iron_sword', flag: 'wendell' },
 };
-Object.assign(STORY.cast, { elder: ['Elder Mott', 'elder'], barnaby: ['Barnaby', 'innkeeper'], gary: ['Big Gary', 'villager'], landlord: ['Landlord', 'barkeep'], guildmaster: ['Guildmaster', 'guildmaster'] });
+Object.assign(STORY.cast, { elder: ['Elder Mott', 'elder'], barnaby: ['Barnaby', 'barnaby'], gary: ['Big Gary', 'villager'], landlord: ['Landlord', 'barkeep'], guildmaster: ['Guildmaster', 'guildmaster'] });
 
 // ---------------------------------------------------------------- no calling yet
 JOBS.bloke = { name: 'Bloke', icon: '🍺', desc: 'No calling yet. Fists, vibes and a phone on 3%.', mod: { hp: 1.15, mp: 0.5, atk: 1.1, def: 1.0, mag: 0.5, spd: 1.0 }, weapons: ['fists'], skills: [['headbutt', 1], ['banter', 2]], trait: null, master: {} };
@@ -61,6 +61,7 @@ MAPS.cellar = {
 {
   const inn = MAPS.haven_inn; inn.decor = inn.decor.filter(([x, y]) => !(x === 1 && y === 6));
   inn.decor.push([1, 6, 'trapdoor']); inn.portals['1,6'] = { to: 'cellar', x: 2, y: 2 };
+  for (const n of inn.npcs) if (n.service === 'inn') Object.assign(n, { type: 'barnaby', name: 'Barnaby' });
   inn.npcs.push({ x: 3, y: 3, type: 'brenna', name: 'Brenna', local: 'brenna',
     text: ['If you\'re going to stand there, at least stand there holding a mop.'],
     textBy: [['!s:cellar', ['Cellar\'s through the trapdoor in the corner. Mind the slimes. And Gary.', 'No, I don\'t know why it\'s called Gary. It introduced itself.']]] });
@@ -165,3 +166,17 @@ export const PHONE = [
   [{ s: 'devon', t: 'Showing Wendell a video of a horse on a trampoline.' }, { s: 'wendell', t: 'Witchcraft. Wonderful witchcraft. Is it Clarence? It looks happy.' }],
   [{ s: 'devon', t: 'Brenna, want to see a picture of a pizza?' }, { s: 'brenna', t: 'I\'ve no idea what that is and I already know I\'m not impressed.' }],
 ];
+// Bro Combos (battle > COMBO): Adam and Devon's double techs, Chrono Trigger style. Both pay the MP and both turns are spent;
+// the move pools their ATK and MAG. New ones are learned as the story goes on.
+export const COMBOS = [
+  { id: 'bro_shove', if: 's:called', desc: 'One foe takes both brothers at once.' },
+  { id: 'bro_hug', if: 's:called', desc: 'A bear hug so sincere it heals the whole party.' },
+  { id: 'pub_brawl', if: 'wyrm', desc: 'Chairs, elbows, chaos. Hits every foe.' },
+  { id: 'last_orders', if: 'lich', desc: 'The big one. May leave a foe stunned.' },
+];
+Object.assign(SKILLS, {
+  bro_shove: { name: 'Brotherly Shove', mp: 3, tgt: 'one', kind: 'phys', pow: 1.3 },
+  bro_hug: { name: 'Bro Hug', mp: 5, tgt: 'allies', kind: 'heal', pow: 0.7 },
+  pub_brawl: { name: 'Pub Brawl', mp: 7, tgt: 'all', kind: 'phys', pow: 0.75 },
+  last_orders: { name: 'Last Orders', mp: 12, tgt: 'one', kind: 'phys', pow: 1.9, stun: 0.5 },
+});

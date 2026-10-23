@@ -3,7 +3,7 @@ import { SOCKET_COST, DIFFICULTY, DROPS, STORY, KEY_ITEMS, TRAITS, CALLING_BATCH
 import { JOBS, SKILLS, GEMS, WEAPONS, ARMORS, ACCS, ITEMS, WEAPON_TYPES, ENEMIES, ENCOUNTERS, ELEM_ICON, BOSSES, SHOPS, QUESTS } from './data.js';
 import { MAPS, WALK } from './maps.js';
 import * as L from './logic.js';
-import { BROS, LOCALS, PARTY_SCALE, PHONE, PUB, WAKE, CELLAR_IN, GARY_DOWN, CALLED, CALLED_AFTER, WENDELL } from './bros.js';
+import { BROS, COMBOS, LOCALS, PARTY_SCALE, PHONE, PUB, WAKE, CELLAR_IN, GARY_DOWN, CALLED, CALLED_AFTER, WENDELL } from './bros.js';
 import * as SP from './sprites.js';
 import * as TR from './terrain.js';
 import * as TA from './townart.js';
@@ -12,6 +12,7 @@ import * as WK from './walkers.js';
 import { Stage, FX } from './stage.js';
 import * as UI from './uiart.js';
 import * as PA from './pubart.js';
+import * as DATA from './data.js'; // QUIZ, QUIPS (optional content)
 import { music, sfx, unlock, isMuted, setMuted, setVolumes, setBackgrounded } from './audio.js';
 const { stats, newChar, learnable, slotSkill, slotGems, gemCapacity, gemsUsed, sanitize, skillWithGems, describeSkill, gainExp, expNeeded, Battle, rewards, SIG, GEMS_PER_SLOT } = L;
 
@@ -639,9 +640,9 @@ function guild() { B.guild = true; show(`<h2>⚔️ ${esc(mapDef().name)}</h2><d
 ACT.leave = () => { B.guild = false; hide(); };
 function inn(npc) {
   const cost = npc.cost || 25;
-  show(`<h2>🛏️ ${esc(mapDef().name)}</h2><div class="npc">${npcImg('innkeeper', 48)}<p>${esc(fill(npcLines(npc).lines[0] || 'A bed for the night?'))}<br><small class="dim">Rest restores HP and MP, and saves your game.</small></p></div><div class="card"><div class="gilbox"><span>One night</span>${coin(cost + ' G')}</div><div class="gilbox"><span>You have</span>${coin(G.gold + ' G')}</div></div><div class="card menuparty">${G.party.map((c) => { const st = maxOf(c); return `<div class="slot">${portrait(ak(c), 'sm' + (c.hp <= 0 ? ' ko' : ''))}<div class="t"><b>${esc(c.name)}</b><div class="row" style="flex-wrap:nowrap"><small style="width:3em">HP</small><div class="grow">${bar(c.hp, st.hp, 'hp')}</div><small style="width:3em;text-align:right">MP</small><div class="grow">${bar(c.mp, st.mp || 1, 'mp')}</div></div></div></div>`; }).join('')}</div><div class="foot">${btn('rest', `${ic('bed')}Rest`, cost, '', 'primary', G.gold < cost)}${btn('close', 'Leave')}</div>`);
+  show(`<h2>🛏️ ${esc(mapDef().name)}</h2><div class="npc">${npcImg(npc.type || 'innkeeper', 48)}<p>${esc(fill(npcLines(npc).lines[0] || 'A bed for the night?'))}<br><small class="dim">Rest restores HP and MP, and saves your game.</small></p></div><div class="card"><div class="gilbox"><span>One night</span>${coin(cost + ' G')}</div><div class="gilbox"><span>You have</span>${coin(G.gold + ' G')}</div></div><div class="card menuparty">${G.party.map((c) => { const st = maxOf(c); return `<div class="slot">${portrait(ak(c), 'sm' + (c.hp <= 0 ? ' ko' : ''))}<div class="t"><b>${esc(c.name)}</b><div class="row" style="flex-wrap:nowrap"><small style="width:3em">HP</small><div class="grow">${bar(c.hp, st.hp, 'hp')}</div><small style="width:3em;text-align:right">MP</small><div class="grow">${bar(c.mp, st.mp || 1, 'mp')}</div></div></div></div>`; }).join('')}</div><div class="foot">${btn('rest', `${ic('bed')}Rest`, cost, '', 'primary', G.gold < cost)}${G.map === 'haven_inn' && G.flags.story.called && DATA.QUIZ ? btn('quiz', `${ic('quest')}Quiz Night`, '', '', '', G.flags.story.quizzed || G.gold < QUIZ_FEE) : ''}${btn('close', 'Leave')}</div>${G.map === 'haven_inn' && G.flags.story.quizzed ? '<p class="dim">Quiz Night is done for tonight. Sleep on it.</p>' : ''}`);
 }
-ACT.rest = (cost) => { sfx('rest'); G.gold -= +cost; for (const c of G.party) { const s = maxOf(c); c.hp = s.hp; c.mp = s.mp; } save(); draw(); show(`<h2>🛏️ Rested</h2><p>${ic('heart')} HP and MP restored.</p><p>${ic('save')} Game saved.</p><div class="foot">${btn('close', 'OK', '', '', 'primary')}</div>`); };
+ACT.rest = (cost) => { sfx('rest'); G.flags.story.quizzed = false; G.gold -= +cost; for (const c of G.party) { const s = maxOf(c); c.hp = s.hp; c.mp = s.mp; } save(); draw(); show(`<h2>🛏️ Rested</h2><p>${ic('heart')} HP and MP restored.</p><p>${ic('save')} Game saved.</p><div class="foot">${btn('close', 'OK', '', '', 'primary')}</div>`); };
 
 function socketer(msg = '') {
   show(`<h2>💎 Gem-wright</h2><div class="npc">${npcImg('merchant', 48)}<p>I bore extra sockets into a hero's gear so more gems fit on their skills. Each hero can take up to ${SOCKET_COST.length} more; the price rises with each one.</p></div><div class="card"><div class="gilbox"><span>You have</span>${coin(G.gold + ' G')}</div></div>${msg ? `<p class="gold">${msg}</p>` : ''}
@@ -649,6 +650,29 @@ function socketer(msg = '') {
 }
 ACT.addsock = (i) => { const c = G.party[+i], n = c.extra || 0, cost = SOCKET_COST[n]; if (cost == null || G.gold < cost) return; G.gold -= cost; c.extra = n + 1; sfx('chest'); socketer(`${c.name} now has ${gemCapacity(c)} sockets.`); };
 
+// ---------- Quiz Night at the Gilded Goose: five questions on the realm (QUIZ in data.js), once per night ----------
+const QUIZ_FEE = 20, QUIZ_PRIZE = [[0, null, 'Barnaby: "Nil points. Brave, though."'], [0, null, 'Barnaby: "One. My goat could do one."'], [20, null, 'Barnaby: "Two. Your entry fee back, and my pity."'], [80, 'potion', 'Barnaby: "Three! Respectable. Have a potion on the house."'], [180, 'hipotion', 'Barnaby: "Four! The table by the fire is yours."'], [400, 'elixir', 'Barnaby: "FIVE! A clean sweep! Brenna, ring the... no. NO bells."']];
+let QZ = null;
+ACT.quiz = () => {
+  if (G.flags.story.quizzed || G.gold < QUIZ_FEE) return;
+  const pool = DATA.QUIZ.filter((x) => cond(x.if)).sort(() => Math.random() - 0.5).slice(0, 5);
+  G.gold -= QUIZ_FEE; G.flags.story.quizzed = true; sfx('coin');
+  QZ = { qs: pool.map((x) => ({ q: x.q, right: x.a[0], a: [...x.a].sort(() => Math.random() - 0.5) })), i: 0, score: 0, last: '' };
+  quizScreen();
+};
+function quizScreen() {
+  const z = QZ, x = z.qs[z.i];
+  if (!x) {
+    const [gold, item, line] = QUIZ_PRIZE[z.score]; G.gold += gold; if (item) G.inv.items[item] = (G.inv.items[item] || 0) + 1; sfx(z.score >= 4 ? 'levelup' : 'coin'); autosave();
+    return show(`<h2>${ic('quest')} Quiz Night: ${z.score}/5</h2><div class="npc">${npcImg('barnaby', 48)}<p>${esc(line)}</p></div>${gold || item ? `<div class="card"><b class="gold">Prize: ${[gold ? gold + ' G' : '', item ? ITEMS[item].name : ''].filter(Boolean).join(' + ')}</b></div>` : ''}<div class="foot">${btn('close', 'Back to the bar', '', '', 'primary')}</div>`);
+  }
+  show(`<h2>${ic('quest')} Quiz Night · Q${z.i + 1}/5 <span class="dim">score ${z.score}</span></h2>${z.last ? `<p class="${z.last[0] === '✔' ? 'gold' : 'bad'}">${esc(z.last)}</p>` : ''}<div class="npc">${npcImg('barnaby', 48)}<p>${esc(x.q)}</p></div><div class="col">${x.a.map((a, k) => btn('qans', esc(a), k)).join('')}</div>`);
+}
+ACT.qans = (k) => {
+  const z = QZ, x = z?.qs[z.i]; if (!x) return;
+  const ok = x.a[+k] === x.right; if (ok) z.score++; sfx(ok ? 'coin' : 'click');
+  z.last = ok ? '✔ Correct!' : `✘ It was: ${x.right}`; z.i++; quizScreen();
+};
 let shopTab = 'buy', curShop = null;
 function shop(id, msg = '') {
   if (id) curShop = id;
@@ -1040,8 +1064,9 @@ async function battleInner(groupIds, bossId = null) {
     if (BT.auto && b.p.some((x) => x.hp <= 0 || x.hp < x.maxhp * 0.3)) { BT.auto = false; toast('⏩ Auto-battle stopped: someone needs help', 3000); renderBattle(); } // never auto-march a party into a wipe
     const cmds = new Map();
     for (const p of b.p.filter((x) => x.hp > 0)) {
+      if (cmds.get(p)?.kind === 'assist') continue; // already teamed up in a Bro Combo
       const cmd = await askCommand(p);
-      cmds.set(p, cmd);
+      cmds.set(p, cmd); if (cmd.kind === 'combo') cmds.set(cmd.partner, { kind: 'assist' });
     }
     BT.ask = null; BT.stage.setActive(null);
     for (const lines of b.round(cmds)) { BT.log.push(...lines); renderBattle(); playFx(b.fx.splice(0)); await sleep(SPEEDS[OPT.speed]); }
@@ -1050,7 +1075,7 @@ async function battleInner(groupIds, bossId = null) {
   if (b.over === 'win') { BT.stage.victory(); sfx('levelup'); renderBattle(); await sleep(1200); }
   BT.stage.stop(); trans = 0;
   b.p.forEach((x) => { x.ch.hp = x.hp; x.ch.mp = x.mp; });
-  if (b.over === 'fled') sfx('flee');
+  if (b.over === 'fled') { sfx('flee'); const q = quip('flee', 0.6); if (q) toast(q.replace(/<[^>]+>/g, ''), 2600); }
   if (b.over === 'win') await victory(b, bossId);
   else if (b.over === 'lose') await defeat();
   else { hide(); }
@@ -1092,9 +1117,18 @@ function playFx(list) {
     } else if (e.t === 'poison') setTimeout(() => sfx('poison'), delay);
   }
 }
+// Bro Combos: the first brother asked can team up with the other while he still stands and has not been asked yet
+const comboPartner = (p) => { const b = BT.b, bro = (x) => BROS.some(([, l]) => l === x.ch.look); if (!bro(p)) return null; const q = b.p.find((x) => x !== p && bro(x)); return q && q.hp > 0 && !q.st.stun && b.p.indexOf(q) > b.p.indexOf(p) ? q : null; };
+const combosKnown = () => COMBOS.filter((c) => cond(c.if));
+// a line of banter after a fight (QUIPS in data.js), from someone actually in the party
+function quip(kind, chance) {
+  const pool = (DATA.QUIPS?.[kind] || []).filter(([who]) => G.party.some((c) => c.look === who)); if (!pool.length || Math.random() > chance) return '';
+  const [who, t] = pool[Math.floor(Math.random() * pool.length)], c = G.party.find((x) => x.look === who);
+  return `<span class="quip">${esc(c.name)}: “${esc(t)}”</span>`;
+}
 function cmdHtml(a) {
   const p = a.p, c = p.ch, head = `<div class="cmdhead">${portrait(ak(c), 'sm')}${esc(p.name)}</div>`, back = btn('c', `${ic('back')}BACK`, 'root');
-  if (a.stage === 'root') return `${head}<div class="cmdlist">${btn('c', `${ic('fight')}FIGHT`, 'attack')}${btn('c', `${ic('skill')}SKILL`, 'skills')}${btn('c', `${ic('item')}ITEM`, 'item')}${btn('c', `${ic('guard')}GUARD`, 'defend')}${veteran() ? `${btn('c', `${ic('repeat')}REPEAT`, 'repeat', '', '', !BT.last.has(p.name))}${btn('c', `${ic('auto')}AUTO`, 'auto')}` : ''}${btn('c', `${ic('run')}RUN`, 'flee', '', '', BT.b.boss)}</div>`;
+  if (a.stage === 'root') return `${head}<div class="cmdlist">${btn('c', `${ic('fight')}FIGHT`, 'attack')}${btn('c', `${ic('skill')}SKILL`, 'skills')}${btn('c', `${ic('item')}ITEM`, 'item')}${btn('c', `${ic('guard')}GUARD`, 'defend')}${comboPartner(p) && combosKnown().length ? btn('c', `${ic('spark')}COMBO`, 'combos') : ''}${veteran() ? `${btn('c', `${ic('repeat')}REPEAT`, 'repeat', '', '', !BT.last.has(p.name))}${btn('c', `${ic('auto')}AUTO`, 'auto')}` : ''}${btn('c', `${ic('run')}RUN`, 'flee', '', '', BT.b.boss)}</div>`;
   if (a.stage === 'skills') {
     return `${head}<div class="cmdlist">` + [0, 1, 2, 3, SIG].map((i) => {
       const sid = slotSkill(c, i); if (!sid) return '';
@@ -1102,12 +1136,17 @@ function cmdHtml(a) {
       return btn('c', `<span class="sk">${ic(UI.skillIconName(s))}<b>${s.name}</b><i>${s.mp}MP</i></span><small>${s.tags.length ? s.tags.join(' + ') + ' · ' : ''}${describeSkill(s)}</small>`, 'cast', i, 'two', p.mp < s.mp);
     }).join('') + `${back}</div>`;
   }
+  if (a.stage === 'combos') {
+    const q = comboPartner(p);
+    return `${head}<div class="cmdlist">` + combosKnown().map((k) => { const s = SKILLS[k.id], m1 = L.mpCost(p, s), m2 = L.mpCost(q, s);
+      return btn('c', `<span class="sk">${ic(UI.skillIconName({ ...s, fx: s.fx || [] }))}<b>${s.name}</b></span><small>${m1}+${m2} MP · ${k.desc}</small>`, 'combo', k.id, 'two combo', p.mp < m1 || q.mp < m2); }).join('') + `${back}</div>`;
+  }
   if (a.stage === 'item') {
     const its = Object.entries(G.inv.items).filter(([, n]) => n > 0);
     return `${head}<div class="cmdlist">` + (its.map(([id, n]) => btn('c', `<span class="sk">${itemIc('items', id)}<b>${ITEMS[id].name}</b><i>x${n}</i></span><small>${ITEMS[id].desc}</small>`, 'useitem', id, 'two')).join('') || '<div class="dim">No items.</div>') + `${back}</div>`;
   }
   // target: pick from a list of names, like the original
-  const list = a.tside === 'e' ? BT.b.e.map((e, i) => (e.hp > 0 ? btn('tgt', `<span class="tgtname">${e.name}</span>${e.weak.length ? `<span class="tw">${e.weak.map((w) => UI.elemIcon(w)).join('')}</span>` : ''}<i>${e.hp}</i>`, 'e', i) : '')) : BT.b.p.map((x, i) => btn('tgt', `${portrait(x.ch.main, 'sm' + (x.hp > 0 ? '' : ' ko'))}<span class="tgtname">&nbsp;${esc(x.name)}</span><i>${x.hp > 0 ? x.hp : 'KO'}</i>`, 'p', i));
+  const list = a.tside === 'e' ? BT.b.e.map((e, i) => (e.hp > 0 ? btn('tgt', `<span class="tgtname">${e.name}</span>${e.weak.length ? `<span class="tw">${e.weak.map((w) => UI.elemIcon(w)).join('')}</span>` : ''}<i>${e.hp}</i>`, 'e', i) : '')) : BT.b.p.map((x, i) => btn('tgt', `${portrait(ak(x.ch), 'sm' + (x.hp > 0 ? '' : ' ko'))}<span class="tgtname">&nbsp;${esc(x.name)}</span><i>${x.hp > 0 ? x.hp : 'KO'}</i>`, 'p', i));
   return `${head}<div class="cmdlist"><div class="dim">${a.tside === 'e' ? 'ATTACK WHICH?' : 'WHO?'}</div>${list.join('')}${back}</div>`;
 }
 function autoCommand(p) { // reuse the hero's last move with sensible targets; fall back to a basic attack
@@ -1135,6 +1174,8 @@ ACT.c = (what, x) => {
   if (what === 'root') a.stage = 'root';
   else if (what === 'skills') a.stage = 'skills';
   else if (what === 'item') a.stage = 'item';
+  else if (what === 'combos') a.stage = 'combos';
+  else if (what === 'combo') { const s = SKILLS[x], cmd = { kind: 'combo', skillId: x, partner: comboPartner(p) }; if (!cmd.partner) a.stage = 'root'; else if (s.tgt === 'one') toTarget('e', cmd); else finish(cmd); }
   else if (what === 'defend') return finish({ kind: 'defend' });
   else if (what === 'flee') return finish({ kind: 'flee' });
   else if (what === 'attack') castDirect('attack', []);
@@ -1193,6 +1234,7 @@ async function victory(b, bossId) {
   for (const e of b.e) { const r2 = (G.flags.bestiary[e.id] ||= { seen: 1, kills: 0 }); r2.kills++; }
   if (G.party.some((c) => c.hp > 0 && c.hp < maxOf(c).hp * 0.35) && tipOnce('rest')) lines.push('💡 Low on HP? Inns heal the whole party and save your game. Potions work from the Items menu.');
   questLog(lines);
+  const q = quip(bossId ? 'boss' : b.p.some((x) => x.hp <= 0 || x.hp < x.maxhp * 0.25) ? 'close' : 'win', bossId ? 1 : 0.4); if (q) lines.push(q);
   await new Promise((res) => {
     const vp = G.party.map((c) => { const n = expNeeded(c.level), mx = c.level >= L.MAX_LEVEL; return `<div class="vp">${portrait(ak(c), 'sm' + (c.hp <= 0 ? ' ko' : ''))}<div class="vi"><div>${esc(c.name)} <span class="gold">LV ${c.level}</span></div>${bar(mx ? 1 : c.exp, mx ? 1 : n, 'xp')}<div class="cpg">${cpGot.get(c) ? `+${cpGot.get(c)} CP` : '<span class="dim">no CP</span>'} ${stars(c, c.main)}</div></div></div>`; }).join('');
     ov.innerHTML = `<div class="win gold anim"><div class="vhead">${ic('trophy')}<h2>${def ? esc(def.name) + ' is slain!' : 'Victory!'}</h2>${ic('trophy')}</div><div class="spoils"><span>${ic('star')}+${r.exp} EXP</span><span class="gold">${ic('coin')}+${r.gold} G</span></div><div class="vparty">${vp}</div><div class="vlines">${lines.map((l) => `<div>${UI.deco(l)}</div>`).join('')}</div><div class="foot">${btn('vdone', 'Continue', '', '', 'primary')}</div></div>`;

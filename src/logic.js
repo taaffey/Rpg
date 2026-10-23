@@ -246,7 +246,7 @@ export class Battle {
     for (const x of [...this.p, ...this.e]) {
       if (!alive(x) || (ambush && x.side === 'e')) continue;
       const cmd = x.side === 'p' ? cmds.get(x) : this.enemyCmd(x);
-      if (!cmd) continue;
+      if (!cmd || cmd.kind === 'assist') continue; // assist: this hero's turn goes into a partner's combo
       const swift = cmd.kind === 'skill' && skillWithGems(cmd.skillId, cmd.gems).swift, first = this.turn === 1 && x.tr.has('firststrike');
       order.push({ x, cmd, pri: (first ? 3 : cmd.kind === 'defend' ? 2 : swift ? 1 : 0), spd: this.speed(x) });
     }
@@ -297,6 +297,16 @@ export class Battle {
         break;
       }
       case 'skill': this.cast(a, cmd.skillId, cmd.gems || [], cmd.target, L, false, false); break;
+      case 'combo': { // a double tech: both heroes pay the MP and pool their strength into one move at the leader's speed
+        const p = cmd.partner, s = SKILLS[cmd.skillId], ca = mpCost(a, s), cp = mpCost(p, s);
+        if (!alive(p) || p.st.stun > 0) { L.push(`${p.name} isn't ready! ${a.name} goes it alone.`); this.cast(a, 'attack', [], cmd.target, L, false, false); break; }
+        if (a.mp < ca || p.mp < cp) { L.push(`Not enough MP for ${s.name}!`); break; }
+        a.mp -= ca; p.mp -= cp; L.push(`${a.name} and ${p.name} team up!`);
+        this.fx.push({ t: 'cast', actor: p.name, kind: s.kind, side: p.side, targets: [] });
+        const atk = a.atk, mag = a.mag; a.atk += p.atk; a.mag += p.mag;
+        try { this.cast(a, cmd.skillId, [], cmd.target, L, true, true); } finally { a.atk = atk; a.mag = mag; }
+        break;
+      }
     }
     return L;
   }

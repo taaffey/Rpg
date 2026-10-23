@@ -957,6 +957,7 @@ export const TOWNS = {
   kid: { hair: 'short', head: 'cowlick', kid: true, ramps: { H: '#f4d35e', T: '#5ac08a', P: '#5a4a8a', B: '#6a3a2a', A: '#a07040' }, remap: { legs: BAREL } },
   guard: { head: 'guard', hair: 'short', h: 29, ramps: { M: '#9aa0b0', T: '#3a5aa0', H: '#6a4a2a', P: '#4a4a5a', B: '#3a2e2a', A: '#f4d35e', R: '#8a5a30', C: '#3a5aa0' }, props: ['pauldrons', 'spear'], hold: true },
   sereth: { head: 'chaperon', hair: 'long', body: 'robe', ramps: { C: '#6a6a7a', T: '#5a5a6a', A: '#9ae0ff', H: '#c8c8d4', B: '#2a2a34', F: '#d8d8e0' }, props: ['hem'], spec: { 1: '#7fd8f0' } }, // the grey apprentice (story scenes)
+  barnaby: { head: 'moustache', hair: 'bald', ramps: { C: '#a04a2a', H: '#b0582a', T: '#8a5a3a', F: '#f8f4ec', P: '#5a4030', B: '#4a3020', A: '#e8e0d0' }, props: ['apron'], spec: { 1: '#f2f2f2' } }, // Brenna's dad, landlord of the Gilded Goose
   fisher: { head: 'fisherhat', hair: 'short', h: 30, ramps: { C: '#4a8ae0', H: '#2a2a30', T: '#e8e8f0', P: '#4a5a7a', B: '#4a3a2a', A: '#2a5aa0', R: '#9a7040' }, props: ['vest', 'rod'], hold: true, spec: { 1: '#d0d8e0' } },
 };
 

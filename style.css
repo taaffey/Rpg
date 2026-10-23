@@ -441,3 +441,5 @@ body:has(#overlay.on) #toast{top:auto;bottom:calc(env(safe-area-inset-bottom,0px
 /* ---------- Bearded Bros: pub illustrations (prologue, ending) ---------- */
 img.pubart{display:block;width:100%;max-width:512px;margin:6px auto 4px;aspect-ratio:16/9;image-rendering:pixelated;border:2px solid #0a0820;box-shadow:0 0 0 2px #c8b8ff55;background:#1a1432}
 .crname b{font-size:13px;display:block;margin-top:4px}
+.quip{display:block;margin-top:6px;color:#c8d4ff;font-style:italic}
+.cmdlist button.combo .sk b{white-space:normal;overflow:visible}

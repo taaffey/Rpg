@@ -59,6 +59,18 @@ const spireIn = await ev(() => { const g = window.__game, w = g.MAPS.world, [sx,
 await pg.waitForTimeout(300); await key({ '0,-1': 'ArrowUp', '0,1': 'ArrowDown', '-1,0': 'ArrowLeft', '1,0': 'ArrowRight' }[spireIn.join(',')], 1, 500);
 ok('the Frost Spire stays sealed until Morvath falls', (await ev(() => window.__game.G.map)) === 'world' && /Spire|Morvath|sigil/.test(await sayText() + (await ev(() => document.getElementById('overlay').textContent))));
 await sayThrough(); await closeAll();
+const keep = await ev(() => JSON.stringify({ gold: window.__game.G.gold, party: window.__game.G.party, wins: window.__game.G.stats, inv: window.__game.G.inv })); await ev(() => { window.__game.battle(['slime', 'slime']); }); await pg.waitForSelector('[data-act=c]', { timeout: 8000 });
+await pg.click('[data-act=c][data-a=combos]'); await pg.waitForTimeout(150);
+ok('COMBO offers the bros\' double techs', !!(await pg.$('[data-act=c][data-a=combo][data-b=bro_shove]')) && !!(await pg.$('[data-act=c][data-a=combo][data-b=bro_hug]')) && !(await pg.$('[data-act=c][data-a=combo][data-b=pub_brawl]')));
+await pg.click('[data-act=c][data-a=combo][data-b=bro_shove]'); await pg.waitForTimeout(150); await pg.click('[data-act=tgt][data-a=e][data-b="0"]'); await pg.waitForTimeout(150);
+ok('the partner\'s turn is spent on the combo (next prompt skips Devon)', /Brenna/.test(await ev(() => document.querySelector('.cmdhead')?.textContent || '')));
+await ev(() => window.__game.BT.b.e.forEach((e) => { e.hp = 1; })); for (let i = 0; i < 30 && (await ev(() => !!window.__game.BT)); i++) await key('Enter', 1, 150);
+await closeAll(); await ev(() => { window.__game.G.gold += 100; window.__game.G.flags.story.quizzed = false; window.__game.goto('haven_inn', 5, 4); }); await pg.waitForTimeout(300); await key('ArrowUp', 1, 400);
+await pg.click('[data-act=quiz]'); await pg.waitForTimeout(200);
+ok('Quiz Night at the Goose asks a question with four answers', /Quiz Night · Q1\/5/.test(await overlayTitle()) && (await ev(() => document.querySelectorAll('[data-act=qans]').length)) === 4);
+for (let i = 0; i < 5; i++) { await pg.click('[data-act=qans][data-a="0"]'); await pg.waitForTimeout(80); }
+ok('the quiz ends with a score and is done for the night', /Quiz Night: \d\/5/.test(await overlayTitle()) && (await ev(() => window.__game.G.flags.story.quizzed)) === true);
+await closeAll(); await ev((k) => { const o = JSON.parse(k), G = window.__game.G; G.gold = o.gold; G.party = o.party; G.stats = o.wins; G.inv = o.inv; }, keep); // undo the side trips' rewards
 await closeAll(); await ev(() => { window.__game.testParty(); window.__game.goto('haven', 17, 30); }); await pg.waitForTimeout(200); await closeAll();
 await ev(() => { for (const m of Object.values(window.__game.MAPS)) m.rate = 0; }); // keep tests deterministic: battles are started explicitly
 await ev(() => { for (const id of ['cavern', 'crypt', 'mirewood', 'frostholm', 'spire', 'storm', 'ruins']) window.__game.G.flags.visited[id] = true; }); // first-visit scenes would cover the teleports below
