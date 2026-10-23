@@ -3,7 +3,7 @@
 // calling yet ('bloke': fists and vibes) until they clear the Gilded Goose's cellar of slimes and beat Big Gary; then
 // Brenna joins and they choose callings at the Guild. Sir Wendell joins at the mouth of the Ashen Cavern.
 // Story flags: s:woke (arrival scene seen), s:cellar (Big Gary beaten), s:called (callings chosen), s:wendell (he joined).
-import { JOBS, SKILLS, ENEMIES, ENCOUNTERS, DROPS, BOSSES, STORY } from './data.js';
+import { JOBS, SKILLS, ENEMIES, ENCOUNTERS, DROPS, BOSSES, STORY, QUESTS } from './data.js';
 import { MAPS, WALK } from './maps.js';
 
 // ---------------------------------------------------------------- the party
@@ -180,3 +180,19 @@ Object.assign(SKILLS, {
   pub_brawl: { name: 'Pub Brawl', mp: 7, tgt: 'all', kind: 'phys', pow: 0.75 },
   last_orders: { name: 'Last Orders', mp: 12, tgt: 'one', kind: 'phys', pow: 1.9, stun: 0.5 },
 });
+// ---- side quest: "Lightning in a Jar". A Frostholm tinkerer can bottle lightning, given a Storm Shard from the Storm Cavern.
+// Payoff: Devon's phone finally reaches 4% (reward flag 'charged').
+QUESTS.charger = { title: 'Lightning in a Jar', giver: 'Frostholm tinkerer', goal: { type: 'find', item: 'storm_shard', where: 'Storm Cavern' }, reward: { gold: 600, items: { megaether: 1 }, flag: 'charged' },
+  lines: {
+    offer: ['Is that a... glowing slate? In your hand? With a tiny lightning bolt on it?', 'It\'s hungry. I can tell. Bring me a Storm Shard from the cavern on the Northern Plains and I\'ll bottle you some lightning.'],
+    active: ['A Storm Shard. The Storm Cavern, on the Northern Plains. Look in the chests; the drake hoards the shiny ones.'],
+    ready: ['A Storm Shard! Hold the slate still... and... THERE.', 'One whole percent! I have no idea what that means, but the slate seems very pleased.'],
+    done: ['I\'ve been calling it "the Devon". It\'s a jar that hums. People are queuing.'],
+  } };
+MAPS.frost_smith.npcs.push({ x: 2, y: 6, type: 'villager2', name: 'Tinkerer', quest: 'charger', text: ['Gears, coils, a jar of angry bees. Mostly science.'], textBy: [['q:charger', ['Four percent. A historic day for science.']]] });
+{ const [k] = Object.keys(MAPS.storm.chests); MAPS.storm.chests[k] = { ...MAPS.storm.chests[k], qitem: 'storm_shard' }; }
+export const PHONE_CHARGED = [
+  [{ s: 'devon', t: 'FOUR PERCENT. Adam. ADAM. Four.' }, { s: 'adam', t: 'I\'m genuinely happy for you.' }],
+  [{ s: 'devon', t: 'Spent the extra 1% on one more photo of my thumb. No regrets.' }],
+  [{ s: 'devon', t: 'Still no signal. But at 4% the no-signal feels more premium.' }],
+];

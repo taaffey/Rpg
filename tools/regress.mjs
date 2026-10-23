@@ -70,6 +70,8 @@ await pg.click('[data-act=quiz]'); await pg.waitForTimeout(200);
 ok('Quiz Night at the Goose asks a question with four answers', /Quiz Night · Q1\/5/.test(await overlayTitle()) && (await ev(() => document.querySelectorAll('[data-act=qans]').length)) === 4);
 for (let i = 0; i < 5; i++) { await pg.click('[data-act=qans][data-a="0"]'); await pg.waitForTimeout(80); }
 ok('the quiz ends with a score and is done for the night', /Quiz Night: \d\/5/.test(await overlayTitle()) && (await ev(() => window.__game.G.flags.story.quizzed)) === true);
+await closeAll();
+ok('Lightning in a Jar: the Storm Shard charges Devon\'s phone to 4%', await ev(() => { const g = window.__game, G = g.G; G.flags.quests.charger = 'active'; G.flags.qitems.storm_shard = true; g.ACT.qclaim('charger'); g.ACT.close(); return G.flags.story.charged === true && G.flags.quests.charger === 'done'; }));
 await closeAll(); await ev((k) => { const o = JSON.parse(k), G = window.__game.G; G.gold = o.gold; G.party = o.party; G.stats = o.wins; G.inv = o.inv; }, keep); // undo the side trips' rewards
 await closeAll(); await ev(() => { window.__game.testParty(); window.__game.goto('haven', 17, 30); }); await pg.waitForTimeout(200); await closeAll();
 await ev(() => { for (const m of Object.values(window.__game.MAPS)) m.rate = 0; }); // keep tests deterministic: battles are started explicitly

@@ -3,7 +3,7 @@ import { SOCKET_COST, DIFFICULTY, DROPS, STORY, KEY_ITEMS, TRAITS, CALLING_BATCH
 import { JOBS, SKILLS, GEMS, WEAPONS, ARMORS, ACCS, ITEMS, WEAPON_TYPES, ENEMIES, ENCOUNTERS, ELEM_ICON, BOSSES, SHOPS, QUESTS } from './data.js';
 import { MAPS, WALK } from './maps.js';
 import * as L from './logic.js';
-import { BROS, COMBOS, LOCALS, PARTY_SCALE, PHONE, PUB, WAKE, CELLAR_IN, GARY_DOWN, CALLED, CALLED_AFTER, WENDELL } from './bros.js';
+import { BROS, COMBOS, LOCALS, PARTY_SCALE, PHONE, PHONE_CHARGED, PUB, WAKE, CELLAR_IN, GARY_DOWN, CALLED, CALLED_AFTER, WENDELL } from './bros.js';
 import * as SP from './sprites.js';
 import * as TR from './terrain.js';
 import * as TA from './townart.js';
@@ -539,7 +539,7 @@ function openChest(x, y, secret = null) { // secret: loot of a hidden treasure s
 }
 
 // ---------- NPCs, dialogue, services ----------
-const QITEM = { heirloom: 'Grandmother\'s Ring', lantern: 'Boatwright\'s Lantern', doubloon: 'Redwake\'s Doubloon', letter: 'Sealed Letter', ...KEY_ITEMS };
+const QITEM = { heirloom: 'Grandmother\'s Ring', lantern: 'Boatwright\'s Lantern', doubloon: 'Redwake\'s Doubloon', letter: 'Sealed Letter', storm_shard: 'Storm Shard', ...KEY_ITEMS };
 const qstate = (id) => G.flags.quests[id];
 function questDone(id) { const g = QUESTS[id].goal; return g.type === 'kill' ? (G.flags.qprog[id] || 0) >= g.n : g.type === 'find' ? !!G.flags.qitems[g.item] : g.type === 'deliver' ? (G.flags.qprog[id] || 0) >= 1 : !!G.flags.bosses[g.id]; }
 function questProgress(id) { const g = QUESTS[id].goal; if (g.type === 'deliver') return G.flags.qprog[id] ? 'delivered' : `bring it to ${g.to}`; return g.type === 'kill' ? `${Math.min(G.flags.qprog[id] || 0, g.n)}/${g.n}` : g.type === 'find' ? (G.flags.qitems[g.item] ? 'found' : `find it in the ${g.where}`) : (G.flags.bosses[g.id] ? 'slain' : 'not yet slain'); }
@@ -618,6 +618,7 @@ ACT.qdeliver = (id) => { const g = QUESTS[id].goal; if (qstate(id) !== 'active' 
 function giveReward(r) {
   const got = [];
   if (r.gold) { G.gold += r.gold; got.push(`${r.gold} G`); }
+  if (r.flag) G.flags.story[r.flag] = true;
   for (const k of ['weapons', 'armors', 'accs', 'gems']) for (const id of r[k] || []) { G.inv[k].push(id); got.push(lootName(k, id)); }
   for (const [id, n] of Object.entries(r.items || {})) { G.inv.items[id] = (G.inv.items[id] || 0) + n; got.push(`${ITEMS[id].name} ×${n}`); }
   return got;
@@ -899,14 +900,14 @@ ACT.optmute = () => { setMuted(!isMuted()); syncMute(); optionsScreen(); };
 function itemsMenu(msg = '') {
   const it = Object.entries(G.inv.items).filter(([, n]) => n > 0);
   show(`<h2>🎒 Items</h2><div class="card"><div class="gilbox"><span>Gold</span>${coin(G.gold + ' G')}</div></div>${msg ? `<p class="gold">${msg}</p>` : ''}${it.length ? it.map(([id, n]) => `<div class="slot"><span class="lead">${itemIc('items', id)}</span><div class="t"><b>${ITEMS[id].name} <span class="dim">×${n}</span></b><small>${ITEMS[id].desc}</small></div>${btn('useitem', 'Use', id)}</div>`).join('') : '<p class="dim">No consumables.</p>'}
-  ${G.party.some((c) => c.look === 'devon') ? `<h3>Key items</h3><div class="slot"><span class="lead">${ic('tip')}</span><div class="t"><b>Devon's Phone</b><small>3% battery. No signal. Never changes.</small></div>${btn('phone', 'Use', '', '')}</div>` : ''}
+  ${G.party.some((c) => c.look === 'devon') ? `<h3>Key items</h3><div class="slot"><span class="lead">${ic('tip')}</span><div class="t"><b>Devon's Phone</b><small>${G.flags.story.charged ? '4% battery! No signal.' : '3% battery. No signal. Never changes.'}</small></div>${btn('phone', 'Use', '', '')}</div>` : ''}
   ${gemsOn() ? `<h3>💎 Gems (${G.inv.gems.length})</h3><div>${G.inv.gems.map((g) => gemChip(g)).join('') || '<span class="dim">none</span>'}</div>` : G.inv.gems.length ? `<h3>Oddments</h3><div class="dim">Dull Stone ×${G.inv.gems.length}</div>` : ''}
   <div class="foot">${btn('menu', 'Back', '', '', 'primary')}</div>`);
 }
 ACT.items = () => itemsMenu(); ACT.menu = mainMenu;
 ACT.phone = async () => { // Devon's phone: still 3%, still no signal, a different joke each time
-  const n = (G.flags.story.phone || 0) % PHONE.length; G.flags.story.phone = n + 1; sfx('blip');
-  await scene(PHONE[n]);
+  const jokes = G.flags.story.charged ? [...PHONE_CHARGED, ...PHONE.slice(1)] : PHONE, n = (G.flags.story.phone || 0) % jokes.length; G.flags.story.phone = n + 1; sfx('blip');
+  await scene(jokes[n]);
 };
 ACT.useitem = (id) => {
   show(`<h2>${itemIc('items', id)} Use ${ITEMS[id].name} on…</h2><div class="card menuparty">${G.party.map((c, i) => heroBtn(c, 'useon', id, i)).join('')}</div><div class="foot">${btn('items', 'Back', '', '', 'primary')}</div>`);
