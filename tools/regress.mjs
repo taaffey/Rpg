@@ -52,6 +52,13 @@ const chatN = await ev(() => Object.keys(window.__game.G.flags.chat).length);
 await openMenu(); await pg.click('[data-act=chat]'); await pg.waitForTimeout(300);
 ok('CHAT plays a party skit', !!(await pg.$('#overlay .saybox')) && (await ev(() => Object.keys(window.__game.G.flags.chat).length)) === chatN + 1, await sayText());
 await sayThrough(); await closeAll();
+await openMenu(); await pg.click('[data-act=items]'); await pg.click('[data-act=phone]'); await pg.waitForTimeout(300);
+ok('Devon\'s phone is a key item with a joke', /3%|Devon/.test(await ev(() => document.getElementById('overlay').textContent)) && !!(await pg.$('#overlay .saybox')));
+await sayThrough(); await closeAll();
+const spireIn = await ev(() => { const g = window.__game, w = g.MAPS.world, [sx, sy] = w.places.find((p) => p[2] === 'Frost Spire'); for (const [dx, dy] of [[0, 1], [-1, 0], [1, 0], [0, -1]]) { const t = w.rows[sy + dy]?.[sx + dx]; if ('.,:d_='.includes(t)) { g.goto('world', sx + dx, sy + dy); return [-dx, -dy]; } } return null; });
+await pg.waitForTimeout(300); await key({ '0,-1': 'ArrowUp', '0,1': 'ArrowDown', '-1,0': 'ArrowLeft', '1,0': 'ArrowRight' }[spireIn.join(',')], 1, 500);
+ok('the Frost Spire stays sealed until Morvath falls', (await ev(() => window.__game.G.map)) === 'world' && /Spire|Morvath|sigil/.test(await sayText() + (await ev(() => document.getElementById('overlay').textContent))));
+await sayThrough(); await closeAll();
 await closeAll(); await ev(() => { window.__game.testParty(); window.__game.goto('haven', 17, 30); }); await pg.waitForTimeout(200); await closeAll();
 await ev(() => { for (const m of Object.values(window.__game.MAPS)) m.rate = 0; }); // keep tests deterministic: battles are started explicitly
 await ev(() => { for (const id of ['cavern', 'crypt', 'mirewood', 'frostholm', 'spire', 'storm', 'ruins']) window.__game.G.flags.visited[id] = true; }); // first-visit scenes would cover the teleports below

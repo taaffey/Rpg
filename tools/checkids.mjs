@@ -74,6 +74,7 @@ for (const m of ng.matchAll(/newChar\('[^']+', '(\w+)', '(\w+)', (null|'(\w+)'),
   for (const c of STORY.chat || []) { const w = `chat ${c.id}`; if (!c.id || chatIds.has(c.id)) errs.push(`${w}: missing or duplicate id`); chatIds.add(c.id); conds(c.if, w); scene(c.lines, w);
     if (c.at) { const [k, v] = c.at.includes(':') ? c.at.split(':') : ['map', c.at]; if (!(k === 'map' ? MAPS[v] : k === 'region' ? REGIONS.includes(v) : k === 'kind' ? KINDS.includes(v) : false)) errs.push(`${w}: bad at '${c.at}'`); } }
   (STORY.chatIdle || []).forEach((l, i) => scene(l, `chatIdle ${i}`));
+  BR.PHONE.forEach((l, i) => scene(l, `phone ${i}`));
   for (const k of ['WAKE', 'CELLAR_IN', 'GARY_DOWN', 'CALLED', 'CALLED_AFTER', 'WENDELL']) scene(BR[k], `bros ${k}`);
   for (const [mid, m] of Object.entries(MAPS)) for (const [k, pt] of Object.entries(m.portals || {})) { if (!MAPS[pt.to]) errs.push(`portal ${mid} ${k}: no map ${pt.to}`); if (pt.need) { conds(pt.need, `portal ${mid}`); scene(pt.deny || [], `portal ${mid} deny`); } }
   for (const [id, l] of Object.entries(BR.LOCALS)) { if (!JOBS[l.job]) errs.push(`local ${id}: job ${l.job}`); if (l.weapon) has('weapons', l.weapon, `local ${id}`); has('armors', l.armor, `local ${id}`); }

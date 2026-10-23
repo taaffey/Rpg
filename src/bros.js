@@ -140,3 +140,28 @@ export const PARTY_SCALE = { 1: { hp: 0.5, atk: 0.75 }, 2: { hp: 0.62, atk: 0.82
   const spot = [[-1, 0], [1, 0], [0, 1], [-1, 1], [1, 1]].map(([dx, dy]) => [cx + dx, cy + dy]).find(([x, y]) => WALK.has(at(x, y)) && !w.portals[`${x},${y}`]);
   if (spot) w.npcs.push({ x: spot[0], y: spot[1], type: 'wendell', name: 'Sir Wendell', local: 'wendell', text: ['HALT! None shall pass! ...Unless you are my relief.'] });
 }
+// The Frost Spire's door bears the drowned king's mark: Morvath must fall before the Titan (so every calling has woken by the end)
+{
+  const w = MAPS.world, [sx, sy] = w.places.find((p) => p[2] === 'Frost Spire'), pt = w.portals[`${sx},${sy}`];
+  Object.assign(pt, { need: 'lich', deny: [
+    { s: 'n', t: 'The Spire\'s great door is sealed with a sigil of black water: a crown, sinking.' },
+    { s: 'wendell', t: 'The mark of Morvath, the drowned king! I would know it anywhere. I have seen it in a book. Once.' },
+    { s: 'devon', t: 'Locked door, bro. Classic. Key\'s in the other dungeon.' },
+    { s: 'adam', t: 'The Sunken Crypt, in the marsh south of Haven. We deal with Morvath, then we come back for the Titan.' },
+  ] });
+}
+// Devon's phone (Items > Key items): 3%, no signal, forever
+export const PHONE = [
+  [{ s: 'devon', t: '3%. Still 3%. It\'s been 3% for a week, bro. I think it\'s scared to go lower.' }, { s: 'adam', t: 'Or time works differently here. Either way, stop checking it.' }],
+  [{ s: 'devon', t: 'Trying to post a selfie with a goblin. "Uploading..." It\'s been uploading since Haven.' }],
+  [{ s: 'devon', t: 'Camera roll. That\'s us at the pub. That\'s the bell. That\'s... my thumb. Twelve photos of my thumb.' }, { s: 'adam', t: 'Delete those. You need the space.' }],
+  [{ s: 'devon', t: 'Mum\'s last text: "Don\'t let your brother drive." I didn\'t, Mum. We teleported.' }],
+  [{ s: 'devon', t: 'Maps app says we\'re in the sea. Also says the nearest Greggs is "unavailable in your region".' }],
+  [{ s: 'devon', t: 'Step counter says 48,000 steps today. That\'s a personal best. I hate it.' }, { s: 'adam', t: 'Proud of you.' }],
+  [{ s: 'devon', t: 'Weather app: "Light dragon. 40% chance of lich."' }, { s: 'adam', t: 'It does not say that.' }, { s: 'devon', t: 'It might.' }],
+  [{ s: 'devon', t: 'Fantasy football. Adam, your team\'s top of the league. You\'ve not touched it in months.' }, { s: 'adam', t: 'Set and forget. Like a good sword.' }],
+  [{ s: 'devon', t: 'Recording a voice note for future us: "If you\'re hearing this, the cargo shorts were worth it."' }],
+  [{ s: 'devon', t: 'Flashlight on! ...Okay, the 3% is definitely real now. Flashlight off.' }],
+  [{ s: 'devon', t: 'Showing Wendell a video of a horse on a trampoline.' }, { s: 'wendell', t: 'Witchcraft. Wonderful witchcraft. Is it Clarence? It looks happy.' }],
+  [{ s: 'devon', t: 'Brenna, want to see a picture of a pizza?' }, { s: 'brenna', t: 'I\'ve no idea what that is and I already know I\'m not impressed.' }],
+];

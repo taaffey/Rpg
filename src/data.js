@@ -357,7 +357,7 @@ Object.assign(ENEMIES, {
   storm_bat: E('Storm Bat', '🦇', 250, 44, 10, 10, 16, 120, 56, [['bite', 2], ['sparkbolt', 1]], { weak: ['ice'], res: ['bolt'] }),
   thunder_imp: E('Thunder Imp', '👹', 270, 14, 11, 54, 12, 128, 60, [['sparkbolt', 3], ['tackle', 1]], { weak: ['ice'], res: ['bolt'] }),
   gale_wraith: E('Gale Wraith', '👻', 310, 14, 13, 58, 15, 140, 64, [['sparkbolt', 2], ['draintouch', 1], ['hexbolt', 1]], { weak: ['holy', 'ice'], res: ['bolt'] }),
-  storm_drake: E('Storm Drake', '🐲', 2500, 48, 18, 52, 12, 2000, 1800, [['stormclaw', 3], ['thunderbreath', 2], ['claw', 1]], { weak: ['ice'], res: ['bolt'], boss: true }),
+  storm_drake: E('Storm Drake', '🐲', 2400, 46, 18, 52, 12, 2000, 1800, [['stormclaw', 3], ['thunderbreath', 2], ['claw', 1]], { weak: ['ice'], res: ['bolt'], boss: true }),
 });
 Object.assign(ENCOUNTERS, { storm: [['storm_bat', 'storm_bat'], ['thunder_imp', 'thunder_imp'], ['gale_wraith'], ['storm_bat', 'thunder_imp'], ['gale_wraith', 'storm_bat'], ['thunder_imp', 'gale_wraith', 'storm_bat']] });
 BOSSES.storm_drake = { name: 'Storm Drake', intro: 'Thunder splits the cavern. The Storm Drake drops from the dark, crackling! Devon\'s phone does not charge.', optional: true, loot: { weapons: ['storm_katana'], armors: ['storm_cloak'], gems: ['siphon', 'crit'] } };
@@ -569,7 +569,7 @@ Object.assign(ENEMIES, {
   sand_golem: E('Sand Golem', '🗿', 560, 50, 24, 6, 3, 190, 92, [['slam', 2], ['sandquake', 1]], { weak: ['ice'], res: ['fire', 'bolt'] }),
   cobra: E('Temple Cobra', '🐍', 290, 43, 12, 42, 15, 136, 70, [['venombite', 2], ['hypnogaze', 1], ['spitvenom', 1]], { weak: ['ice'], res: ['dark'] }),
   dust_wraith: E('Dust Wraith', '👻', 300, 14, 13, 52, 14, 140, 68, [['sandstorm', 1], ['draintouch', 2], ['hexbolt', 1]], { weak: ['holy', 'ice'], res: ['dark', 'fire'] }),
-  sphinx: E('Sphinx Pharaoh', '🦁', 2500, 47, 17, 50, 11, 2100, 1900, [['sphinxclaw', 3], ['sunray', 2], ['riddle', 2], ['sandstorm', 1]], { weak: ['ice', 'dark'], res: ['holy', 'fire'], boss: true }),
+  sphinx: E('Sphinx Pharaoh', '🦁', 2400, 45, 17, 50, 11, 2100, 1900, [['sphinxclaw', 3], ['sunray', 2], ['riddle', 2], ['sandstorm', 1]], { weak: ['ice', 'dark'], res: ['holy', 'fire'], boss: true }),
 });
 ENCOUNTERS.ruins = [['royal_mummy'], ['ruin_scorpion', 'ruin_scorpion'], ['sand_golem'], ['cobra', 'cobra'], ['dust_wraith', 'royal_mummy'], ['cobra', 'ruin_scorpion'], ['dust_wraith', 'dust_wraith'], ['sand_golem', 'cobra'], ['mummy', 'mummy', 'dust_wraith'], ['scorpion', 'cobra', 'desert_bandit']];
 BOSSES.sphinx = { name: 'Sphinx Pharaoh', intro: 'Sand pours from the altar as the Sphinx Pharaoh rises: "Answer, or be buried! ...And no phoning a friend."', optional: true, loot: { weapons: ['khopesh'], accs: ['sun_disc'], gems: ['overcharge'] } };
