@@ -1,7 +1,7 @@
 // ===== Bearded Bros (and the Bell of Gemforge): UI, map, menus, battle flow =====
 import { SOCKET_COST, DIFFICULTY, DROPS, STORY, KEY_ITEMS, TRAITS, CALLING_BATCHES } from './data.js';
 import { JOBS, SKILLS, GEMS, WEAPONS, ARMORS, ACCS, ITEMS, WEAPON_TYPES, ENEMIES, ENCOUNTERS, ELEM_ICON, BOSSES, SHOPS, QUESTS } from './data.js';
-import { MAPS, WALK } from './maps.js';
+import { MAPS, WALK, START } from './maps.js';
 import * as L from './logic.js';
 import { BROS, COMBOS, LOCALS, PARTY_SCALE, PHONE, PHONE_CHARGED, PUB, WAKE, CELLAR_IN, GARY_DOWN, CALLED, CALLED_AFTER, WENDELL } from './bros.js';
 import * as SP from './sprites.js';
@@ -109,7 +109,7 @@ function newGame(party = DEFAULT_PARTY) {
     party: party.map(([n, j, look]) => Object.assign(newChar(n, j, null, null, LIGHT_ARMOR.has(j) || j === 'bloke' ? 'cloth' : 'leather'), look ? { look } : {})),
     gold: 400, difficulty: 'normal', slot: 1,
     inv: { weapons: [], armors: [], accs: [], gems: [], items: { potion: 3 } },
-    map: 'haven', x: 17, y: 30, flags: { chests: {}, bosses: {}, seen: {}, talked: {}, visited: {}, quests: {}, qprog: {}, qitems: {}, tips: {}, bestiary: {}, story: {}, chat: {} }, playtime: 0,
+    map: START.map, x: START.x, y: START.y, flags: { chests: {}, bosses: {}, seen: {}, talked: {}, visited: {}, quests: {}, qprog: {}, qitems: {}, tips: {}, bestiary: {}, story: {}, chat: {} }, playtime: 0,
   };
 }
 // ---------- saves: 3 slots, autosave, migration ----------
@@ -127,7 +127,7 @@ function migrate(g) {
   for (const c of g.party) { if (c.weapon && !WEAPONS[c.weapon]) c.weapon = null; if (c.armor && !ARMORS[c.armor]) c.armor = null; if (c.acc && !ACCS[c.acc]) c.acc = null; c.exp = Math.max(0, c.exp || 0); c.level = Math.min(L.MAX_LEVEL, c.level || 1); gainExp(c, 0); } // gainExp(0) settles EXP banked under an older curve
   for (const c of g.party) migrateCallings(c, g.inv);
   const m = MAPS[g.map];
-  if (!m) { g.map = 'haven'; g.x = 17; g.y = 30; } else if (!WALK.has(m.rows[g.y]?.[g.x] ?? '#') && m.rows[g.y]?.[g.x] !== 'B') { g.x = m.spawn.x; g.y = m.spawn.y; }
+  if (!m) { g.map = START.map; g.x = START.x; g.y = START.y; } else if (!WALK.has(m.rows[g.y]?.[g.x] ?? '#') && m.rows[g.y]?.[g.x] !== 'B') { g.x = m.spawn.x; g.y = m.spawn.y; }
   return g;
 }
 // Saves from before Calling Points: skills came from the hero's level (main calling) and a sub calling two levels behind.
@@ -1283,7 +1283,7 @@ function awakening({ heart, jobs, gems }) {
 }
 const epilogueOf = (c) => { const e = STORY.epilogue[c.look] ?? STORY.epilogue[c.main]; return (typeof e === 'string' ? e : e?.[c.main] || e?.default) || '{n} went home.'; };
 async function ending() {
-  if (STORY.finale) { goto('haven', 17, 22); await sleep(600); await scene(STORY.finale); } // the bell rings for them in Haven: back to The Bell & Anvil, two minutes after they left
+  if (STORY.finale) { goto('haven', ...MAPS.haven.spots.bell); await sleep(600); await scene(STORY.finale); } // the bell rings for them in Haven: back to The Bell & Anvil, two minutes after they left
   music('ending');
   const left = ['wyrm', 'lich'].filter((k) => !G.flags.bosses[k]).map((k) => BOSSES[k].name);
   const quests = Object.keys(QUESTS).filter((id) => qstate(id) === 'done').length, gemsOn = G.party.reduce((n, c) => n + gemsUsed(c), 0);
@@ -1306,7 +1306,7 @@ async function defeat() {
   music('gameover');
   await new Promise((res) => {
     ov.innerHTML = `<div class="win red anim"><div class="vhead">${ic('ko')}<h2 class="bad">Defeated…</h2>${ic('ko')}</div><div class="vparty">${G.party.map((c) => `<div class="vp">${portrait(ak(c), 'sm ko')}<div class="vi">${esc(c.name)}</div></div>`).join('')}</div><p>Someone carries you back to Haven. Half your gold is gone.</p><div class="foot">${btn('ddone', 'Wake up', '', '', 'primary')}</div></div>`;
-    ACT.ddone = () => { G.gold = Math.floor(G.gold / 2); for (const c of G.party) { const s = maxOf(c); c.hp = s.hp; c.mp = s.mp; } goto('haven', 11, 12); hide(); res(); };
+    ACT.ddone = () => { G.gold = Math.floor(G.gold / 2); for (const c of G.party) { const s = maxOf(c); c.hp = s.hp; c.mp = s.mp; } goto('haven', ...MAPS.haven.spots.respawn); hide(); res(); };
   });
 }
 

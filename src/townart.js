@@ -103,6 +103,23 @@ const PAL = {
   gold: ramp('#5a3a08 #8a5e10 #b8861c #e0b030 #f8d458 #fff0a0'),
   green: ramp('#0c2412 #14381c #1e4e28 #2a6636 #388046 #4a9a58'),
   flowers: ['#e83850', '#f87090', '#f8d040', '#ffffff', '#b070e0', '#f89038', '#60a8f0'].map(pk),
+  // ---- the Bell Village (theme 'village'): warm, late-afternoon greens, honey stone, golden thatch, terracotta
+  vgrass: ramp('#12341a #1a4620 #245a24 #306e28 #408430 #539a36 #69b03e #84c64a #a2d85a #c2e878'),
+  vdirt: ramp('#2e1c0e #44301a #5a4426 #725a34 #8a7042 #a28856 #bba26e #d2bc88'),
+  flag: ramp('#34302c #4a4540 #625c54 #7a7268 #938a7c #aba08e #c2b8a2 #d8cfb8 #ece4cc'),
+  vwater: ramp('#0a2a3a #103c50 #184f66 #226680 #31809a #4e9db0 #78bcc6 #a8d8da #d2eeec #f0fcfa'),
+  bank: ramp('#2a2012 #3c2e1a #50402a #685338 #7f6a48 #988258'),
+  dry: ramp('#2a2824 #3e3b35 #55514a #6c6759 #868070 #a09883 #bab19a #d3c9ae'),
+  honey: ramp('#463622 #62492e #7f6340 #9c7e54 #b99a6a #d0b480 #e4ca98 #f4e0b4'),
+  wash: ramp('#6a5b46 #887960 #a69679 #c1b190 #d9caa8 #eadfbe #f6ecd0 #fffaea'),
+  thatchG: ramp('#2c1c0a #46300e #644416 #845c1e #a47628 #c2903a #daa84c #ecc468 #f8dc8c #fff0b2'),
+  reed: ramp('#2a2612 #403a1a #5a5026 #766934 #928244 #aea05a #c8ba74 #e0d492'),
+  terra: ramp('#34160e #52220f #763018 #9c4222 #bc582c #d4743a #e68e4c #f4ac6c'),
+  slateM: ramp('#262822 #383c34 #4c5248 #62695a #7a8470 #949e88 #b0b8a0 #ccd2b8'),
+  oakT: ramp('#100904 #1c1007 #2c190c #402412 #563118 #6c4120 #865330'),
+  ivy: ramp('#0a2010 #12301a #1a4421 #265c2a #327434 #428c3c #58a64a #78c25c'),
+  bronze: ramp('#2e1a06 #4e2e0a #74480f #9c6416 #c4841e #e4a830 #f6cc4c #fff09c'),
+  oakL: ramp('#0a2410 #12341a #1b461f #265a25 #336f2c #418634 #54a03c #6cb846 #8ad058 #b0e078'),
 };
 // per theme: what each map char is made of (ground classes) and which ramps paint it
 const G_LAND = 0, G_DIRT = 1, G_ST = 2, G_PLZ = 3, G_WAT = 4, G_DOCK = 5, G_WALL = 6;
@@ -110,6 +127,7 @@ const CLS = {
   town: { ',': G_DIRT, _: G_ST, E: G_ST, H: G_ST, ':': G_PLZ, F: G_PLZ, '~': G_WAT, '=': G_DOCK, '#': G_WALL },
   snowtown: { ',': G_DIRT, _: G_ST, E: G_ST, H: G_ST, ':': G_PLZ, F: G_PLZ, '~': G_WAT, '=': G_DOCK, '#': G_WALL },
   swamptown: { ',': G_DIRT, _: G_DOCK, E: G_DOCK, H: G_DOCK, '=': G_DOCK, ':': G_PLZ, F: G_PLZ, '~': G_WAT, '#': G_WALL },
+  village: { ',': G_DIRT, _: G_ST, E: G_DIRT, H: G_ST, ':': G_PLZ, '~': G_WAT, '=': G_WAT, '#': G_WALL },
 };
 export const isTheme = (theme) => !!CLS[theme];
 
@@ -117,7 +135,7 @@ export const isTheme = (theme) => !!CLS[theme];
 const WF = 8; // frames
 function waterTex(theme, f) { // 64x64 tileable frame
   return once('wt' + theme + f, () => {
-    const p = new Pix(64, 64), sw = theme === 'swamptown', R = sw ? PAL.swamp : PAL.water, ph = (f / WF) * 64;
+    const p = new Pix(64, 64), sw = theme === 'swamptown', R = sw ? PAL.swamp : theme === 'village' ? PAL.vwater : PAL.water, ph = (f / WF) * 64;
     for (let y = 0; y < 64; y++) for (let x = 0; x < 64; x++) {
       const a = vnoise(x + ph, y * 2.2, 16, 3, 64), b = vnoise(x - ph, y * 2.2 + 9, 16, 5, 64), c = vnoise(x, y, 32, 7, 64);
       let v = (sw ? 0.4 : 0.42) + (a + b - 1) * 0.42 + (c - 0.5) * 0.25;
@@ -190,6 +208,7 @@ function centres(m) { // top-left of every 'F' block (fountains / centrepieces) 
   return out;
 }
 function buildGround(m) {
+  if (m.theme === 'village') return buildVillage(m);
   const theme = m.theme, cls = CLS[theme], base = m.base || m.rows, W = base[0].length, H = base.length, snow = theme === 'snowtown', swamp = theme === 'swamptown';
   const TW = W + 2 * MG, TH = H + 2 * MG, GW = TW * 16, GH = TH * 16, O = MG * 16;
   const chAt = (x, y) => base[Math.max(0, Math.min(H - 1, y))][Math.max(0, Math.min(W - 1, x))];
@@ -720,17 +739,19 @@ function gullPix(f) { return once('gull' + f, () => { const r = f ? ['.k.....k.'
 const MC = new WeakMap();
 function mapState(m) {
   let s = MC.get(m); if (s) return s;
-  s = { g: buildGround(m), cen: centres(m) }; MC.set(m, s);
-  for (const b of m.buildings || []) buildingPix(m.theme, b); // builds and records chimney positions
+  s = { g: buildGround(m), cen: m.theme === 'village' ? [] : centres(m) }; MC.set(m, s);
+  if (m.theme !== 'village') for (const b of m.buildings || []) buildingPix(m.theme, b); // builds and records chimney positions
   return s;
 }
 const TREE_KIND = (theme, ch) => (theme === 'snowtown' || ch === 't' ? 'pine' : theme === 'swamptown' ? 'swamp' : 'leaf');
 export function objects(theme, get, x, y, t, out, m) {
+  if (theme === 'village') return villageTree(get, x, y, out);
   const ch = get(x, y); if (ch !== 'T' && ch !== 't') return;
   const kind = TREE_KIND(theme, ch), h = hash(x, y, 1), v = kind === 'pine' ? (theme === 'snowtown' ? (h < 0.5 ? 0 : 1) : 2 + (h < 0.5 ? 0 : 1)) : kind === 'leaf' ? (h < 0.12 ? 2 : h < 0.45 ? 1 : 0) : (h < 0.5 ? 0 : 1);
   const img = treePix(kind, v); out.push({ img, x: x + 0.5 - img.width / 32, y: y + 1 - img.height / 16 + (kind === 'leaf' ? 0.12 : 0.06), z: 1, sy: y + 1 });
 }
 export function mapObjects(m, t, out) {
+  if (m.theme === 'village') return villageObjects(m, t, out);
   const s = mapState(m), G = s.g, snow = m.theme === 'snowtown', swamp = m.theme === 'swamptown';
   out.push({ x: -MG, y: -MG, w: 1, h: 1, z: 0, draw: (ctx, X, Y, TS) => { const k = TS / 16, sx0 = Math.max(0, Math.floor(-X / k)), sy0 = Math.max(0, Math.floor(-Y / k)), sw = Math.min(G.GW - sx0, Math.ceil(ctx.canvas.width / k) + 2), sh = Math.min(G.GH - sy0, Math.ceil(ctx.canvas.height / k) + 2); if (sw > 0 && sh > 0) ctx.drawImage(G.cv, sx0, sy0, sw, sh, X + sx0 * k, Y + sy0 * k, sw * k, sh * k); } });
   for (const b of m.buildings || []) {
@@ -754,4 +775,263 @@ export function mapObjects(m, t, out) {
     }
   }
   if (m.props?.some((p) => p.k === 'ship' || p.k === 'boat') && !swamp) for (let i = 0; i < 2; i++) { const a = t * 0.35 + i * 3; out.push({ img: gullPix(Math.floor(t * 4 + i) % 2), x: 2.5 + Math.cos(a) * 2.2 + i * 1.5, y: 8 + i * 9 + Math.sin(a * 1.3) * 1.5, z: 2 }); }
+}
+
+// ================================================================================================================
+// THE BELL VILLAGE (theme 'village'): Haven, a thousand years ago. Golden thatch, honey stone, dry-stone walls, a brook
+// and an open green. Same pipeline as the other towns (one ground bake + cached sprites), its own materials and art.
+// base chars: . grass  , dirt lane  _ flagstones  : small cobbles  ~ water  = ford / bridge / jetty / stepping stones
+//             # dry-stone wall  T oak  t yew  a apple tree  h hedgerow  f fence  w cottage flowers  k allotment  G grave  E exit
+// ================================================================================================================
+const VMAT = {
+  grass: (x, y) => {
+    const h = hash(x, y, 77); if (h < 0.0035) return pk('#f4f0d6'); if (h < 0.0055) return pk('#f0cc3c'); // daisies, buttercups
+    return pick(PAL.vgrass, cl(0.24 + fbm(x, y, 1) * 0.5 + (vnoise(x, y, 36, 6) - 0.5) * 0.34 + tuft(x, y, 11, 0.85), 0.05, 0.94), x, y);
+  },
+  dirt: (x, y) => { const v = vor(x, y, 4.2, 1, 41); let s = 0.42 + (fbm(x, y, 8) - 0.5) * 0.45;
+    if (v.h < 0.14 && v.e > 1.1) s += v.dx + v.dy < 0 ? 0.28 : 0.1; else if (v.e < 0.7 && v.h > 0.8) s -= 0.12; return pick(PAL.vdirt, cl(s), x, y); },
+  flag: (x, y) => { // big irregular flagstones, mossy joints
+    const v = vor(x, y, 10.5, 0.82, 55), n = fbm(x, y, 9);
+    if (v.e < 1.15) return hash(x, y, 4) < 0.3 ? pick(PAL.moss, 0.3 + n * 0.3, x, y) : pick(PAL.flag, 0.07 + n * 0.1, x, y);
+    let s = 0.52 + (v.h - 0.5) * 0.42 + (n - 0.5) * 0.22; const lit = -(v.dx + v.dy);
+    if (v.e < 2.4) s += lit > 0.3 ? 0.17 : lit < -0.3 ? -0.17 : 0; if (hash(x, y, 5) < 0.035) s += hash(x, y, 6) < 0.5 ? 0.12 : -0.12;
+    return pick(PAL.flag, cl(s, 0.1, 1), x, y);
+  },
+};
+function dryWallPx(x, y, wy, tot) { // dry-stone wall: wy = pixel row down the wall's face, tot = wall height in px
+  const capH = tot <= 16 ? 5 : 4;
+  if (wy < capH) { // the top: rounded cap stones, mossy
+    const bx = Math.floor((x + (wy < 2 ? 0 : 3)) / 6); let s = 0.68 + (hash(bx, 3, 5) - 0.5) * 0.24 + (fbm(x, y, 4) - 0.5) * 0.12;
+    if (wy === 0) s += 0.14; if (wy === capH - 1) s -= 0.24; if ((((x + (wy & 1) * 3) % 6) + 6) % 6 === 0) s -= 0.18;
+    if (vnoise(x, y, 6, 12) > 0.66 && hash(x, y, 7) < 0.7) return pick(PAL.moss, 0.5 + hash(x, y, 8) * 0.4, x, y);
+    return pick(PAL.dry, cl(s, 0.1, 1), x, y);
+  }
+  const v = vor(x, y, 8.4, 0.62, 61); let s = 0.5 + (v.h - 0.5) * 0.42 + (fbm(x, y, 6) - 0.5) * 0.14;
+  if (v.e < 0.95) s = 0.07; else { const lit = -(v.dx + v.dy); if (v.e < 2.1) s += lit > 0.25 ? 0.18 : lit < -0.25 ? -0.2 : 0; }
+  if (wy > tot - 4) s -= 0.2;
+  const mm = vnoise(x, y * 1.4, 7, 12); if (mm > 0.66 && v.e > 0.95 && (wy > tot * 0.45 || hash(x, y, 9) < 0.25)) return pick(PAL.moss, 0.35 + hash(x, y, 8) * 0.4, x, y);
+  return pick(PAL.dry, cl(s, 0.05, 0.95), x, y);
+}
+
+function buildVillage(m) {
+  const base = m.base || m.rows, W = base[0].length, H = base.length, TW = W + 2 * MG, TH = H + 2 * MG, GW = TW * 16, GH = TH * 16, O = MG * 16;
+  const chAt = (x, y) => base[Math.max(0, Math.min(H - 1, y))][Math.max(0, Math.min(W - 1, x))];
+  const C = new Uint8Array(TW * TH); for (let ty = 0; ty < TH; ty++) for (let tx = 0; tx < TW; tx++) C[ty * TW + tx] = CLS.village[chAt(tx - MG, ty - MG)] ?? G_LAND;
+  const cAt = (tx, ty) => C[Math.max(0, Math.min(TH - 1, ty)) * TW + Math.max(0, Math.min(TW - 1, tx))];
+  const field = (set, r) => { // blurred mask of one ground class: gives soft, rounded borders
+    const F = new Float32Array(GW * GH); for (let py = 0; py < GH; py++) for (let px = 0; px < GW; px++) F[py * GW + px] = set(C[(py >> 4) * TW + (px >> 4)]) ? 1 : 0;
+    boxblur(F, GW, GH, r); boxblur(F, GW, GH, r); return F;
+  };
+  const WF = field((c) => c === G_WAT, 4), WB = field((c) => c === G_WAT, 11), FF = field((c) => c === G_ST || c === G_PLZ, 3), PF = field((c) => c === G_PLZ, 2), DF = field((c) => c === G_DIRT, 3);
+  // lanes: which way each dirt tile runs, so cart ruts follow it (N-S or E-W lanes up to four tiles wide)
+  const LANE = new Int16Array(TW * TH * 3); // [dir 0 none / 1 N-S / 2 E-W, centre px, half-width px]
+  for (let ty = 0; ty < TH; ty++) for (let tx = 0; tx < TW; tx++) if (C[ty * TW + tx] === G_DIRT) {
+    let a = tx, b = tx, c = ty, d = ty; while (cAt(a - 1, ty) === G_DIRT && tx - a < 5) a--; while (cAt(b + 1, ty) === G_DIRT && b - tx < 5) b++; while (cAt(tx, c - 1) === G_DIRT && ty - c < 7) c--; while (cAt(tx, d + 1) === G_DIRT && d - ty < 7) d++;
+    const hw = b - a + 1, vh = d - c + 1, k = (ty * TW + tx) * 3;
+    if (hw <= 4 && vh >= hw + 2) { LANE[k] = 1; LANE[k + 1] = (a + hw / 2) * 16; LANE[k + 2] = hw * 8; } else if (vh <= 4 && hw >= vh + 2) { LANE[k] = 2; LANE[k + 1] = (c + vh / 2) * 16; LANE[k + 2] = vh * 8; }
+  }
+  const P = new Pix(GW, GH), SH = new Uint8Array(GW * GH);
+  for (let py = 0; py < GH; py++) for (let px = 0; px < GW; px++) {
+    const tx = px >> 4, ty = py >> 4, lx = px & 15, ly = py & 15, x = px - O, y = py - O, c = C[ty * TW + tx], i = py * GW + px; let col = 0;
+    if (c === G_WALL) { let top = ty; while (top > MG && cAt(tx, top - 1) === G_WALL) top--; let bot = ty; while (bot < TH - MG - 1 && cAt(tx, bot + 1) === G_WALL) bot++;
+      col = dryWallPx(x, y, (ty - top) * 16 + ly, (bot - top + 1) * 16);
+      if (cAt(tx - 1, ty) !== G_WALL && lx <= 1) col = dk(col, 0.62); if (cAt(tx + 1, ty) !== G_WALL && lx >= 14) col = dk(col, 0.55);
+    } else {
+      const jag = (vnoise(x, y, 3, 19) - 0.5) * 0.12, w = WF[i] + jag + (vnoise(x, y, 4, 9) - 0.5) * 0.1;
+      if (w > 0.36) { // pond / brook: wet grass fringe, muddy bank with pebbles, shallows, then open (animated) water
+        if (w <= 0.44) col = dk(VMAT.grass(x, y), 0.68);
+        else if (w <= 0.5) col = pick(PAL.bank, cl(0.38 + (fbm(x, y, 3) - 0.5) * 0.5 + (hash(x, y, 9) < 0.14 ? 0.35 : 0)), x, y);
+        else if (w <= 0.58) col = hash(x, y, 12) < 0.55 ? pk('#86ccc470') : pk('#5aa4a068');
+        else col = 0;
+      } else {
+        const s = FF[i] + jag, d = DF[i] + jag;
+        if (s > 0.5) { const pv = PF[i] + jag * 0.5; col = s < 0.545 ? pick(PAL.flag, 0.18 + hash(x, y, 3) * 0.1, px, py) : pv > 0.5 ? (pv < 0.54 ? pick(PAL.flag, 0.2, px, py) : MAT.cobble(x, y)) : VMAT.flag(x, y); }
+        else if (d > 0.5) { col = d < 0.54 ? pick(PAL.vdirt, 0.14, px, py) : VMAT.dirt(x, y);
+          const k = (ty * TW + tx) * 3, dir = LANE[k]; if (dir && d > 0.6) { const u = Math.abs((dir === 1 ? px : py) - LANE[k + 1]), hw = LANE[k + 2], rc = hw * 0.5, off = Math.abs(u - rc);
+            if (hw > 12 && off < 1.7) col = pick(PAL.vdirt, cl(0.16 + off * 0.12 + hash(x, y, 31) * 0.1), px, py); // cart ruts
+            else if (u < rc - 3 && hash(x, y, 33) < 0.05) col = pick(PAL.vgrass, 0.5 + hash(x, y, 34) * 0.4, px, py); } } // grass tufts down the middle
+        else { col = VMAT.grass(x, y); if (s > 0.43 || d > 0.44) col = dk(col, 0.74); }
+      }
+    }
+    P.d[i] = col;
+  }
+  const S = { P, SH, GW, GH, O, chAt, cAt, W, H, WF, WB, C, TW, TH };
+  decorateVillage(m, S);
+  for (let i = 0; i < GW * GH; i++) if (SH[i]) { const c = P.d[i], a = cA(c); P.d[i] = a === 255 ? rgba(cR(c) * 0.6, cG(c) * 0.62, cB(c) * 0.7 + 12) : a ? c : pk('#00061a66'); }
+  return { cv: P.canvas(), GW, GH };
+}
+
+// ---------------------------------------------------------------- the village's ground decoration (baked into the ground canvas)
+function decorateVillage(m, S) {
+  const { P, O, W, H } = S, base = m.base || m.rows, at = (x, y) => (x < 0 || y < 0 || x >= W || y >= H ? '' : base[y][x]), G = S.GW;
+  // shadows first (they darken everything painted into this canvas)
+  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+    const c = base[y][x];
+    if (c === '#' && at(x, y + 1) !== '#' && at(x, y + 1) !== '') shRect(S, x * 16, (y + 1) * 16, 16, 4);
+    if (c === 'T') shEll(S, x * 16 + 12, y * 16 + 13, 12, 5); else if (c === 't') shEll(S, x * 16 + 11, y * 16 + 13, 8, 4); else if (c === 'a') shEll(S, x * 16 + 11, y * 16 + 13, 9, 4);
+    if (c === 'h' && at(x, y + 1) !== 'h') shRect(S, x * 16 + 1, (y + 1) * 16, 15, 2);
+  }
+  for (const b of m.buildings || []) { const R0 = (b.x + b.w) * 16; for (let k = 0; k < 10; k++) shRect(S, R0 + k, b.y * 16 + 6 + k, 1, b.h * 16 - 6 - k); shRect(S, b.x * 16 + 2, (b.y + b.h) * 16, b.w * 16 - 2, 1); }
+  // hedgerows: hawthorn clumps with a dark rim, white may blossom and a few red haws
+  const hm = new Set(); for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) if (base[y][x] === 'h') for (const [ox, oy] of [[4, 5], [12, 5], [8, 3], [4, 11], [12, 11], [8, 9]]) blob(P, O + x * 16 + ox + (hash(x, y, ox) - 0.5) * 2, O + y * 16 + oy, 5, PAL.leafD, { seed: x * 7 + y, rimDark: 0.25, mask: hm, amb: 0.15 });
+  edgeMask(P, hm, PAL.leafD[0]);
+  for (const i of hm) { const x = i % P.w, y = (i / P.w) | 0, h = hash(x, y, 41); if (h < 0.05) P.d[i] = pk('#f4f0e0'); else if (h < 0.07) P.d[i] = pk('#d8484c'); else if (h < 0.1) P.d[i] = pick(PAL.leaf, 0.85, x, y); }
+  // cottage flower beds: no edging, red geraniums, marigolds, lavender
+  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) if (base[y][x] === 'w') {
+    for (let j = 0; j < 16; j++) for (let i = 0; i < 16; i++) { const px = O + x * 16 + i, py = O + y * 16 + j; P.set(px, py, pick(PAL.mud, 0.22 + hash(px, py, 1) * 0.3, px, py)); }
+    for (let k = 0; k < 8; k++) blob(P, O + x * 16 + 2 + hash(x * 9 + k, y, 1) * 12, O + y * 16 + 3 + hash(x * 9 + k, y, 2) * 11, 2.8, PAL.leaf, { seed: k + x });
+    const cols = ['#e03038', '#e03038', '#f0a020', '#b070e0', '#f8f0e0', '#e03038'];
+    for (let k = 0; k < 12; k++) { const cx = Math.floor(O + x * 16 + 2 + hash(x * 13 + k, y, 3) * 12), cy = Math.floor(O + y * 16 + 2 + hash(x * 13 + k, y, 4) * 11), fc = pk(cols[(x + y + k) % cols.length]); P.set(cx, cy - 1, fc); P.set(cx - 1, cy, fc); P.set(cx + 1, cy, dk(fc, 0.75)); P.set(cx, cy + 1, dk(fc, 0.7)); P.set(cx, cy, pk('#fff4a0')); }
+  }
+  // fences: posts and two rails
+  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) if (base[y][x] === 'f') {
+    const L = at(x - 1, y) === 'f', Rt = at(x + 1, y) === 'f', U = at(x, y - 1) === 'f', D = at(x, y + 1) === 'f', X = O + x * 16, Y = O + y * 16, R = PAL.wood;
+    const rail = (yy) => { for (let i = L ? 0 : 7; i <= (Rt ? 15 : 8); i++) { P.set(X + i, Y + yy, pick(R, 0.78, X + i, Y + yy)); P.set(X + i, Y + yy + 1, pick(R, 0.4, X + i, Y + yy)); P.set(X + i, Y + yy + 2, pick(R, 0.08, X + i, Y + yy)); S.SH[(Y + yy + 3) * G + X + i] = 1; } };
+    if (L || Rt) { rail(5); rail(10); }
+    if (U || D) for (let j = U ? 0 : 7; j <= (D ? 15 : 9); j++) { P.set(X + 7, Y + j, pick(R, 0.7, X, Y + j)); P.set(X + 8, Y + j, pick(R, 0.4, X, Y + j)); P.set(X + 9, Y + j, pick(R, 0.08, X, Y + j)); S.SH[(Y + j) * G + X + 10] = 1; }
+    for (let j = 2; j < 15; j++) for (let i = 6; i < 10; i++) P.set(X + i, Y + j, pick(R, j === 2 ? 0.95 : i === 6 ? 0.7 : i === 9 ? 0.15 : 0.45 - j * 0.01, X + i, Y + j));
+    P.set(X + 5, Y + 3, pick(R, 0.08, 0, 0)); P.set(X + 10, Y + 3, pick(R, 0.08, 0, 0)); for (let i = 6; i < 10; i++) P.set(X + i, Y + 1, pick(R, 0.08, 0, 0));
+  }
+  villageGround2(m, S);
+}
+
+// ---------------------------------------------------------------- village trees (36-48 px wide, rooted at the bottom-centre of their tile)
+function oakPix(v) {
+  return once('oak' + v, () => {
+    const p = new Pix(52, 58), cx = 26, R = v === 1 ? PAL.leafD : PAL.oakL;
+    trunk(p, cx, 34, 56, PAL.bark, 3.4);
+    for (const s of [-1, 1]) for (let k = 0; k < 7; k++) { const x = Math.round(cx + s * (3.4 + k * 1.2)), y = 52 + Math.round(k * 0.7); p.set(x, y, pick(PAL.bark, 0.45, x, y)); p.set(x, y + 1, pick(PAL.bark, 0.2, x, y)); } // roots
+    if (v === 3) { for (let y = 43; y < 52; y++) for (let x = cx - 2; x <= cx + 1; x++) if (Math.hypot((x + 0.5 - cx), (y - 47) * 0.55) < 2.4) p.set(x, y, pick(PAL.bark, y < 45 ? 0.04 : 0.1, x, y)); } // a hollow in the trunk
+    const bl = [[26, 9, 9], [15, 14, 9], [37, 14, 9], [26, 17, 12], [8, 23, 7], [44, 23, 7], [15, 27, 10], [37, 27, 10], [26, 29, 10], [26, 22, 11], [20, 8, 7], [33, 9, 7]];
+    const jit = (k) => (hash(v, k, 5) - 0.5) * 3;
+    bl.map((b, k) => [b[0] + jit(k), b[1] + jit(k + 9) * 0.6, b[2] + jit(k + 20) * 0.3]).sort((a, b) => a[1] - b[1]).forEach(([x, y, r], k) => blob(p, x, y, r, R, { seed: v * 31 + k, rimDark: 0.32, jit: 0.2, amb: 0.1 }));
+    for (let i = 0; i < 110; i++) { const x = Math.floor(hash(i, v, 1) * 52), y = Math.floor(hash(i, v, 2) * 40); const c = p.get(x, y); if (!cA(c)) continue; const li = R.indexOf(c); if (li >= R.length - 4) { p.set(x, y, R[Math.min(R.length - 1, li + 2)]); p.set(x + 1, y + 1, R[Math.max(0, li - 2)]); } }
+    if (v === 2) for (let i = 0; i < 16; i++) { const x = Math.floor(8 + hash(i, 3, 3) * 36), y = Math.floor(8 + hash(i, 4, 3) * 26); if (p.on(x, y)) { p.set(x, y, pk('#b88a30')); p.set(x + 1, y, pk('#7a5818')); } } // acorns
+    outline(p, 0.3); return canv(p);
+  });
+}
+function yewPix(v) {
+  return once('yew' + v, () => {
+    const p = new Pix(30, 50), cx = 15; trunk(p, cx, 40, 48, PAL.bark, 2.2);
+    const bl = [[15, 9, 6], [15, 17, 8], [10, 24, 8], [20, 24, 8], [15, 28, 10], [9, 34, 7], [21, 34, 7], [15, 36, 9]];
+    bl.forEach(([x, y, r], k) => blob(p, x + (hash(v, k, 4) - 0.5) * 1.5, y, r, PAL.pine, { seed: v * 13 + k, rimDark: 0.3, jit: 0.2, amb: 0.08, bias: -0.08 }));
+    if (v === 1) for (let i = 0; i < 12; i++) { const x = Math.floor(5 + hash(i, 1, 6) * 20), y = Math.floor(8 + hash(i, 2, 6) * 30); if (p.on(x, y)) p.set(x, y, pk('#c8403c')); } // berries
+    outline(p, 0.3); return canv(p);
+  });
+}
+function applePix(v) {
+  return once('apple' + v, () => {
+    const p = new Pix(34, 38), cx = 17; trunk(p, cx, 20, 36, PAL.bark, 1.9);
+    for (const [x, y, r] of [[17, 8, 7], [9, 13, 7], [25, 13, 7], [17, 14, 9], [11, 20, 6], [23, 20, 6], [17, 20, 7]]) blob(p, x + (hash(v, x, 5) - 0.5) * 1.5, y, r, PAL.oakL, { seed: v * 17 + x, rimDark: 0.3, jit: 0.2, amb: 0.1 });
+    for (let i = 0; i < 12; i++) { const x = Math.floor(5 + hash(i, v, 3) * 24), y = Math.floor(5 + hash(i, v + 4, 3) * 19); if (!p.on(x, y)) continue;
+      if (v === 1) { p.set(x, y, pk('#f4e8ec')); p.set(x + 1, y, pk('#e8a0b8')); } else { p.set(x, y, pk('#e03a2c')); p.set(x + 1, y, pk('#a01c1c')); p.set(x, y - 1, pk('#ff9a88')); } }
+    outline(p, 0.3); return canv(p);
+  });
+}
+function villageTree(get, x, y, out) {
+  const ch = get(x, y); if (ch !== 'T' && ch !== 't' && ch !== 'a') return;
+  const h = hash(x, y, 1); let img;
+  if (ch === 't') img = yewPix(h < 0.5 ? 0 : 1); else if (ch === 'a') img = applePix(h < 0.5 ? 0 : 1); else img = oakPix(h < 0.18 ? 3 : h < 0.4 ? 2 : h < 0.7 ? 1 : 0);
+  out.push({ img, x: x + 0.5 - img.width / 32, y: y + 1 - img.height / 16 + 0.1, z: 1, sy: y + 1 });
+}
+
+// ---------------------------------------------------------------- ground-baked details: water life, fords, stones, jetty, steps, flowers, allotments, graves
+const stoneBlob = (p, cx, cy, rx, ry, R, seed, moss = 0) => { // a flat-topped stone seen from above-front: lit top, darker side face
+  for (let y = Math.floor(cy - ry) - 2; y <= cy + ry + 3; y++) for (let x = Math.floor(cx - rx) - 1; x <= cx + rx + 1; x++) {
+    const dx = (x + 0.5 - cx) / rx, dy = (y + 0.5 - cy) / ry, top = dx * dx + dy * dy <= 1, side = !top && dx * dx + ((y + 0.5 - cy - 2.2) / ry) ** 2 <= 1; if (!top && !side) continue;
+    let v = top ? 0.62 + (-dx * 0.22 - dy * 0.24) + (hash(x, y, seed) - 0.5) * 0.14 : 0.24 + (hash(x, y, seed) - 0.5) * 0.08;
+    if (top && dx * dx + dy * dy > 0.7) v -= 0.12; p.set(x, y, moss && top && vnoise(x, y, 4, seed) > 0.64 ? pick(PAL.moss, 0.55, x, y) : pick(R, cl(v, 0.05, 0.95), x, y));
+  }
+};
+function reedCluster(P, X, Y, seed) {
+  const n = 3 + Math.floor(hash(seed, 1, 5) * 3);
+  for (let k = 0; k < n; k++) { const dx = Math.round((hash(seed, k, 6) - 0.5) * 7), top = 6 + Math.floor(hash(seed, k, 7) * 5), lean = hash(seed, k, 8) < 0.5 ? -1 : 1;
+    for (let j = 0; j < top; j++) P.set(X + dx + (j > top * 0.65 ? lean : 0), Y - j, pick(PAL.olive, 0.38 + j * 0.05 + (k & 1) * 0.12, X, Y - j));
+    if (k % 2 === 0) { const hx = X + dx + lean; for (let j = top - 1; j <= top + 1; j++) { P.set(hx, Y - j, pk(j === top ? '#8a5a2a' : '#5e3a1a')); P.set(hx + 1, Y - j, pk('#4a2c14')); } } }
+}
+function lilyPad(P, X, Y, seed) {
+  const rx = 3.4, ry = 2.1, notch = hash(seed, 1, 9) * 6.28;
+  for (let y = Math.floor(Y - ry); y <= Y + ry; y++) for (let x = Math.floor(X - rx); x <= X + rx; x++) { const dx = (x + 0.5 - X) / rx, dy = (y + 0.5 - Y) / ry; if (dx * dx + dy * dy > 1) continue; if (Math.abs(Math.atan2(dy, dx) - notch) < 0.28) continue; P.set(x, y, pick(PAL.green, cl(0.78 - dy * 0.3 - dx * 0.1), x, y)); }
+  if (hash(seed, 2, 9) < 0.28) { P.set(X, Y - 1, pk('#fff4f4')); P.set(X - 1, Y, pk('#f4b8d0')); P.set(X + 1, Y, pk('#f4b8d0')); P.set(X, Y, pk('#f8d848')); }
+}
+function bluebells(P, X, Y, seed) { for (let k = 0; k < 5; k++) { const x = X + Math.round((hash(seed, k, 11) - 0.5) * 6), y = Y + Math.round((hash(seed, k, 12) - 0.5) * 4); P.set(x, y + 1, pk('#2e7a30')); P.set(x, y, pk(hash(seed, k, 13) < 0.5 ? '#4e5ede' : '#6a7cf0')); if (hash(seed, k, 14) < 0.5) P.set(x, y - 1, pk('#8a9af8')); } }
+const SPOTS = { // little flower drifts for the 'patch' prop: [colours]
+  bluebell: ['#4e5ede', '#6a7cf0', '#8a9af8'], daisy: ['#ffffff', '#f4f0d6', '#f8e060'], poppy: ['#e8302c', '#f0503c', '#c01c1c'], lavender: ['#9a6ad8', '#b48ae8', '#7e4ec0'], parsley: ['#f8f8ec', '#e8ecd8', '#ffffff'], buttercup: ['#f8d838', '#f0c020', '#ffe868'],
+};
+function gravePix(v) {
+  return once('gv' + v, () => { const p = new Pix(16, 18); const R = PAL.dry;
+    if (v === 0) { for (let y = 3; y < 14; y++) for (let x = 4; x < 12; x++) { if (y < 6 && Math.hypot(x + 0.5 - 8, y + 0.5 - 6) > 4.2) continue; p.set(x, y, pick(R, cl(0.72 - (x - 4) * 0.07 + (y === 3 ? 0.2 : 0)), x, y)); } for (let y = 6; y < 9; y++) p.set(8, y, pick(R, 0.12, 8, y)); p.set(7, 7, pick(R, 0.12, 7, 7)); p.set(9, 7, pick(R, 0.12, 9, 7)); }
+    else if (v === 1) { for (let y = 2; y < 15; y++) p.set(7, y, pick(R, 0.75, 7, y)), p.set(8, y, pick(R, 0.55, 8, y)), p.set(9, y, pick(R, 0.25, 9, y)); for (let x = 4; x < 12; x++) p.set(x, 5, pick(R, x < 8 ? 0.8 : 0.45, x, 5)), p.set(x, 6, pick(R, x < 8 ? 0.6 : 0.3, x, 6)); }
+    else if (v === 2) { for (let y = 8; y < 14; y++) for (let x = 3; x < 13; x++) if (Math.hypot((x + 0.5 - 8) / 5, (y - 13) / 5) < 1) p.set(x, y, pick(PAL.vgrass, 0.5 + (x < 8 ? 0.15 : -0.05), x, y)); for (let y = 4; y < 11; y++) for (let x = 6; x < 11; x++) p.set(x, y, pick(R, cl(0.7 - (x - 6) * 0.1), x, y)); }
+    else { for (let y = 4; y < 15; y++) { p.set(8, y, pick(PAL.wood, 0.55, 8, y)); p.set(9, y, pick(PAL.wood, 0.25, 9, y)); } for (let x = 5; x < 12; x++) p.set(x, 7, pick(PAL.wood, x < 8 ? 0.6 : 0.3, x, 7)); }
+    for (let x = 3; x < 13; x++) if (hash(x, v, 3) < 0.5) p.set(x, 15, pick(PAL.mud, 0.45, x, 15));
+    outline(p, 0.45); return p; });
+}
+function gemGrave(P, X, Y) { // Gemforge's grave: a long low slab with a carved gem, a headstone, and grey flowers that nobody admits to planting
+  const x0 = X + 1, w = 30, R = PAL.dry;
+  for (let y = Y + 4; y < Y + 18; y++) for (let x = x0; x < x0 + w; x++) { const top = y < Y + 12; let v = top ? 0.7 - (x - x0) * 0.004 + (y === Y + 4 ? 0.14 : 0) + (hash(x, y, 3) - 0.5) * 0.08 : 0.3 + (hash(x, y, 4) - 0.5) * 0.06; if (x === x0 || x === x0 + w - 1) v -= 0.2; P.set(x, y, pick(R, cl(v), x, y)); }
+  const gx = X + 16, gy = Y + 8; for (const [dx, dy, c] of [[0, -3, '#b8f0f4'], [-1, -2, '#8ad8e4'], [0, -2, '#d8fcfc'], [1, -2, '#60b8cc'], [-2, -1, '#8ad8e4'], [-1, -1, '#b8f0f4'], [0, -1, '#e8ffff'], [1, -1, '#8ad8e4'], [2, -1, '#60b8cc'], [-1, 0, '#60b8cc'], [0, 0, '#8ad8e4'], [1, 0, '#4898b0'], [0, 1, '#4898b0']]) P.set(gx + dx, gy + dy, pk(c));
+  for (let y = Y - 6; y < Y + 8; y++) for (let x = X + 25; x < X + 31; x++) { if (y < Y - 3 && Math.hypot(x + 0.5 - (X + 28), y + 0.5 - (Y - 3)) > 3.2) continue; P.set(x, y, pick(R, cl(0.74 - (x - X - 25) * 0.09 + (y === Y - 6 ? 0.18 : 0)), x, y)); } // headstone
+  for (let k = 0; k < 16; k++) { const fx = X + Math.round(hash(k, 1, 21) * 34) - 2, fy = Y + 3 + Math.round(hash(k, 2, 21) * 16); const c = ['#c4c4d4', '#a8a8bc', '#dcdce8'][k % 3]; P.set(fx, fy, pk(c)); P.set(fx - 1, fy + 1, pk('#8c8ca0')); P.set(fx + 1, fy + 1, pk('#8c8ca0')); P.set(fx, fy + 1, pk('#4a6a4a')); P.set(fx, fy + 2, pk('#3a5a3a')); }
+}
+function villageGround2(m, S) {
+  const { P, O, W, H, WF, WB, GW, C, TW } = S, base = m.base || m.rows, props = m.props || [];
+  const keep = new Set(); // tiles where reeds / pads must stay away: crossings and steps
+  for (const pr of props) if (['ford', 'stones', 'jetty', 'steps', 'weir', 'bridge'].includes(pr.k)) for (let j = -1; j <= (pr.h || 1); j++) for (let i = -1; i <= (pr.w || 1); i++) keep.add(`${pr.x + i},${pr.y + j}`);
+  const tileOf = (px, py) => `${(px >> 4) - MG},${(py >> 4) - MG}`;
+  // reeds along the banks, lily pads out in the pond
+  for (let gy = 0; gy * 7 < S.GH - 8; gy++) for (let gx = 0; gx * 9 < GW - 10; gx++) {
+    const px = gx * 9 + Math.floor(hash(gx, gy, 201) * 9), py = gy * 7 + Math.floor(hash(gx, gy, 202) * 7), i = py * GW + px, w = WF[i];
+    if (keep.has(tileOf(px, py))) continue;
+    if (w > 0.45 && w < 0.53 && hash(gx, gy, 203) < 0.4 && C[(py >> 4) * TW + (px >> 4)] !== G_WALL) reedCluster(P, px, py, gx * 31 + gy);
+    else if (WB[i] > 0.82 && w > 0.9 && hash(gx, gy, 204) < 0.32 && P.d[i] === 0) lilyPad(P, px, py, gx * 17 + gy);
+  }
+  // bluebells under the oaks, flower drifts, allotments, graves
+  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) { const c = base[y][x];
+    if (c === 'T' && hash(x, y, 55) < 0.6) for (let k = 0; k < 22; k++) { const tx = x + Math.floor((hash(x * 7 + k, y, 56) - 0.5) * 3.4), ty = y + Math.floor((hash(x, y * 7 + k, 57) - 0.2) * 3.2); if (base[ty]?.[tx] !== '.') continue; bluebells(P, O + tx * 16 + Math.floor(hash(k, x, 58) * 16), O + ty * 16 + 4 + Math.floor(hash(k, y, 59) * 11), x * 13 + y * 7 + k); }
+    if (c === 'k') { const v = Math.floor(hash(x, y, 61) * 4), X = O + x * 16, Y = O + y * 16;
+      for (let j = 0; j < 16; j++) for (let i = 0; i < 16; i++) P.set(X + i, Y + j, pick(PAL.mud, 0.18 + hash(X + i, Y + j, 1) * 0.2 + (j % 5 === 1 ? 0.14 : 0), X + i, Y + j));
+      for (let r = 0; r < 3; r++) { const ry = Y + 3 + r * 5;
+        for (let k = 0; k < 3; k++) { const cx = X + 2 + k * 5 + (r & 1) * 2;
+          if (v === 0) { blob(P, cx, ry + 1, 2.8, PAL.leaf, { seed: k + r * 3 + x, amb: 0.2, rimDark: 0.2 }); P.set(cx - 1, ry, pick(PAL.leaf, 0.95, 0, 0)); }
+          else if (v === 1) { for (let j = 0; j < 5; j++) { P.set(cx, ry - j + 1, pick(PAL.leaf, 0.45 + j * 0.1, cx, ry - j)); if (j > 1) P.set(cx + (j & 1 ? 1 : -1), ry - j + 1, pick(PAL.leaf, 0.7, cx, ry)); } }
+          else if (v === 2) { for (let j = 0; j < 7; j++) P.set(cx, ry - j + 2, pick(PAL.wood, 0.55, cx, ry - j)); for (let j = 0; j < 4; j++) { P.set(cx - 1, ry - j * 1.5 + 1, pick(PAL.leaf, 0.7, cx, ry)); P.set(cx + 1, ry - j * 1.5, pick(PAL.leaf, 0.5, cx, ry)); } P.set(cx + 1, ry - 4, pk('#e83040')); }
+          else { blob(P, cx, ry + 1, 2.6, PAL.leafD, { seed: k + r * 5, amb: 0.25 }); P.set(cx, ry - 1, pk('#e8d8f0')); } } } }
+    if (c === 'G') { const v = Math.floor(hash(x, y, 71) * 4); P.blit(gravePix(v), O + x * 16, O + y * 16 - 2); if (hash(x, y, 72) < 0.5) { const fx = O + x * 16 + 3 + Math.floor(hash(x, y, 73) * 10); P.set(fx, O + y * 16 + 14, pk(hash(x, y, 74) < 0.5 ? '#f8f0f0' : '#c4c4d4')); } }
+  }
+  for (const pr of props) { const X = O + pr.x * 16, Y = O + pr.y * 16, w = pr.w || 1, h = pr.h || 1;
+    if (pr.k === 'patch') for (let k = 0; k < w * h * 16; k++) { const px = X + Math.floor(hash(k, pr.x, 81) * w * 16), py = Y + Math.floor(hash(k, pr.y, 82) * h * 16); if (base[(py - O) >> 4]?.[(px - O) >> 4] !== '.') continue; const cs = SPOTS[pr.c || 'daisy']; if (pr.c === 'bluebell') bluebells(P, px, py, k + pr.x); else { const c = pk(cs[k % cs.length]); P.set(px, py, c); P.set(px + 1, py, dk(c, 0.85)); P.set(px, py + 1, pk('#2e7a30')); } }
+    else if (pr.k === 'ring') { const r = pr.r || 20; for (let y = Y - r; y <= Y + r; y++) for (let x = X - r * 1.3; x <= X + r * 1.3; x++) { const d = Math.hypot((x - X) / 1.3, (y - Y) * 1.1) + (vnoise(x, y, 4, 91) - 0.5) * 4; if (d > r) continue; const c = P.get(x, y); if (cA(c) === 255 && d > r - 2) P.set(x, y, dk(c, 0.82)); else if (cA(c) === 255) P.set(x, y, mix(c, pick(PAL.vdirt, 0.55 + (fbm(x, y, 5) - 0.5) * 0.4, x, y), 0.8)); } }
+    else if (pr.k === 'ford') { for (let y = Y; y < Y + h * 16; y++) for (let x = X; x < X + w * 16; x++) { const lx = x - X, ly = y - Y; let c = VMAT.flag(x - O, y - O); const edge = lx < 2 || lx >= w * 16 - 2;
+        if (edge) c = pick(PAL.flag, lx < 2 || lx >= w * 16 - 2 ? 0.32 + hash(x, y, 3) * 0.2 : 0.5, x, y);
+        P.set(x, y, hash(x, y, 91) < 0.42 ? mix(c, pk('#6ab4bc'), 0.35) : c); }
+      for (let k = 0; k < h * 9; k++) { const y = Y + 2 + Math.floor(hash(k, 1, 92) * (h * 16 - 4)); P.set(X + 2 + Math.floor(hash(k, 2, 92) * 3), y, pk('#e8faf8b0')); P.set(X + w * 16 - 3 - Math.floor(hash(k, 3, 92) * 3), y, pk('#e8faf870')); } }
+    else if (pr.k === 'stones') for (let j = 0; j < h; j++) for (let i = 0; i < w; i++) { const cx = X + i * 16 + 8 + (hash(i, j, 93) - 0.5) * 3, cy = Y + j * 16 + 8 + (((i + j) & 1) ? 2 : -2); stoneBlob(P, cx, cy, 6 + hash(i, j, 94) * 1.5, 3.8, PAL.dry, i * 5 + j, 1);
+      for (let k = 0; k < 9; k++) { const a = hash(k, i + j * 7, 95) * 6.28; P.set(Math.round(cx + Math.cos(a) * 8), Math.round(cy + 3 + Math.sin(a) * 4.6), pk('#e8faf890')); } }
+    else if (pr.k === 'jetty') { const vert = h >= w; for (let y = Y; y < Y + h * 16; y++) for (let x = X; x < X + w * 16; x++) { const lx = x - X, ly = y - Y, u = vert ? ly : lx, v = vert ? lx : ly, inset = vert ? (lx < 2 || lx > w * 16 - 3) : (ly < 2 || ly > h * 16 - 3); if (inset) continue;
+        const pl = Math.floor(u / 4), pu = u % 4; let s = 0.52 + (hash(pl, Math.floor(v / 9), 9) - 0.5) * 0.3; if (pu === 0) s = 0.12; else if (pu === 1) s += 0.12; P.set(x, y, pick(PAL.wood, cl(s), x, y)); if (vert ? lx < 3 : ly < 3) P.set(x, y, pick(PAL.wood, 0.22, x, y)); if (vert ? lx > w * 16 - 4 : ly > h * 16 - 4) P.set(x, y, pick(PAL.wood, 0.16, x, y)); }
+      for (const [px, py] of vert ? [[X, Y + 3], [X + w * 16 - 3, Y + 3], [X, Y + h * 16 - 4], [X + w * 16 - 3, Y + h * 16 - 4]] : [[X + 3, Y], [X + 3, Y + h * 16 - 3], [X + w * 16 - 4, Y], [X + w * 16 - 4, Y + h * 16 - 3]]) for (let a = 0; a < 3; a++) for (let b = 0; b < 3; b++) P.set(px + a, py + b, pick(PAL.wood, 0.7 - a * 0.2 - (b === 2 ? 0.2 : 0), px + a, py + b)); }
+    else if (pr.k === 'steps') { const n = h * 4; for (let r = 0; r < n; r++) for (let x = X; x < X + w * 16; x++) { const y0 = Y + r * 4, edge = x < X + 2 || x >= X + w * 16 - 2;
+        for (let j = 0; j < 4; j++) { const t = j < 2; let s = t ? 0.78 - r * 0.012 + (hash(x >> 2, r, 7) - 0.5) * 0.14 : 0.34 + (hash(x >> 2, r, 8) - 0.5) * 0.08; if (j === 0) s += 0.1; if (edge) s -= 0.2; if (((x - X) % 8 === 0) && t) s -= 0.2; P.set(x, y0 + j, pick(PAL.dry, cl(s), x, y0 + j)); } } }
+    else if (pr.k === 'weir') { for (let x = X; x < X + w * 16; x++) { for (let j = 0; j < 6; j++) P.set(x, Y + 6 + j, pick(PAL.dry, cl(0.78 - j * 0.1 + (hash(x >> 2, 1, 4) - 0.5) * 0.2 - (x % 7 === 0 ? 0.25 : 0)), x, Y + 6 + j)); for (let j = 0; j < 4; j++) if (hash(x, j, 96) < 0.6) P.set(x, Y + 12 + j, pk(j < 2 ? '#f0fcfa' : '#c8ecec90')); } }
+    else if (pr.k === 'gemgrave') gemGrave(P, X, Y);
+    else if (PROPS[pr.k]) P.blit(propPix(pr.k), X, Y);
+  }
+}
+// static prop shadows are added in the shadow pass; this keeps them next to the art that needs them
+
+// ---------------------------------------------------------------- village sprites: buildings, props, life (geese, goats, smoke...)
+function stubBuilding(b) { // placeholder art until each building has its own
+  return once(`vb${b.x},${b.y}`, () => { const w = b.w * 16, h = (b.h + 3) * 16, p = new Pix(w, h), yB = h - 1, yE = h - b.h * 16 + 4;
+    for (let y = yE; y <= yB; y++) for (let x = 1; x < w - 1; x++) p.set(x, y, pick(PAL.wash, 0.7 + (hash(x, y, 3) - 0.5) * 0.1, x, y));
+    for (let y = 2; y <= yE; y++) { const ins = Math.max(0, (yE - y) * 0.35); for (let x = Math.floor(ins); x < w - ins; x++) p.set(x, y, pick(PAL.thatchG, 0.55 + (hash(x >> 2, y >> 2, 4) - 0.5) * 0.3, x, y)); }
+    p.rect(b.door * 16 + 3, yB - 14, 10, 15, pick(PAL.oakT, 0.5, 0, 0)); rim(p, 0.4, 'tlr'); return canv(p); });
+}
+function villageBuildingPix(b) { return stubBuilding(b); }
+function villageProp(pr, m, t, out) { /* props with sprites are added below as they are built */ }
+function villageObjects(m, t, out) {
+  const s = mapState(m), G = s.g;
+  out.push({ x: -MG, y: -MG, w: 1, h: 1, z: 0, draw: (ctx, X, Y, TS) => { const k = TS / 16, sx0 = Math.max(0, Math.floor(-X / k)), sy0 = Math.max(0, Math.floor(-Y / k)), sw = Math.min(G.GW - sx0, Math.ceil(ctx.canvas.width / k) + 2), sh = Math.min(G.GH - sy0, Math.ceil(ctx.canvas.height / k) + 2); if (sw > 0 && sh > 0) ctx.drawImage(G.cv, sx0, sy0, sw, sh, X + sx0 * k, Y + sy0 * k, sw * k, sh * k); } });
+  for (const b of m.buildings || []) { const img = villageBuildingPix(b); out.push({ img, x: b.x + (img.dx || 0), y: b.y + b.h - img.height / 16 + (img.dy || 0), z: 1, sy: b.y + b.h }); }
+  for (const pr of m.props || []) villageProp(pr, m, t, out);
 }

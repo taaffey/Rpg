@@ -6,12 +6,19 @@ const pg = await b.newPage({ viewport: { width: 700, height: 900 } });
 const errs = []; pg.on('pageerror', (e) => errs.push('PAGEERR ' + e.message)); pg.on('console', (m) => ['error', 'warning'].includes(m.type()) && !/fonts|ERR_|Failed to load/.test(m.text()) && errs.push(m.text()));
 let fails = 0; const ok = (name, cond, extra = '') => { console.log(cond ? 'PASS' : 'FAIL', name, extra); if (!cond) fails++; };
 await pg.addInitScript(() => { window.__osc = 0; const oc = AudioContext.prototype.createOscillator; AudioContext.prototype.createOscillator = function () { const o = oc.call(this); const st = o.start.bind(o); o.start = (t) => { window.__osc++; return st(t); }; return o; }; });
-const URL_ = process.env.URL || 'http://localhost:8123/index.html';
+const URL_ = process.env.URL || `http://localhost:${process.env.PORT || 8123}/index.html`;
 await pg.goto(URL_); await pg.waitForTimeout(300);
 const ev = (f, a) => pg.evaluate(f, a);
 const key = async (k, n = 1, d = 90) => { for (let i = 0; i < n; i++) { await pg.keyboard.press(k); await pg.waitForTimeout(d); } };
 const closeAll = async () => { for (let i = 0; i < 8 && (await ev(() => document.getElementById('overlay').classList.contains('on'))); i++) await key('Escape', 1, 70); };
 const openMenu = async () => { await closeAll(); await key('Escape', 1, 120); };
+// Haven's layout lives in maps.js (named spots, buildings, townsfolk): ask the game instead of hard-coding tiles
+const gotoAt = (map, [x, y]) => ev(([m, x, y]) => window.__game.goto(m, x, y), [map, x, y]);
+const havenSpot = (name) => ev((n) => window.__game.MAPS.haven.spots[n], name); // [x, y]
+const doorFront = (id) => ev((i) => { const b = window.__game.MAPS.haven.buildings.find((b) => b.to === i); return [b.x + b.door, b.y + b.h]; }, id); // the tile just below a building's door
+const exitAbove = () => ev(() => { const m = window.__game.MAPS.haven, k = Object.keys(m.portals).find((k) => m.portals[k].to === 'world'), [x, y] = k.split(',').map(Number); return [x, y - 1]; }); // the tile above the first exit to the world
+const besideNpc = (name, quest) => ev(([nm, q]) => { const m = window.__game.MAPS.haven, n = m.npcs.find((n) => n.name === nm && (!q || n.quest === q)), free = (x, y) => '.,:_='.includes(m.rows[y]?.[x] ?? '#') && !m.npcs.some((o) => o.x === x && o.y === y);
+  for (const [dx, dy, k] of [[1, 0, 'ArrowLeft'], [-1, 0, 'ArrowRight'], [0, 1, 'ArrowUp'], [0, -1, 'ArrowDown']]) if (free(n.x + dx, n.y + dy)) return [n.x + dx, n.y + dy, k]; }, [name, quest]); // [x, y, the arrow that faces them]
 const overlayTitle = () => ev(() => (document.querySelector('#overlay h2') || document.querySelector('#overlay .sayname'))?.textContent || '');
 
 // --- start, keyboard only: quiz night at the pub, the bell, waking up in Haven
@@ -26,7 +33,7 @@ const wake = await sayThrough();
 ok('waking in Haven: the Elder expected heroes of legend', /legend/i.test(wake) && /Devon/.test(wake), wake.slice(0, 120));
 ok('game started in Haven', (await ev(() => window.__game.G.map)) === 'haven');
 await ev(() => { for (const m of Object.values(window.__game.MAPS)) m.rate = 0; });
-await ev(() => window.__game.goto('haven', 17, 32)); await pg.waitForTimeout(300); await key('ArrowDown', 1, 400);
+await gotoAt('haven', await exitAbove()); await pg.waitForTimeout(300); await key('ArrowDown', 1, 400);
 ok('the gate turns two blokes away until they have callings', (await ev(() => window.__game.G.map)) === 'haven' && /Guard/.test(await overlayTitle())); await sayThrough();
 await ev(() => window.__game.goto('haven_inn', 2, 6)); await pg.waitForTimeout(300); await key('ArrowLeft', 1, 600);
 ok('the trapdoor in the Goose leads to the cellar', (await ev(() => window.__game.G.map)) === 'cellar'); await sayThrough();
@@ -73,14 +80,14 @@ ok('the quiz ends with a score and is done for the night', /Quiz Night: \d\/5/.t
 await closeAll();
 ok('Lightning in a Jar: the Storm Shard charges Devon\'s phone to 4%', await ev(() => { const g = window.__game, G = g.G; G.flags.quests.charger = 'active'; G.flags.qitems.storm_shard = true; g.ACT.qclaim('charger'); g.ACT.close(); return G.flags.story.charged === true && G.flags.quests.charger === 'done'; }));
 await closeAll(); await ev((k) => { const o = JSON.parse(k), G = window.__game.G; G.gold = o.gold; G.party = o.party; G.stats = o.wins; G.inv = o.inv; }, keep); // undo the side trips' rewards
-await closeAll(); await ev(() => { window.__game.testParty(); window.__game.goto('haven', 17, 30); }); await pg.waitForTimeout(200); await closeAll();
+await closeAll(); await ev(() => { window.__game.testParty(); window.__game.goto('haven', ...window.__game.MAPS.haven.spots.wake); }); await pg.waitForTimeout(200); await closeAll();
 await ev(() => { for (const m of Object.values(window.__game.MAPS)) m.rate = 0; }); // keep tests deterministic: battles are started explicitly
 await ev(() => { for (const id of ['cavern', 'crypt', 'mirewood', 'frostholm', 'spire', 'storm', 'ruins']) window.__game.G.flags.visited[id] = true; }); // first-visit scenes would cover the teleports below
 ok('game started in Haven', (await ev(() => window.__game.G.map)) === 'haven');
 await pg.waitForTimeout(800); ok('music engine scheduled notes', (await ev(() => window.__osc)) >= 4);
 
 // --- walk into a building through its door, talk to the NPC to open the shop
-await ev(() => window.__game.goto('haven', 10, 18)); await key('ArrowUp', 1, 450);
+await gotoAt('haven', await doorFront('haven_shop')); await key('ArrowUp', 1, 450);
 ok('entered the shop interior', (await ev(() => window.__game.G.map)) === 'haven_shop');
 await key('ArrowUp', 3, 160);
 ok('shop UI opened by bumping the merchant', /General Store/.test(await overlayTitle()));
@@ -167,7 +174,7 @@ const finishBattle = async () => { // click-driven: Attack the first foe until t
   await pg.waitForTimeout(250);
 };
 const quickFight = async (grp, boss) => { await ev(([g, b2]) => { window.__game.battle(g, b2); }, [grp, boss]); await pg.waitForSelector('[data-act=c]', { timeout: 8000 }); await ev(() => window.__game.BT.b.e.forEach((e) => { e.hp = 1; })); await finishBattle(); };
-await ev(() => window.__game.goto('haven', 15, 15)); await key('ArrowLeft', 1, 200);
+{ const [vx, vy, vk] = await besideNpc('Villager', 'slimes'); await gotoAt('haven', [vx, vy]); await key(vk, 1, 200); }
 ok('quest giver offers a quest', /Villager/.test(await overlayTitle()));
 for (let i = 0; i < 12 && !(await pg.$('[data-act=qaccept]')); i++) await key('Enter', 1, 120);
 await pg.click('[data-act=qaccept]'); await pg.waitForTimeout(150);
@@ -175,7 +182,7 @@ ok('quest accepted', (await ev(() => window.__game.G.flags.quests.slimes)) === '
 await ev(() => { window.__game.OPT.speed = 'instant'; });
 await quickFight(['slime', 'slime', 'slime']); await quickFight(['slime', 'slime', 'slime']);
 ok('kills counted toward the quest', (await ev(() => window.__game.G.flags.qprog.slimes)) === 6);
-await ev(() => window.__game.goto('haven', 15, 15)); await key('ArrowLeft', 1, 200);
+{ const [vx, vy, vk] = await besideNpc('Villager', 'slimes'); await gotoAt('haven', [vx, vy]); await key(vk, 1, 200); }
 for (let i = 0; i < 4 && !(await pg.$('[data-act=qclaim]')); i++) await key('Enter', 1, 120);
 const goldBefore = await ev(() => window.__game.G.gold); await pg.click('[data-act=qclaim]'); await pg.waitForTimeout(150);
 ok('quest reward granted', (await ev(() => window.__game.G.gold)) === goldBefore + 150 && (await ev(() => window.__game.G.flags.quests.slimes)) === 'done');
@@ -184,7 +191,7 @@ await ev(() => window.__game.goto('cavern', 18, 11)); await key('ArrowDown', 1, 
 ok('hidden quest chest gives the heirloom', (await ev(() => window.__game.G.flags.qitems.heirloom)) === true);
 await closeAll();
 // --- story: the Wyrm's fall plays an aftermath scene, leaves its heart, and Haven's guard has news
-const guardSays = async () => { await closeAll(); await ev(() => window.__game.goto('haven', 18, 31)); await pg.waitForTimeout(200); await key('ArrowRight', 1, 250); await key('Enter', 1, 150); const t = await ev(() => document.getElementById('tt')?.textContent || ''); await closeAll(); return t; };
+const guardSays = async () => { await closeAll(); const [gx, gy, gk] = await besideNpc('Guard'); await gotoAt('haven', [gx, gy]); await pg.waitForTimeout(200); await key(gk, 1, 250); await key('Enter', 1, 150); const t = await ev(() => document.getElementById('tt')?.textContent || ''); await closeAll(); return t; };
 await ev(() => { window.__game.G.flags.bosses.wyrm = false; });
 const guard0 = await guardSays();
 await ev(() => { window.__game.battle(['wyrm'], 'wyrm'); }); await pg.waitForSelector('[data-act=c]', { timeout: 8000 });
@@ -258,7 +265,7 @@ await closeAll();
 
 // --- saves: slots, confirmations, legacy import, autosave, difficulty
 await ev(() => { window.__game.G.gold = 777; });
-await ev(() => window.__game.goto('haven', 12, 20)); await pg.waitForTimeout(150); // entering a town autosaves
+await gotoAt('haven', await havenSpot('green')); await pg.waitForTimeout(150); // entering a town autosaves
 const slot1 = await ev(() => JSON.parse(localStorage.getItem('gemforge-save-v3-1')).G.gold);
 ok('entering a town autosaves into the active slot', slot1 === 777, String(slot1));
 await ev(() => { localStorage.setItem('gemforge-save-v2', JSON.stringify({ ...JSON.parse(localStorage.getItem('gemforge-save-v3-1')).G, gold: 4242, flags: { chests: {}, bosses: {}, seen: {}, talked: {} } })); localStorage.removeItem('gemforge-save-v3-1'); window.__game.G.slot = null; /* stop the pagehide autosave from re-creating slot 1 */ });

@@ -434,24 +434,41 @@ const THATCH = pal('#2a1a08 #46300e #644616 #846020 #a27c30 #c09a46 #dab866');
 const WOOD = pal('#1e1008 #36200e #523216 #6e4620 #8a5c2c #a8763c');
 const RED = pal('#3a0a08 #6a1410 #9a2418 #c43a22 #e05a34');
 
-// Haven: a castle in a walled town (3 x 2.5 tiles)
-const castle = () => memo('castle', () => {
-  const p = new Pix(48, 42), P = STONE;
-  p.rect(4, 14, 40, 24, (i, j) => GRASS[4 + ((i * 7 + j * 3) % 5 === 0 ? 1 : 0) - ((i + j * 2) % 7 === 0 ? 1 : 0)]); // courtyard lawn
-  wallBlock(p, 4, 12, 40, 3, P); // back wall
-  for (const [x, y] of [[8, 27], [33, 27], [10, 18], [32, 18]]) { roofBlock(p, x, y, 7, 4, BLUE); houseFront(p, x, y + 4, 7, P); } // houses
-  // keep: tall hall with blue roofs and towers
-  wallBlock(p, 15, 13, 18, 12, P, false); roofBlock(p, 15, 8, 18, 6, BLUE);
-  for (let j = 15; j < 25; j += 4) for (let i = 17; i < 32; i += 3) p.set(i, j, K);
-  tower(p, 13, 9, 5, 15, P, BLUE, 6); tower(p, 30, 9, 5, 15, P, BLUE, 6); tower(p, 21, 3, 6, 10, P, BLUE, 7);
-  p.rect(24, -4, 1, 0, K); for (let j = 0; j < 4; j++) p.set(24, j - 4 + 4, P[1]); p.rect(25, 0, 4, 2, RED[3]); p.set(28, 1, RED[2]); // flag
-  p.rect(22, 21, 4, 4, K); p.rect(23, 20, 2, 1, K); // keep door
-  // side and front walls with corner towers and a gatehouse
-  wallBlock(p, 2, 14, 3, 22, P, false); wallBlock(p, 43, 14, 3, 22, P, false);
-  wallBlock(p, 2, 34, 44, 6, P);
-  tower(p, 0, 12, 6, 10, P, BLUE, 5); tower(p, 42, 12, 6, 10, P, BLUE, 5); tower(p, 0, 30, 6, 10, P, BLUE, 5); tower(p, 42, 30, 6, 10, P, BLUE, 5);
-  tower(p, 17, 31, 5, 9, P, BLUE, 4); tower(p, 26, 31, 5, 9, P, BLUE, 4);
-  p.rect(22, 33, 4, 7, (i, j) => (j === 33 ? P[1] : hex('#0c0806'))); p.rect(22, 34, 4, 1, WOOD[3]); // gate arch + portcullis bar
+// Haven: the Bell Village, a few golden-thatched cottages round a green with the old bell tower standing over them (3 x 2.6 tiles)
+const CREAM = pal('#8a7a60 #a69678 #c4b498 #e0d2b4 #f0e6cc #faf2dc #fffbee');
+const BRONZE = pal('#2e1a06 #5a3a0c #8a5a14 #bc841e #e0a830 #f6cc4c #fff09c');
+const havenIcon = () => memo('havenV', () => {
+  const p = new Pix(48, 42), put = (x, y, c) => p.set(x, y, c);
+  for (let y = 12; y < 42; y++) for (let x = 0; x < 48; x++) { // the village green: a lawn with a ragged edge
+    const dx = (x - 24) / 23.5, dy = (y - 27.5) / 14.2, d = dx * dx + dy * dy + (bay(x, y) - 0.5) * 0.12; if (d > 1) continue;
+    put(x, y, GRASS[clamp(4 + ((x * 7 + y * 3) % 5 === 0 ? 1 : 0) - ((x + y * 2) % 7 === 0 ? 1 : 0) - (d > 0.82 ? 1 : 0) + (d < 0.3 && (x + y) % 4 === 0 ? 1 : 0), 0, 9)]);
+  }
+  for (let j = 0; j < 12; j++) { const hw = 2 + j * 0.18, cx = 24 + Math.sin(j * 0.5) * 0.7; for (let i = Math.floor(cx - hw); i <= cx + hw; i++) put(i, 41 - j, DIRT[3 + ((i + j) % 3 === 0 ? 1 : 0) - (i === Math.floor(cx - hw) ? 1 : 0)]); } // the lane up from the lych gate
+  const PD = pal('#14507a #1e6e9e #3a8ec0 #6ab4dc #b4dcf2'); // the duck pond
+  for (let y = 33; y < 40; y++) for (let x = 2; x < 15; x++) { const dx = (x - 8.5) / 6.4, dy = (y - 36.5) / 3.3; if (dx * dx + dy * dy > 1) continue; put(x, y, PD[clamp(Math.round(2 + (dx + dy) * -0.8 + ((x * 3 + y) % 5 === 0 ? 1 : 0) + (dx * dx + dy * dy > 0.7 ? -1 : 0)), 0, 4)]); }
+  for (const [x, y] of [[6, 36], [10, 37]]) { put(x, y, hex('#ffffff')); put(x + 1, y, hex('#e8e8e8')); put(x, y - 1, hex('#ffffff')); put(x + 1, y - 1, hex('#f0c040')); } // two geese
+  const cottage = (x, y, w, rh, wallH = 3, door = 2) => { // thatched roof (thick rounded eaves) over a whitewashed front
+    roofBlock(p, x, y, w, rh, THATCH);
+    for (let i = 1; i < w - 1; i++) { put(x + i, y + rh - 1, THATCH[1]); }
+    for (let i = 0; i < w; i += 3) put(x + i, y + 1, THATCH[6]);
+    for (let j = 0; j < wallH; j++) for (let i = 1; i < w - 1; i++) put(x + i, y + rh + j, CREAM[i === w - 2 ? 3 : j === 0 ? 4 : 5]);
+    put(x + door, y + rh + wallH - 1, hex('#3a2010')); put(x + door, y + rh + wallH - 2, hex('#4a2c14')); put(x + w - 3, y + rh + 1, hex('#f8d870'));
+    p.rect(x + w - 4, y - 3, 2, 4, STONE[4]); put(x + w - 4, y - 3, STONE[6]); // chimney
+  };
+  cottage(5, 17, 11, 5, 3, 3); cottage(33, 17, 11, 5, 3, 7); // the back pair, beside the tower
+  cottage(2, 27, 13, 6, 3, 4); cottage(34, 28, 13, 6, 3, 6); // the front pair
+  cottage(16, 31, 16, 6, 3, 8); put(23, 33, hex('#f6cc4c')); put(24, 33, hex('#fff09c')); put(24, 34, hex('#f6cc4c')); // the Goose: long and low, with a speck of gold over the door
+  // the Bell Tower: stone base, timber frame, an open belfry with the great bell, a steep timber roof
+  for (let j = 0; j < 8; j++) for (let i = 0; i < 10; i++) put(19 + i, 21 + j, STONE[clamp(Math.round(5.2 - (i > 6 ? 2 : 0) + (i === 0 ? 1 : 0) - (j % 3 === 2 ? 1.2 : 0) - (j === 7 ? 1 : 0)), 0, 8)]);
+  put(23, 28, hex('#0c0806')); put(24, 28, hex('#0c0806')); put(23, 27, hex('#1a100a')); put(24, 27, hex('#1a100a'));
+  for (let j = 0; j < 9; j++) for (let i = 0; i < 8; i++) { const brace = i === (j % 8) || i === 7 - (j % 8); put(20 + i, 12 + j, WOOD[clamp(i === 0 ? 5 : i === 7 ? 2 : brace ? 3 : 4, 0, 5)]); if (i > 0 && i < 7 && !brace && j % 3 === 1) put(20 + i, 12 + j, CREAM[4]); }
+  for (let j = 0; j < 6; j++) for (let i = 0; i < 8; i++) put(20 + i, 6 + j, i === 0 || i === 7 ? WOOD[i ? 2 : 5] : hex('#1c1008')); // belfry stage: posts and a dark opening
+  for (let j = 0; j < 5; j++) { const hw = j < 1 ? 1 : j < 3 ? 2 : 3; for (let i = -hw; i <= hw; i++) put(24 + i, 7 + j, BRONZE[clamp(5 - Math.round(Math.abs(i + 1) * 0.9) - (j === 4 ? 1 : 0), 0, 7)]); } put(24, 12, BRONZE[3]); // the great bell
+  p.rect(19, 5, 10, 1, WOOD[5]);
+  for (let j = 0; j < 6; j++) { const hw = 1.2 + j * 1.5; for (let i = Math.floor(24 - hw); i <= 24 + hw - 1; i++) put(i, j, WOOD[clamp(Math.round(4.5 - (i - (24 - hw)) / (2 * hw) * 3.4 + (j % 2 ? -0.5 : 0)), 0, 5)]); }
+  put(24, 0, BRONZE[6]); put(24, 1, BRONZE[4]);
+  // trees round the edge
+  for (const [cx, cy, r] of [[2, 22, 4], [45, 24, 4], [13, 14, 4], [37, 13, 4.4], [24, 39, 0], [44, 38, 3.6]]) if (r) { for (let y = Math.floor(cy - r); y <= cy + r; y++) for (let x = Math.floor(cx - r); x <= cx + r; x++) { const dx = (x + 0.5 - cx) / r, dy = (y + 0.5 - cy) / r; if (dx * dx + dy * dy > 1 || p.on(x, y) && y > cy + 1) continue; put(x, y, GRASS[clamp(Math.round(6 - dx * 2.4 - dy * 2.4 - (dx * dx + dy * dy > 0.7 ? 1.4 : 0)), 0, 9)]); } put(Math.round(cx), Math.round(cy + r), WOOD[2]); }
   return p.outline(K).canvas();
 });
 // Frostholm: snowbound walled town, white stone and teal roofs (3 x 2.5 tiles)
@@ -562,7 +579,7 @@ export function mapObjects(m, t, out) {
   if (m.theme !== 'world') return;
   const f8 = Math.floor(t * FPS) % FRAMES;
   for (const [k, [x, y]] of Object.entries(GEN.pois)) {
-    if (k === 'haven') out.push({ img: castle(), x: x - 1, y: y + 1 - 42 / 16, z: 1, sy: y + 1 });
+    if (k === 'haven') out.push({ img: havenIcon(), x: x - 1, y: y + 1 - 42 / 16, z: 1, sy: y + 1 });
     else if (k === 'frost') out.push({ img: frostTown(), x: x - 1, y: y + 1 - 40 / 16, z: 1, sy: y + 1 });
     else if (k === 'mirewood') out.push({ img: village(), x: x - 0.75, y: y + 1 - 2, z: 1, sy: y + 1 });
     else if (k === 'cavern' || k === 'storm') out.push({ img: caveMouth(k === 'storm', k === 'storm' && (f8 === 3 || f8 === 5) ? 1 : 0), x: x - 0.5, y: y + 1 - 28 / 16, z: 1, sy: y + 1 });
