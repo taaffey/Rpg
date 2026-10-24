@@ -206,10 +206,12 @@ export const PHONE_CHARGED = [
 {
   const f = STORY.finale || [], flash = f.findIndex((l) => /White light/.test(l.t)), back = f.findIndex((l) => /bar stools|Bell & Anvil/.test(l.t));
   if (flash >= 0) f[flash].art = 'flash';
-  if (back >= 0) for (let i = back; i < f.length; i++) f[i].art = 'return';
+  if (back >= 0) { for (let i = back; i < f.length; i++) f[i].art = 'return'; f[back].music = 'pub'; } // home at last: the tavern jig again
 }
 // the hay they wake up in, beside the main street where the game starts (props stamp solid 'p' tiles like town() does)
 {
   const h = MAPS.haven; h.props.push({ k: 'hay', x: 20, y: 30 }, { k: 'hay', x: 21, y: 30 });
   h.rows = h.rows.map((r, y) => (y === 30 ? r.slice(0, 20) + 'pp' + r.slice(22) : r));
 }
+// the Gilded Goose (and Quiz Night, which happens in it) has the tavern jig
+MAPS.haven_inn.music = 'pub';

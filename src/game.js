@@ -745,7 +745,7 @@ ACT.diff = (slot, d) => { newGame(); G.slot = +slot; G.difficulty = d; G.flags.v
 const pubImg = (v) => { try { return `<img class="pubart" src="${PA.pubURL(v, 1)}" alt="">`; } catch { return ''; } };
 function prologue(i) {
   if (i >= PUB.length) return ACT.crbegin();
-  const [v, head, text] = PUB[i];
+  const [v, head, text] = PUB[i]; if (i === 0) music('pub'); // the tavern jig plays under the whole 2026 prologue, until the bell swallows them
   show(`<h2>${esc(head)}</h2>${pubImg(v)}<p class="lore">${esc(text)}</p><div class="foot">${btn('prolog', i < PUB.length - 1 ? 'Next' : 'Wake up', i + 1, '', 'primary', false, 'autofocus')}</div>`, '', 'lorewin');
   if (v === 'flash') sfx('levelup'); else if (v === 'ring') sfx('chest');
 }

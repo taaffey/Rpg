@@ -38,7 +38,7 @@ async function main() {
       const fc = await img(UI.faceURL(k)); x.drawImage(fc, 90 + (n + 1) * cw, oy, 72, 72);
     }
   } else if (mode === 'weapons') {
-    const T = ['sword', 'dagger', 'staff', 'bow', 'fists', 'whip', 'scythe', 'tome', 'axe', 'katana'], cw = 150; size(40 + T.length * cw, 520);
+    const T = ['sword', 'dagger', 'staff', 'bow', 'fists', 'whip', 'scythe', 'tome', 'axe', 'katana'], cw = 150; size(40 + T.length * cw, 560);
     const who = ['bloke', 'knight', 'rogue', 'cleric', 'bard', 'mage', 'hexer', 'paladin', 'monk'];
     T.forEach((t, i) => {
       const ox = 10 + i * cw; label(t, ox, 16, '#fff');
@@ -47,7 +47,6 @@ async function main() {
     });
     // class variants of the family art
     [['bard', 'sword'], ['paladin', 'sword'], ['mage', 'staff'], ['cleric', 'staff'], ['cleric', 'fists'], ['bard', 'whip'], ['monk', 'whip'], ['hexer', 'tome'], ['rogue', 'dagger']].forEach(([j, t], i) => { const ox = 10 + i * 112; x.fillStyle = '#4a5468'; x.fillRect(ox, 430, 96, 96); x.drawImage(BA.heroFrame(j, 'ready', t), ox, 430, 96, 96); label(j + ':' + t, ox, 540, '#ccc'); });
-    c.height = 556;
   } else if (mode === 'big') { // idle frames and field walkers, big
     const keys = (q.get('keys') || 'knight@adam,mage@devon').split(','), pose = q.get('pose') || 'idle', S = +(q.get('s') || 8), cw = 32 * S + 8;
     size(10 + keys.length * cw, 32 * S + 30 + 24 * 6 * 2);
