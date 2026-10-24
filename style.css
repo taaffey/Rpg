@@ -453,3 +453,10 @@ img.pubart{display:block;width:100%;max-width:512px;margin:6px auto 4px;aspect-r
   .battle .partywin .pm{padding-top:7px;padding-bottom:7px}
   .battle .cmdhead{font-size:11px;margin-bottom:6px}
 }
+/* the title screen has no use for the touch pads */
+body:has(#overlay.title) #padL, body:has(#overlay.title) #padR{visibility:hidden}
+.saybox{cursor:pointer}
+/* a scene line with a picture (the finale's pub): darken the map, picture above the words */
+#overlay.say.art{background:rgba(0,0,8,.82)}
+#overlay.say.art .win{display:flex;flex-direction:column;gap:6px}
+#overlay.say.art img.pubart{margin:0 auto;max-height:42vh;width:auto;max-width:100%}

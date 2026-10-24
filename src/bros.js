@@ -94,7 +94,8 @@ export const WAKE = [
   { s: 'elder', t: 'The bell rings for those who set right Gemforge\'s seals. Slay the three evils and perhaps it will ring for you again.' },
   { s: 'devon', t: 'Main quest unlocked. Let\'s GO.' },
   { s: 'elder', t: 'You have no calling, no weapons and no idea. Prove you can swing a fist first. The Gilded Goose has a slime problem.' },
-  { s: 'elder', t: 'Barnaby\'s cellar. Down the street, the inn by the north wall. Do try not to die. The paperwork is dreadful.' },
+  { s: 'elder', t: 'Barnaby\'s tavern, north-west of the fountain. The sign says INN. We are not a subtle people. Mind the cellar trapdoor.' },
+  { s: 'elder', t: 'Do try not to die. The paperwork is dreadful.' },
 ];
 export const CELLAR_IN = [
   { s: 'n', t: 'Brick vaults. Barrels. Something squelching in the dark, and a smell like a brewery that gave up.' },
@@ -198,3 +199,9 @@ export const PHONE_CHARGED = [
   [{ s: 'devon', t: 'Spent the extra 1% on one more photo of my thumb. No regrets.' }],
   [{ s: 'devon', t: 'Still no signal. But at 4% the no-signal feels more premium.' }],
 ];
+// the finale's 2026 half plays over the pub illustrations: the white light, then The Bell & Anvil again
+{
+  const f = STORY.finale || [], flash = f.findIndex((l) => /White light/.test(l.t)), back = f.findIndex((l) => /bar stools|Bell & Anvil/.test(l.t));
+  if (flash >= 0) f[flash].art = 'flash';
+  if (back >= 0) for (let i = back; i < f.length; i++) f[i].art = 'return';
+}

@@ -93,7 +93,7 @@ const gearDesc = (k, d) => (k === 'weapons' ? `${WEAPON_TYPES[d.type].name} · $
 const npcImg = (type, px = 48) => `<span class="face"><img src="${UI.npcFaceURL(type)}" width="${px}" height="${px}" alt=""></span>`;
 
 // ---------- state ----------
-// ---------- callings: four heroes each answer the bell with one calling; more are learned on the road ----------
+// ---------- callings: the bros take one after the cellar, the locals bring their own; more are learned on the road ----------
 // FF5-style: callings rank up with Calling Points (logic.js); new batches wake with each heart-gem held (data.js CALLING_BATCHES)
 const STARTER_JOBS = CALLING_BATCHES[0];
 const heartsHeld = (g = G) => Object.keys(KEY_ITEMS).filter((k) => g?.flags?.qitems?.[k]).length;
@@ -607,11 +607,16 @@ function finishTyping() { // show the whole line and reveal the buttons
 function say(i) {
   sayAt = i; const l = curLines[i], n = typeof l === 'string' ? curNpc : speaker(l), last = i >= curLines.length - 1; typingText = fill(typeof l === 'string' ? l : l.t);
   const face = n.narr ? '' : n.job ? portrait(n.job) : npcImg(n.type || 'villager');
-  show(`<div class="saybox${n.narr ? ' narr' : ''}">${face}<div class="saybody">${n.narr ? '' : `<div class="sayname">${esc(n.name)}</div>`}<div class="saytext" data-tap="skiptype"${n.narr ? ' style="color:#c8d4ff"' : ''}><span id="tt"></span><span class="more">▼</span></div></div></div><div class="sayrow hidden">${last ? curFinal : btn('say', 'NEXT', i + 1, '', 'primary')}</div>`, 'say');
+  const art = typeof l === 'object' && l.art; if (l?.music) music(l.music); // a scene line can bring a picture (the pub, in the finale) and its music
+  show(`${art ? pubImg(art) : ''}<div class="saybox${n.narr ? ' narr' : ''}" data-tap="sayadv">${face}<div class="saybody">${n.narr ? '' : `<div class="sayname">${esc(n.name)}</div>`}<div class="saytext"${n.narr ? ' style="color:#c8d4ff"' : ''}><span id="tt"></span><span class="more">▼</span></div></div></div><div class="sayrow hidden">${last ? curFinal : btn('say', 'NEXT', i + 1, '', 'primary')}</div>`, art ? 'say art' : 'say');
   let k = 0; clearInterval(typing);
   typing = setInterval(() => { k++; const el = $('#tt'); if (!el) return finishTyping(); el.textContent = typingText.slice(0, k); if (k % 3 === 0) sfx('blip'); if (k >= typingText.length) finishTyping(); }, 28);
 }
 ACT.skiptype = finishTyping;
+ACT.sayadv = () => { // tap anywhere on the dialogue box: finish the line, then go on (only when there is a single way on, never a choice)
+  if (typing) return finishTyping();
+  const bs = [...ov.querySelectorAll('.sayrow [data-act]')]; if (bs.length === 1) bs[0].click();
+};
 ACT.say = (i) => say(+i);
 ACT.qaccept = (id) => { const g = QUESTS[id].goal; G.flags.quests[id] = 'active'; G.flags.qprog[id] = 0; if (g.type === 'deliver') { G.flags.qitems[g.item] = true; toast(`📜 Received: ${QITEM[g.item]}`, 2600); } sfx('levelup'); hide(); banner(`Quest: ${QUESTS[id].title}`); };
 ACT.qdeliver = (id) => { const g = QUESTS[id].goal; if (qstate(id) !== 'active' || g.type !== 'deliver') return; G.flags.qprog[id] = 1; G.flags.qitems[g.item] = false; ACT.qclaim(id); }; // the recipient pays
@@ -1276,23 +1281,9 @@ function awakening({ heart, jobs, gems }) {
     ACT.awdone = () => { hide(); res(); };
   });
 }
-function drawEnding(c2, t, W, H) {
-  c2.imageSmoothingEnabled = false;
-  const k = Math.min(1, t / 14), mix = (a, b2) => Math.round(a + (b2 - a) * k);
-  const g = c2.createLinearGradient(0, 0, 0, H); g.addColorStop(0, `rgb(${mix(14, 70)},${mix(18, 110)},${mix(50, 190)})`); g.addColorStop(0.7, `rgb(${mix(40, 255)},${mix(30, 170)},${mix(80, 120)})`); g.addColorStop(1, `rgb(${mix(60, 255)},${mix(40, 220)},${mix(90, 160)})`);
-  c2.fillStyle = g; c2.fillRect(0, 0, W, H);
-  for (let i = 0; i < 60; i++) { c2.fillStyle = `rgba(255,255,255,${Math.max(0, (1 - k * 1.4)) * (0.4 + 0.6 * Math.abs(Math.sin(t + i)))})`; c2.fillRect((i * 83) % W, (i * 41) % 120, 2, 2); }
-  const sy = H - 40 - k * 75; c2.fillStyle = '#fff6c0'; c2.beginPath(); c2.arc(W * 0.62, sy, 26, 0, 7); c2.fill(); c2.fillStyle = 'rgba(255,230,160,.25)'; c2.beginPath(); c2.arc(W * 0.62, sy, 44, 0, 7); c2.fill();
-  for (const [col, base, amp, f] of [['#6a5a98', 150, 40, 0.012], ['#3a2f66', 175, 30, 0.02]]) { c2.fillStyle = col; c2.beginPath(); c2.moveTo(0, H); for (let x = 0; x <= W; x += 8) c2.lineTo(x, base - Math.abs(Math.sin(x * f + 2)) * amp); c2.lineTo(W, H); c2.fill(); }
-  c2.fillStyle = '#241c44'; c2.fillRect(W - 120, 56, 22, 140); c2.fillRect(W - 126, 50, 34, 8); c2.fillRect(W - 116, 36, 14, 16); // the Frost Spire, quiet at last
-  c2.fillStyle = '#9ae0ff'; c2.fillRect(W - 112, 70, 4, 6); c2.fillRect(W - 112, 100, 4, 6);
-  c2.fillStyle = '#1a1432'; c2.fillRect(0, H - 34, W, 34);
-  G.party.forEach((c, i) => { const x = 40 + i * 52, y = H - 34 - 46 + Math.round(Math.sin(t * 2 + i) * 1.5); c2.fillStyle = 'rgba(0,0,0,.4)'; c2.fillRect(x + 4, H - 38, 38, 4); const im = WK.walker(ak(c), 'down', 0); c2.drawImage(im, x + 8, y + 48 - im.height * 2, im.width * 2, im.height * 2); });
-  for (let i = 0; i < 4; i++) { const bx = ((t * 30 + i * 140) % (W + 60)) - 30, by = 40 + i * 14 + Math.sin(t * 3 + i) * 4; c2.fillStyle = '#1a1432'; c2.fillRect(bx, by, 6, 2); c2.fillRect(bx - 2, by - 2 + (Math.floor(t * 8 + i) % 2) * 3, 2, 2); c2.fillRect(bx + 6, by - 2 + (Math.floor(t * 8 + i) % 2) * 3, 2, 2); }
-}
 const epilogueOf = (c) => { const e = STORY.epilogue[c.look] ?? STORY.epilogue[c.main]; return (typeof e === 'string' ? e : e?.[c.main] || e?.default) || '{n} went home.'; };
 async function ending() {
-  if (STORY.finale) await scene(STORY.finale); // the bell rings for them: back to The Bell & Anvil, two minutes after they left
+  if (STORY.finale) { goto('haven', 17, 22); await sleep(600); await scene(STORY.finale); } // the bell rings for them in Haven: back to The Bell & Anvil, two minutes after they left
   music('ending');
   const left = ['wyrm', 'lich'].filter((k) => !G.flags.bosses[k]).map((k) => BOSSES[k].name);
   const quests = Object.keys(QUESTS).filter((id) => qstate(id) === 'done').length, gemsOn = G.party.reduce((n, c) => n + gemsUsed(c), 0);
@@ -1305,11 +1296,9 @@ async function ending() {
     ['MADE WITH', 'h'], ['Claude Code', ''], ['every sprite, tile and song', ''], ['was drawn or composed in code', ''], ['', ''], ['THANK YOU FOR PLAYING', 'h'],
   ];
   await new Promise((res) => {
-    show(`<h2>🍻 Last orders</h2>${pubImg('return')}<canvas id="endcv" width="512" height="230" class="framed"></canvas>
+    show(`<h2>🍻 Last orders</h2>${pubImg('return')}
     <div class="credits"><div class="roll">${roll.map(([t, k]) => `<div class="${k}">${t || '&nbsp;'}</div>`).join('')}</div></div>
     ${left.length ? `<p class="dim">Still sleeping: ${left.join(', ')}. The bell is waiting.</p>` : `<p class="gold">The bell of Haven rings for ${esc(partyNames())}.</p>`}<div class="foot">${btn('edone', 'Keep exploring', '', '', 'primary')}</div>`, '', 'gold');
-    const c2 = $('#endcv').getContext('2d'), t0 = performance.now();
-    const loop = () => { if (!$('#endcv')) return; drawEnding(c2, (performance.now() - t0) / 1000, 512, 230); requestAnimationFrame(loop); }; loop();
     ACT.edone = () => { hide(); music(musicFor()); res(); };
   });
 }
