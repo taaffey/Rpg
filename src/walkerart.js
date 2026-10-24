@@ -51,16 +51,20 @@ export const CHARS = HEROES, NPCS = {};
 for (const [k, v] of Object.entries(TOWNS)) NPCS[k] = { ...v, npc: true };
 
 // ---------- looks: 'job' or 'job@look' -> recipe (the calling's outfit, the person's hair / skin / beard) ----------
-const OPEN_HEADS = new Set(['monk', 'cowlick']), HOODED = new Set(['cleric', 'rogue']);
+// A class recipe may carry: hairBy {lookHairStyle: HAIR key} (e.g. the Bouncer buzzes everyone), openOk (the headgear leaves the forehead free, so
+// freckles / grey temples / a bun may be added), hood (a lock of hair may peek out), look {adam|devon|brenna|wendell: {...overrides}}.
+// Clothes never change with the look: the matching STAG t-shirt, the hi-vis jacket etc. are class constants.
+const OPEN_HEADS = new Set(['monk', 'cowlick', 'sweat']), HOODED = new Set(['cleric', 'rogue']);
 const LOOKC = new Map();
 export function cfgFor(key, table = CHARS, fallback = 'knight') {
   key = String(key || ''); let c = LOOKC.get(key); if (c) return c;
   const [job, look] = key.split('@'), L = LOOKS[look], base = OUTFITS[key] || table[job] || table[fallback] || CHARS.knight;
   if (!L) { LOOKC.set(key, base); return base; }
-  const heads = [].concat(base.head || []), open = !heads.length || heads.every((h) => OPEN_HEADS.has(h)), hood = heads.some((h) => HOODED.has(h));
-  c = { ...base, ramps: { ...(base.ramps || {}), ...L.ramps }, spec: { ...(base.spec || {}), ...(L.spec || {}) } };
-  if (base.hair && !OUTFITS[key]) c.hair = L.hair;
-  c.head = [...heads, ...(base.hair && open ? L.open || [] : []), ...(hood ? L.hood || [] : []), ...(L.face || [])];
+  const ov = base.look?.[look] || {}, heads = [].concat(ov.head ?? base.head ?? []);
+  const openOk = ov.openOk ?? base.openOk ?? (!heads.length || heads.every((h) => OPEN_HEADS.has(h))), hood = ov.hood ?? base.hood ?? heads.some((h) => HOODED.has(h));
+  c = { ...base, ...ov, ramps: { ...(base.ramps || {}), ...L.ramps, ...(ov.ramps || {}) }, spec: { ...L.spec, ...(base.spec || {}), ...(ov.spec || {}) } };
+  if (base.hair && !OUTFITS[key]) c.hair = ov.hair ?? base.hairBy?.[L.hair] ?? L.hair;
+  c.head = [...heads, ...(base.hair && openOk ? L.open || [] : []), ...(hood ? L.hood || [] : []), ...(L.face || [])];
   LOOKC.set(key, c); return c;
 }
 for (const who of ['adam', 'devon']) NPCS[who] = { ...cfgFor('bloke@' + who), npc: true }; // the bros as standing townsfolk
@@ -78,7 +82,8 @@ function rampsFor(cfg) {
 function layers(cfg, dir, f) {
   const L = [], bob = f % 2 ? 1 : 0, rm = cfg.remap || {};
   const sw = f === 1 ? 1 : f === 3 ? 2 : 0, sw2 = f === 1 ? 2 : f === 3 ? 1 : 0; // arm swing opposite to the legs
-  const props = (cfg.props || []).map((n) => PROPS[n]?.[dir]).filter(Boolean);
+  // a prop may be a function of the frame: ({ f, sw, sw2, hold }) -> { z, parts } (cuffs, wristbands and watches follow the swinging arms)
+  const props = (cfg.props || []).map((n) => { const p = PROPS[n]?.[dir]; return typeof p === 'function' ? p({ f, sw, sw2, hold: !!cfg.hold, cfg }) : p; }).filter(Boolean);
   const z = (k) => { for (const p of props) if (p.z === k) for (const q of p.parts) L.push([q, bob]); };
   const add = (p, m, dy = bob) => p && L.push([p, dy, m]);
   z('back');

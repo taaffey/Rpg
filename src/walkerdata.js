@@ -1129,3 +1129,318 @@ Object.assign(TOWNS, {
   wendell: { hair: 'bald', head: ['brows', 'walrus'], ramps: { M: '#8e96a4', C: '#8e3a2c', A: '#6a4428', P: '#7a6a5c', B: '#3e3430', R: '#6a4a2a', H: '#f0f0f6', S: ['#ffd4b4', '#e8a882', '#c07a58', '#8a4e36'] }, props: ['tabard', 'pauldrons', 'dents'], remap: { torso: { W: 'L', T: 'M', t: 'm', u: 'n' }, arms: { W: 'L', T: 'M', t: 'm', u: 'n' }, legs: { P: 'M', p: 'm', q: 'n', Q: 'L' } }, spec: { 3: '#a04a22' } }, // old Sir Wendell: bald, walrus moustache, rust-spotted grey plate
   barkeep: { hair: 'crop', ramps: { H: '#8a6a58', T: '#2e5a4a', P: '#3a3a48', B: '#2a2228', A: '#2a2a30', F: '#f2f2f6', S: ['#ffdcc0', '#f0b890', '#cc8864', '#96583c'] }, props: ['polo', 'towel'], remap: { arms: TEE }, spec: { 1: '#4a7ae0', 2: '#e8e8e0' } },
 });
+
+// =====================================================================================================
+// ---------- THE SILLY PASS: twelve silly callings (job ids unchanged; only the clothes changed) ----------
+// knight = Bouncer · rogue = Chancer · mage = Spreadsheet Sorcerer · cleric = Barmaid · monk = Gym Bro · ranger = Darts Player
+// hexer = Influencer · bard = Busker · berserker = Stag Do Lad · alchemist = Home Brewer · samurai = Angry Chef · paladin = Traffic Warden
+// Special colours used here (cfg.spec): 1-3 and 5-7 per class; 4 / 8 / 9 are reserved for the looks (grey beard, ribbon...).
+const CUFFROW = [15, 16, 14]; // sleeve end row of the three arm-swing variants
+// wrist details that follow the swinging arms: lL / lR = the one-row letters of the left / right cuff, (rows = [dy offsets])
+const armBand = (lL, lR, up2) => ({
+  down: (c) => { const a = CUFFROW[c.hold ? 0 : c.sw], b = CUFFROW[c.sw2]; return { z: 'mid', parts: [P(2, a, [lL]), P(12, b, [lR]), ...(up2 ? [P(2, a - 2, [up2[0]]), P(12, b - 2, [up2[1]])] : [])] }; },
+  up: (c) => { const a = CUFFROW[c.sw2], b = CUFFROW[c.hold ? 0 : c.sw]; return { z: 'mid', parts: [P(2, a, [lL]), P(12, b, [lR]), ...(up2 ? [P(2, a - 2, [up2[0]]), P(12, b - 2, [up2[1]])] : [])] }; },
+  right: (c) => { const v = c.hold ? 0 : c.sw; return { z: 'mid', parts: [P([7, 9, 5][v], [15, 14, 14][v], [lL])] }; },
+});
+const SKIRT = (ch, y) => (y >= 17 && SHIRT[ch]) || ch; // white blouse above, coloured skirt below (robe bodies)
+
+Object.assign(HAIR, {
+  buzz: { // clippers, number two
+    down: P(0, 1, ['................', '.....hHHHHh.....', '....hHHYHHHh....', '...hHHhHHhHHh...', '...hh......hh...', '...j........j...']),
+    up: P(0, 1, ['................', '.....hHHHHh.....', '....hHHYHHHh....', '...hHHhHHhHHh...', '...hHHHHHHHHh...', '...hHhHHHhHHh...', '...hHHHHHHHHh...', '...hHhHHHHhHh...', '....hjhHHhjh....', '......hjjh......']),
+    right: P(0, 1, ['................', '.....hHHHh......', '....hHHHHHHh....', '...hHHHhHHHHh...', '...hHHHHHHh.....', '...hHHHHHh......', '...hHHHHh.......', '....hjhj........']),
+  },
+  quiff: { // swept-up pompadour, shaved sides
+    down: P(0, -2, ['.......YHHh.....', '.....YHHHHHHh...', '...YHHYYHHHHHh..', '...HHHHYYHHHHh..', '...HHHhHHHHHhh..', '...HHhHHHHhHh...', '...hHHhHHhHHh...', '...hh......hh...', '...h........h...']),
+    up: P(0, -2, ['.....YHHHh......', '....YHHHHHHh....', '...YHHHHHHHHh...', '...HHHYYHHHHh...', '...HHHHHHHHHh...', '...HHhHHHhHHh...', '...hHHHHHHHHh...', '...hHhHHHHhHh...', '...hHHHHHHHHh...', '....hHhHHhHh....', '....hjhhhhjh....', '......hjjh......']),
+    right: P(0, -2, ['.........YHHHh..', '.....YHHHHHHHHh.', '....YHHYYHHHHHh.', '...YHHHHYYHHHHh.', '...HHHHHHHHHHh..', '..hHHHHHHHHHh...', '..hHHHHHHHHh....', '..hHHHHHHHh.....', '..hHHHHHHh......', '..hHHHHh........', '..hjhhj.........']),
+  },
+});
+Object.assign(HEADS, {
+  shades: { // wraparound sunglasses (the Bouncer)
+    down: [P(0, 8, ['..oooooooooooo..', '....o5o..o5o....'])],
+    up: [P(0, 8, ['..oo........oo..'])],
+    right: [P(0, 8, ['......oooooooo..', '..........o5oo..'])],
+  },
+  bigshades: { // oversized influencer sunglasses
+    down: [P(0, 7, ['...oooo..oooo...', '..oooooooooooo..', '...o5oo..o5oo...', '....ooo..ooo....'])],
+    up: [P(0, 8, ['..oo........oo..'])],
+    right: [P(0, 7, ['.........oooo...', '......oooooooo..', '.........o5oo...', '.........ooo....'])],
+  },
+  glasses: { // nerdy square specs (the Spreadsheet Sorcerer)
+    down: [P(0, 8, ['....o.oooo.o....', '....o.o..o.o....', '....ooo..ooo....'])],
+    up: [P(0, 8, ['..oo........oo..'])],
+    right: [P(0, 8, ['......ooooo.o...', '..........o.o...', '..........ooo...'])],
+  },
+  earpiece: { // curly-cord earpiece
+    down: [P(0, 9, ['.............F..', '............2...', '...........2....', '...........2....'])],
+    up: [P(0, 9, ['.............F..', '............2...', '...........2....', '...........2....'])],
+    right: [P(0, 9, ['......F.........', '......2.........', '.......2........', '.......2........'])],
+  },
+  flatcap: { // tweed flat cap, peak down over the eyes
+    down: [P(0, 0, ['................', '.....KCCCCc.....', '...KCCCCCCCCc...', '..KCCCCCCCCCCc..', '..CCCCCCCCCCCcv.', '..cccccccccccv..', '...vvvvvvvvvv...'])],
+    up: [P(0, 0, ['................', '.....KCCCCc.....', '...KCCCCCCCCc...', '..KCCCCCCCCCCc..', '..CCCCCCCCCCCcv.', '..cccccccccccv..', '...vvvvvvvvvv...'])],
+    right: [P(0, 0, ['................', '....KCCCCc......', '..KCCCCCCCCc....', '.KCCCCCCCCCCc...', '.CCCCCCCCCCCcv..', '.cccccccccccvvv.', '...........vvvv.'])],
+  },
+  wizoffice: { // wizard hat with a Post-it stuck to it
+    down: [P(0, -5, ['.......KCc......', '......KCCc......', '......CCCcv.....', '.....KCCCcv.....', '.....CCCCCcv....', '....KCCCCCCcv...', '....CCCCCCCCcv..', '...KCCCCCCCCcv..', '...CCCCCCCCCCcv.', '..AAAAZAAAAAAaz.', '..KCCCCCCCCCCv..', '.KCCCCCCCCCCCcv.', '.vccccccccccccv.']), P(6, -1, ['32', '33'])],
+    up: [P(0, -5, ['.......KCc......', '......KCCc......', '......CCCcv.....', '.....KCCCcv.....', '.....CCCCCcv....', '....KCCCCCCcv...', '....CCCCCCCCcv..', '...KCCCCCCCCcv..', '...CCCCCCCCCCcv.', '..AAAAAAAAAAAaz.', '..KCCCCCCCCCCv..', '.KCCCCCCCCCCCcv.', '.vccccccccccccv.'])],
+    right: [P(0, -5, ['..KCc...........', '..CCc...........', '...KCc..........', '...KCCc.........', '....CCCc........', '....KCCCCc......', '....CCCCCCc.....', '...KCCCCCCCc....', '...CCCCCCCCCc...', '..AAAAZAAAAAaz..', '.KCCCCCCCCCCCCv.', 'KCCCCCCCCCCCCCcv', '.vcccccccccccvv.']), P(5, -1, ['32', '33'])],
+  },
+  sweat: { // terry-cloth sweatband
+    down: [P(0, 6, ['...AAAAAAAAAA...'])],
+    up: [P(0, 6, ['...AAAAAAAAAA...'])],
+    right: [P(0, 6, ['...AAAAAAAAAAA..'])],
+  },
+  cone: { // a traffic cone, worn
+    down: [P(0, -7, ['.......ZA.......', '......ZAAa......', '......wwww......', '.....wwwwww.....', '.....ZAAAAa.....', '....ZAAAAAAa....', '....ZAAAAAAa....', '...aaaaaaaaaa...', '..zzzzzzzzzzzz..'])],
+    up: [P(0, -7, ['.......ZA.......', '......ZAAa......', '......wwww......', '.....wwwwww.....', '.....ZAAAAa.....', '....ZAAAAAAa....', '....ZAAAAAAa....', '...aaaaaaaaaa...', '..zzzzzzzzzzzz..'])],
+    right: [P(0, -7, ['......ZA........', '.....ZAAa.......', '.....wwww.......', '....wwwwww......', '....ZAAAAa......', '...ZAAAAAAa.....', '...ZAAAAAAa.....', '..aaaaaaaaaa....', '.zzzzzzzzzzzz...'])],
+  },
+  bobble: { // bobble hat with a hop flower pinned on
+    down: [P(0, -3, ['......OFFf......', '......FFFf......', '.....KCCCCc.....', '....KCCCCCCc....', '...KCCCCCCCCc...', '..KCCCCCCCCCCc..', '..CCCCCCCCCCCcv.', '.KCKCKCKCKCKCcv.', '.cvcvcvcvcvcvvv.']), P(11, 1, ['.1', '11', '1.'])],
+    up: [P(0, -3, ['......OFFf......', '......FFFf......', '.....KCCCCc.....', '....KCCCCCCc....', '...KCCCCCCCCc...', '..KCCCCCCCCCCc..', '..CCCCCCCCCCCcv.', '.KCKCKCKCKCKCcv.', '.cvcvcvcvcvcvvv.'])],
+    right: [P(0, -3, ['.....OFFf.......', '.....FFFf.......', '....KCCCCc......', '...KCCCCCCCc....', '..KCCCCCCCCCc...', '.KCCCCCCCCCCCc..', '.CCCCCCCCCCCCcv.', '.KCKCKCKCKCKCcv.', '.cvcvcvcvcvcvvv.']), P(10, 1, ['.1', '11', '1.'])],
+  },
+  goggles: { // brewing goggles pushed up onto the forehead
+    down: [P(0, 6, ['...m33m..m33m...', '...mmmm..mmmm...'])],
+    up: [P(0, 6, ['..mmmmmmmmmmmm..'])],
+    right: [P(0, 6, ['.........m33m...', '.........mmmm...'])],
+  },
+  toque: { // the tall pleated chef's hat
+    down: [P(0, -6, ['.....OFFFFO.....', '...OFFFFFFFFf...', '..OFFFFFfFFFFf..', '..FFFfFFFFfFFf..', '..FFFFFFFFFFFf..', '...fFFFfFFFFf...', '....FFfFFfFF....', '....FfFFFfFf....', '....ffffffff....'])],
+    up: [P(0, -6, ['.....OFFFFO.....', '...OFFFFFFFFf...', '..OFFFFFfFFFFf..', '..FFFfFFFFfFFf..', '..FFFFFFFFFFFf..', '...fFFFfFFFFf...', '....FFfFFfFF....', '....FfFFFfFf....', '....ffffffff....'])],
+    right: [P(0, -6, ['....OFFFFO......', '..OFFFFFFFFf....', '.OFFFFFfFFFFf...', '.FFFfFFFFfFFf...', '.FFFFFFFFFFFf...', '..fFFFfFFFFf....', '...FFfFFfFF.....', '...FfFFFfFf.....', '...ffffffff.....'])],
+  },
+  angry: { // furrowed brows, flushed cheeks
+    down: [P(0, 6, ['....o......o....', '.....oo..oo.....', '................', '...1........1...'])],
+    up: [],
+    right: [P(0, 6, ['.........o......', '..........oo....', '................', '...........1....'])],
+  },
+  peaked: { // peaked cap with a chequered band
+    down: [P(0, 0, ['................', '....KCCCCCCc....', '..KCCCCCCCCCCc..', '..CCCCCCCCCCCcv.', '..FoFoFoFoFoFo..', '..vvvvvvvvvvvv..', '...vvvvvvvvvv...'])],
+    up: [P(0, 0, ['................', '....KCCCCCCc....', '..KCCCCCCCCCCc..', '..CCCCCCCCCCCcv.', '..FoFoFoFoFoFo..', '..vvvvvvvvvvvv..'])],
+    right: [P(0, 0, ['................', '....KCCCCCCc....', '..KCCCCCCCCCCc..', '..CCCCCCCCCCCcvv', '..FoFoFoFoFoFvv.', '..vvvvvvvvvvvvvv', '............vvvv'])],
+  },
+});
+
+// ---------- props: weapons, accessories and clothing details (letters as in walkerart.js) ----------
+const stripe = (n) => Array(n).fill('F');
+Object.assign(PROPS, {
+  bomber: { // black bomber jacket: white collar, zip, ribbed cuffs
+    down: (c) => { const a = CUFFROW[c.hold ? 0 : c.sw], b = CUFFROW[c.sw2]; return { z: 'mid', parts: [P(6, 12, ['FFFF']), P(7, 13, ['FF']), P(7, 14, ['L', 'L', 'L']), P(2, a, ['aA']), P(12, b, ['Aa'])] }; },
+    up: (c) => { const a = CUFFROW[c.sw2], b = CUFFROW[c.hold ? 0 : c.sw]; return { z: 'mid', parts: [P(2, a, ['aA']), P(12, b, ['Aa'])] }; },
+    right: { z: 'mid', parts: [P(8, 12, ['FF']), P(9, 13, ['F'])] },
+  },
+  bat: { // a rounders bat, barrel up (Bats & Clubs)
+    down: { z: 'mid', parts: [P(0, 1, ['.R.', 'GRr', 'GRr', 'GRr', 'GRr', 'GRr', '.Rr', '.R.', '.R.', '.R.', '.R.', '.R.', '.R.', '.R.', '.R.']), P(1, 16, ['S', 'x']), P(0, 18, ['.r.'])] },
+    up: { z: 'mid', parts: [P(13, 1, ['.R.', 'rRG', 'rRG', 'rRG', 'rRG', 'rRG', 'rR.', '.R.', '.R.', '.R.', '.R.', '.R.', '.R.', '.R.', '.R.']), P(14, 16, ['x']), P(13, 18, ['.r.'])] },
+    right: { z: 'back', parts: [P(0, 1, ['.R.', 'GRr', 'GRr', 'GRr', 'GRr', 'GRr']), P(1, 7, ['Rr']), P(1, 8, ['R', 'R']), P(2, 10, ['R', 'R']), P(3, 12, ['R', 'R', 'R']), P(3, 15, ['r'])] },
+  },
+  clipboard: { // guest list
+    down: { z: 'mid', parts: [P(12, 13, ['.MM.', 'RRRR', 'RFgr', 'RFFr', 'RgFr', 'RFFr', 'rrrr'])] },
+    up: { z: 'mid', parts: [P(0, 13, ['.MM.', 'RRRR', 'RRRr', 'RRRr', 'RRRr', 'RRRr', 'rrrr'])] },
+    right: { z: 'back', parts: [] },
+  },
+  shell: { // shell-suit: white collar band and side stripes
+    down: { z: 'mid', parts: [P(5, 12, ['FFFFFF']), P(4, 12, ['F', 'F', 'F', 'F', 'F']), P(11, 12, ['F', 'F', 'F', 'F', 'F'])] },
+    up: { z: 'mid', parts: [P(5, 12, ['FFFFFF']), P(4, 12, ['F', 'F', 'F', 'F', 'F']), P(11, 12, ['F', 'F', 'F', 'F', 'F'])] },
+    right: { z: 'mid', parts: [P(8, 12, ['FFF']), P(11, 12, ['F', 'F', 'F', 'F', 'F'])] },
+  },
+  chain: { // gold chain
+    down: { z: 'mid', parts: [P(6, 12, ['A..A']), P(7, 13, ['ZZ'])] },
+    up: { z: 'mid', parts: [] },
+    right: { z: 'mid', parts: [P(10, 12, ['A', 'Z'])] },
+  },
+  watches: armBand('ZA', 'AZ', ['Lm', 'mL']), // a gold and a silver watch up each forearm
+  selfie: { // selfie stick (the Sorcerer's "staff")
+    down: { z: 'mid', parts: [P(0, -5, ['ooo', 'o5o', 'o5o', 'ooo']), ...[0].map(() => P(1, -1, ['M', ...Array(21).fill('M')])), P(1, 16, ['S', 'x'])] },
+    up: { z: 'mid', parts: [P(13, -5, ['ooo', 'o5o', 'o5o', 'ooo']), P(14, -1, ['m', ...Array(21).fill('m')])] },
+    right: { z: 'back', parts: [P(1, -5, ['ooo', 'o5o', 'o5o', 'ooo']), P(2, -1, ['m', ...Array(21).fill('m')])] },
+  },
+  office: { // lanyard with an ID badge, shirt collar and a red tie poking out of the robe
+    down: { z: 'mid', parts: [P(6, 12, ['F..F']), P(7, 12, ['11']), P(7, 13, ['11']), P(5, 12, ['2']), P(6, 13, ['2']), P(7, 14, ['2']), P(10, 12, ['2']), P(9, 13, ['2']), P(8, 14, ['2']), P(7, 15, ['ww']), P(7, 16, ['wo'])] },
+    up: { z: 'mid', parts: [] },
+    right: { z: 'mid', parts: [P(9, 12, ['F', '1']), P(10, 13, ['2', '2']), P(10, 15, ['w', 'o'])] },
+  },
+  apronB: { // the Barmaid's black bar apron
+    down: { z: 'mid', parts: [P(5, 12, ['c....c']), P(6, 13, ['KCCc', 'CCCc', 'CCCc']), P(5, 16, ['CCCCCc', 'CCCCCc', 'CCCCCc', 'CCccCc', 'CCCCCc', 'CCCCCc', 'cccccc'])] },
+    up: { z: 'mid', parts: [P(5, 16, ['c....c']), P(4, 17, ['AcccccA'])] },
+    right: { z: 'mid', parts: [P(9, 13, ['KC', 'CC', 'CC', 'CC', 'CC', 'CCc', 'CCc', 'CCc', 'ccc'])] },
+  },
+  pint: { // a pint, held (foam on top)
+    down: { z: 'top', parts: [P(12, 14, ['www', 'ZAz', 'AAz', 'AAz']), P(11, 17, ['S'])] },
+    up: { z: 'mid', parts: [] },
+    right: { z: 'top', parts: [P(11, 14, ['www', 'ZAz', 'AAz', 'AAz']), P(10, 17, ['S'])] },
+  },
+  towelB: { // blue-striped tea towel over the shoulder
+    down: { z: 'mid', parts: [P(11, 11, ['OF', 'FF', '1f', 'FF', 'Ff', '1N'])] },
+    up: { z: 'mid', parts: [P(3, 11, ['OF', 'FF', '1f', 'FF', 'fN'])] },
+    right: { z: 'top', parts: [P(7, 11, ['OFf', 'F1N', 'Ff.', '1N.'])] },
+  },
+  tank: { // big arms
+    down: { z: 'mid', parts: [P(1, 12, ['S', 's', 's']), P(14, 12, ['S', 's', 's']), P(1, 15, ['x']), P(14, 15, ['x'])] },
+    up: { z: 'mid', parts: [P(1, 12, ['S', 's', 's']), P(14, 12, ['S', 's', 's'])] },
+    right: { z: 'mid', parts: [P(6, 12, ['S', 's', 's'])] },
+  },
+  shaker: { // protein shaker
+    down: { z: 'mid', parts: [P(0, 13, ['111', 'w2w', 'w2w', 'w2w', 'www']), P(1, 17, ['x'])] },
+    up: { z: 'mid', parts: [P(13, 13, ['111', 'www', 'www', 'www', 'www'])] },
+    right: { z: 'back', parts: [P(2, 13, ['111', 'w2w', 'w2w', 'www'])] },
+  },
+  jersey: { // loud sponsor shirt: polo collar and a yellow logo band
+    down: { z: 'mid', parts: [P(6, 12, ['FFFF']), P(7, 13, ['FF']), P(4, 14, ['11111111', '1o1oo1o1'])] },
+    up: { z: 'mid', parts: [P(4, 14, ['11111111', '1o1oo1o1'])] },
+    right: { z: 'mid', parts: [P(8, 12, ['FF']), P(5, 14, ['1111111', '1o1oo1o'])] },
+  },
+  belly: { // the belly hanging over the belt
+    down: { z: 'mid', parts: [P(3, 14, ['WTTTTTTTTu', 'TTTTTTTTTt', 'TTTTTTTTtu', 'tTTTTTTtuu'])] },
+    up: { z: 'mid', parts: [P(3, 14, ['WTTTTTTTTu', 'TTTTTTTTTt', 'TTTTTTTTtu', 'tTTTTTTtuu'])] },
+    right: { z: 'mid', parts: [P(10, 14, ['Tt', 'TTt', 'TTu', 'tuu'])] },
+  },
+  chainD: { // gold chain, bigger (it is a darts shirt)
+    down: { z: 'mid', parts: [P(6, 12, ['A..A']), P(6, 13, ['AZZA'])] },
+    up: { z: 'mid', parts: [] },
+    right: { z: 'mid', parts: [P(10, 12, ['A', 'Z'])] },
+  },
+  dart: { // a dart, held up ready
+    down: { z: 'mid', parts: [P(14, 12, ['L', 'M', '1', '1']), P(13, 16, ['S'])] },
+    up: { z: 'mid', parts: [P(1, 12, ['L', 'M', '1', '1'])] },
+    right: { z: 'top', parts: [P(13, 12, ['L', 'M', '1', '1']), P(12, 15, ['S'])] },
+  },
+  puffer: { // bulky quilted puffer jacket
+    down: { z: 'mid', parts: [P(3, 11, ['.WTTTTTTt.', 'WTTTTTTTTt', 'tttttttttt', 'WTTTTTTTTt', 'tttttttttt', 'WTTTTTTTTt', 'tttttttttu']), P(1, 12, ['WT', 'TT', 'tt', 'TT', 'tt', 'ts']), P(13, 12, ['TW', 'tT', 'tt', 'tT', 'tt']), P(1, 17, ['Ss'])] },
+    up: { z: 'mid', parts: [P(3, 11, ['.WTTTTTTt.', 'WTTTTTTTTt', 'tttttttttt', 'WTTTTTTTTt', 'tttttttttt', 'WTTTTTTTTt', 'tttttttttu']), P(1, 12, ['WT', 'TT', 'tt', 'TT', 'tt', 'Ss']), P(13, 12, ['TW', 'TT', 'tt', 'TT', 'tt', 'sS'])] },
+    right: { z: 'mid', parts: [P(5, 11, ['.WTTTTTt.', 'WTTTTTTTt', 'ttttttttt', 'WTTTTTTTt', 'ttttttttt', 'WTTTTTTTt', 'tttttttuu']), P(6, 12, ['WTT', 'TTT', 'ttt', 'TTT', 'ttt', 'ts'])] },
+  },
+  phoneup: { // selfie arm: the right sleeve goes up, the phone goes ahead of it
+    down: { z: 'mid', parts: [P(13, 3, ['ooo', 'o1o', 'o1o', 'ooo']), P(14, 7, ['S']), P(13, 8, ['WT', 'Tt', 'tt', 'WT', 'Tt'])] },
+    up: { z: 'mid', parts: [P(13, 3, ['ooo', 'ooo', 'ooo', 'ooo']), P(14, 7, ['S']), P(13, 8, ['WT', 'Tt', 'tt', 'WT', 'Tt'])] },
+    right: { z: 'top', parts: [P(12, 3, ['ooo', 'o1o', 'o1o', 'ooo']), P(13, 7, ['S']), P(12, 8, ['WT', 'Tt', 'tt', 'WT', 'Tt'])] },
+  },
+  guitar: { // acoustic guitar slung across the belly, neck out to the side
+    down: { z: 'mid', parts: [P(7, 14, ['GRRr', 'RRRr']), P(6, 16, ['.GRRRr', 'GRRRRRr', 'GRoRRRr', 'GRoRRRr', '.rRRRr.']), P(11, 14, ['r']), P(12, 13, ['R']), P(13, 12, ['R']), P(14, 11, ['R']), P(15, 9, ['g', 'g']), P(5, 12, ['B', 'B', 'B', 'B'])] },
+    up: { z: 'mid', parts: [P(7, 14, ['GRRr', 'RRRr']), P(6, 16, ['.GRRRr', 'GRRRRRr', 'GRRRRRr', 'GRRRRRr', '.rRRRr.']), P(5, 12, ['B', 'B', 'B', 'B'])] },
+    right: { z: 'mid', parts: [P(8, 15, ['GRRr', 'RRor', 'RRRr', 'rRRr']), P(12, 14, ['Rr']), P(13, 13, ['R']), P(14, 12, ['g'])] },
+  },
+  scarf: { // knitted scarf
+    down: { z: 'mid', parts: [P(4, 12, ['OFOFOFOF']), P(9, 13, ['Ff', 'Ff', 'fN', 'fN'])] },
+    up: { z: 'mid', parts: [P(4, 12, ['OFOFOFOF']), P(9, 13, ['Ff', 'fN'])] },
+    right: { z: 'mid', parts: [P(7, 12, ['OFOFO']), P(6, 13, ['Ff', 'fN', 'fN'])] },
+  },
+  stagtee: { // the matching STAG t-shirt (white band, suggestive lettering)
+    down: { z: 'mid', parts: [P(4, 14, ['FFFFFFFF', 'FoFooFoF', 'FFFFFFFF'])] },
+    up: { z: 'mid', parts: [P(4, 14, ['FFFFFFFF', 'FoooFooF', 'FFFFFFFF'])] },
+    right: { z: 'mid', parts: [P(5, 14, ['FFFFFFF', 'FoFooFo', 'FFFFFFF'])] },
+  },
+  can: { // a can of lager
+    down: { z: 'top', parts: [P(12, 15, ['Lm', 'ZZ', 'mL']), P(11, 17, ['S'])] },
+    up: { z: 'mid', parts: [] },
+    right: { z: 'top', parts: [P(11, 15, ['Lm', 'ZZ', 'mL']), P(10, 17, ['S'])] },
+  },
+  apronH: { // the Home Brewer's leather apron
+    down: { z: 'mid', parts: [P(5, 12, ['b....b']), P(6, 13, ['DBBb', 'BBBb', 'BBBb']), P(5, 16, ['BBBBBb', 'BBBBBb', 'BBbbBb', 'BBBBBb', 'BBBBBb'])] },
+    up: { z: 'mid', parts: [P(5, 16, ['b....b'])] },
+    right: { z: 'mid', parts: [P(9, 13, ['DB', 'BB', 'BB', 'BB', 'BB', 'BBb', 'BBb'])] },
+  },
+  demijohn: { // a demijohn of something that is definitely fermenting
+    down: { z: 'mid', parts: [P(0, 11, ['..m..', '.wLw.', 'wZAAw', 'wAAAw', 'wAAaw', 'wAaaw', '.www.']), P(1, 17, ['S', 'x'])] },
+    up: { z: 'mid', parts: [P(11, 11, ['..m..', '.wLw.', 'wZAAw', 'wAAAw', 'wAAaw', 'wAaaw', '.www.'])] },
+    right: { z: 'back', parts: [P(1, 11, ['..m..', '.wLw.', 'wZAAw', 'wAAAw', 'wAAaw', 'wAaaw', '.www.'])] },
+  },
+  chefjacket: { // double-breasted whites with a red neckerchief
+    down: { z: 'mid', parts: [P(6, 12, ['KKKK']), P(6, 13, ['m..m', 'm..m', 'm..m', 'm..m'])] },
+    up: { z: 'mid', parts: [P(6, 12, ['KKKK'])] },
+    right: { z: 'mid', parts: [P(8, 12, ['KK']), P(10, 13, ['m', 'm', 'm'])] },
+  },
+  towel2: { // blue-striped kitchen towel over the shoulder
+    down: { z: 'mid', parts: [P(11, 11, ['OF', 'FF', '2f', 'FF', 'Ff', '2N'])] },
+    up: { z: 'mid', parts: [P(3, 11, ['OF', 'FF', '2f', 'FF', 'fN'])] },
+    right: { z: 'top', parts: [P(7, 11, ['OFf', 'F2N', 'Ff.', '2N.'])] },
+  },
+  cleaver: { // a meat cleaver, held aloft
+    down: { z: 'mid', parts: [P(0, 8, ['LLLL', 'LMMm', 'LoMm', 'LMMm', 'MMmn', 'mnnn']), P(1, 14, ['DB', 'DB', 'dB']), P(1, 16, ['S', 'x'])] },
+    up: { z: 'mid', parts: [P(12, 8, ['LLLL', 'LMMm', 'LMMm', 'LMMm', 'MMmn', 'mnnn']), P(13, 14, ['DB', 'DB', 'dB'])] },
+    right: { z: 'back', parts: [P(1, 8, ['LLLL', 'LMMm', 'LoMm', 'LMMm', 'MMmn', 'mnnn']), P(2, 14, ['DB', 'DB', 'dB'])] },
+  },
+  hivis: { // hi-vis jacket: reflective bands
+    down: (c) => { const a = CUFFROW[c.hold ? 0 : c.sw], b = CUFFROW[c.sw2]; return { z: 'mid', parts: [P(4, 14, ['LLLLLLLL']), P(5, 12, ['L', 'L']), P(10, 12, ['L', 'L']), P(2, a, ['LL']), P(12, b, ['LL'])] }; },
+    up: (c) => { const a = CUFFROW[c.sw2], b = CUFFROW[c.hold ? 0 : c.sw]; return { z: 'mid', parts: [P(4, 14, ['LLLLLLLL']), P(5, 12, ['L', 'L']), P(10, 12, ['L', 'L']), P(2, a, ['LL']), P(12, b, ['LL'])] }; },
+    right: { z: 'mid', parts: [P(5, 14, ['LLLLLLL']), P(9, 12, ['L', 'L'])] },
+  },
+  lollipop: { // the STOP lollipop sign (red disc, white bar), held out to the side
+    down: { z: 'mid', parts: [P(12, -5, ['.11.', '1ww1', '1ww1', '.11.']), P(14, -1, ['F', 'F', 'F', 'F', 'F', 'F', 'F', 'F', 'F', 'F', 'F', 'F', 'F', 'F', 'F', 'F', 'F', 'F', 'F', 'F', 'F']), P(13, 16, ['x'])] },
+    up: { z: 'mid', parts: [P(0, -5, ['.11.', '1111', '1111', '.11.']), P(1, -1, ['F', 'F', 'F', 'F', 'F', 'F', 'F', 'F', 'F', 'F', 'F', 'F', 'F', 'F', 'F', 'F', 'F', 'F', 'F', 'F', 'F'])] },
+    right: { z: 'back', parts: [P(1, -5, ['.11.', '1ww1', '1ww1', '.11.']), P(2, -1, ['F', 'F', 'F', 'F', 'F', 'F', 'F', 'F', 'F', 'F', 'F', 'F', 'F', 'F', 'F', 'F', 'F', 'F', 'F', 'F', 'F'])] },
+  },
+  ticketbox: { // handheld ticket machine on the belt
+    down: { z: 'mid', parts: [P(4, 15, ['oF', 'oo'])] },
+    up: { z: 'mid', parts: [P(10, 15, ['Fo', 'oo'])] },
+    right: { z: 'mid', parts: [P(10, 15, ['oF', 'oo'])] },
+  },
+});
+
+Object.assign(HEROES, {
+  knight: { // BOUNCER: bomber, shades, earpiece, clipboard, bat
+    head: ['shades', 'earpiece'], hair: 'buzz', openOk: false, hood: false, hairBy: { short: 'buzz', messy: 'buzz' },
+    ramps: { T: '#34343e', P: '#2a2a32', B: '#1a1a20', A: '#6a6a78', F: '#f4f4f8', R: '#b07a3e', M: '#c8ccd6', H: '#3a2a20' },
+    props: ['bat', 'clipboard', 'bomber'], spec: { 5: '#7a98c8', 2: '#e0d8c8' },
+  },
+  rogue: { // CHANCER: teal shell suit, flat cap, gold chain, a lot of watches
+    head: ['flatcap'], hair: 'short', openOk: false, hood: false,
+    ramps: { T: '#22b2a4', P: '#7c3cb8', B: '#f2f2f6', A: '#f0c840', C: '#8a7a64', F: '#f6f6fa', M: '#cfd4de', H: '#4a3220' },
+    remap: { torso: { A: 'T', Z: 'W', a: 't', z: 'u' } }, props: ['shell', 'chain', 'watches'],
+  },
+  mage: { // SPREADSHEET SORCERER: green wizard robe, specs, lanyard, a Post-it on the hat
+    head: ['wizoffice', 'glasses'], hair: 'short', body: 'robe', h: 29, hold: true, openOk: false, hood: false,
+    ramps: { C: '#1f7c4c', T: '#2c9c5e', A: '#e6e8f0', H: '#5a4630', M: '#8a90a0', B: '#2a2a32', F: '#f4f4f8' },
+    props: ['selfie', 'office'], spec: { 1: '#e04a4a', 2: '#2a9ad8', 3: '#fff070', 5: '#8ad8ff' },
+  },
+  cleric: { // BARMAID: wine skirt, white blouse, apron, tea towel, a pint
+    head: ['bun'], hair: 'long', body: 'robe', hold: true, openOk: false, hood: false,
+    look: { adam: { head: [], openOk: true }, devon: { head: [], openOk: true }, wendell: { head: [], openOk: true } },
+    ramps: { T: '#f6f2f6', P: '#8c2c3e', F: '#f6f1e6', A: '#f0a424', B: '#2a2028', H: '#a8462a' },
+    remap: { torso: SKIRT }, props: ['apronB', 'towelB', 'pint'], spec: { 1: '#3a6ac0' },
+  },
+  monk: { // GYM BRO: tank top, sweatband, shorts, big arms, protein shaker
+    head: ['sweat'], hair: 'short', openOk: true, hood: false,
+    ramps: { T: '#2a8cf2', P: '#1e1e28', B: '#f2f2f6', A: '#f6f6fa', H: '#4a3020' },
+    remap: { arms: BARE, legs: SHORTS }, props: ['tank', 'shaker'], spec: { 1: '#e84a3a', 2: '#e8e060' },
+  },
+  ranger: { // DARTS PLAYER: loud sponsor shirt, belly, gold chain, a dart between the fingers
+    head: [], hair: 'short', openOk: true, hood: false,
+    ramps: { T: '#d6322e', P: '#2c2c3a', B: '#1c1c22', A: '#f0c840', F: '#f6f6fa', M: '#c8ccd6', H: '#5a4630' },
+    remap: { arms: TEE }, props: ['jersey', 'belly', 'chainD', 'dart', 'wristband'], spec: { 1: '#f6d838' },
+  },
+  hexer: { // INFLUENCER: lavender puffer, quiff, huge shades, selfie
+    head: ['bigshades'], hair: 'quiff', h: 27, hold: true, openOk: false, hood: false, hairBy: { short: 'quiff', messy: 'quiff' },
+    ramps: { T: '#b6a0f2', P: '#2a2a34', B: '#f6f6fa', H: '#4a3020' },
+    remap: { arms: { W: 'W', T: 'T', t: 't', u: 'u' } }, props: ['puffer', 'phoneup'], spec: { 1: '#8aeaff', 5: '#8a7ab8' },
+  },
+  bard: { // BUSKER: beanie, scarf, olive jacket, acoustic guitar
+    head: ['beanie'], hair: 'short', openOk: false, hood: false,
+    ramps: { T: '#6c7c3c', P: '#3c4c70', B: '#5a3a24', C: '#e2a82e', F: '#d8483e', R: '#b8702e', H: '#4a3020' },
+    props: ['guitar', 'scarf'],
+  },
+  berserker: { // STAG DO LAD: matching hot-pink STAG tee, traffic cone, lager
+    head: ['cone'], hair: 'short', h: 32, openOk: false, hood: false,
+    ramps: { T: '#ff4fa6', P: '#2c3c6c', B: '#f2f2f6', A: '#ff8c1e', F: '#f8f8fa', M: '#d0d4de', H: '#5a4630' },
+    remap: { arms: TEE, legs: SHORTS }, props: ['stagtee', 'can'],
+  },
+  alchemist: { // HOME BREWER: bobble hat with hops, goggles up, leather apron, demijohn
+    head: ['bobble', 'goggles'], hair: 'short', h: 27, openOk: false, hood: false,
+    ramps: { T: '#e8c44c', P: '#4c4a3a', B: '#7c4c28', C: '#c45e2a', F: '#f6f2ea', M: '#d0a842', A: '#f0a420', H: '#5a4630' },
+    props: ['apronH', 'demijohn'], spec: { 1: '#6cc44c', 3: '#8adcf2' },
+  },
+  samurai: { // ANGRY CHEF: whites, toque, red face, towel, cleaver
+    head: ['toque', 'angry'], hair: 'short', h: 30, openOk: false, hood: false,
+    ramps: { T: '#f4f4f8', P: '#464654', B: '#2a2a32', F: '#f8f8fa', K: '#d83a2a', M: '#cfd4de', D: '#6a4428', H: '#4a3020' },
+    props: ['chefjacket', 'towel2', 'cleaver'], spec: { 1: '#ea4a36', 2: '#3a6cc8' },
+  },
+  paladin: { // TRAFFIC WARDEN: hi-vis jacket, peaked cap, STOP lollipop, ticket machine
+    head: ['peaked'], hair: 'short', hold: true, openOk: false, hood: false,
+    ramps: { T: '#eee83a', P: '#2a3052', B: '#1a1a22', A: '#2a2a34', C: '#242c4a', F: '#f6f6fa', M: '#e4e8f0', H: '#4a3020' },
+    props: ['lollipop', 'hivis', 'ticketbox'], spec: { 1: '#d42a2a' }, h: 29,
+  },
+});
+PROPS.wristband = armBand('FF', 'FF'); // darts player's sweat wristbands

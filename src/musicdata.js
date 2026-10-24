@@ -101,14 +101,15 @@ const enM = j(en6, 'D5:2 Bb4:2 Eb5:2 G5:2', 'Ab5:3 G5:1 F5:2 D5:2',
   en6, 'Ab5:2 F5:2 D5:2 F5:2', 'Eb5:8');
 
 // ---------- pub (The Bell & Anvil, the Gilded Goose, quiz night): jaunty 6/8 tavern jig (G major) ----------
-// 6/8 as 2 dotted-quarter beats of 6 sixteenths (eighth = 2 steps). Verse (accordion) / chorus (fiddle), then verse with
-// tin-whistle answers / chorus on the whistle; the verse opens on a falling bell figure (D-B-G)
+// 6/8 as 2 beats of 6 steps (a step is a sixteenth, an eighth is 2 steps; bpm counts dotted-quarter beats). 32 bars:
+// verse (accordion) / chorus (fiddle, accordion in sixths) / verse (accordion, tin whistle answers on beat 2 of the even bars) / chorus (rolled whistle, fiddle in sixths)
 const puA = 'G:12 C:12 G/B:12 Am7:6 D7:6 G:12 C:12 Am7:6 D7:6 G:12', puB = 'Em:12 C:12 G:6 E7:6 Am:6 D7:6 Em:12 C:6 A7:6 D7:12 G:6 D7:6';
-const puV = j('D5:4 B4:2 G4:4 B4:2', 'E5:4 D5:2 C5:6', 'D5:2 E5:2 D5:2 B4:2 A4:2 B4:2', 'C5:4 B4:2 A4:6', 'D5:4 B4:2 G4:4 B4:2', 'C5:4 E5:2 G5:6', 'E5:4 D5:2 C5:2 B4:2 A4:2', 'G4:6 -:6');
-const puC = j('G5:6 B5:6', 'C6:4 B5:2 G5:4 E5:2', 'D5:4 G5:2 B5:6', 'A5:4 G5:2 F#5:6', 'G5:6 B5:6', 'C6:4 B5:2 G5:4 E5:2', 'A5:4 G5:2 F#5:2 E5:2 F#5:2', 'G5:6 -:6');
-const puH = j('B4:6 E5:6', 'E5:4 D5:2 E5:4 C5:2', 'B4:6 D5:6', 'C5:4 B4:2 A4:6', 'B4:6 E5:6', 'E5:4 D5:2 E5:4 A4:2', 'C5:4 B4:2 A4:2 G4:2 A4:2', 'B4:6 -:6'); // sixths under the chorus
-const puUp = '-:6 D5:2 E5:2 F#5:2', puRest = j('-:12', '-:12', '-:12', '-:12', '-:12', '-:12', '-:12', '-:6 A4:2 B4:2 C5:2'); // pickups into the chorus / back into the verse
-const puW = j('-:12', '-:6 E5:2 G5:2 C6:2', '-:12', '-:6 F#5:2 A5:2 D6:2', '-:12', '-:6 E6:2 D6:2 C6:2', '-:12', puUp); // whistle answers the accordion's held notes
+const puV = j('D5:4 B4:2 G4:4 B4:2', 'E5:4 D5:2 C5:6', 'D5:3 E5:1 D5:2 B4:3 A4:1 B4:2', 'C5:4 B4:2 A4:6', 'D5:4 B4:2 G4:4 B4:2', 'C5:4 E5:2 G5:6', 'E5:4 D5:2 C5:3 B4:1 A4:2', 'G4:6 -:6');
+const puChorus = (open) => j(open, 'C6:4 B5:2 G5:4 E5:2', 'D5:4 G5:2 B5:6', 'A5:4 G5:2 F#5:6', open, 'C6:4 B5:2 G5:4 E5:2', 'A5:4 G5:2 F#5:3 E5:1 F#5:2', 'G5:6 -:6');
+const puC = puChorus('G5:6 B5:6'), puR = puChorus('G5:2 A5:1 G5:1 F#5:1 G5:1 B5:6'); // puR: the same chorus with a roll on its opening note
+const puH = j('B4:6 E5:6', 'E5:4 D5:2 E5:4 C5:2', 'B4:6 D5:6', 'C5:4 B4:2 A4:6', 'B4:6 E5:6', 'E5:4 D5:2 E5:4 A4:2', 'C5:4 B4:2 A4:3 G4:1 A4:2', 'B4:6 -:6'); // sixths under the chorus
+const puUp = '-:6 D5:3 E5:1 F#5:2', puBack = j('-:12', '-:12', '-:12', '-:12', '-:12', '-:12', '-:12', '-:6 A4:3 B4:1 C5:2'); // pickups into the chorus / back into the verse
+const puW = j('-:12', '-:6 E5:3 G5:1 C6:2', '-:12', '-:6 F#5:3 A5:1 D6:2', '-:12', '-:6 C6:2 D6:1 C6:1 D6:1 C6:1', '-:12', puUp); // whistle: arpeggio flicks, then a trill, on the accordion's held notes
 
 export const SCORES = {
   title: { bpm: 76, sub: 2, beats: 4, key: 'D major', e: 0.24, r: 0.3, echo: 3, fb: 0.3, prog: j(tiA, tiB), parts: [
@@ -252,20 +253,25 @@ export const SCORES = {
     { t: 'drum', v: 0.45, p: { s: '..rrrrrr' }, bars: [[15, 16]] },
     { t: 'drum', v: 0.5, p: { c: 'x' + '.'.repeat(63) }, bars: [[16, 17]] }] },
 
-  pub: { bpm: 96, sub: 6, beats: 2, key: 'G major', e: 0.2, r: 0.22, echo: 6, fb: 0.25, prog: j(puA, puB, puA, puB), parts: [
-    { t: 'mel', i: 'accordion', v: 0.55, n: j(puV, puRest, puV, puRest) },
-    { t: 'mel', i: 'strings', v: 0.55, at: 7, pan: -0.15, n: j(puUp, puC) },
-    { t: 'mel', i: 'accordion', v: 0.3, at: 8, pan: 0.2, n: puH },
-    { t: 'mel', i: 'panflute', v: 0.5, at: 16, pan: 0.2, n: j(puW, puC) },
-    { t: 'mel', i: 'strings', v: 0.32, at: 24, pan: -0.25, n: puH },
-    { t: 'pad', i: 'pizz', v: 0.3, c: 62, rh: '-:4 x:2', pan: -0.3 },
+  pub: { gain: 1.1, bpm: 96, sub: 6, beats: 2, key: 'G major', e: 0.2, r: 0.22, echo: 6, fb: 0.25, prog: j(puA, puB, puA, puB), parts: [
+    { t: 'mel', i: 'accordion', v: 0.8, n: j(puV, puBack, puV, puBack) },
+    { t: 'mel', i: 'strings', v: 0.8, at: 7, pan: -0.15, n: j(puUp, puC) },
+    { t: 'mel', i: 'accordion', v: 0.5, at: 8, pan: 0.2, n: puH },
+    { t: 'mel', i: 'panflute', v: 0.45, at: 16, pan: 0.2, n: puW },
+    { t: 'mel', i: 'panflute', v: 0.55, at: 24, pan: 0.2, n: puR },
+    { t: 'mel', i: 'strings', v: 0.45, at: 24, pan: -0.25, n: puH },
+    { t: 'pad', i: 'pizz', v: 0.3, c: 62, rh: '-:4 x:2', pan: -0.3, bars: [[0, 8], [16, 24]] },
+    { t: 'pad', i: 'pizz', v: 0.3, c: 62, rh: '-:2 x:2 x:2', pan: -0.3, bars: [[8, 16], [24, 32]] },
     { t: 'pad', i: 'pad', v: 0.14, c: 60, bars: [[8, 16], [24, 32]] },
-    { t: 'bass', i: 'bass', v: 0.55, pat: 'R:4 -:2 L:4 -:2', lo: 38 },
+    { t: 'bass', i: 'bass', v: 0.6, pat: 'R:4 -:2 L:4 -:2', lo: 38, bars: [[0, 8], [16, 24]] },
+    { t: 'bass', i: 'bass', v: 0.6, pat: 'R:4 -:2 5:4 -:2', lo: 38, bars: [[8, 16], [24, 32]] },
     { t: 'drum', v: 0.45, p: { b: 'x.....o.....', m: 'x.o.o.x.o.o.' } },
-    { t: 'drum', v: 0.45, pan: 0.25, p: { j: '....x.....x.' }, bars: [[8, 16], [24, 32]] },
-    { t: 'drum', v: 0.45, pan: -0.25, p: { w: '..x.....x...' }, bars: [[16, 32]] },
     { t: 'drum', v: 0.45, p: { b: '........o.x.' }, bars: [[7, 8], [23, 24]] },
-    { t: 'drum', v: 0.45, pan: 0.25, p: { j: '......rrrr..' }, bars: [[15, 16], [31, 32]] }] },
+    { t: 'drum', v: 0.9, pan: 0.25, p: { j: '....x.....x.' }, bars: [[8, 16], [24, 32]] },
+    { t: 'drum', v: 0.6, pan: -0.25, p: { w: '..x.....x...' }, bars: [[16, 32]] },
+    { t: 'drum', v: 0.9, pan: 0.25, p: { j: '......rrrr..' }, bars: [[15, 16], [31, 32]] },
+    { t: 'drum', v: 0.6, pan: -0.25, p: { w: '..........xx' }, bars: [[15, 16], [31, 32]] },
+    { t: 'drum', v: 0.4, pan: 0.3, p: { e: 'x...........' }, bars: [[8, 9], [24, 25]] }] },
 };
 
 // names the game may ask for before they are wired up (or old names) -> the closest existing piece
