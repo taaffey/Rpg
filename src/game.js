@@ -2,6 +2,7 @@
 import { SOCKET_COST, DIFFICULTY, DROPS, STORY, KEY_ITEMS, TRAITS, CALLING_BATCHES } from './data.js';
 import { JOBS, SKILLS, GEMS, WEAPONS, ARMORS, ACCS, ITEMS, WEAPON_TYPES, ENEMIES, ENCOUNTERS, ELEM_ICON, BOSSES, SHOPS, QUESTS } from './data.js';
 import { MAPS, WALK } from './maps.js';
+import { GEN } from './mapgen.js';
 import * as L from './logic.js';
 import { BROS, COMBOS, LOCALS, PARTY_SCALE, PHONE, PHONE_CHARGED, PUB, WAKE, CELLAR_IN, GARY_DOWN, CALLED, CALLED_AFTER, WENDELL } from './bros.js';
 import * as SP from './sprites.js';
@@ -171,7 +172,7 @@ const FLAT_DECOR = new Set(['trapdoor']); // drawn on the floor: walk right over
 const decorAt = (x, y) => mapDef().decor?.some((d) => d[0] === x && d[1] === y && !FLAT_DECOR.has(d[2]));
 const here = (n) => !(n.local && G.party.some((c) => c.look === n.local)); // locals leave their post once they join
 const npcAt = (x, y) => mapDef().npcs?.find((n) => n.x === x && n.y === y && here(n));
-const regionOf = () => { if (G.map !== 'world') return null; const t = tileAt(G.x, G.y); return t === ',' || t === 't' ? 'snow' : t === ':' ? 'swamp' : t === 'd' ? 'desert' : G.y <= 13 ? 'plains' : 'green'; };
+const regionOf = () => { if (G.map !== 'world') return null; const t = tileAt(G.x, G.y); return t === ',' || t === 't' ? 'snow' : t === ':' ? 'swamp' : t === 'd' ? 'desert' : G.y <= (GEN.deco?.plainsY ?? 13) ? 'plains' : 'green'; };
 const REGION_NAME = { snow: 'Frostfields', swamp: 'Mire Marsh', plains: 'Northern Plains', green: 'Greenmarch', desert: 'Sunscar Sands' };
 function musicFor() { const m = mapDef(); if (m.kind !== 'outdoor') return m.music; const r = regionOf(); return r === 'snow' ? 'snow' : r === 'desert' ? 'desert' : r === 'swamp' ? 'mirewood' : 'world'; }
 function reveal() { // fog of war
@@ -215,7 +216,7 @@ function drawMini(c2, id, scale, ox, oy, t, noPlayer = false) {
 }
 function miniOverlay(t) {
   const m = mapDef(); if (!OPT.minimap || !m.fog) return;
-  const W = m.rows[0].length, H = m.rows.length, sc = Math.max(2, Math.min(Math.floor(104 / W), Math.floor(80 / H))), w = W * sc, h = H * sc, ox = cv.width - w - 8, oy = 8;
+  const W = m.rows[0].length, H = m.rows.length, sc = Math.max(1, Math.min(Math.floor(104 / W), Math.floor(80 / H))), w = W * sc, h = H * sc, ox = cv.width - w - 8, oy = 8;
   if (miniDirty || miniCache.id !== G.map) { // redraw the static layer only when something was revealed or changed
     miniCache.id = G.map; miniCache.sc = sc; miniCache.canvas.width = w; miniCache.canvas.height = h; miniDirty = false;
     const mc = miniCache.canvas.getContext('2d'), art = G.map === 'world' && TR.mapImage ? TR.mapImage(m) : null, seen = G.flags.seen[G.map] || [];
@@ -876,7 +877,7 @@ const OBJECTIVES = [ // the main thread, in the story's voice. show / after / do
   { title: 'The Grey Hand', show: 'wyrm|lich', hint: 'The seals were not broken. They were cut. Who would free such things?', done: 's:met', doneHint: 'Sereth, last apprentice of Gemforge. He wants the hearts.' },
   { title: 'North', after: 'wyrm', hint: 'The pass is open. Frostholm lies beyond it.', done: 'v:frostholm', doneHint: 'Frostholm stands in the shadow of the Frost Spire.' },
   { title: 'The Walking Mountain', after: 'wyrm lich', lockHint: 'The Frost Spire\'s door is sealed with the drowned king\'s mark. Morvath first.', hint: 'The Frost Spire rises north-east of Frostholm. The Titan waits at its summit.', metHint: 'Sereth waits atop the Frost Spire. So does the Titan.', done: 'titan', doneHint: 'The mountain sleeps. Sereth is dust.' },
-  { title: 'Thunder on the Plains', after: 'wyrm', optional: true, hint: 'A drake nests in the Storm Cavern on the Northern Plains. Not for the faint (Lv 11+).', done: 'storm_drake', doneHint: 'Stars over the plains again.' },
+  { title: 'Thunder on the Plains', after: 'wyrm', optional: true, hint: 'A drake nests in the Storm Cavern in the Frostfields. Not for the faint (Lv 11+).', done: 'storm_drake', doneHint: 'Stars over the plains again.' },
   { title: 'The Sun Pharaoh', optional: true, hint: 'Something asks riddles beneath the Sunscar Ruins, south-east of Haven (Lv 11+).', done: 'sphinx', doneHint: 'The riddle is answered.' },
 ];
 ACT.journal = () => {

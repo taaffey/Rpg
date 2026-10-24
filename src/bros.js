@@ -190,8 +190,8 @@ Object.assign(SKILLS, {
 // Payoff: Devon's phone finally reaches 4% (reward flag 'charged').
 QUESTS.charger = { title: 'Lightning in a Jar', giver: 'Frostholm tinkerer', goal: { type: 'find', item: 'storm_shard', where: 'Storm Cavern' }, reward: { gold: 600, items: { megaether: 1 }, flag: 'charged' },
   lines: {
-    offer: ['Is that a... glowing slate? In your hand? With a tiny lightning bolt on it?', 'It\'s hungry. I can tell. Bring me a Storm Shard from the cavern on the Northern Plains and I\'ll bottle you some lightning.'],
-    active: ['A Storm Shard. The Storm Cavern, on the Northern Plains. Look in the chests; the drake hoards the shiny ones.'],
+    offer: ['Is that a... glowing slate? In your hand? With a tiny lightning bolt on it?', 'It\'s hungry. I can tell. Bring me a Storm Shard from the cavern in the Frostfields and I\'ll bottle you some lightning.'],
+    active: ['A Storm Shard. The Storm Cavern, in the Frostfields. Look in the chests; the drake hoards the shiny ones.'],
     ready: ['A Storm Shard! Hold the slate still... and... THERE.', 'One whole percent! I have no idea what that means, but the slate seems very pleased.'],
     done: ['I\'ve been calling it "the Devon". It\'s a jar that hums. People are queuing.'],
   } };
