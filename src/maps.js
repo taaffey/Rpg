@@ -40,7 +40,7 @@ function interior(id, name, kind, back, opts = {}) {
 const PROP_FOOT = { stall: [3, 2], lamp: [1, 1], barrel: [1, 1], barrels: [2, 1], crate: [1, 1], crates: [2, 1], sacks: [1, 1], bench: [2, 1], well: [2, 2], cart: [2, 1], snowman: [1, 1], logs: [2, 1], pot: [1, 1], board: [1, 1], hay: [1, 1], statue: [1, 1], totem: [1, 1], sled: [2, 1], reeds: [1, 1], nets: [2, 1],
   // the Bell Village (Haven): bell tower 5x2, shrine chapel, Gemforge's grave slab, market cross, maypole, stocks, farm-cart stalls, notice board,
   // trestle table, hay cart, haystack, prize marrow, beehives, the waterwheel's walkway
-  tower: [5, 2], chapel: [4, 3], gemgrave: [2, 1], cross: [1, 1], maypole: [1, 1], stocks: [2, 1], cartstall: [3, 2], noticeboard: [2, 1], trestle: [2, 1], haycart: [3, 2],
+  tower: [3, 2], chapel: [4, 3], gemgrave: [2, 1], cross: [1, 1], maypole: [1, 1], stocks: [2, 1], cartstall: [3, 2], noticeboard: [2, 1], trestle: [2, 1], haycart: [3, 2],
   haystack: [2, 2], marrow: [2, 1], hives: [3, 1], wheel: [2, 1], post: [1, 1] };
 // props whose solid cells are not one rectangle: [dx, dy] offsets from the prop's x, y (lych gate posts, the bridge's parapets)
 const PROP_CELLS = { lychgate: (o) => [[0, 0], [(o.w || 3) + 1, 0]], bridge: (o) => { const c = []; for (let i = 0; i < (o.w || 3); i++) c.push([i, -1], [i, 1]); return c; } };
@@ -95,15 +95,17 @@ const TOWNS = {
     'Th.........kkkkkk.,,,,,,,,,,,....~~.....hT',
     'TT.........kkkkkk.,,,,,,,,,,,....~~.....TT',
     'T..........kkkkkk.,,,,,,,,,,,....~~......T',
-    'Thhhhhhhhhhhhhhhhhhhhh,,,hhhhhhhh~~hhhhhhT',
+    'ThhhhThhThhhhhhhhhhhhh,,,hhhhThhh~~hhThThT',
     'T#####################EEE########~~######T',],
   [[13, 14, 9, 4, 'inn', 4, 'haven_inn'], [26, 14, 7, 4, 'guild', 3, 'haven_guild'], [10, 24, 5, 3, 'shop', 2, 'haven_shop'], [27, 24, 6, 3, 'smith', 1, 'haven_smith'],
     [10, 5, 5, 4, 'house', 2, 'haven_cottage'], [35, 13, 5, 4, 'elder', 2, 'haven_elder']],
-  [['tower', 21, 6], ['steps', 22, 10, { w: 3, h: 2 }], ['chapel', 2, 15], ['gemgrave', 3, 22], ['weir', 7, 9, { w: 2 }], ['stones', 6, 11, { w: 4 }], ['jetty', 6, 6, { w: 4 }], ['bridge', 6, 19, { w: 4 }], ['ford', 22, 28, { w: 3, h: 2 }],
-    ['cross', 23, 19], ['ring', 17.5, 22.9, { r: 20 }], ['maypole', 17, 22], ['stocks', 19, 23], ['noticeboard', 20, 18], ['cartstall', 25, 19], ['cartstall', 25, 22],
+  [['tower', 22, 6], ['steps', 22, 10, { w: 3, h: 2 }], ['chapel', 2, 15], ['gemgrave', 3, 22], ['weir', 7, 9, { w: 2 }], ['stones', 6, 11, { w: 4 }], ['jetty', 6, 6, { w: 4 }], ['bridge', 6, 19, { w: 4 }], ['ford', 22, 28, { w: 3, h: 2 }],
+    ['cross', 23, 19], ['ring', 17.5, 22.9, { r: 20 }], ['maypole', 17, 22], ['stocks', 19, 23], ['noticeboard', 20, 18], ['cartstall', 25, 19, { c: 'veg' }], ['cartstall', 25, 22, { c: 'fur' }],
     ['trestle', 13, 19], ['trestle', 19, 20], ['trestle', 14, 21], ['barrel', 13, 18], ['barrel', 19, 18], ['post', 13, 20], ['post', 21, 20], ['lanterns', 13, 20, { w: 8 }],
-    ['crates', 15, 25], ['sacks', 15, 24], ['barrel', 9, 25], ['bench', 29, 22], ['bench', 15, 22], ['well', 37, 21], ['wheel', 31, 27], ['washline', 33, 15, { w: 2 }],
-    ['haycart', 19, 31], ['haystack', 36, 30], ['haystack', 38, 30], ['hives', 38, 8], ['marrow', 9, 31], ['lychgate', 21, 33, { w: 3 }],
+    ['crates', 15, 25], ['sacks', 15, 24], ['barrel', 9, 25], ['bench', 29, 22], ['bench', 17, 9], ['well', 37, 21], ['wheel', 31, 27], ['washline', 33, 15, { w: 2 }],
+    ['haycart', 17, 31], ['haystack', 36, 30], ['haystack', 38, 30], ['hives', 38, 8], ['marrow', 9, 31], ['lychgate', 21, 33, { w: 3 }],
+    ['geese', 14, 24, { w: 5, h: 2, n: 2 }], ['pondfowl', 30.5, 20.5, { rx: 1.0, ry: 0.4, n: 2 }], ['goats', 36, 24, { w: 3, h: 3, n: 3 }], ['goats', 20.6, 30.1, { n: 1 }], ['rowboat', 6.5, 7.1],
+    ['guildbanner', 27.8, 14.9], ['guildbanner', 30.2, 14.9], ['sparks', 28.2, 18.8],
     ['patch', 16, 3, { w: 5, h: 3, c: 'poppy' }], ['patch', 27, 3, { w: 4, h: 3, c: 'daisy' }], ['patch', 2, 28, { w: 4, h: 2, c: 'bluebell' }], ['patch', 36, 10, { w: 3, h: 2, c: 'buttercup' }]]),
   frostholm: town([
     'tttttttttttttttttttttttttttttt',
@@ -174,14 +176,14 @@ const doorPortals = (t) => Object.fromEntries(Object.entries(TOWNS[t].doors).map
 
 // ---------------------------------------------------------------- Haven Town
 // named places other code can rely on (the wake-up, the finale, the wipe respawn, the world-map landing...): each a walkable [x, y]
-const HAVEN_SPOTS = { wake: [22, 31], gate: [23, 32], bell: [23, 8], green: [21, 21], goose: [17, 18], respawn: [16, 19] };
+const HAVEN_SPOTS = { wake: [20, 31], gate: [23, 32], bell: [23, 8], green: [21, 21], goose: [17, 18], respawn: [16, 19] };
 MAPS.haven = {
   name: 'Haven Town', kind: 'town', theme: 'village', music: 'town', rows: TOWNS.haven.rows, base: TOWNS.haven.base, buildings: TOWNS.haven.buildings, props: TOWNS.haven.props,
   spots: HAVEN_SPOTS, spawn: { x: HAVEN_SPOTS.wake[0], y: HAVEN_SPOTS.wake[1] },
   portals: { [P(22, 34)]: portal('world', 7, 21), [P(23, 34)]: portal('world', 7, 21), [P(24, 34)]: portal('world', 7, 21), ...doorPortals('haven') },
   decor: [],
   npcs: [
-    { x: 25, y: 32, type: 'guard', name: 'Guard', text: ['Oi, you two. Nice face-curtains. Don\'t walk out that gate empty-handed. The smithy is up the main street.', 'The Wyrm sleeps in the Ashen Cavern, east of here. Old songs say it hates the cold. Bring ice, lads.'],
+    { x: 26, y: 32, type: 'guard', name: 'Guard', text: ['Oi, you two. Nice face-curtains. Don\'t walk out that gate empty-handed. The smithy is up the main street.', 'The Wyrm sleeps in the Ashen Cavern, east of here. Old songs say it hates the cold. Bring ice, lads.'],
       textBy: [['titan', ['Did you hear the old bell this morning? Nobody pulled the rope. Nobody. I\'ve had to have a little sit down.']],
         ['wyrm lich', ['The Wyrm AND the drowned king? I\'m standing up straighter. I\'ve also started a beard. Solidarity.']],
         ['wyrm', ['Whole watch heard the mountain roar, then go quiet. Was that you? Course it was. Look at the eyebrows on you.', 'Traders are already loading carts for the north road. The pass to Frostholm is open again.']],
@@ -189,9 +191,9 @@ MAPS.haven = {
     { x: 20, y: 24, type: 'villager', name: 'Villager', quest: 'slimes', text: ['The road north is blocked by a rockslide. They say the Wyrm\'s snoring shook the mountain loose.', 'Your ginger friend keeps waving a little black slate at the sky shouting "one bar, ONE BAR". Is he well?'],
       textBy: [['wyrm', ['The rockslide\'s gone! My cousin in Frostholm can visit at last. ...I\'m not sure that\'s good news.']]] },
     { x: 18, y: 22, type: 'kid', name: 'Child', textBy: [['titan', ['When I grow up I\'m going to have a beard like Adam\'s. Or Devon\'s. Devon\'s has a whole biscuit in it.', 'Psst... did you ever find my treasure box? Behind the castle, past the barrels by the old tree.']]], text: ['Mister! Is that a real beard or are you a bear? The ginger one says he\'s "half bear, bro".', 'Psst... I hid my treasure box behind the castle, past the barrels by the old tree. Don\'t tell!'] },
-    { x: 21, y: 8, type: 'guard', name: 'Bell Warden', text: ['Halt! The castle is closed while the King holds council. No, you cannot "just pop in for a selfie".'],
+    { x: 22, y: 8, type: 'guard', name: 'Bell Warden', text: ['Halt! The castle is closed while the King holds council. No, you cannot "just pop in for a selfie".'],
       textBy: [['titan', ['The King would knight the pair of you, if you\'d stop pointing that slate at him.']], ['wyrm|lich', ['The King has heard of you. He says the realm is grateful.', '...The castle is still closed. Kings, eh.']]] },
-    { x: 25, y: 8, type: 'guard', name: 'Bell Warden', text: ['Haven Castle has guarded this harbour for three hundred years. Since Gemforge\'s day.', 'And no, it does not have "Wi-Fi". Whatever you think that is, we haven\'t got it.'] },
+    { x: 24, y: 8, type: 'guard', name: 'Bell Warden', text: ['Haven Castle has guarded this harbour for three hundred years. Since Gemforge\'s day.', 'And no, it does not have "Wi-Fi". Whatever you think that is, we haven\'t got it.'] },
     { x: 28, y: 23, type: 'villager2', name: 'Furrier', quest: 'wolves', text: ['Every hunt teaches you something. Change your calling and you keep what you learned; that is how the old heroes did it.', 'The neat-bearded one called it "transferable skills". Sounds like witchcraft to me.'] },
     { x: 5, y: 22, type: 'elder', name: 'Acolyte', quest: 'tombs', text: ['Light keep you, travellers. The temple tends Gemforge\'s grave. Someone leaves grey flowers on it every spring.', 'No, there is no gift shop. What is a gift shop? Why do you both look so sad about it?'],
       textBy: [['s:met', ['Sereth? The temple books name him: Gemforge\'s last apprentice, cast out for cutting a gem into his own heart.', 'That was three hundred years ago. No man lives so long. ...No man should. He also owes us three centuries of library fines.']],
