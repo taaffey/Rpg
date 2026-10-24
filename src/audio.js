@@ -141,6 +141,7 @@ const P = {
   panflute: { w: ['flute'], a: 0.05, d: 0.3, s: 0.8, r: 0.2, vib: [6, 0.3], peak: 0.45, breath: 0.12 },
   ocarina: { w: ['ocarina'], a: 0.04, d: 0.3, s: 0.9, r: 0.1, vib: [12, 0.2], peak: 0.5 },
   reed: { w: ['reed'], lp: 3000, a: 0.03, d: 0.3, s: 0.85, r: 0.1, vib: [14, 0.18], peak: 0.34 },
+  accordion: { w: ['reed', 'reed'], det: [-10, 10], lp: 2600, a: 0.02, d: 0.3, s: 0.85, r: 0.08, peak: 0.24 }, // musette: two reeds a few cents apart beat against each other, no vibrato
   choir: { w: ['choir', 'choir'], det: [-9, 9], lp: 2000, a: 0.25, d: 0.5, s: 1, r: 0.5, vib: [8, 0.3], peak: 0.26 },
   glass: { w: ['glass'], lp: 5000, a: 0.12, d: 1, s: 0.85, r: 0.8, vib: [6, 0.3], peak: 0.42 },
   pad: { w: ['sawtooth', 'sawtooth', 'sawtooth'], det: [-11, 0, 11], lp: 1150, a: 0.45, d: 1, s: 1, r: 0.9, peak: 0.12 },
