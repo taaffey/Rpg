@@ -119,7 +119,7 @@ await pg.click('[data-act=bmain]');
 await closeAll();
 
 // --- explore the world: fog of war grows; options persist; save + reload + continue
-await ev(() => window.__game.goto('world', 7, 21)); await key('ArrowRight', 5, 140);
+await ev(() => window.__game.goto('world', 10, 25)); await key('ArrowRight', 5, 140);
 const seenCount = () => ev(() => window.__game.G.flags.seen.world.join('').split('1').length - 1);
 const s1 = await seenCount(); ok('fog of war reveals tiles', s1 > 20, `(${s1} tiles)`);
 await ev(() => { const o = window.__game.OPT; o.speed = 'fast'; });
@@ -135,7 +135,7 @@ ok('fog persisted through save', after.seen === s1);
 ok('options persisted', (await ev(() => window.__game.OPT.minimap)) === false && (await ev(() => window.__game.OPT.speed)) === 'fast');
 
 // --- gate, region music/banners, battle by keyboard only
-await ev(() => window.__game.goto('world', 29, 17)); await key('ArrowUp', 3, 150);
+await ev(() => window.__game.goto('world', 24, 17)); await key('ArrowUp', 3, 150);
 ok('northern pass blocked before the Wyrm falls', (await ev(() => window.__game.G.y)) === 17);
 await ev(() => { window.__game.G.flags.bosses.wyrm = true; }); await key('ArrowUp', 4, 170);
 ok('pass opens after the Wyrm', (await ev(() => window.__game.G.y)) <= 13);
@@ -213,9 +213,9 @@ await closeAll();
 // --- Sunscar Ruins (optional dungeon), new side quests end-to-end, hidden treasure
 const talkTo = async (map, x, y, dir) => { await closeAll(); await ev(([m, x2, y2]) => window.__game.goto(m, x2, y2), [map, x, y]); await pg.waitForTimeout(150); await key(dir, 1, 250); };
 const clickWhen = async (sel) => { for (let i = 0; i < 14 && !(await pg.$(sel)); i++) await key('Enter', 1, 120); const el = await pg.$(sel); if (el) { await el.click(); await pg.waitForTimeout(150); } return !!el; };
-await talkTo('world', 29, 26, 'ArrowUp');
+await talkTo('world', 26, 34, 'ArrowRight');
 ok('Desert Oracle offers the Sphinx quest', /Oracle/.test(await overlayTitle()) && (await clickWhen('[data-act=qaccept]')) && (await ev(() => window.__game.G.flags.quests.sphinx)) === 'active');
-await closeAll(); await ev(() => window.__game.goto('world', 31, 25)); await key('ArrowUp', 1, 450);
+await closeAll(); await ev(() => window.__game.goto('world', 29, 34)); await key('ArrowUp', 1, 450);
 ok('entered the Sunscar Ruins from the desert', (await ev(() => window.__game.G.map)) === 'ruins' && (await ev(() => window.__game.MAPS[window.__game.G.map].theme)) === 'ruins');
 await talkTo('mirewood', 18, 15, 'ArrowUp');
 ok('Apothecary offers the stinger hunt', (await clickWhen('[data-act=qaccept]')) && (await ev(() => window.__game.G.flags.quests.stingers)) === 'active');
@@ -232,10 +232,10 @@ ok('the apprentice takes the letter and pays', (await clickWhen('[data-act=qdeli
 await closeAll(); await ev(() => window.__game.goto('ruins', 3, 2)); await pg.waitForTimeout(200);
 await quickFight(['sphinx'], 'sphinx');
 ok('Sphinx Pharaoh slain: flag, Khopesh and Sun Disc', (await ev(() => window.__game.G.flags.bosses.sphinx)) === true && (await ev(() => window.__game.G.inv.weapons.includes('khopesh') && window.__game.G.inv.accs.includes('sun_disc'))));
-await talkTo('world', 29, 26, 'ArrowUp');
+await talkTo('world', 26, 34, 'ArrowRight');
 const gSph = await ev(() => window.__game.G.gold);
 ok('Oracle pays out the Sphinx quest', (await clickWhen('[data-act=qclaim]')) && (await ev(() => window.__game.G.gold)) === gSph + 2000);
-await closeAll(); await ev(() => window.__game.goto('world', 14, 27)); await pg.waitForTimeout(150); await key('ArrowRight', 1, 300);
+await closeAll(); await ev(() => window.__game.goto('world', 12, 39)); await pg.waitForTimeout(150); await key('ArrowRight', 1, 300);
 ok('hidden treasure under the waterfall is dug up', /Hidden treasure/.test(await overlayTitle()) && (await ev(() => window.__game.G.flags.qitems.doubloon)) === true);
 await closeAll();
 await ev(() => { window.__game.G.flags.bosses.wyrm = true; });

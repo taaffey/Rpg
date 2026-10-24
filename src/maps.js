@@ -159,7 +159,7 @@ const doorPortals = (t) => Object.fromEntries(Object.entries(TOWNS[t].doors).map
 // ---------------------------------------------------------------- Haven Town
 MAPS.haven = {
   name: 'Haven Town', kind: 'town', theme: 'town', music: 'town', rows: TOWNS.haven.rows, base: TOWNS.haven.base, buildings: TOWNS.haven.buildings, props: TOWNS.haven.props, spawn: { x: 17, y: 32 },
-  portals: { [P(16, 33)]: portal('world', 7, 21), [P(17, 33)]: portal('world', 7, 21), [P(18, 33)]: portal('world', 7, 21), ...doorPortals('haven') },
+  portals: { [P(16, 33)]: portal('world', ...GEN.adj.haven), [P(17, 33)]: portal('world', ...GEN.adj.haven), [P(18, 33)]: portal('world', ...GEN.adj.haven), ...doorPortals('haven') },
   decor: [],
   npcs: [
     { x: 19, y: 31, type: 'guard', name: 'Guard', text: ['Oi, you two. Nice face-curtains. Don\'t walk out that gate empty-handed. The smithy is up the main street.', 'The Wyrm sleeps in the Ashen Cavern, east of here. Old songs say it hates the cold. Bring ice, lads.'],
@@ -197,7 +197,7 @@ interior('haven_cottage', 'Fisher\'s Cottage', 'house', back('haven', 'haven_cot
 // ---------------------------------------------------------------- Frostholm
 MAPS.frostholm = {
   name: 'Frostholm', kind: 'town', theme: 'snowtown', music: 'frosttown', rows: TOWNS.frostholm.rows, base: TOWNS.frostholm.base, buildings: TOWNS.frostholm.buildings, props: TOWNS.frostholm.props, spawn: { x: 14, y: 26 },
-  portals: { [P(14, 27)]: portal('world', 27, 9), [P(15, 27)]: portal('world', 27, 9), ...doorPortals('frostholm') },
+  portals: { [P(14, 27)]: portal('world', ...GEN.adj.frost), [P(15, 27)]: portal('world', ...GEN.adj.frost), ...doorPortals('frostholm') },
   decor: [],
   npcs: [
     { x: 16, y: 25, type: 'guard', name: 'Guard', text: ['Frostholm owes you for that pass. Mind the cold; it bites harder than the wolves. ...Shorts, lad? SHORTS?', 'The Spire is north-east. The grey man went up a month ago. Nobody has seen him since.'],
@@ -222,7 +222,7 @@ const CAVERN = [
   '#.####.#.####.#.##.#', '#.#C...#.#..#.#.#C.#', '#.#.####.#..#...#..#', '#.#......#..#####..#', '#.######.#.........#', '#........#####X###C#', '####################'];
 MAPS.cavern = {
   name: 'Ashen Cavern', kind: 'dungeon', theme: 'cavern', music: 'dungeon', rows: CAVERN, spawn: { x: 2, y: 1 }, enc: 'dungeon', rate: 0.09, fog: 4,
-  portals: { [P(1, 1)]: portal('world', 24, 20) },
+  portals: { [P(1, 1)]: portal('world', ...GEN.adj.cavern) },
   chests: { [P(3, 3)]: { gems: ['echo'] }, [P(14, 4)]: { weapons: ['shadow_edge'] }, [P(3, 8)]: { weapons: ['archmage_staff'], gold: 200 }, [P(17, 8)]: { weapons: ['void_grimoire'], gems: ['chain'] }, [P(18, 12)]: { gold: 50, qitem: 'heirloom' } },
   boss: { x: 14, y: 12, id: 'wyrm' },
 };
@@ -278,13 +278,13 @@ MAPS.world = {
   npcs: [
     { x: ux - 2, y: uy + 1, type: 'elder', name: 'Desert Oracle', quest: 'sphinx', text: ['The sand remembers everything, child. Even you. Especially the shorts.', 'Seek the hermit of the northern plains, if the pass ever opens. He knows where the old kings hid their gifts.'],
       textBy: [['wyrm lich titan', ['The three are gone. The sand will forget them. It will not forget you. It has tried.']], ['wyrm|lich', ['The sand whispers of a man who cuts stone the way others cut bread. He is no friend of yours.', '@base']]] },
-    { x: 8, y: 8, type: 'elder', name: 'Plains Hermit', text: ['Visitors! Sit, sit. Forty winters alone on these plains, and now two beards walk in. Is this a beard-off? I accept.', 'The old kings of Greenmarch hid gifts for the worthy. One lies in the north-west, where the land ends beneath the twin peaks.', 'And the sea-captain Redwake buried his gold by a waterfall in the south. Haven\'s old sailor knows the tale.', 'Look for a faint glimmer on the ground. Treasure likes to twinkle.'],
+    { x: GEN.deco.hermit[0], y: GEN.deco.hermit[1], type: 'elder', name: 'Plains Hermit', text: ['Visitors! Sit, sit. Forty winters alone on these plains, and now two beards walk in. Is this a beard-off? I accept.', 'The old kings of Greenmarch hid gifts for the worthy. One lies in the north-west, where the land ends beneath the twin peaks.', 'And the sea-captain Redwake buried his gold by a waterfall in the south. Haven\'s old sailor knows the tale.', 'Look for a faint glimmer on the ground. Treasure likes to twinkle.'],
       textBy: [['titan', ['The north wind smells of spring, for once. Your doing, I wager. My beard still wins, mind.', 'The old kings\' gift still waits in the north-west, beneath the twin peaks. And Redwake\'s gold by the southern falls.']],
         ['wyrm !s:met', ['Visitors! Sit, sit. A grey man passed this way a while back, asking about the old kings. I told him nothing. He smiled as if he knew.', 'Smug sort. No beard. Never trust a man who can\'t grow a beard in three hundred years.', 'The old kings hid gifts for the worthy. One lies in the north-west, where the land ends beneath the twin peaks.', 'And the sea-captain Redwake buried his gold by a waterfall in the south. Haven\'s old sailor knows the tale.', 'Look for a faint glimmer on the ground. Treasure likes to twinkle.']]] },
   ],
   secrets: {
-    [P(15, 27)]: { gold: 1200, gems: ['crit'], qitem: 'doubloon' }, // Redwake's cache at the foot of the waterfall
-    [P(4, 5)]: { gems: ['echo'], items: { elixir: 2 }, accs: ['life_charm'] }, // the old kings' gift, north-west corner
+    [P(GEN.deco.waterfall[0], GEN.deco.waterfall[1])]: { gold: 1200, gems: ['crit'], qitem: 'doubloon' }, // Redwake's cache at the foot of the waterfall
+    [P(GEN.deco.gift[0], GEN.deco.gift[1])]: { gems: ['echo'], items: { elixir: 2 }, accs: ['life_charm'] }, // the old kings' gift, north-west corner
   },
   places: [[hx, hy, 'Haven Town'], [fx, fy, 'Frostholm'], [cx, cy, 'Ashen Cavern'], [rx, ry, 'Sunken Crypt'], [sx, sy, 'Frost Spire'], [mx, my, 'Mirewood'], [tx, ty, 'Storm Cavern'], [ux, uy, 'Sunscar Ruins']],
 };

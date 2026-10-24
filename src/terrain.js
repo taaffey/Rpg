@@ -34,6 +34,7 @@ const pal = (s) => s.split(' ').map(hex);
 
 // ---------- palettes (dark -> light) ----------
 const GRASS = pal('#0b3210 #124a16 #1b621c #257a22 #32922a #42a832 #56bc3c #72ce4c #96e068 #c0f08c');
+const AMBER = pal('#3a2406 #5a3a0c #7c5212 #9c6c1a #bc8a26 #d8a634 #ecc044 #f8d864 #fff0a0'); // golden lager fields: the body of the glass
 const SNOW = pal('#3a4878 #56689a #7686b8 #96a8d4 #b4c6e8 #d0def4 #e8f0fc #ffffff');
 const SWAMP = pal('#0e160a #172210 #213016 #2c3e1c #384e22 #465e28 #566e30 #6a823a #82964a');
 const POOL = pal('#0c1e1c #12302c #1a423c #26584c #3a7060 #5a8a74');
@@ -41,7 +42,7 @@ const SAND = pal('#5a3a1a #7a5226 #9a6c34 #b88646 #cfa05a #e0b872 #ecce8e #f6e2b
 const DIRT = pal('#2e1e10 #4a3018 #664424 #845a30 #a0723e #ba8c52 #d0a668');
 const OCEAN = pal('#06164e #0a2268 #0e2e84 #143a9e #1c4ab6 #285ecc #3876de #5894ea #94c0f6 #e4f2ff');
 const CLIFF = { // rock faces where land drops into water, by the land's region
-  0: pal('#22140c #362214 #4c321c #644426 #7e5a32 #987040 #b08852 #c8a46c'),
+  0: pal('#16303a #22485a #32667a #4a869a #6aa8b8 #92c8d4 #bce2ea #e6f8fc'), // the glass: pale teal-white cliffs
   1: pal('#1c2236 #2a3450 #3c486a #525e84 #6c7a9e #8a98b8 #aab6d0 #ccd6e8'),
   2: pal('#141410 #222016 #302c1e #403a26 #524a30 #665c3a #7a7046 #908656'),
   3: pal('#3a200c #562e12 #74421a #925824 #ae7032 #c68a44 #daa45a #ecc078'),
@@ -140,6 +141,7 @@ function* bakeGen() { // generator: yields often so the bake can run in idle sli
     // grass: bright, textured, darker patches, darker under woods and mountains
     let v = 4.7 + n1 * 1.5 + n2 * 0.7 + d * 1.15 - Math.max(0, fmask[i] - 0.15) * 2.2;
     if (hh < 0.07) v -= 1.7; else if (hh > 0.955) v += 1.3;
+    if (Y / 16 - PAD >= 17.5) return AMBER[clamp(Math.round(v + (Y / 16 - PAD - 30) * 0.05), 1, 8)]; // below the ridge the fields are golden, the beer
     return GRASS[clamp(Math.round(v), 1, 8)];
   };
   for (let i = 0; i < N; i++) { if (!(i & 32767)) yield; if (cls[i] >= 2) { put(i, groundCol(i % PW, (i / PW) | 0, rpx[i], i)); kind[i] = 1; } }
@@ -535,13 +537,15 @@ const rockslide = () => memo('slide', () => {
   }
   return p.outline(K, 220).canvas();
 });
-// a little sailing ship
+// a swan pedalo, paddling round the Handle Lake
 const ship = (f, left) => memo('ship' + f + left, () => {
-  const p = new Pix(24, 22), HU = WOOD, SA = pal('#8a8a9a #b4b4c4 #dcdce6 #f6f6fa');
-  for (let x = 2; x < 22; x++) { const bot = 15 + (x > 5 && x < 19 ? 2 : x > 3 && x < 21 ? 1 : 0); for (let y = 13; y <= bot; y++) p.set(x, y, HU[y === 13 ? 5 : y === 14 ? 4 : y === bot ? 1 : 3]); }
-  p.rect(1, 12, 3, 2, HU[4]); p.rect(19, 11, 4, 3, HU[4]); for (let x = 3; x < 21; x += 3) p.set(x, 14, HU[1]);
-  for (const [mx, top, w] of [[9, 1, 5], [15, 4, 4]]) { for (let y = top; y < 13; y++) p.set(mx, y, HU[1]); for (let y = top + 1; y < 11; y++) { const bil = Math.round(Math.sin((y - top) / (10 - top) * 3.14) * (1 + (f & 1))); for (let i = -w + bil; i <= w; i++) p.set(mx + i, y, SA[clamp(i < 0 ? 3 : 2 - (y > 8 ? 1 : 0), 0, 3)]); } }
-  p.rect(9, 0, 3, 1, RED[3]); p.set(12, 0, RED[2]);
+  const p = new Pix(24, 22), W = pal('#9aa6b8 #c8d0dc #eef2f8 #ffffff');
+  for (let x = 3; x < 21; x++) { const bot = 16 + (x > 6 && x < 18 ? 1 : 0); for (let y = 13; y <= bot; y++) p.set(x, y, y === 13 ? W[3] : y === bot ? W[0] : W[2]); }
+  p.rect(3, 15, 18, 1, RED[3]); // red stripe
+  for (let y = 4; y < 13; y++) { p.set(18, y, W[3]); p.set(19, y, W[2]); } // the neck
+  p.rect(17, 2, 4, 3, W[3]); p.rect(21, 3, 2, 1, [236, 150, 40]); p.set(19, 3, [10, 10, 20]); // head, beak, eye
+  p.rect(8, 9, 3, 4, RED[2]); p.rect(7, 12, 5, 1, W[1]); p.set(13 + (f & 1), 18, W[1]); // a pedalling lad + a splash
+  p.rect(3, 12, 3, 2, W[2]); // tail
   if (left) { const q = new Pix(24, 22); for (let y = 0; y < 22; y++) for (let x = 0; x < 24; x++) { const i = (y * 24 + x) * 4; if (p.d[i + 3]) q.set(23 - x, y, [p.d[i], p.d[i + 1], p.d[i + 2]]); } return q.outline(K).canvas(); }
   return p.outline(K).canvas();
 });

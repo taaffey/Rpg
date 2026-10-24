@@ -28,7 +28,7 @@ for (const [name, w, h] of [['iPhone', 390, 844], ['iPad', 820, 1180]]) {
   ok(`${name}: A talks to the person you face`, await ev(() => !!document.querySelector('#overlay .sayname')));
   await ev(() => { const o = document.getElementById('overlay'); o.className = ''; o.innerHTML = ''; });
   // 4. slide d-pad: hold up, then slide to the right without lifting
-  await ev(() => window.__game.goto('world', 7, 21)); await pg.waitForTimeout(400);
+  await ev(() => window.__game.goto('world', 10, 25)); await pg.waitForTimeout(400);
   const box = await (await pg.$('.cross')).boundingBox(), cxp = box.x + box.width / 2, cyp = box.y + box.height / 2;
   const start = await pos(); await pg.mouse.move(cxp, cyp - box.height * 0.35); await pg.mouse.down(); await pg.waitForTimeout(700);
   const mid = await pos(); await pg.mouse.move(cxp + box.width * 0.35, cyp, { steps: 4 }); await pg.waitForTimeout(700); await pg.mouse.up(); await pg.waitForTimeout(200);

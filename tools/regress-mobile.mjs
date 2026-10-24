@@ -11,7 +11,7 @@ for (const [name, w, h] of [['iPhone 14 portrait', 390, 844], ['iPhone 14 landsc
   const ev = (f, a) => pg.evaluate(f, a);
   ok(`${name}: viewport-fit=cover + no zoom`, /viewport-fit=cover/.test(await ev(() => document.querySelector('meta[name=viewport]').content)) && /user-scalable=no/.test(await ev(() => document.querySelector('meta[name=viewport]').content)));
   await pg.tap('[data-act=new]'); await pg.tap('[data-act=slotpick][data-a="1"]'); await pg.tap('[data-act=diff][data-b=normal]'); await pg.waitForTimeout(200); await pg.evaluate(() => { window.__game.ACT.crbegin(); window.__game.ACT.close(); window.__game.testParty(); }); await pg.waitForTimeout(400);
-  await ev(() => { for (const m of Object.values(window.__game.MAPS)) m.rate = 0; }); await ev(() => window.__game.goto('world', 7, 21)); await pg.waitForTimeout(500);
+  await ev(() => { for (const m of Object.values(window.__game.MAPS)) m.rate = 0; }); await ev(() => window.__game.goto('world', 10, 25)); await pg.waitForTimeout(500);
   const p0 = await ev(() => [window.__game.G.x, window.__game.G.y]);
   { const bb = await (await pg.$('.cross [data-d=right]')).boundingBox(); await pg.touchscreen.tap(bb.x + bb.width / 2, bb.y + bb.height / 2); } await pg.waitForTimeout(350); // taps go to the slide pad under the arm
   const p1 = await ev(() => [window.__game.G.x, window.__game.G.y]);

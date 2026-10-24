@@ -30,12 +30,19 @@ def noise2(seed):
     return lambda x, y: 0.6*n(x, y) + 0.3*n(x*2.1+5, y*2.1+3) + 0.1*n(x*4.3+9, y*4.3+1)
 
 def make_world(seed):
-    W, H = 40, 30
+    """Greenmarch, the Pint: the continent is a pint of lager seen from above (and nobody in Haven has noticed).
+    Foam = the snowy north with its bubbles (islets), glass = the two coasts, beer = golden fields, dregs = the marsh in the
+    bottom, handle = the sandy east loop around a lake. W x H = 36 x 44. Gameplay graph is unchanged: Haven (start), the Ashen
+    Cavern, the marsh (Mirewood, crypt), a gated pass at x=24 through the ridge (rows 14-16), the north (Frostholm, Spire, Storm
+    Cavern) and the optional Sunscar Ruins in the handle's sand."""
+    W, H = 36, 44
     nC, nR, nF, nM = noise2(seed), noise2(seed+1), noise2(seed+2), noise2(seed+3)
-    pois = {'haven': (7, 20), 'cavern': (24, 19), 'crypt': (12, 25), 'frost': (27, 8), 'spire': (34, 4), 'mirewood': (19, 25), 'storm': (13, 8)}
-    spawn_adj = {'haven': (7, 21), 'cavern': (24, 20), 'crypt': (12, 26), 'frost': (27, 9), 'spire': (34, 5), 'mirewood': (19, 24), 'storm': (13, 9)}
-    roads = [((7, 21), (7, 22)), ((7, 22), (24, 22)), ((24, 22), (24, 20)), ((12, 22), (12, 26)), ((24, 22), (29, 22)), ((29, 22), (29, 17)),
-             ((29, 13), (29, 9)), ((29, 9), (13, 9)), ((34, 9), (34, 5)), ((29, 9), (34, 9)), ((19, 22), (19, 24)), ((27, 9), (27, 9)), ((7, 21), (12, 21))]
+    pois = {'haven': (10, 24), 'cavern': (19, 21), 'crypt': (11, 36), 'frost': (18, 8), 'spire': (24, 5), 'mirewood': (18, 35), 'storm': (12, 9)}
+    spawn_adj = {'haven': (10, 25), 'cavern': (19, 22), 'crypt': (11, 37), 'frost': (18, 9), 'spire': (24, 6), 'mirewood': (18, 34), 'storm': (12, 10)}
+    GX = 24  # the gated pass
+    roads = [((10, 25), (10, 26)), ((10, 26), (24, 26)), ((19, 26), (19, 22)), ((11, 26), (11, 37)), ((18, 26), (18, 34)),
+             ((24, 26), (24, 10)), ((24, 10), (18, 10)), ((18, 10), (18, 9)), ((24, 10), (24, 6)), ((18, 10), (12, 10)),
+             ((24, 26), (24, 34)), ((24, 34), (29, 34))]
     road_tiles = set()
     for (x0, y0), (x1, y1) in roads:
         for x in range(min(x0, x1), max(x0, x1)+1): road_tiles.add((x, y0))
@@ -43,79 +50,91 @@ def make_world(seed):
     near = lambda x, y, d: any(abs(x-px) <= d and abs(y-py) <= d for px, py in list(pois.values()) + list(spawn_adj.values()))
     near_road = lambda x, y, d: any(abs(x-a) + abs(y-b) <= d for a, b in road_tiles)
     g = [['~']*W for _ in range(H)]
-    # --- land: a wobbly superellipse continent, never touching the map edge
+    # --- land: a tapering glass (rim at y~3, base at y~40) plus the handle ring on the east side
+    gl = lambda y: 5 + (y-3) * (5/36)
+    gr = lambda y: 28 - (y-3) * (5/36)
     for y in range(1, H-1):
         for x in range(1, W-1):
-            dx, dy = (x-19.6)/18.7, (y-14.6)/13.2
-            v = abs(dx)**3.4 + abs(dy)**3.4 + nC(x/4.5, y/4.5)*0.4
-            if v < 0.86 or near(x, y, 1) or near_road(x, y, 0): g[y][x] = '.'
+            top = 3.3 + nC(x/5, 0.5) * 1.3
+            bottom = 40.2 + nC(x/4, 9) * 0.7
+            inside = top <= y <= bottom and gl(y) + nC(0.3, y/6) * 0.9 <= x <= gr(y) + nC(2.7, y/6) * 0.9
+            dx, dy = (x - 28.5) / 7.0, (y - 25.5) / 9.0
+            ix, iy = (x - 28.5) / 3.1, (y - 25.5) / 5.6
+            ring = dx*dx + dy*dy < 1 + nC(x/4, y/4) * 0.14 and ix*ix + iy*iy > 1 and x >= 22
+            lake = ix*ix + iy*iy <= 1 and y > 17
+            if (inside or ring) and not lake: g[y][x] = '.'
+            if near(x, y, 1) or near_road(x, y, 0): g[y][x] = '.'
     for y in range(H):
         for x in range(W):
             if x in (0, W-1) or y in (0, H-1): g[y][x] = '~'
-    # bays and sounds carved by hand
-    for x, y in [(2, 22), (2, 23), (3, 23), (2, 24), (3, 24), (4, 24), (3, 25), (4, 25), (2, 25), (3, 26), (4, 26), (2, 26), (5, 25),
-                 (16, 2), (17, 2), (18, 2), (19, 2), (18, 3), (17, 3), (37, 11), (36, 11), (37, 12), (36, 12),
-                 (25, 28), (26, 28), (27, 28), (26, 27), (37, 25), (37, 26), (36, 26), (38, 23), (38, 24)]:
-        g[y][x] = '~'
-    for x, y in [(1, 25), (1, 24)]: g[y][x] = '~'
-    # islands
-    for x, y in [(1, 26), (2, 27), (1, 27), (37, 28), (38, 28), (38, 27), (9, 28), (10, 28)]: g[y][x] = '.'
+    # foam bubbles: little snowy islets that have floated off the top of the glass
+    for x, y in [(8, 2), (9, 2), (9, 1), (14, 1), (15, 1), (15, 2), (21, 2), (22, 2), (22, 1), (27, 3), (28, 3), (28, 2), (4, 6), (3, 6), (3, 7)]: g[y][x] = ','
     # --- regions with ragged borders
     for y in range(H):
         for x in range(W):
             if g[y][x] != '.': continue
-            if y <= 13 and (x - 22) + (13 - y) * -0.35 + nR(x/3.5, y/3.5)*3.2 > 0: g[y][x] = ','
-            elif y >= 22 and ((x-15)/9.5)**2 + ((y-26)/3.8)**2 + nR(x/3+7, y/3)*0.5 < 1: g[y][x] = ':'
-            elif y >= 21 and ((x-30)/5.6)**2 + ((y-25.3)/3.6)**2 + nR(x/3+3, y/3+9)*0.45 < 1: g[y][x] = 'd'
-    region = lambda x, y: g[y][x] if g[y][x] in '.,:d' else None
-    # --- the mountain wall with the gated pass at x=29 (rows 14-16), with ragged foothills on both sides
+            if y <= 13 and (x - 12.5) - (13 - y) * 0.15 + nR(x/3.5, y/3.5) * 3.0 > 0: g[y][x] = ','          # the foam
+            elif y >= 31 and ((x-16.5)/8.8)**2 + ((y-36.2)/4.7)**2 + nR(x/3+7, y/3) * 0.5 < 1: g[y][x] = ':'  # the dregs
+            elif y >= 20 and ((x-28.5)/9.8)**2 + ((y-29)/7.6)**2 + nR(x/3+3, y/3+9) * 0.45 < 1: g[y][x] = 'd'  # the sandy handle
+    # --- the mountain wall with the gated pass at x=GX (rows 14-16), with ragged foothills on both sides
     for y in (14, 15, 16):
         for x in range(W):
             if g[y][x] != '~': g[y][x] = 'M'
     for x in range(W):
         for y, k in ((13, 0.15), (17, 0.1)):
-            if g[y][x] in '.,' and nM(x/2.2, y) > k and abs(x-29) > 1 and not near(x, y, 1) and not near_road(x, y, 0): g[y][x] = 'M'
-    for y in (14, 15, 16): g[y][29] = 'B'
-    # --- mountain clusters (centre, radii) shaped by noise
-    for cx, cy, rx, ry in [(13, 6.4, 3.6, 2.2), (3.2, 9.5, 1.8, 2.2), (34, 2.8, 2.6, 1.8), (24, 17.6, 3.4, 1.6), (36.5, 19.5, 1.4, 1.8), (28.5, 24.2, 1.2, 0.7), (26.2, 26.3, 0.8, 0.7), (6.5, 4.5, 1.2, 0.9), (17, 18.4, 1.2, 0.8)]:
+            if g[y][x] in '.,' and nM(x/2.2, y) > k and abs(x-GX) > 1 and not near(x, y, 1) and not near_road(x, y, 0): g[y][x] = 'M'
+    for y in (14, 15, 16): g[y][GX] = 'B'
+    reserved = set()  # tiles that must stay open (the hermit's spot, the twin-peaks gift, the waterfall)
+    gift, hermit = (7, 7), (10, 12)
+    for dx in range(-1, 2):
+        for dy in range(-1, 2): reserved.add((gift[0]+dx, gift[1]+dy))
+    for dx in range(-1, 2):
+        for dy in range(-1, 2): reserved.add((hermit[0]+dx, hermit[1]+dy))
+    for cx, cy, rx_, ry_ in [(19, 20.4, 3.6, 2.0), (12.5, 7.2, 3.0, 2.0), (25.5, 3.0, 2.4, 1.7), (7.0, 19.0, 1.5, 2.4), (21.5, 31.0, 1.0, 0.8)]:
         for y in range(H):
             for x in range(W):
-                d = ((x-cx)/rx)**2 + ((y-cy)/ry)**2 + nM(x/2, y/2)*0.35
-                if d < 1 and g[y][x] in '.,:d' and not near_road(x, y, 0) and (x, y) not in spawn_adj.values(): g[y][x] = 'M'
+                d = ((x-cx)/rx_)**2 + ((y-cy)/ry_)**2 + nM(x/2, y/2) * 0.35
+                if d < 1 and g[y][x] in '.,:d' and not near_road(x, y, 0) and (x, y) not in spawn_adj.values() and (x, y) not in reserved: g[y][x] = 'M'
+    # twin peaks over the old kings' gift
+    for x, y in [(gift[0]-1, gift[1]-2), (gift[0]+1, gift[1]-2), (gift[0]-1, gift[1]-3), (gift[0]+1, gift[1]-3)]:
+        if g[y][x] != '~': g[y][x] = 'M'
     # --- woods: noise blobs (snow woods are pines)
     for y in range(H):
         for x in range(W):
             c = g[y][x]
             if c not in '.,:': continue
-            if near(x, y, 1) or near_road(x, y, 0) or y in (13, 17) and abs(x-29) <= 2: continue
+            if near(x, y, 1) or near_road(x, y, 0) or (x, y) in reserved or (y in (13, 17) and abs(x-GX) <= 2): continue
             f = nF(x/3.4, y/3.4) + (-0.02 if c == ',' else 0.06 if c == ':' else 0)
-            if f > 0.13: g[y][x] = 't' if c == ',' else 'T'
-    # --- rivers: meandering from the ranges to the sea (bridged where roads cross)
+            if f > 0.15: g[y][x] = 't' if c == ',' else 'T'
+    # --- rivers (bridged where roads cross). North: ridge -> the foam's edge. South: ridge -> the marsh -> the bottom coast (a waterfall)
     rivers = [
-        [(19, 13), (19, 12), (19, 11), (18, 11), (18, 10), (18, 9), (18, 8), (18, 7), (19, 7), (19, 6), (20, 6), (20, 5), (20, 4), (20, 3), (20, 2)],
-        [(16, 17), (16, 18), (16, 19), (15, 19), (15, 20), (15, 21), (16, 21), (16, 22), (16, 23), (17, 23), (17, 24), (17, 25), (16, 25), (16, 26), (16, 27), (16, 28)],
-        [(34, 17), (34, 18), (33, 18), (33, 19), (33, 20), (34, 20), (34, 21), (34, 22), (34, 23), (35, 23), (35, 24), (35, 25), (35, 26), (35, 27), (35, 28)],
+        [(15, 13), (15, 12), (15, 11), (14, 11), (14, 10), (14, 9), (14, 8), (14, 7), (15, 7), (15, 6), (15, 5), (15, 4), (15, 3), (15, 2)],
+        [(14, 17), (14, 18), (13, 18), (13, 19), (13, 20), (13, 21), (14, 21), (14, 22), (14, 23), (15, 23), (15, 24), (15, 25), (15, 26), (15, 27), (16, 27), (16, 28),
+         (16, 29), (15, 29), (15, 30), (15, 31), (15, 32), (14, 32), (14, 33), (14, 34), (14, 35), (14, 36), (14, 37), (14, 38), (14, 39)],
     ]
     for path in rivers:
         for x, y in path:
             if g[y][x] == '~': break
             g[y][x] = '=' if (x, y) in road_tiles else 'r'
-    for x, y in [(14, 27), (15, 27), (13, 27)]: g[y][x] = ':'  # the south river ends on a sea cliff -> waterfall
+    wfx, wfy = 14, 39   # the waterfall: the south river drops off the sea cliff here
+    for x, y in [(wfx-1, wfy), (wfx-2, wfy), (wfx-1, wfy-1), (wfx-2, wfy-1), (wfx-3, wfy)]:
+        if g[y][x] != '~': g[y][x] = ':'
     # --- roads stay open (clear woods), POIs placed last
     for x, y in road_tiles:
-        if g[y][x] in 'Tt': g[y][x] = ',' if g[y][x] == 't' else ('.' if y < 22 else ':' if 8 <= x <= 22 else '.')
+        if g[y][x] in 'Tt': g[y][x] = ',' if g[y][x] == 't' else ('.' if y < 31 else ':')
         if g[y][x] == '~': g[y][x] = '='
+        if g[y][x] == 'M': g[y][x] = '.'
     for k, (x, y) in spawn_adj.items():
-        if g[y][x] not in '.,:d': g[y][x] = ',' if y < 14 and x >= 22 else '.'
+        if g[y][x] not in '.,:d': g[y][x] = ',' if y < 14 and x >= 12 else '.'
     for k, (x, y) in pois.items(): g[y][x] = 'H' if k in ('haven', 'frost', 'mirewood') else 'D'
-    for x in range(H): pass
+    for (x, y) in (gift, hermit):
+        if g[y][x] in 'TtM~': g[y][x] = '.'
     # --- checks
     walk = lambda c: c in '.,:d=HD'
     for (x, y) in road_tiles: assert walk(g[y][x]) or g[y][x] == 'B', ('road', x, y, g[y][x])
     for y in (14, 15, 16):
-        assert g[y][29] == 'B' and all(c in 'MB~' for c in g[y]), y
-    for y in list(range(9, 14)) + list(range(17, 23)): assert walk(g[y][29]), (29, y)
-    for x in range(8, 13): assert walk(g[21][x])
+        assert g[y][GX] == 'B' and all(c in 'MB~' for c in g[y]), y
+    for y in list(range(9, 14)) + list(range(17, 27)): assert walk(g[y][GX]), (GX, y)
     pas = lambda c: c in '.,:d=HD'
     start = spawn_adj['haven']
     open_ = bfs(g, start, pas)
@@ -123,13 +142,17 @@ def make_world(seed):
     for k in ('frost', 'spire', 'storm'): assert pois[k] not in open_, 'gate leaks ' + k
     opened = bfs(g, start, lambda c: pas(c) or c == 'B')
     for k in pois: assert pois[k] in opened, k
-    deco = {'ruins': [31, 24], 'ship': [[2.6, 23.4], [4.2, 25.6], [6.0, 27.8], [13.0, 28.5], [22.0, 28.4], [14.0, 28.6], [5.0, 28.2], [2.4, 28.4], [0.5, 26.0], [0.6, 22.0], [1.2, 21.6]]}
+    assert gift in opened and hermit in opened and (wfx-1, wfy) in opened and walk(g[wfy][wfx-1]), 'secret spots unreachable'
+    # the ship: a pedalo-sized boat paddling round the lake in the handle (art phase swaps the sprite)
+    deco = {'ruins': [29, 33], 'ship': [[27.0, 22.6], [29.8, 22.8], [30.6, 25.6], [29.6, 28.6], [27.2, 28.8], [26.4, 25.6]],
+            'gift': list(gift), 'hermit': list(hermit), 'waterfall': [wfx - 1, wfy], 'gate': [GX, 15],
+            'amber': [18, 32]}  # the golden "beer" band of fields across the glass (painted by terrain.js on grass tiles)
     rx, ry = deco['ruins']
     for x in (rx, rx+1): g[ry][x] = 'M'
     # the left half of the ruins is the doorway of the optional Sunscar Ruins dungeon (added after generation so nothing else moves)
     g[ry][rx] = 'D'; pois['ruins'] = (rx, ry); spawn_adj['ruins'] = (rx, ry+1)
     assert walk(g[ry+1][rx]) and (rx, ry+1) in bfs(g, start, pas), 'ruins door unreachable before the gate'
-    for x, y in deco['ship']: assert g[int(y)][int(x)] == '~', ('ship', x, y)
+    for x, y in deco['ship']: assert g[int(y)][int(x)] == '~', ('ship', x, y, g[int(y)][int(x)])
     return [''.join(row) for row in g], pois, spawn_adj, deco
 
 # --------------------------------------------------------------- dungeons
