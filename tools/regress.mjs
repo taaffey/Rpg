@@ -9,7 +9,7 @@ await pg.addInitScript(() => { window.__osc = 0; const oc = AudioContext.prototy
 const URL_ = process.env.URL || 'http://localhost:8123/index.html';
 await pg.goto(URL_); await pg.waitForTimeout(300);
 const ev = (f, a) => pg.evaluate(f, a);
-const NAMES = await ev(async () => { const D = await import('/src/data.js'); return { jobs: Object.fromEntries(Object.entries(D.JOBS).map(([k, v]) => [k, v.name])), skills: Object.fromEntries(Object.entries(D.SKILLS).map(([k, v]) => [k, v.name])) }; }); // display names live in data.js; the tests follow them
+const NAMES = await ev(async () => { const D = await import('/src/data.js'); return { batches: D.CALLING_BATCHES, jobs: Object.fromEntries(Object.entries(D.JOBS).map(([k, v]) => [k, v.name])), skills: Object.fromEntries(Object.entries(D.SKILLS).map(([k, v]) => [k, v.name])) }; }); // display names live in data.js; the tests follow them
 const rx = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 const key = async (k, n = 1, d = 90) => { for (let i = 0; i < n; i++) { await pg.keyboard.press(k); await pg.waitForTimeout(d); } };
 const closeAll = async () => { for (let i = 0; i < 8 && (await ev(() => document.getElementById('overlay').classList.contains('on'))); i++) await key('Escape', 1, 70); };
@@ -195,7 +195,7 @@ ok('aftermath scene plays after the Wyrm falls', await ev(() => !!document.query
 ok('the Wyrm leaves the Ember Heart', (await ev(() => window.__game.G.flags.qitems.ember_heart)) === true);
 for (let i = 0; i < 6 && (await ev(() => !!document.querySelector('#overlay .saybox'))); i++) await key('Escape', 1, 150); // Esc skips to the end, then closes
 await pg.waitForTimeout(200);
-ok('the first heart wakes three callings (awakening moment)', /Ember Heart wakes/.test(await overlayTitle()) && (await ev(() => [...document.querySelectorAll('#overlay .echo b')].map((e) => e.textContent).join())) === 'Hexer,Bard,Berserker');
+ok('the first heart wakes three callings (awakening moment)', /Ember Heart wakes/.test(await overlayTitle()) && (await ev(() => [...document.querySelectorAll('#overlay .echo b')].map((e) => e.textContent).join())) === NAMES.batches[1].map((j) => NAMES.jobs[j]).join());
 await pg.screenshot({ path: process.env.SHOT_AWAKE || '/tmp/awakening.png' });
 await key('Escape', 1, 200);
 ok('Esc skips and closes the scene and the awakening', !(await ev(() => document.getElementById('overlay').classList.contains('on'))));

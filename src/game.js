@@ -89,7 +89,7 @@ const gearLine = (g) => ['atk', 'mag', 'def', 'hp', 'mp', 'spd'].filter((k) => g
 // weapon traits (see WEAPONS in data.js) as short tags, plus the flavour line for shop / equip lists
 const weaponTraits = (g) => [g.elem ? `${UI.elemIcon(g.elem)} ${g.elem} attacks` : '', g.hits > 1 ? `${g.hits} hits/attack` : '', g.crit ? `crit +${Math.round(g.crit * 100)}%` : '', g.pierce ? `pierce ${Math.round(g.pierce * 100)}%` : '',
   g.proc ? `${Math.round(g.proc[1] * 100)}% ${g.proc[0]} on hit` : '', g.heal ? `heal +${Math.round(g.heal * 100)}%` : '', g.sig ? `skill: ${SKILLS[g.sig].name}` : ''].filter(Boolean);
-const gearDesc = (k, d) => (k === 'weapons' ? `${WEAPON_TYPES[d.type].name} · ${gearLine(d)}${d.desc ? `<br><i class="dim">${d.desc}</i>` : ''}` : d.desc || gearLine(d));
+const gearDesc = (k, d) => (k === 'weapons' ? `${WEAPON_TYPES[d.type].name} · ${gearLine(d)}` : gearLine(d)) + (d.desc ? `<br><i class="dim">${d.desc}</i>` : ''); // stats first, then the joke
 const npcImg = (type, px = 48) => `<span class="face"><img src="${UI.npcFaceURL(type)}" width="${px}" height="${px}" alt=""></span>`;
 
 // ---------- state ----------
@@ -105,7 +105,7 @@ const DEFAULT_PARTY = BROS.map(([n, look]) => [n, 'bloke', look]); // two blokes
 const LIGHT_ARMOR = new Set(['mage', 'cleric', 'hexer', 'bard', 'alchemist']);
 function newGame(party = DEFAULT_PARTY) {
   G = {
-    // like FF1: the party starts at level 1, unarmed, with 400 G to arm itself at the Haven Smithy (~205 G for the cheap weapons)
+    // like FF1: the party starts at level 1, unarmed, with 400 G to arm itself at the Haven hardware shop (~205 G for the cheap weapons)
     party: party.map(([n, j, look]) => Object.assign(newChar(n, j, null, null, LIGHT_ARMOR.has(j) || j === 'bloke' ? 'cloth' : 'leather'), look ? { look } : {})),
     gold: 400, difficulty: 'normal', slot: 1,
     inv: { weapons: [], armors: [], accs: [], gems: [], items: { potion: 3 } },
@@ -808,11 +808,6 @@ function loadSlot(i) {
   const d = readSlot(i); if (!d?.G) return;
   G = migrate(d.G); G.slot = i; snap(); music(musicFor()); hide(); banner(mapDef().name); toast(`Loaded slot ${i}`);
 }
-function intro() {
-  show(`<h2>${ic('house')} Welcome to Haven Town</h2><div class="npc">${npcImg('elder', 48)}<p>Three great evils stir: the <b>Ashen Wyrm</b> in the cavern east of town, a <b>Lich King</b> in the swamp crypt, and a <b>Frost Titan</b> in a spire far to the north.</p></div>
-  <p>Your party sets out <b>unarmed</b> with <span class="gold">400 G</span>: arm everyone at the <b>Smithy</b> first (a sword, two staves and a dagger cost about 205 G), then buy a few pints.</p>
-  <p>Open the <b>Menu</b> (Esc) to change callings and skills, and visit the <b>Smithy</b> for gear. Talk to townsfolk: a <span class="gold">!</span> marks someone with news. Check your <b>Journal</b> if you get lost.</p><div class="foot">${btn('close', 'Begin', '', '', 'primary')}</div>`);
-}
 // ---------- party chat (menu > CHAT): skits about where you are and what just happened (STORY.chat) ----------
 function chatHere(at) { // how well a skit's place fits: 2 = this map, 1 = this region / kind of place, 0 = anywhere, -1 = elsewhere
   if (!at) return 0; const m = mapDef(), [k, v] = at.includes(':') ? at.split(':') : ['map', at];
@@ -890,7 +885,7 @@ ACT.journal = () => {
   show(`<h2>📜 Journal</h2><p class="dim">Great evils slain: <b class="gold">${n}/3</b> · Hidden treasures: <b class="gold">${found}/${secrets.length}</b>${hearts.length ? `<br>Carried: <b class="gold">${hearts.join(', ')}</b>` : ''}</p>${OBJECTIVES.filter((o) => cond(o.show)).map((o) => { const dn = cond(o.done), locked = !cond(o.after); return `<div class="card ${dn ? 'done' : ''}"><b>${dn ? '✔' : locked ? '🔒' : '◇'} ${o.optional ? '<span class="dim">Optional:</span> ' : ''}${o.title}</b><div class="dim">${locked ? o.lockHint || 'A rockslide buries the northern pass.' : dn ? o.doneHint : o.metHint && cond('s:met') ? o.metHint : o.hint}</div></div>`; }).join('')}
   <h3>Side quests</h3>${(() => { const act = Object.entries(QUESTS).filter(([id]) => qstate(id) === 'active'), dn = Object.entries(QUESTS).filter(([id]) => qstate(id) === 'done');
     return (act.length ? act.map(([id, q]) => `<div class="card ${questDone(id) ? 'done' : ''}"><b>${questDone(id) ? '❓' : '◇'} ${esc(q.title)}</b> <span class="dim">(${questProgress(id)})</span><div class="dim">${questDone(id) ? 'Return to ' + esc(q.giver) + ' to claim your reward.' : esc(q.lines.active[0])}</div></div>`).join('') : '<div class="dim">No active quests. Folk in town sometimes need a hand.</div>') + (dn.length ? `<div class="dim">Completed: ${dn.map(([, q]) => '✔ ' + esc(q.title)).join(' · ')}</div>` : ''); })()}
-  <h3>💡 Tips</h3><div class="dim">${gemsOn() ? '• Gems rewrite skills: try Wide + a heal, Echo on a big spell, Stun on a fast skill.<br>' : ''}• Battles earn CP for each hero's calling; ranks teach abilities that are kept for good. Change callings from the menu.<br>• Inns heal and save. Frostholm's shops sell much better gear.<br>• Hermits and oracles roam the wilds. Listen to them, and watch the ground for a faint glint of buried treasure.</div><div class="foot">${btn('menu', 'Back', '', '', 'primary')}</div>`);
+  <h3>💡 Tips</h3><div class="dim">${gemsOn() ? `• Gems rewrite skills: try ${GEMS.wide.name} + a heal, ${GEMS.echo.name} on a big spell, ${GEMS.stun.name} on a fast skill.<br>` : ''}• Battles earn CP for each hero's calling; ranks teach abilities that are kept for good. Change callings from the menu.<br>• Inns heal and save. Frostholm's shops sell much better gear.<br>• Hermits and oracles roam the wilds. Listen to them, and watch the ground for a faint glint of buried treasure.</div><div class="foot">${btn('menu', 'Back', '', '', 'primary')}</div>`);
 };
 let optBack = 'menu';
 function optionsScreen() {
