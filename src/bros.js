@@ -205,3 +205,8 @@ export const PHONE_CHARGED = [
   if (flash >= 0) f[flash].art = 'flash';
   if (back >= 0) for (let i = back; i < f.length; i++) f[i].art = 'return';
 }
+// the hay they wake up in, beside the main street where the game starts (props stamp solid 'p' tiles like town() does)
+{
+  const h = MAPS.haven; h.props.push({ k: 'hay', x: 20, y: 30 }, { k: 'hay', x: 21, y: 30 });
+  h.rows = h.rows.map((r, y) => (y === 30 ? r.slice(0, 20) + 'pp' + r.slice(22) : r));
+}
