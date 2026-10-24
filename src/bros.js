@@ -114,8 +114,11 @@ export const GARY_DOWN = [
   { s: 'brenna', t: 'I give off "please wipe your feet" vibes. But fine. Healer. Now go to the Guild and get yourselves proper callings.' },
 ];
 export const CALLED = [
-  { s: 'guildmaster', t: 'Right. Callings. No, "influencer" is not one. Neither is "IT support".' },
-  { s: 'adam', t: 'Fair. Something sensible for me, then. And for him, whatever keeps him alive. I\'ve done that job since he was four.' },
+  { s: 'guildmaster', t: 'Right. Callings. The heroes of old left us a list. Nobody knows why they all had such odd trades.' },
+  { s: 'devon', t: 'Bouncer. Chancer. Darts Player. Bro, these are all just blokes from a pub.' },
+  { s: 'adam', t: 'Spreadsheet Sorcerer is on here too. I\'m choosing to take that personally.' },
+  { s: 'guildmaster', t: 'Pick what suits. More wake as the great evils fall. Yes, one of them is "Influencer". We don\'t talk about it.' },
+  { s: 'adam', t: 'Something sensible for me, then. And for him, whatever keeps him alive. I\'ve done that job since he was four.' },
 ];
 export const CALLED_AFTER = [
   { s: 'guildmaster', t: 'There. Every battle teaches a calling something, and what you learn you keep. Change any time; I won\'t be offended.' },
