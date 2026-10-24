@@ -129,7 +129,7 @@ export const WENDELL = [
   { s: 'wendell', t: 'Sir Wendell of Haven, at your service. I have guarded this cave for eleven years. Nobody told me I could stop.' },
   { s: 'devon', t: 'Eleven YEARS? Mate, that\'s not a job, that\'s a hostage situation.' },
   { s: 'wendell', t: 'I see you also honour the old ways of the beard. Splendid. Then I ride with you! Well. Walk. The horse left in year three.' },
-  { s: 'wendell', t: 'A word of counsel: the stone golems within laugh at fire. Bolt and good steel crack them. And bring potions. Many potions.' },
+  { s: 'wendell', t: 'A word of counsel: the stone golems within laugh at fire. Bolt and good steel crack them. And bring pints. Many, many pints.' },
   { s: 'adam', t: 'Noted. If it gets ugly, we come back out, rest, and get a few levels first. No heroics.' },
   { s: 'brenna', t: 'Great. Now there are three of them.' },
 ];

@@ -209,7 +209,7 @@ MAPS.frostholm = {
   secrets: { [P(27, 22)]: { gems: ['execute'], gold: 500 } }, // a trapper's cache behind the south-east pines
 };
 interior('frost_inn', 'The Frozen Flagon', 'inn', back('frostholm', 'frost_inn', { theme: 'interior', music: 'frosttown' }), { cost: 60, inn: { text: ['Shake off the snow. The fire\'s always lit in Frostholm. And for pity\'s sake, somebody lend that man some trousers.'], textBy: [['titan', ['The Spire\'s quiet. I slept the whole night through for the first time this winter.']]] },
-  npcs: [{ x: 8, y: 5, type: 'fisher', name: 'Traveler', text: ['The drowned king\'s crypt is no joke. Bring a few Phoenix Downs.', 'Your mate asked if I had "a charger". I have a horse. Will that do?'], textBy: [['lich', ['The drowned king is dead? Then I can go home by the marsh road at last.']]] }] });
+  npcs: [{ x: 8, y: 5, type: 'fisher', name: 'Traveler', text: ['The drowned king\'s crypt is no joke. Bring a few Late-Night Kebabs.', 'Your mate asked if I had "a charger". I have a horse. Will that do?'], textBy: [['lich', ['The drowned king is dead? Then I can go home by the marsh road at last.']]] }] });
 interior('frost_shop', 'Frostholm Provisions', 'general', back('frostholm', 'frost_shop', { music: 'frosttown' }), { shop: 'frost_general' });
 interior('frost_smith', 'Frostholm Forge', 'smith', back('frostholm', 'frost_smith', { music: 'frosttown' }), { shop: 'frost_smith', npcs: [{ x: 2, y: 4, type: 'villager', name: 'Apprentice', deliver: 'letter', text: ['Hammer, quench, hammer, quench... I dream in sparks.', 'I grew up in Mirewood, you know. Frostholm is so dry. And so cold. And nobody here knows what "a vibe" is either.'] }] });
 interior('frost_guild', 'Frostholm Guild', 'guild', back('frostholm', 'frost_guild', { music: 'frosttown' }));
@@ -255,7 +255,7 @@ MAPS.mirewood = {
       textBy: [['lich', ['These planks have seen a hundred floods. One less drowned king, now.']]] },
     { x: 12, y: 15, type: 'kid', name: 'Child', quest: 'letter', text: ['The Sunken Crypt is full of skeletons! ...Allegedly. I\'m not allowed to go near it.', 'Is your beard full of things? Mum says beards are full of things.'] },
     { x: 18, y: 14, type: 'villager2', name: 'Apothecary', quest: 'stingers', text: ['Bog-moss, newt oil, a pinch of ash... no, no, that\'s for warts.', 'Beard oil? Oh, I have just the thing, dear. It\'s mostly newt.'] },
-    { x: 17, y: 12, type: 'villager2', name: 'Villager', text: ['Holy light and fire both put the dead back down. Pack Phoenix Downs if you go to the Crypt.', 'Your friend asked me if I "use Spotify". Is that a rash? We get a lot of rashes here.'], textBy: [['lich', ['They\'re fishing near the Crypt again. Bold, if you ask me.']]] },
+    { x: 17, y: 12, type: 'villager2', name: 'Villager', text: ['Holy light and fire both put the dead back down. Pack some Late-Night Kebabs if you go to the Crypt.', 'Your friend asked me if I "use Spotify". Is that a rash? We get a lot of rashes here.'], textBy: [['lich', ['They\'re fishing near the Crypt again. Bold, if you ask me.']]] },
   ],
 };
 interior('mire_inn', 'The Soggy Frog', 'inn', back('mirewood', 'mire_inn'), { cost: 40, inn: { text: ['Welcome to the Soggy Frog. Wipe your boots. Mind the frogs; they bite. No, they are not "a starter".'], textBy: [['lich', ['No more knocking on the shutters at night. Now I can hear the frogs. I hate the frogs.']]] } });

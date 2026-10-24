@@ -201,8 +201,9 @@ export const ACCS = {
   frost_pendant: { name: 'Frost Pendant', res: ['ice'], def: 2, sockets: 0, price: 180 },
 };
 export const ITEMS = {
-  potion: { name: 'Potion', heal: 60, price: 30, desc: 'Restore 60 HP' }, hipotion: { name: 'Hi-Potion', heal: 160, price: 90, desc: 'Restore 160 HP' },
-  ether: { name: 'Ether', mpr: 30, price: 70, desc: 'Restore 30 MP' }, phoenix: { name: 'Phoenix Down', revive: 0.35, price: 150, desc: 'Revive an ally' },
+  // the pub's medicine cabinet: pints heal, spliffs restore MP, a kebab gets you back on your feet. verb/art phrase the battle log.
+  potion: { name: 'Pint of Lager', heal: 60, price: 30, desc: 'Restore 60 HP. Ice cold, no head.', verb: 'necks' }, hipotion: { name: 'Pitcher', heal: 160, price: 90, desc: 'Restore 160 HP. Sharing optional.', verb: 'downs' },
+  ether: { name: 'Spliff', mpr: 30, price: 70, desc: 'Restore 30 MP. Smells suspicious.', verb: 'sparks up' }, phoenix: { name: 'Late-Night Kebab', revive: 0.35, price: 150, desc: 'Revive an ally. Do not ask what is in it.', verb: 'feeds' },
 };
 
 // ---- Enemies. skills: [[skillId, weight]]
@@ -282,7 +283,7 @@ Object.assign(ACCS, {
   life_charm: { name: 'Life Charm', hp: 45, sockets: 0, price: 680 }, gem_crown: { name: 'Gem Crown', sockets: 3, price: 1600 },
   lich_ring: { name: 'Lich Ring', mag: 6, spd: 3, res: ['dark'], sockets: 1, price: 900 },
 });
-Object.assign(ITEMS, { megaether: { name: 'Mega Ether', mpr: 80, price: 220, desc: 'Restore 80 MP' }, elixir: { name: 'Elixir', heal: 600, price: 400, desc: 'Restore 600 HP' } });
+Object.assign(ITEMS, { megaether: { name: 'Fat Doobie', mpr: 80, price: 220, desc: 'Restore 80 MP. Absolutely chilled.', verb: 'sparks up' }, elixir: { name: 'Sunday Roast', heal: 600, price: 400, desc: 'Restore 600 HP. Yorkshires included.', verb: 'tucks into' } });
 
 // enemies (sprites for variants are recolors defined in sprites.js)
 Object.assign(ENEMIES, {
@@ -392,8 +393,8 @@ export const DIFFICULTY = {
 };
 
 Object.assign(ITEMS, {
-  antidote: { name: 'Antidote', cure: 'poison', price: 20, desc: 'Cure poison' },
-  remedy: { name: 'Remedy', cure: 'all', price: 80, desc: 'Cure poison, slow and stun' },
+  antidote: { name: 'Cup of Tea', cure: 'poison', price: 20, desc: 'Cure poison. Tea fixes everything.', verb: 'has' },
+  remedy: { name: 'Tea & Biscuits', art: 'some', cure: 'all', price: 80, desc: 'Cure poison, slow and stun. Dunking encouraged.', verb: 'has' },
 });
 for (const id of ['haven_general', 'mire_general']) SHOPS[id].stock.items.push('antidote');
 SHOPS.frost_general.stock.items.push('antidote', 'remedy');
@@ -912,7 +913,7 @@ export const QUIZ = [
   { q: 'Which beast in the Greenmarch grass shrugs off fire and laughs at arrows?', a: ['The Golden Boar', 'The Silver Goat', 'Big Gary', 'A yeti'] },
   { q: 'What is the Storm Drake weak to?', a: ['Ice', 'Bolt', 'Fire', 'Being ignored'] },
   { q: 'Which raiders take only the good cheese from Frostholm\'s storehouses?', a: ['Yetis', 'Ice wolves', 'Goblins', 'Barnaby'] },
-  { q: 'Which item revives a fallen ally?', a: ['Phoenix Down', 'Ether', 'Antidote', 'A pint of water'] },
+  { q: 'Which item revives a fallen ally?', a: ['Late-Night Kebab', 'Spliff', 'Cup of Tea', 'A pint of water'] },
   { q: 'Which calling wakes with the first heart: Hexer, Bard or...?', a: ['Berserker', 'Paladin', 'Samurai', 'Accountant'], if: 's:gems' },
   // the pub, 2026 (or thereabouts)
   { q: 'Capital of Australia? Wherever that is.', a: ['Canberra', 'Sydney', 'Melbourne', 'Frostholm'] },
@@ -977,7 +978,7 @@ export const QUIPS = {
     ['devon', 'I\'m fine! I\'m fine. I\'m mostly fine. Is my beard still on?'],
     ['brenna', 'Hold still. This will sting. Good. Stop whining.'],
     ['wendell', 'A mere flesh wound! ...Several mere flesh wounds.'],
-    ['adam', 'That was too close. Potions out. We heal before we move.'],
+    ['adam', 'That was too close. Pints out. We heal before we move.'],
     ['devon', 'Saw a bright light, bro. Thought it was the bell. It was the sun.'],
     ['brenna', 'Every night at the Goose, it\'s the same. Only now there are dragons.'],
     ['adam', 'Stay behind me next time. I mean it.'],

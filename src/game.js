@@ -810,7 +810,7 @@ function loadSlot(i) {
 }
 function intro() {
   show(`<h2>${ic('house')} Welcome to Haven Town</h2><div class="npc">${npcImg('elder', 48)}<p>Three great evils stir: the <b>Ashen Wyrm</b> in the cavern east of town, a <b>Lich King</b> in the swamp crypt, and a <b>Frost Titan</b> in a spire far to the north.</p></div>
-  <p>Your party sets out <b>unarmed</b> with <span class="gold">400 G</span>: arm everyone at the <b>Smithy</b> first (a sword, two staves and a dagger cost about 205 G), then buy a few potions.</p>
+  <p>Your party sets out <b>unarmed</b> with <span class="gold">400 G</span>: arm everyone at the <b>Smithy</b> first (a sword, two staves and a dagger cost about 205 G), then buy a few pints.</p>
   <p>Open the <b>Menu</b> (Esc) to change callings and skills, and visit the <b>Smithy</b> for gear. Talk to townsfolk: a <span class="gold">!</span> marks someone with news. Check your <b>Journal</b> if you get lost.</p><div class="foot">${btn('close', 'Begin', '', '', 'primary')}</div>`);
 }
 // ---------- party chat (menu > CHAT): skits about where you are and what just happened (STORY.chat) ----------
@@ -935,7 +935,7 @@ ACT.useon = (id, i) => {
   else if (c.hp > 0 && it.heal && c.hp < s.hp) { c.hp = Math.min(s.hp, c.hp + it.heal); ok = true; }
   else if (c.hp > 0 && it.mpr && c.mp < s.mp) { c.mp = Math.min(s.mp, c.mp + it.mpr); ok = true; }
   if (ok) G.inv.items[id]--;
-  itemsMenu(ok ? `Used ${it.name} on ${esc(c.name)}.` : 'No effect.');
+  itemsMenu(ok ? `${esc(c.name)} ${it.verb || 'uses'} ${it.art || 'a'} ${it.name}.` : 'No effect.');
 };
 
 
@@ -1254,7 +1254,7 @@ async function victory(b, bossId) {
   if (bossId) G.flags.bosses[bossId] = true;
   miniDirty = true;
   for (const e of b.e) { const r2 = (G.flags.bestiary[e.id] ||= { seen: 1, kills: 0 }); r2.kills++; }
-  if (G.party.some((c) => c.hp > 0 && c.hp < maxOf(c).hp * 0.35) && tipOnce('rest')) lines.push('💡 Low on HP? Inns heal the whole party and save your game. Potions work from the Items menu.');
+  if (G.party.some((c) => c.hp > 0 && c.hp < maxOf(c).hp * 0.35) && tipOnce('rest')) lines.push('💡 Low on HP? Inns heal the whole party and save your game. Pints work from the Items menu.');
   questLog(lines);
   const q = quip(bossId ? 'boss' : b.p.some((x) => x.hp <= 0 || x.hp < x.maxhp * 0.25) ? 'close' : 'win', bossId ? 1 : 0.4); if (q) lines.push(q);
   await new Promise((res) => {
