@@ -70,19 +70,19 @@ const HEAD = {
   helm: ['.....kkkkkk.....', '....kHHHHHHk....', '...kHHhhhhHHk...', '...kHkkkkkkHk...', '...kHFFFFFFHk...', '...kHFkFFkFHk...', '....kFFFFFFk....'],
 };
 const BODY = ['.....kTTTTk.....', '...kkTTAATTkk...', '..kFkTTTTTTkFk..', '..kFkTTAATTkFk..', '...kkTTTTTTkk...', '....kTTkkTTk....', '....kttk.kttk...', '....kkkk.kkkk...', '................'];
-export const HERO_STYLE = { // job -> [head, H, h, T, t, A, F]
-  knight: ['helm', '#aab4c8', '#7a8499', '#3a6ac0', '#27428a', '#e8e8f0', '#f0c8a0'],
-  rogue: ['hood', '#3c4a44', '#2a3430', '#4a4a58', '#2a2a36', '#d0a040', '#f0c8a0'],
-  mage: ['pointy', '#7a4ac0', '#5a30a0', '#5a38b0', '#3a2080', '#f4d35e', '#f0c8a0'],
-  cleric: ['hood', '#f2f2f2', '#c8c8d8', '#f2f2f2', '#c8c8d8', '#f4d35e', '#f0c8a0'],
-  monk: ['hair', '#8a5a30', '#55341c', '#e88a30', '#b06020', '#d94a4a', '#e8b890'],
-  ranger: ['hair', '#8a5a30', '#55341c', '#3a8a3a', '#2a6a2a', '#8a5a30', '#f0c8a0'],
-  hexer: ['hood', '#4a2a80', '#2a1550', '#2a2038', '#15101d', '#6ef0a0', '#d8c8b0'],
-  berserker: ['hair', '#c03020', '#802010', '#8a5a30', '#55341c', '#d94a4a', '#e8b890'],
-  alchemist: ['hood', '#3aa86a', '#2a7048', '#e8e0d0', '#b8b0a0', '#7fd8f0', '#f0c8a0'],
-  samurai: ['hair', '#202030', '#101018', '#c04040', '#802020', '#f2f2f2', '#f0c8a0'],
-  paladin: ['helm', '#e8e8f0', '#a8a8c0', '#f2f2f2', '#c8c8d8', '#f4d35e', '#f0c8a0'],
-  bard: ['pointy', '#d94a4a', '#8a2430', '#2aa0a0', '#1a7070', '#f4d35e', '#f0c8a0'],
+export const HERO_STYLE = { // job -> [head, H, h, T, t, A, F]  (the silly classes; the legacy 16x16 hero used on the title and ending screens)
+  knight: ['hair', '#3a2a20', '#241810', '#30303a', '#26262e', '#f4f4f8', '#f0c8a0'], // Bouncer
+  rogue: ['hair', '#8a7a64', '#5a4a38', '#22b2a4', '#7c3cb8', '#f0c840', '#f0c8a0'], // Chancer
+  mage: ['pointy', '#1f7c4c', '#145a36', '#2c9c5e', '#1c6a40', '#e6e8f0', '#f0c8a0'], // Spreadsheet Sorcerer
+  cleric: ['hair', '#a8462a', '#7a3218', '#f6f2f6', '#8c2c3e', '#f0a424', '#f0c8a0'], // Barmaid
+  monk: ['hair', '#4a3020', '#2a1a10', '#2a8cf2', '#1e1e28', '#f6f6fa', '#e8b890'], // Gym Bro
+  ranger: ['hair', '#5a4630', '#3a2a18', '#d6322e', '#2c2c3a', '#f0c840', '#f0c8a0'], // Darts Player
+  hexer: ['hair', '#4a3020', '#2a1a10', '#b6a0f2', '#26262e', '#ff7ac0', '#f0c8a0'], // Influencer
+  bard: ['hair', '#e2a82e', '#a87818', '#6c7c3c', '#3c4c70', '#d8483e', '#f0c8a0'], // Busker
+  berserker: ['pointy', '#ff8c1e', '#c05a00', '#ff4fa6', '#2c3c6c', '#f8f8fa', '#e8b890'], // Stag Do Lad
+  alchemist: ['hair', '#c45e2a', '#8a3a10', '#e8c44c', '#4c4a3a', '#f0a420', '#f0c8a0'], // Home Brewer
+  samurai: ['helm', '#f6f6fa', '#c8c8d8', '#f4f4f8', '#464654', '#d83a2a', '#f0c8a0'], // Angry Chef
+  paladin: ['helm', '#242c4a', '#14182c', '#eee83a', '#2a3052', '#f6f6fa', '#f0c8a0'], // Traffic Warden
   bloke: ['hair', '#6a4428', '#4a2c18', '#8a8e98', '#3e5a92', '#3a3036', '#f0c8a0'], // jobless 2026 bloke (grey tee, jeans)
 };
 const jobOf = (key) => { const j = String(key).split('@')[0]; return HERO_STYLE[j] ? j : 'knight'; }; // 'job@look' -> job

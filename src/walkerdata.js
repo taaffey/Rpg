@@ -1389,7 +1389,7 @@ Object.assign(HEROES, {
   rogue: { // CHANCER: teal shell suit, flat cap, gold chain, a lot of watches
     head: ['flatcap'], hair: 'short', openOk: false, hood: false,
     ramps: { T: '#22b2a4', P: '#7c3cb8', B: '#f2f2f6', A: '#f0c840', C: '#8a7a64', F: '#f6f6fa', M: '#cfd4de', H: '#4a3220' },
-    remap: { torso: { A: 'T', Z: 'W', a: 't', z: 'u' } }, props: ['shell', 'chain', 'watches'],
+    remap: { torso: { A: 'T', Z: 'W', a: 't', z: 'u' } }, props: ['shell', 'chain', 'watches', 'penknife'], spec: { 1: '#d63a34' },
   },
   mage: { // SPREADSHEET SORCERER: green wizard robe, specs, lanyard, a Post-it on the hat
     head: ['wizoffice', 'glasses'], hair: 'short', body: 'robe', h: 29, hold: true, openOk: false, hood: false,
@@ -1405,7 +1405,7 @@ Object.assign(HEROES, {
   monk: { // GYM BRO: tank top, sweatband, shorts, big arms, protein shaker
     head: ['sweat'], hair: 'short', openOk: true, hood: false,
     ramps: { T: '#2a8cf2', P: '#1e1e28', B: '#f2f2f6', A: '#f6f6fa', H: '#4a3020' },
-    remap: { arms: BARE, legs: SHORTS }, props: ['tank', 'shaker'], spec: { 1: '#e84a3a', 2: '#e8e060' },
+    remap: { arms: BARE, legs: SHORTS }, props: ['tank', 'shaker', 'gloves'], spec: { 1: '#e84a3a', 2: '#e8e060', 3: '#a8281e' },
   },
   ranger: { // DARTS PLAYER: loud sponsor shirt, belly, gold chain, a dart between the fingers
     head: [], hair: 'short', openOk: true, hood: false,
@@ -1444,3 +1444,16 @@ Object.assign(HEROES, {
   },
 });
 PROPS.wristband = armBand('FF', 'FF'); // darts player's sweat wristbands
+const HANDROW = [16, 17, 15]; // top row of the hand in the three arm-swing variants
+Object.assign(PROPS, {
+  gloves: { // red boxing gloves that follow the swinging hands (Gym Bro)
+    down: (c) => ({ z: 'top', parts: [P(2, HANDROW[c.hold ? 0 : c.sw], ['11', '13']), P(12, HANDROW[c.sw2], ['11', '31'])] }),
+    up: (c) => ({ z: 'top', parts: [P(2, HANDROW[c.sw2], ['11', '13']), P(12, HANDROW[c.hold ? 0 : c.sw], ['11', '31'])] }),
+    right: (c) => { const v = c.hold ? 0 : c.sw; return { z: 'top', parts: [P([7, 9, 5][v], [16, 15, 15][v], ['11', '13'])] }; },
+  },
+  penknife: { // the Chancer's penknife, blade out
+    down: { z: 'mid', parts: [P(1, 12, ['L', 'L', '1', '1']), P(1, 16, ['S'])] },
+    up: { z: 'mid', parts: [P(14, 12, ['L', 'L', '1', '1'])] },
+    right: { z: 'back', parts: [P(3, 12, ['L', 'L', '1', '1'])] },
+  },
+});

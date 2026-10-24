@@ -3,7 +3,6 @@
 // capsules, bevelled polygons) that are z-buffered, lit from the upper left, quantised onto hue-shifted
 // 3-6 tone ramps with a little ordered dither, creased where parts overlap, rim-lit and outlined (sel-out).
 // Small details (faces, eyes, teeth, trims) are stamped as pixels on top.
-import { HERO_STYLE } from './sprites.js';
 
 const mk = (w, h) => { const c = document.createElement('canvas'); c.width = w; c.height = h; return c; };
 export function rng(seed) { let a = seed | 0; return () => { a = (a + 0x6D2B79F5) | 0; let t = Math.imul(a ^ (a >>> 15), 1 | a); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
@@ -376,7 +375,7 @@ const CLS = {
     late(c) { const h = c.J.haB, z = c.bz + 0.4, o = c.bz < 0 ? 1.6 : 0; poly1(c, [[h[0] - 1.6 + o, h[1] - 3.7], [h[0] + 1.6 + o, h[1] - 3.7], [h[0] + 1.1 + o, h[1] + 0.8], [h[0] - 1.1 + o, h[1] + 0.8]], 'amber', { z }); c.parts.push(ell(h[0] + o, h[1] - 4, 1.9, 1, 'foam', { z: z + 0.1 })); },
   },
   monk: { // GYM BRO: tank top, sweatband, shorts, big arms, a protein shaker
-    shirt: '#2a8cf2', legs: '#1e1e28', shoe: '#f2f2f6', belt: '#f6f6fa', tank: true, armR: 1.4, shin: 'skin', cuff: 'band', weapon: 'fists', offhand: true,
+    shirt: '#2a8cf2', legs: '#1e1e28', shoe: '#f2f2f6', belt: '#f6f6fa', tank: true, armR: 1.4, shin: 'skin', cuff: 'band', weapon: 'fists',
     head: { dflt: 'short', over: ['sweat'] }, pal: { A: '#f6f6fa', a: '#b8bcd0' }, mats: { shake: ['#e8e060'], lid: ['#e84a3a'] },
     torso(c) { const n = c.J.neck; paintPoly(c, [[n[0] - 2.8, n[1] + 0.8], [n[0] + 0.4, n[1] + 0.5], [n[0] - 1.2, n[1] + 3.6]], 'skin'); c.parts.push(ell(c.J.shF[0] + 0.5, c.J.shF[1] - 0.2, 2.3, 2, 'skin', { z: 6 })); },
     late(c) { const h = c.J.haB, z = c.bz + 0.4, o = c.bz < 0 ? 1.6 : 0, r = (a, b, w, hh, m, zz) => poly1(c, [[h[0] - w + o, h[1] + a], [h[0] + w + o, h[1] + a], [h[0] + w + o, h[1] + b], [h[0] - w + o, h[1] + b]], m, { z: zz, bev: 0.4 }); r(-3.2, 1.8, 1.3, 0, 'wht', z); r(-0.8, 1.8, 1.3, 0, 'shake', z + 0.1); r(-4.2, -3.2, 1.5, 0, 'lid', z + 0.2); },
@@ -467,7 +466,7 @@ function heroSpec(job, poseName, wover, look = null, key = job) {
   if (!robe) { C(J.hipF, J.kneeF, 1.55, 1.4, 'legs', 0.5); C(J.kneeF, J.ankF, shin === 'skin' ? 1.15 : 1.4, 1.25, shin, 0.6); }
   parts.push(ell(J.ankF[0] - 1.2, J.ankF[1] + 0.9, 2.1, 1.15, 'boots', { z: 0.8, d: 0.7 }));
   C(J.shF, J.elF, 1.3 * ar, 1.2 * ar, sleeveM, 5); C(J.elF, J.haF, 1.2 * ar, 1.05 * ar, foreM, 5.5);
-  if (K.cuff) for (const [el, ha] of [[J.elF, J.haF], [J.elB, J.haB]]) { const fd = unit(el, ha); parts.push(paint(cap(...add(ha, fd, -2.9), ...add(ha, fd, -1.7), 1.5 * ar, 1.5 * ar, K.cuff))); }
+  if (K.cuff) for (const [el, ha] of [[J.elF, J.haF], [J.elB, J.haB]]) { const fd = unit(el, ha); parts.push(paint(cap(...add(ha, fd, -2.7), ...add(ha, fd, -1.8), 1.0 * ar, 1.0 * ar, K.cuff))); }
   if (K.late) K.late(ctx);
   const hand = J.wHand === 'F' ? J.haF : J.haB;
   if (art) parts.push(...weaponParts(art, hand, J.wAng, poseName, J));

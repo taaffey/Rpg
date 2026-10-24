@@ -16,11 +16,11 @@ const PAL = {
 // ---------- pixel art (interior colors only: a dark outline is added automatically) ----------
 const A = {
   sword: ['...........Tn.', '..........tTTn', '.........tTTn.', '........tTTn..', '.......tTTn...', '......tTn.....', '.....Tn.......', '....kn........', '...kn.........', '..kn..........', '.nNn..........', '..N...........'],
-  dagger: ['...........w', '..........wl', '.........wl.', '........wl..', '.......lg...', '.....yyoY...', '....yyyoYY..', '...yyyyoYY..', '..yyyyoYY...', '..yyyoYY....', '..YYYYY.....'],
+  dagger: ['...........w.', '..........wl.', '.........wl..', '........wl...', '.......wl....', '......lg.....', '.....yyoY....', '....yoyY.....', '...yyoYY.....', '..yoyYY......', '.YYYYY.......'],
   staff: ['.......wwww..', '......wlwwlw.', '......wwlwlw.', '......lwwlwlg', '.......l.lg..', '......nN.....', '.....nN......', '....nN.......', '...nN........', '..nN.........', '.nN..........', 'nN...........'],
   bow: ['...........w', '..........lw', '.........lg.', '........lg..', '.......lg...', '......lg....', '.....dg.....', '..r.rdr.....', '..rrrr......', '.wrrrw......', '.wwrw.......', 'wwr.........'],
   fists: ['..rrrrrr..', '.rwwrrrrrR', 'rrwrrrrrrR', 'rrrrrrrrrR', 'rrrrrrrrRR', '.rrrrrrrR.', '.RrrrrrRR.', '..RRRRRR..', '..wwwwww..', '..wlllllg.', '..wlllllg.'],
-  whip: ['..........dd.', '.........wwww', '.........wllw', '.........wwww', '...llll..gl..', '..lggggl.l...', '.lg....gll...', '.lg....gl....', '.lg....gl....', '..lg..gl.....', '...lggl......', '....ll.......'],
+  whip: ['..........dd.', '..........dd.', '.........wwww', '.........wllw', '.........wllw', '.........wwww', '..........l..', '....ll....l..', 'l..lggl..lg..', 'gllg..gllg...', '.gg....gg....'],
   scythe: ['.....jGGGGGj.', '.......oYo...', '......oooY...', '.....lg.d....', '....lg.......', '...lg........', '..lg.........', '.lg..........', 'lg...........', 'dk...........', 'kk...........'],
   book: ['.PPPPPPPPP.', '.PpppppppPw', '.PppyypppPw', '.PpyeeyppPw', '.PppyypppPw', '.PpppppppPw', '.PpppppppPw', '.PPPPPPPPPw', '..wwwwwwwww'],
   tome: ['kkkkkkkkkkk', 'kccccccccck', 'kcwwcyGrcck', 'kcwcccccccc', 'kcccpmbccck', 'kccGyrcccCk', 'kcccccccCCk', 'kcccccccccc', 'kkkkkwkkkkk', '.kkkkkkkkk.'],

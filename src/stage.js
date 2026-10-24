@@ -93,7 +93,9 @@ export class Stage {
       if (e.kind === 'phys') { if (v.side === 'p') v.atk = ATK; else { v.lunge = 0.36; v.slammed = false; v.blink = 0.18; } }
       else {
         v.cast = 0.6; if (v.side === 'e') v.blink = 0.3;
-        const col = e.kind === 'heal' ? 'heal' : e.kind === 'buff' ? 'holy' : 'mp';
+        let col = e.kind === 'heal' ? 'heal' : e.kind === 'buff' ? 'holy' : 'mp';
+        const fx = v.side === 'p' ? BA.CLASS_FX[String((v.c.ch && v.c.ch.main) || '').split('@')[0]] : null; // class accents: Influencer pink ring light, Barmaid foam, Stag Do orange...
+        if (fx) { const k = 'cls:' + (v.c.ch.main + '').split('@')[0] + col; ELEM_COL[k] = ELEM_COL[k] || (col === 'heal' ? [fx.c1, '#7af0a0', '#ffffff', fx.c2] : [fx.c1, fx.c2, fx.c1, '#ffffff']); col = k; }
         this.shapes.push({ k: 'circle', x: cx, y: v.feet + 1, r: v.big ? 30 : 12, t: 0, life: 0.6, col: ELEM_COL[col][0], col2: ELEM_COL[col][1] });
         this.burst(cx, cy, col, 10, 16, { g: -20 });
       }
