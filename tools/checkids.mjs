@@ -78,6 +78,8 @@ for (const m of ng.matchAll(/newChar\('[^']+', '(\w+)', '(\w+)', (null|'(\w+)'),
   BR.PHONE.forEach((l, i) => scene(l, `phone ${i}`));
   for (const [i, q] of (DATA.QUIZ || []).entries()) { conds(q.if, `quiz ${i}`); if (q.a?.length !== 4 || new Set(q.a).size !== 4) errs.push(`quiz ${i}: needs 4 distinct answers`); }
   for (const [k, list] of Object.entries(DATA.QUIPS || {})) for (const [who, t] of list) if (!PEOPLE.includes(who) || !t) errs.push(`quip ${k}: bad speaker ${who}`);
+  for (const id of Object.keys(ENEMIES)) { const n = DATA.BESTIARY_NOTES?.[id]; if (!n) errs.push(`bestiary note missing for enemy ${id}`); else if (!PEOPLE.includes(n[0]) || !n[1] || n[1].length > 100) errs.push(`bestiary note ${id}: bad speaker/text`); }
+  for (const id of Object.keys(DATA.BESTIARY_NOTES || {})) if (!ENEMIES[id]) errs.push(`bestiary note for unknown enemy ${id}`);
   for (const k of BR.COMBOS) { if (!SKILLS[k.id]) errs.push(`combo ${k.id}: no skill`); conds(k.if, `combo ${k.id}`); }
   for (const k of ['WAKE', 'CELLAR_IN', 'GARY_DOWN', 'CALLED', 'CALLED_AFTER', 'WENDELL']) scene(BR[k], `bros ${k}`);
   for (const [mid, m] of Object.entries(MAPS)) for (const [k, pt] of Object.entries(m.portals || {})) { if (!MAPS[pt.to]) errs.push(`portal ${mid} ${k}: no map ${pt.to}`); if (pt.need) { conds(pt.need, `portal ${mid}`); scene(pt.deny || [], `portal ${mid} deny`); } }

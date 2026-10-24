@@ -41,17 +41,25 @@ keyboard alone, or with the mouse. Options (volumes, battle speed, shake, minima
 - **Menus**: equipment stat comparison (green/red arrows), Bestiary with weaknesses, Journal with quests, full map screen.
 - Crash safety: a battle error returns you to the map instead of freezing; progress is autosaved.
 
+## The medicine cabinet (HP and MP items)
+Beer and a joint here and there: **Pint of Lager / Pitcher / Sunday Roast** restore HP, **Spliff / Fat Doobie** restore MP,
+a **Late-Night Kebab** gets a fallen mate back on their feet, **Cup of Tea / Tea & Biscuits** cure the nasties. The Home
+Brewer's passive, Happy Hour, makes them twice as potent. Status effects are pub-style too: a dodgy tum, hungover, gobsmacked.
+
 ## How builds work (three layered systems)
-1. **Callings** (12, FF5-style job system): every win gives each standing hero **Calling Points** for their current
+1. **Callings** (12 silly archetypes, FF5-style job system): every win gives each standing hero **Calling Points** for their current
    calling (1 per foe, more for tough ones, 10-15 for a great evil; KO'd heroes get none). Each calling has 6 **ranks**
-   (CP 0 / 6 / 18 / 45 / 80 / 130); every rank teaches one ability, rank 4 a passive **trait** (Stalwart, First Strike,
-   MP Thrift, Regen, Counter, Pre-emptive, Dark Hunger, Encore, Adrenaline, Pharmacy, Bushido, Guardian) and rank 6
+   (CP 0 / 6 / 18 / 45 / 80 / 130); every rank teaches one ability, rank 4 a passive **trait** (Door Policy, Sucker Punch,
+   Free Trial, Top-Up, Spotter, Oche Stare, Parasocial, Tip Jar, Dutch Courage, Happy Hour, Sharp Tongue, Hi-Vis) and rank 6
    **masters** the calling: a small stat bonus kept whatever the hero does next. Learned abilities are permanent: the
    current calling's are always usable, plus one **second calling**'s (any calling the hero has taken up) and one extra
    **trait** slot. Stats and weapon types come from the current calling only; character level still raises stats.
-   Change callings from the menu at any time. Six callings answer the bell; Hexer, Bard and Berserker wake with the
-   first heart-gem claimed, Alchemist, Samurai and Paladin with the second (see CALLING_BATCHES in data.js).
-2. **Weapons** (10 types, 47 weapons, tiers: Haven smithy -> Mirewood -> Frostholm forge -> chests, bosses and rare drops):
+   Change callings from the menu at any time. Six callings are on the Guild's list from the start (**Bouncer, Chancer,
+   Spreadsheet Sorcerer, Barmaid, Gym Bro, Darts Player**); **Influencer, Busker and Stag Do Lad** wake with the first
+   heart-gem claimed, **Home Brewer, Angry Chef and Traffic Warden** with the second (see CALLING_BATCHES in data.js).
+   The ids stay the classic ones (knight, rogue, mage, cleric, monk, ranger, hexer, bard, berserker, alchemist, samurai,
+   paladin), so the engine, art keys and saves are unchanged; only the names, jokes and artwork are silly.
+2. **Weapons** (10 silly families: Bats, Pointy Things, Poles, Shooters, Knuckles, Cables, Strimmers, Gadgets, Novelties, Kitchen Knives; 53 weapons from a Biro to a Titanic Extinguisher; tiers: Haven hardware shop -> Mirewood car boot -> Frostholm DIY forge -> chests, bosses and rare drops):
    each type grants a **signature skill** (some legendary weapons replace it with their own, e.g. Mend, Raijin, Demon Cut),
    many carry a free **innate gem**, and most have a trait: elemental attacks, extra crit, double blows, armor pierce,
    on-hit Poison/Slow/Stun/drain, healing bonus, or stat bonuses and curses.
@@ -63,10 +71,10 @@ keyboard alone, or with the mouse. Options (volumes, battle speed, shake, minima
 
 Blue gradient windows with white borders, the Press Start 2P pixel font and a pointing-hand cursor. Battles use the FF1 GBA layout: the scene on top with a message box over it, an enemy-name window bottom-left (the command menu replaces it on your turn) and the party HP window bottom-right. Shops show the keeper, Buy/Sell and a gold window; dialogue types out line by line.
 
-**An actual start:** like FF1, the party begins at level 1, **unarmed**, with 400 G: arming everyone at the Haven Smithy
-costs about 205 G and leaves room for potions. Monks (and other fist-wielding main jobs) punch hard bare-handed.
+**An actual start:** like FF1, the party begins at level 1, **unarmed**, with 400 G: arming everyone at the Haven hardware shop
+costs about 205 G and leaves room for pints. Gym Bros (and other fist-wielding main jobs) punch hard bare-handed.
 
-**Loot and growth:** every monster has a common drop (potions, ethers, antidotes...) and a ★ RARE drop (a gem, accessory or a
+**Loot and growth:** every monster has a common drop (pints, spliffs, cups of tea...) and a ★ RARE drop (a gem, accessory or a
 unique weapon, 4-8%); bosses always drop their treasure. The Bestiary lists each foe's drops once defeated (rares stay `???` until found).
 The EXP curve (`EXP_TABLE` in `src/logic.js`) gives a level every 1-4 fights near Haven and ~6-10 regional fights later; KO'd heroes
 get half EXP. `node tools/progress.mjs` simulates a full playthrough and checks the level reached at every stage and boss.

@@ -468,3 +468,5 @@ body:has(#overlay.title) #padL, body:has(#overlay.title) #padR{visibility:hidden
 .battle .cmdlist button .sk b em{font-style:normal;color:var(--yel)}
 /* picking a skill / item / target: give the list more room than the party panel (names got longer and sillier) */
 .battle .br.subcmd{grid-template-columns:minmax(0,1.55fr) minmax(0,1fr)}
+.greet{font-style:italic;margin:4px 2px 6px;font-size:9px;line-height:1.6}
+.beast .note{font-style:italic;margin-top:4px;font-size:8px;line-height:1.6}
