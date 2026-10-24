@@ -460,3 +460,11 @@ body:has(#overlay.title) #padL, body:has(#overlay.title) #padR{visibility:hidden
 #overlay.say.art{background:rgba(0,0,8,.82)}
 #overlay.say.art .win{display:flex;flex-direction:column;gap:6px}
 #overlay.say.art img.pubart{margin:0 auto;max-height:42vh;width:auto;max-width:100%}
+/* long silly names: let skill and item names wrap in the battle command list instead of cutting off */
+.battle .cmdlist button .sk{align-items:flex-start}
+.battle .cmdlist button .sk b{white-space:normal;overflow:visible;text-overflow:clip;line-height:1.45}
+.battle .cmdlist button .sk i{flex:none;white-space:nowrap}
+.battle .cmdlist button .sk b{font-size:10px;overflow-wrap:anywhere}
+.battle .cmdlist button .sk b em{font-style:normal;color:var(--yel)}
+/* picking a skill / item / target: give the list more room than the party panel (names got longer and sillier) */
+.battle .br.subcmd{grid-template-columns:minmax(0,1.55fr) minmax(0,1fr)}

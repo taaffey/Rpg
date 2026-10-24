@@ -947,7 +947,7 @@ ACT.bnav = (d) => { B.i = (B.i + +d + G.party.length) % G.party.length; B.view =
 ACT.bclose = () => (B.guild ? guild() : mainMenu());
 function buildMain(c) {
   const s = stats(c), m = JOBS[c.main], sj = c.sub ? JOBS[c.sub] : null, cap = gemCapacity(c), used = gemsUsed(c);
-  const gearRow = (label, view, id, kind) => `<div class="slot"><span class="lead">${id ? itemIc(kind, id) : ic({ weapons: 'fists', armors: 'armor', accs: 'ring' }[kind], 'dimic')}</span><div class="t"><b><span class="dim">${label}</span> ${id ? DB[kind][id].name : `<span class="dim">— ${kind === 'weapons' ? 'unarmed' : 'none'} —</span>`}</b><small>${id ? gearDesc(kind, DB[kind][id]) : kind === 'weapons' ? 'Fighting bare-handed. Buy a weapon at a Smithy.' : ''}</small></div>${btn('bview', 'Change', view)}</div>`;
+  const gearRow = (label, view, id, kind) => `<div class="slot"><span class="lead">${id ? itemIc(kind, id) : ic({ weapons: 'fists', armors: 'armor', accs: 'ring' }[kind], 'dimic')}</span><div class="t"><b><span class="dim">${label}</span> ${id ? DB[kind][id].name : `<span class="dim">— ${kind === 'weapons' ? 'unarmed' : 'none'} —</span>`}</b><small>${id ? gearDesc(kind, DB[kind][id]) : kind === 'weapons' ? 'Fighting bare-handed. Buy a weapon at the hardware shop.' : ''}</small></div>${btn('bview', 'Change', view)}</div>`;
   const slotRow = (i) => {
     const sid = slotSkill(c, i), gems = slotGems(c, i);
     const m2 = sid ? skillWithGems(sid, gems) : null;
@@ -1107,7 +1107,7 @@ function renderBattle() {
   ov.innerHTML = `<div class="win battle"><div class="bl"><div class="order"><span class="olab">ORDER</span>${order}${BT.auto ? '<button class="autobtn on" data-tap="autotoggle" tabindex="-1">AUTO ON</button>' : ''}</div>
   <div class="stagewrap"><div id="stagehost"></div>${msg && !BT.logBig ? `<div class="bmsg">${msg}</div>` : ''}<button class="logtoggle" data-tap="logsize" tabindex="-1" title="Battle log (L)">${BT.logBig ? 'CLOSE' : 'LOG'}</button></div>
   ${BT.logBig ? `<div class="logwrap"><div class="log big" id="log">${BT.log.map(line).join('')}</div></div>` : ''}</div>
-  <div class="br"><div class="pane cmdwin"><div id="cmd">${ask ? cmdHtml(ask) : enemyWin}</div></div>
+  <div class="br${ask && ask.stage !== 'root' ? ' subcmd' : ''}"><div class="pane cmdwin"><div id="cmd">${ask ? cmdHtml(ask) : enemyWin}</div></div>
   <div class="pane partywin">${b.p.map((p) => { const r = p.hp / p.maxhp; return `<div data-n="${p.name}" class="pm ${p.hp <= 0 ? 'dead' : ''} ${ask?.p === p ? 'active' : ''}">${portrait(ak(p.ch), 'sm' + (p.hp <= 0 ? ' ko' : ''))}<span class="pn">${esc(p.name)}${UI.statusIcons(p.st)}</span><span class="ph ${r < 0.25 ? 'low' : r < 0.5 ? 'mid' : ''}">${p.hp}<small>/${p.maxhp}</small></span><span class="pg">${bar(p.hp, p.maxhp, 'hp')}</span><span class="pmp">MP ${p.mp}</span></div>`; }).join('')}</div></div></div>`;
   ov.className = 'on';
   $('#stagehost').appendChild(BT.stage.canvas);
@@ -1151,7 +1151,7 @@ function cmdHtml(a) {
     return `${head}<div class="cmdlist">` + [0, 1, 2, 3, SIG].map((i) => {
       const sid = slotSkill(c, i); if (!sid) return '';
       const gems = slotGems(c, i), s = skillWithGems(sid, gems); s.mp = L.mpCost(p, s);
-      return btn('c', `<span class="sk">${ic(UI.skillIconName(s))}<b>${s.name}</b><i>${s.mp}MP</i></span><small>${s.tags.length ? s.tags.join(' + ') + ' · ' : ''}${describeSkill(s)}</small>`, 'cast', i, 'two', p.mp < s.mp);
+      return btn('c', `<span class="sk">${ic(UI.skillIconName(s))}<b>${s.name}</b></span><small>${s.tags.length ? s.tags.join(' + ') + ' · ' : ''}${describeSkill(s)}</small>`, 'cast', i, 'two', p.mp < s.mp);
     }).join('') + `${back}</div>`;
   }
   if (a.stage === 'combos') {
@@ -1161,7 +1161,7 @@ function cmdHtml(a) {
   }
   if (a.stage === 'item') {
     const its = Object.entries(G.inv.items).filter(([, n]) => n > 0);
-    return `${head}<div class="cmdlist">` + (its.map(([id, n]) => btn('c', `<span class="sk">${itemIc('items', id)}<b>${ITEMS[id].name}</b><i>x${n}</i></span><small>${ITEMS[id].desc}</small>`, 'useitem', id, 'two')).join('') || '<div class="dim">No items.</div>') + `${back}</div>`;
+    return `${head}<div class="cmdlist">` + (its.map(([id, n]) => btn('c', `<span class="sk">${itemIc('items', id)}<b>${ITEMS[id].name} <em>×${n}</em></b></span><small>${ITEMS[id].desc}</small>`, 'useitem', id, 'two')).join('') || '<div class="dim">No items.</div>') + `${back}</div>`;
   }
   // target: pick from a list of names, like the original
   const list = a.tside === 'e' ? BT.b.e.map((e, i) => (e.hp > 0 ? btn('tgt', `<span class="tgtname">${e.name}</span>${e.weak.length ? `<span class="tw">${e.weak.map((w) => UI.elemIcon(w)).join('')}</span>` : ''}<i>${e.hp}</i>`, 'e', i) : '')) : BT.b.p.map((x, i) => btn('tgt', `${portrait(ak(x.ch), 'sm' + (x.hp > 0 ? '' : ' ko'))}<span class="tgtname">&nbsp;${esc(x.name)}</span><i>${x.hp > 0 ? x.hp : 'KO'}</i>`, 'p', i));

@@ -99,29 +99,29 @@ export function sanitize(c, inv) {
 export function skillWithGems(id, gems = []) {
   const sk = SKILLS[id];
   const m = { id, ...sk, fx: [...(sk.fx || [])], hits: sk.hits || 1, pierce: sk.pierce || 0, chain: false, echo: false, vamp: 0, swift: false, stun: sk.stun || 0, execute: !!sk.execute, recoil: 0, siphon: 0, guard: false, crit: sk.crit || 0, tags: [] };
-  let mpMul = 1;
+  let mpMul = 1; const tag = (gid) => GEMS[gid].name.replace(/ Gem$/, ''); // skill tags use the gem's own (silly) name
   for (const gid of gems) {
     const g = GEMS[gid];
-    if (g.elem) { if (m.kind === 'phys' || m.kind === 'mag') { m.elem = g.elem; m.tags.push(g.elem); } continue; }
+    if (g.elem) { if (m.kind === 'phys' || m.kind === 'mag') { m.elem = g.elem; m.tags.push(tag(gid)); } continue; }
     switch (gid) {
-      case 'chain': m.chain = true; m.tags.push('Chain'); break;
-      case 'echo': m.echo = true; m.tags.push('Echo'); break;
-      case 'vamp': m.vamp = 0.35; m.tags.push('Vampiric'); break;
-      case 'pierce': m.pierce = Math.min(1, m.pierce + 0.5); m.tags.push('Pierce'); break;
-      case 'thrifty': mpMul *= 0.5; m.tags.push('Thrifty'); break;
-      case 'overcharge': m.pow *= 1.5; mpMul *= 1.5; m.tags.push('Overcharge'); break;
-      case 'focusg': m.pow *= 1.25; m.tags.push('Focus'); break;
-      case 'venom': if (!m.fx.includes('poison')) m.fx.push('poison'); m.tags.push('Venom'); break;
-      case 'swift': m.swift = true; m.tags.push('Swift'); break;
-      case 'stun': m.stun = 0.35; m.tags.push('Stun'); break;
-      case 'execute': m.execute = true; m.tags.push('Execute'); break;
-      case 'berserk': m.pow *= 1.4; m.recoil = 0.08; m.tags.push('Berserk'); break;
-      case 'siphon': m.siphon = 0.15; m.tags.push('Siphon'); break;
-      case 'guard': m.guard = true; m.tags.push('Guard'); break;
-      case 'crit': m.crit = 0.25; m.tags.push('Crit'); break;
+      case 'chain': m.chain = true; m.tags.push(tag(gid)); break;
+      case 'echo': m.echo = true; m.tags.push(tag(gid)); break;
+      case 'vamp': m.vamp = 0.35; m.tags.push(tag(gid)); break;
+      case 'pierce': m.pierce = Math.min(1, m.pierce + 0.5); m.tags.push(tag(gid)); break;
+      case 'thrifty': mpMul *= 0.5; m.tags.push(tag(gid)); break;
+      case 'overcharge': m.pow *= 1.5; mpMul *= 1.5; m.tags.push(tag(gid)); break;
+      case 'focusg': m.pow *= 1.25; m.tags.push(tag(gid)); break;
+      case 'venom': if (!m.fx.includes('poison')) m.fx.push('poison'); m.tags.push(tag(gid)); break;
+      case 'swift': m.swift = true; m.tags.push(tag(gid)); break;
+      case 'stun': m.stun = 0.35; m.tags.push(tag(gid)); break;
+      case 'execute': m.execute = true; m.tags.push(tag(gid)); break;
+      case 'berserk': m.pow *= 1.4; m.recoil = 0.08; m.tags.push(tag(gid)); break;
+      case 'siphon': m.siphon = 0.15; m.tags.push(tag(gid)); break;
+      case 'guard': m.guard = true; m.tags.push(tag(gid)); break;
+      case 'crit': m.crit = 0.25; m.tags.push(tag(gid)); break;
       case 'wide':
-        if (m.tgt === 'one') { m.tgt = 'all'; m.pow *= 0.6; m.tags.push('Wide'); }
-        else if (m.tgt === 'ally') { m.tgt = 'allies'; m.pow *= 0.6; m.tags.push('Wide'); }
+        if (m.tgt === 'one') { m.tgt = 'all'; m.pow *= 0.6; m.tags.push(tag(gid)); }
+        else if (m.tgt === 'ally') { m.tgt = 'allies'; m.pow *= 0.6; m.tags.push(tag(gid)); }
         break;
     }
   }
@@ -254,7 +254,7 @@ export class Battle {
     this.p.forEach((x) => (x.defending = false));
     for (const { x, cmd } of order) {
       if (!alive(x) || this.over) continue;
-      if (x.st.stun > 0) { x.st.stun = 0; this.fx.push({ t: 'poison' }); yield [`${x.name} is stunned and can't act!`]; continue; }
+      if (x.st.stun > 0) { x.st.stun = 0; this.fx.push({ t: 'poison' }); yield [`${x.name} is gobsmacked and can't act!`]; continue; }
       const L = this.act(x, cmd);
       this.check();
       yield L;
@@ -263,7 +263,7 @@ export class Battle {
     const L = [];
     for (const x of [...this.p, ...this.e]) {
       if (!alive(x)) continue;
-      if (x.st.poison > 0) { const d = Math.max(1, Math.round(x.maxhp * 0.07)); this.hurt(x, d, L, `${x.name} suffers poison`); this.fx.push({ t: 'poison' }); }
+      if (x.st.poison > 0) { const d = Math.max(1, Math.round(x.maxhp * 0.07)); this.hurt(x, d, L, `${x.name} clutches their tum`); this.fx.push({ t: 'poison' }); }
       if (alive(x) && x.tr.has('regen') && x.hp < x.maxhp) { const h = Math.min(x.maxhp - x.hp, Math.max(1, Math.round(x.maxhp * 0.05))); x.hp += h; this.fx.push({ t: 'heal', name: x.name, amount: h }); L.push(`${x.name} regenerates ${h} HP.`); }
       for (const k of Object.keys(x.st)) if (k !== 'stun' && x.st[k] > 0) x.st[k]--;
     }
@@ -327,8 +327,8 @@ export class Battle {
   }
   applyFx(a, t, s, L, dealt) {
     for (const f of s.fx) {
-      if (f === 'poison' && alive(t)) { t.st.poison = 4; L.push(`  ${t.name} is poisoned.`); }
-      if (f === 'slow' && alive(t)) { t.st.slow = 3; L.push(`  ${t.name} is slowed.`); }
+      if (f === 'poison' && alive(t)) { t.st.poison = 4; L.push(`  ${t.name} has a dodgy tum.`); }
+      if (f === 'slow' && alive(t)) { t.st.slow = 3; L.push(`  ${t.name} is hungover.`); }
       if (f === 'atkup') { t.st.atkup = 4; L.push(`  ${t.name}'s power rises.`); }
       if (f === 'defup') { t.st.defup = 4; L.push(`  ${t.name}'s guard rises.`); }
       if (f === 'drain' && dealt > 0 && alive(a)) { const h = Math.min(Math.round(dealt * (a.tr.has('hunger') ? 0.75 : 0.5)), a.maxhp - a.hp); if (h > 0) { a.hp += h; this.fx.push({ t: 'heal', name: a.name, amount: h }); L.push(`  ${a.name} drains ${h} HP.`); } }
@@ -339,9 +339,9 @@ export class Battle {
     if (this.rng() >= chance) return;
     if (f === 'drain') { if (!alive(a)) return; const h = Math.min(Math.round(dealt * (a.tr.has('hunger') ? 0.75 : 0.5)), a.maxhp - a.hp); if (h > 0) { a.hp += h; this.fx.push({ t: 'heal', name: a.name, amount: h }); L.push(`  ${a.name}'s weapon drains ${h} HP.`); } return; }
     if (!alive(t)) return;
-    if (f === 'poison' && !(t.st.poison > 0)) { t.st.poison = 4; L.push(`  ${t.name} is poisoned.`); }
-    else if (f === 'slow' && !(t.st.slow > 0)) { t.st.slow = 3; L.push(`  ${t.name} is slowed.`); }
-    else if (f === 'stun' && !t.def_?.boss) { t.st.stun = 1; L.push(`  ${t.name} is stunned!`); }
+    if (f === 'poison' && !(t.st.poison > 0)) { t.st.poison = 4; L.push(`  ${t.name} has a dodgy tum.`); }
+    else if (f === 'slow' && !(t.st.slow > 0)) { t.st.slow = 3; L.push(`  ${t.name} is hungover.`); }
+    else if (f === 'stun' && !t.def_?.boss) { t.st.stun = 1; L.push(`  ${t.name} is gobsmacked!`); }
   }
   damage(a, t, s, mult = 1, elem = s.elem) {
     const up = a.st.atkup > 0 ? 1.4 : 1, dup = t.st.defup > 0 ? 1.5 : 1;
@@ -381,7 +381,7 @@ export class Battle {
         }
         if (s.vamp && total && alive(a)) { const h = Math.min(Math.round(total * s.vamp), a.maxhp - a.hp); if (h > 0) { a.hp += h; this.fx.push({ t: 'heal', name: a.name, amount: h }); L.push(`  ${a.name} siphons ${h} HP.`); } }
         this.applyFx(a, t, s, L, total);
-        if (s.stun && alive(t) && !t.def_?.boss && this.rng() < s.stun) { t.st.stun = 1; L.push(`  ${t.name} is stunned!`); }
+        if (s.stun && alive(t) && !t.def_?.boss && this.rng() < s.stun) { t.st.stun = 1; L.push(`  ${t.name} is gobsmacked!`); }
         if (s.chain) {
           const others = this.foes(a).filter((x) => alive(x) && x !== t);
           if (others.length) { const o = pick(others, this.rng); const d = this.damage(a, o, s, 0.5, elem); this.hurt(o, d, L, `  Chain! ${o.name} takes ${d}`); }
