@@ -780,7 +780,6 @@ const ENEMY_VARIANTS = {
   straw_golem: ['golem', { rock: '#dcba50', dark: '#a68228', glow: '#fff080', moss: '#8a9a30' }],
   brew_wraith: ['wraith', { cloak: '#c8841a', inner: '#2a1408', hand: '#f0d890', eye: '#fff27a' }],
   wasp_swarm: ['hornet', { body: '#f6d414', stripe: '#14100c', wing: '#e8f6ff', eye: '#ff2a2a', sting: '#ffffff' }],
-  mash_tun: ['golem', { rock: '#d4622a', dark: '#4e2c12', glow: '#fff4b0', moss: '#ffffff' }],
 };
 // ---------- bestiary expansion: new monster designs (all face right, lit from the upper left) ----------
 TEX.ribs = (x) => (x % 4 === 0 ? -0.16 : x % 4 === 1 ? 0.06 : 0);
@@ -1231,6 +1230,83 @@ Object.assign(MODELS, {
     } };
   } },
 });
+
+// a vertical, optionally bulging cylinder part (barrels, vats): shaded across its width, lit from the left
+function cylY(cx, y0, y1, r0, r1, m, o = {}) {
+  const Rm = Math.max(r0, r1) + (o.bulge || 0);
+  return { m, z: o.z || 0, mode: o.mode, bb: [Math.floor(cx - Rm - 1), Math.floor(y0 - 1), Math.ceil(cx + Rm + 1), Math.ceil(y1 + 1)],
+    f(px, py, hit) {
+      if (py < y0 || py > y1) return false; const t = (py - y0) / (y1 - y0), r = r0 + (r1 - r0) * t + (o.bulge || 0) * Math.sin(Math.PI * t), u = (px - cx) / r;
+      if (Math.abs(u) > 1) return false; const nz = Math.sqrt(1 - u * u); hit.nx = u; hit.ny = 0; hit.nz = nz; hit.h = nz * r; return true;
+    } };
+}
+MODELS.mash_tun = { big: true, col: { copper: '#b4521e', oak: '#7e4c26', iron: '#585a6e', foam: '#f6eedc', ale: '#e09420', brass: '#dcae34', wheel: '#c0361e', hose: '#2e2e3a', glass: '#1a3a48', eye: '#ffb818' }, build(P) {
+  const m = { copper: mat(P.copper, 6, { spec: '#ffe0a0', specAt: 0.9, lift: -0.04, ramp: { hi: 0.55, lo: 0.28 } }), oak: mat(P.oak, 5, { tex: 'grain' }), iron: mat(P.iron, 5, { spec: '#ffffff', ramp: { hi: 0.8 } }),
+    foam: mat(P.foam, 5, { tex: 'wart', ramp: { lo: 0.6, hi: 0.7 } }), ale: mat(P.ale, 5, { spec: '#fff4c0', specAt: 0.86, lift: 0.04 }), brass: mat(P.brass, 5, { spec: '#ffffff', specAt: 0.88, ramp: { hi: 0.8 } }),
+    wheel: mat(P.wheel, 5, { spec: '#ffd0c0', specAt: 0.9 }), hose: mat(P.hose, 4, { tex: 'ribs', spec: '#8a8aa0', specAt: 0.9 }), glass: mat(P.glass, 4, { spec: '#c8f4ff', specAt: 0.8 }),
+    steam: mat('#e4ecf4', 4, { lift: 0.22, ramp: { lo: 0.7, hi: 0.5 } }), paper: mat('#f4ecd0', 3, { lift: 0.1 }) };
+  const foam = [[32, 33, 5, 4], [46, 29, 8, 6], [58, 24, 9, 7], [70, 26, 9, 7], [82, 32, 6, 5], [54, 16, 5.5, 5], [66, 15, 5, 4.5], [76, 20, 4.5, 4]];
+  return { w: 124, h: 108, mats: m, parts: [
+    // barrel feet and a puddle of spilt ale
+    cylY(26, 88, 103, 9, 8, 'oak', { bulge: 1.6 }), cylY(82, 88, 103, 9, 8, 'oak', { bulge: 1.6 }), cylY(54, 90, 105, 10, 9, 'oak', { bulge: 1.8, z: 40 }),
+    // the left arm: a ribbed hose with a brass nozzle that dribbles
+    cap(26, 56, 12, 62, 4, 4, 'hose', { z: 4 }), cap(12, 62, 7, 76, 4, 4, 'hose', { z: 4 }), cap(7, 76, 12, 88, 4, 4, 'hose', { z: 4 }), cap(12, 88, 16, 94, 3.6, 3, 'hose', { z: 4 }), cap(16, 93, 18, 99, 3.8, 3, 'brass', { z: 5 }),
+    ell(26, 56, 5, 6, 'brass', { z: 14 }),
+    // the body: a riveted copper vessel, oak belt at the foot
+    cylY(54, 34, 92, 31, 32, 'copper', { bulge: 1.5 }),
+    paint(poly([[20, 78], [90, 78], [90, 92], [20, 92]], 'oak')),
+    paint(poly([[20, 36], [90, 36], [90, 40], [20, 40]], 'iron')), paint(poly([[20, 76], [90, 76], [90, 79.5], [20, 79.5]], 'iron')), paint(poly([[20, 88.5], [90, 88.5], [90, 92], [20, 92]], 'iron')),
+    // rim and the lid, ajar on a hinge
+    ell(54, 35, 34, 5.5, 'iron', { z: 20, d: 0.7 }),
+    poly([[14, 35], [18, 25], [58, 6], [64, 15], [32, 41]], 'oak', { z: 36, bev: 2.2 }),
+    paint(poly([[22, 33], [25, 24], [30, 22], [27, 35]], 'iron')), paint(poly([[38, 27], [41, 18], [46, 16], [43, 29]], 'iron')),
+    cap(33, 22, 36, 13, 2.4, 2, 'iron', { z: 48 }), ell(36, 12, 3.4, 3.4, 'iron', { z: 49 }),
+    // foam heaving over the rim, tongues of it running down the front, and a vent pipe
+    ...foam.map(([x, y, rx, ry], i) => ell(x, y, rx, ry, 'foam', { z: 50 + (i % 3) * 0.7 })),
+    cap(24, 34, 24, 52, 3.4, 2.2, 'foam', { z: 50 }), cap(46, 34, 46, 46, 3, 2, 'foam', { z: 50 }), cap(85, 37, 85, 47, 2.8, 2, 'foam', { z: 50 }),
+    ell(24, 53, 2.4, 2.4, 'foam', { z: 51 }), ell(85, 48, 2.2, 2.2, 'foam', { z: 51 }),
+    // gauges
+    ell(38, 50, 7, 7, 'brass', { z: 32 }), ell(38, 50, 5, 5, 'paper', { z: 36, d: 0.3 }), ell(30, 69, 5.5, 5.5, 'brass', { z: 32 }), ell(30, 69, 4, 4, 'paper', { z: 36, d: 0.3 }),
+    // the porthole face: brass ring round dark glass, a furnace grate beneath
+    ell(68, 52, 13, 13, 'brass', { z: 30 }), ell(68, 52, 10, 10, 'glass', { z: 38, d: 0.3 }),
+    poly([[55, 67], [85, 67], [86, 80], [54, 80]], 'iron', { z: 31, bev: 1.8 }),
+    // the right arm: a copper pipe with brass couplings, ending in a big red valve-wheel fist
+    cap(84, 52, 97, 58, 5, 5, 'copper', { z: 24 }), cap(97, 58, 104, 70, 4.6, 4.4, 'copper', { z: 24 }), ell(97, 58, 6.2, 6.2, 'brass', { z: 26 }), ell(84, 52, 5.5, 7, 'brass', { z: 26 }),
+    ell(106, 78, 14, 14, 'wheel', { z: 30, d: 0.5 }), cut(ell(106, 78, 9.5, 9.5)),
+    cap(106, 64, 106, 92, 1.9, 1.9, 'wheel', { z: 30 }), cap(92, 78, 120, 78, 1.9, 1.9, 'wheel', { z: 30 }), cap(96, 68, 116, 88, 1.7, 1.7, 'wheel', { z: 30 }), cap(116, 68, 96, 88, 1.7, 1.7, 'wheel', { z: 30 }),
+    ell(106, 78, 4.4, 4.4, 'brass', { z: 36 }),
+    // steam puffs and falling ale
+    ell(80, 8, 6, 5, 'steam', { z: 60 }), ell(90, 4.5, 4.6, 3.8, 'steam', { z: 60 }), ell(98, 12, 3.6, 3.2, 'steam', { z: 60 }), ell(8, 18, 5, 4.4, 'steam', { z: 60 }), ell(4, 8, 3.4, 3, 'steam', { z: 60 }),
+    ell(17, 103, 1.8, 2.4, 'ale', { z: 60 }), ell(18, 107, 1.4, 1.2, 'ale', { z: 60 }), ell(90, 96, 1.8, 2.6, 'ale', { z: 60 }), ell(96, 100, 3.6, 1.4, 'ale', { z: 5, d: 0.4 }),
+  ], post(a) {
+    const cu = (i) => a.ramp('copper', i), ir = (i) => a.ramp('iron', i), br = (i) => a.ramp('brass', i);
+    // rivets along the bands and the vertical seams
+    for (const y of [38, 77.6, 90]) for (let x = 24; x <= 86; x += 5) if (a.mat(x, Math.floor(y)) === 'iron') { a.px(x, Math.floor(y), ir(4)); a.px(x + 1, Math.floor(y) + 1, ir(0)); }
+    for (const x of [33, 77]) for (let y = 44; y < 76; y += 5) if (a.mat(x, y) === 'copper') { a.px(x, y, cu(5)); a.px(x + 1, y + 1, cu(0)); }
+    for (let y = 43; y < 76; y++) { if (a.mat(35, y) === 'copper' && y % 5 !== 0) a.px(35, y, cu(1)); if (a.mat(79, y) === 'copper' && y % 5 !== 0) a.px(79, y, cu(1)); }
+    // oak belt planks
+    for (let x = 22; x < 90; x += 6) for (let y = 80; y < 88; y++) if (a.mat(x, y) === 'oak') a.px(x, y, a.ramp('oak', 0));
+    // gauges: needles and ticks
+    a.line(38, 50, 41, 47, '#d02020'); a.px(38, 50, '#201010'); a.px(35, 53, '#201010'); a.px(41, 53, '#201010'); a.px(38, 46, '#201010');
+    a.line(30, 69, 28, 66, '#d02020'); a.px(30, 69, '#201010'); a.px(27, 71, '#201010'); a.px(33, 71, '#201010');
+    // the face behind the porthole: glass, two angry amber eyes
+    for (let y = 42; y <= 62; y++) for (let x = 58; x <= 78; x++) if (Math.hypot(x - 67.5, y - 51.5) < 9.6) a.px(x, y, y < 45 ? '#18303c' : '#0e1c24');
+    for (const ex of [61, 68]) { a.rect(ex, 50, 6, 5, P.eye); a.rect(ex + 1, 51, 4, 3, '#fff4a0'); a.rect(ex + 2, 52, 2, 1, '#ffffff'); a.rect(ex, 49, 6, 1, '#0e1c24'); }
+    a.line(60, 47, 66, 50, '#0e1c24'); a.line(75, 47, 69, 50, '#0e1c24'); a.line(60, 48, 66, 51, '#0e1c24'); a.line(75, 48, 69, 51, '#0e1c24'); a.px(61, 49, '#0e1c24'); a.px(74, 49, '#0e1c24');
+    for (let k = 0; k < 4; k++) { a.px(62 + k, 56 - (k >> 1) * 0, '#2c6070'); } a.px(63, 55, '#c8f4ff'); a.px(62, 56, '#c8f4ff'); a.px(64, 54, '#9ae0f0');
+    // grate mouth: a glowing furnace seen through iron bars, jagged like teeth
+    for (let y = 69; y < 79; y++) for (let x = 57; x < 84; x++) { const t = (y - 69) / 9, jag = y < 71 && (x % 4 < 2) ; if (jag) { a.px(x, y, ir(1)); continue; } a.px(x, y, t < 0.35 ? '#fff0a0' : t < 0.7 ? '#ffb020' : '#e05a10'); }
+    for (let x = 57; x < 84; x += 4) { a.rect(x, 69, 2, 10, ir(2)); a.px(x, 69, ir(4)); a.px(x + 1, 76, ir(1)); }
+    a.rect(57, 74, 27, 1, ir(1)); a.rect(57, 78, 27, 1, ir(0));
+    // gleams on the brass ring and the copper
+    a.px(60, 44, '#ffffff'); a.px(61, 43, '#fff4c0'); a.px(31, 41, '#ffffff'); a.px(30, 42, cu(5)); a.px(29, 60, cu(5));
+    // beer dribbling out of the nozzle
+    a.px(18, 100, P.ale); a.px(18, 101, a.ramp('ale', 4)); a.px(17, 104, '#fff4c0');
+    for (const [bx, by] of [[28, 34], [50, 17], [64, 19], [76, 25], [40, 21]]) a.px(bx, by, '#ffffff');
+    a.px(80, 6, '#ffffff'); a.px(8, 16, '#ffffff'); a.px(90, 3, '#ffffff'); a.px(98, 11, '#ffffff');
+    a.px(103, 74, '#ffffff'); a.px(102, 75, '#ffd0c0');
+  } };
+} };
 const ECACHE = new Map();
 export function enemyArt(id) {
   if (ECACHE.has(id)) return ECACHE.get(id);
@@ -1247,7 +1323,7 @@ export const enemyIds = () => [...Object.keys(MODELS), ...Object.keys(ENEMY_VARI
 // ===== Painted backdrops =====
 // =====================================================================
 export const BW = 256, BH = 176;
-export const BACKDROPS = ['world', 'desert', 'forest', 'snow', 'swamp', 'dungeon', 'crypt', 'spire', 'storm', 'ruins', 'boss', 'crypt:boss', 'spire:boss', 'storm:boss', 'ruins:boss', 'cellar', 'cellar:boss'];
+export const BACKDROPS = ['world', 'desert', 'forest', 'snow', 'swamp', 'dungeon', 'crypt', 'spire', 'storm', 'ruins', 'boss', 'crypt:boss', 'spire:boss', 'storm:boss', 'ruins:boss', 'cellar', 'cellar:boss', 'brewery', 'brewery:boss'];
 function painter(w, h, seed) {
   const img = new Uint8ClampedArray(w * h * 4), r = rng(seed);
   const P = {
@@ -1564,5 +1640,55 @@ BD_FNS.cellar = function (P, hy, L, boss) { // the Bell & Anvil's cellar: brick 
   barrelUp(P, 12, hy + 64, 26, 40, 7); barrelUp(P, 246, hy + 58, 24, 36, 9); // foreground kegs framing the shot
   scatter(P, hy + 12, 30, 87, (x, y, s, k) => { if (k < 0.4) rock(P, x, y, s * 0.7, ['#1a100c', '#3a281c', '#5a4430', '#7a6048'], x); else if (k < 0.55 && s > 0.3) { const G = RG(['#0a1a10', '#2a5a34', '#7ab07a']); for (let j = 0; j < 3; j++) P.set(x + j, y, G[j === 0 ? 2 : 1]); P.set(x + 3, y, G[0]); } }); // pebbles, a dropped bottle
   cobweb(P, 0, 0, 1, 22); cobweb(P, P.w - 1, 0, -1, 18);
+  shadowBand(P, hy + 12, hy + 24, 0.3); vignette(P, 0.42);
+};
+BD_FNS.brewery = function (P, hy, L, boss) { // the Great Brewery: copper vats, oak casks, pipes, hop garlands, wet flagstones, lantern light
+  const BR = ['#160c0a', '#281612', '#3c2218', '#52301f', '#6a402a', '#7e5034'];
+  bricks(P, 0, 0, P.w, hy + 12, BR, 171, 14, 6);
+  const T = RG(WOODC), CU = RG(['#240a06', '#52200e', '#82351a', '#b0521e', '#d87a2c', '#f2a64e', '#ffd890']), I = RG(IRONC);
+  // oak casks racked along the back wall, between the vats
+  const rack = (x0, x1, y) => { for (let x = x0; x < x1; x++) { P.set(x, y, T[5]); P.set(x, y + 1, T[2]); P.set(x, y + 2, T[0]); } };
+  for (const [x0, cnt, y] of [[150, 3, hy - 6], [6, 2, hy - 10]]) { for (let k = 0; k < cnt; k++) barrelEnd(P, x0 + 10 + k * 20, y - 7, 9, x0 + k); rack(x0, x0 + 20 * cnt + 2, y + 3); }
+  // the great copper vats, domed, banded and riveted
+  const vat = (cx, top, bot, hw, seed) => {
+    const dome = Math.round(hw * 0.5);
+    for (let y = top; y <= bot; y++) {
+      const dy = top + dome - y, half = dy > 0 ? hw * Math.sqrt(Math.max(0, 1 - (dy / dome) ** 2)) : hw;
+      for (let x = Math.floor(cx - half); x <= cx + half; x++) {
+        const u = (x + 0.5 - cx) / hw, band = (y - top - dome) % 22 < 3 && y > top + dome;
+        const v = 0.58 - u * 0.5 - Math.abs(u) ** 3 * 0.3 + (hash(x >> 1, y, seed) - 0.5) * 0.08 - (y > bot - 3 ? 0.25 : 0) - (dy > 0 ? (dy / dome) * 0.18 * (u > 0 ? 1 : -0.4) : 0);
+        P.set(x, y, P.pick(CU, clamp(band ? v - 0.28 : v, 0, 1), x, y));
+      }
+    }
+    for (let y = top + dome; y < bot; y += 22) for (let x = Math.ceil(cx - hw + 3); x < cx + hw - 2; x += 6) { P.set(x, y + 1, CU[6]); P.set(x + 1, y + 2, CU[0]); } // rivets on the bands
+    P.set(cx - 4, top + 2, CU[6]); P.set(cx - 3, top + 3, CU[6]); // dome glint
+    const gx = Math.round(cx + hw * 0.3), gy0 = top + dome + 10, gy1 = bot - 14, AM = RG(['#6a3a08', '#d88a1c', '#ffd25a']), DK = RG(['#0a1a22', '#16303c']); // a sight glass with the brew in it
+    for (let y = gy0; y <= gy1; y++) for (let k = -1; k <= 3; k++) P.set(gx + k, y, k === -1 || k === 3 ? I[1] : y > gy0 + (gy1 - gy0) * 0.35 ? AM[k === 0 ? 2 : k === 1 ? 1 : 0] : DK[k === 0 ? 1 : 0]);
+    for (let k = 0; k < 4; k++) P.set(gx + k - 1, gy0 - 1, I[3]);
+    for (const dx of [-hw + 4, hw - 5]) for (let y = bot; y < bot + 6; y++) for (let k = 0; k < 3; k++) P.set(cx + dx + k, y, T[k === 0 ? 4 : k === 1 ? 3 : 1]); // stubby legs
+  };
+  vat(34, 22, hy + 8, 24, 1); vat(128, 8, hy + 6, 32, 2); vat(216, 18, hy + 8, 27, 3);
+  // pipework: horizontal copper runs with flanges, and vertical drops
+  const pipeH = (x0, x1, y, h) => { for (let x = x0; x <= x1; x++) for (let j = 0; j < h; j++) P.set(x, y + j, P.pick(CU, clamp(0.9 - j / (h - 1) * 0.85 - (hash(x >> 2, y, 4) - 0.5) * 0.05, 0, 1), x, y + j)); for (let x = x0 + 10; x < x1; x += 34) for (let j = -1; j <= h; j++) { P.set(x, y + j, I[j < 1 ? 3 : 1]); P.set(x + 1, y + j, I[j < 1 ? 4 : 2]); } };
+  pipeH(56, 98, 38, 5); pipeH(160, 190, 46, 5);
+  for (let y = 38; y < hy + 6; y++) for (let k = 0; k < 4; k++) P.set(99 + k, y, P.pick(CU, 0.85 - k * 0.22, 99 + k, y));
+  for (let y = 46; y < hy + 6; y++) for (let k = 0; k < 4; k++) P.set(157 + k, y, P.pick(CU, 0.85 - k * 0.22, 157 + k, y));
+  // timber beams overhead and hop garlands swagged between the posts
+  for (let y = 0; y < 7; y++) for (let x = 0; x < P.w; x++) P.set(x, y, P.pick(T, clamp(0.78 - y * 0.12 + (hash(x >> 2, y, 6) - 0.5) * 0.12, 0, 1), x, y));
+  for (let x = 0; x < P.w; x++) P.set(x, 7, T[0]);
+  for (const px of [0, 84, 170, 250]) for (let y = 0; y < hy + 12; y++) for (let k = 0; k < 6; k++) P.set(px + k, y, P.pick(T, clamp(0.62 - k * 0.1 + (hash(px, y >> 2, 8) - 0.5) * 0.12 - (k === 5 ? 0.2 : 0), 0, 1), px + k, y));
+  const GR = RG(['#0c2410', '#1c5a1c', '#3a8c2a', '#7cc03c', '#c0e26a']);
+  for (const [x0, x1] of [[6, 84], [90, 170], [176, 250]]) for (let x = x0; x <= x1; x++) {
+    const t = (x - x0) / (x1 - x0), y = 8 + Math.round(Math.sin(t * Math.PI) * 12); P.set(x, y, T[2]);
+    if ((x - x0) % 4 === 0) { const h2 = 2 + Math.floor(hash(x, 3, 2) * 3); for (let j = 0; j < h2 + 2; j++) for (let k = -1; k <= 1; k++) if (Math.abs(k) + (j === 0 || j === h2 + 1 ? 1 : 0) < 2) P.set(x + k, y + 1 + j, GR[(x + j) % 4 === 0 ? 4 : (x + j) % 3 === 0 ? 3 : j === 0 ? 1 : 2]); }
+  }
+  for (const [lx, ly] of [[94, 34], [176, 36]]) { torch(P, lx, ly, '#ffb04a', L); glow(P, lx, ly + 6, 40, '#ff9a3a', 0.42); }
+  glow(P, 128, 30, 70, '#ffb040', 0.18);
+  ground(P, hy + 12, ['#120e12', '#201a1e', '#322a2c', '#483c3a', '#625048', '#7e6858'], (X, Z) => { const row = Math.floor(Z * 0.5), fx = (((X * 0.3 + row * 0.5) % 1) + 1) % 1, fz = (((Z * 0.5) % 1) + 1) % 1, grout = fx < 0.05 || fz < 0.08 ? -0.34 : 0; return 0.42 + grout + (fbm(X * 1.2, Z * 1.6, 41, 3) - 0.5) * 0.42 + (hash(Math.floor(X * 0.3 + row * 0.5), row, 5) - 0.5) * 0.22; }, { haze: '#3a2a22', hazeMax: 0.4 });
+  for (let y = hy + 12; y < P.h; y++) for (let x = 0; x < P.w; x++) { const d = Math.hypot((x - 128) / 150, (y - hy - 12) / 70); if (bayer(x, y) < (1 - d) * 0.22) P.blend(x, y, [255, 170, 80], 0.18); } // lantern light pooling on the wet flags
+  for (const [cx, cy, rw, rh] of boss ? [[150, 128, 44, 8], [54, 152, 34, 6], [212, 162, 30, 6], [110, 168, 24, 4]] : [[150, 140, 30, 6]]) pool(P, cx, cy, rw, rh, ['#1a1218', '#2c222a', '#54424a', '#a08068'], '#ffc878'); // puddles reflecting the lanterns
+  pool(P, 188, 150, 18, 4, ['#3a1e06', '#7a4410', '#b8701c', '#f0b040'], '#ffd070'); // spilt ale
+  barrelUp(P, 10, hy + 66, 26, 40, 11); barrelUp(P, 247, hy + 58, 24, 36, 13); // foreground kegs framing the shot
+  scatter(P, hy + 12, 24, 91, (x, y, s, k) => { if (k < 0.5) rock(P, x, y, s * 0.6, ['#1a1214', '#3a2c2a', '#5a4840', '#7a6254'], x); else if (s > 0.3) { const G2 = RG(['#1c5a1c', '#3a8c2a', '#7cc03c']); P.set(x, y, G2[1]); P.set(x + 1, y, G2[2]); P.set(x, y - 1, G2[0]); } }); // pebbles and fallen hops
   shadowBand(P, hy + 12, hy + 24, 0.3); vignette(P, 0.42);
 };
