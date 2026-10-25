@@ -118,6 +118,7 @@ const VERSION = '2.0.0', LEGACY_SAVE = 'gemforge-save-v2', SLOT_KEY = (i) => `ge
 function migrate(g) {
   g.v = 3; g.flags ||= {};
   for (const k of ['chests', 'bosses', 'seen', 'talked', 'visited', 'quests', 'qprog', 'qitems', 'tips', 'bestiary', 'story', 'chat']) g.flags[k] ||= {};
+  if (g.flags.worldv !== WORLD_V) { delete g.flags.seen.world; if (g.map === 'world') { [g.x, g.y] = GEN.adj.haven; g.dir = 'down'; } }
   g.playtime ||= 0; g.stats ||= { wins: 0 }; g.difficulty = DIFFICULTY[g.difficulty] ? g.difficulty : 'normal';
   for (const c of g.party) { c.extra ||= 0; c.gems ||= []; while (c.gems.length < 5) c.gems.push([]); }
   // old saves keep their gear; only ids that no longer exist are dropped (never a crash on load)
@@ -145,7 +146,8 @@ function migrateCallings(c, inv) {
 }
 const readSlot = (i) => { try { const raw = localStorage.getItem(SLOT_KEY(i)); return raw ? JSON.parse(raw) : null; } catch { return null; } };
 const anySave = () => SLOT_IDS.some((i) => readSlot(i));
-const save = () => { if (!G || !G.slot) return false; try { localStorage.setItem(SLOT_KEY(G.slot), JSON.stringify({ v: 3, savedAt: Date.now(), G })); return true; } catch { return false; } };
+const WORLD_V = 4; // bump when the overworld layout changes: older saves drop their fog and a party standing on the old map is walked back to Haven's gate
+const save = () => { if (!G || !G.slot) return false; G.flags.worldv = WORLD_V; try { localStorage.setItem(SLOT_KEY(G.slot), JSON.stringify({ v: 3, savedAt: Date.now(), G })); return true; } catch { return false; } };
 (function importLegacy() { // a v2 single-slot save becomes slot 1 the first time this version runs
   try { const old = localStorage.getItem(LEGACY_SAVE); if (old && !readSlot(1)) { const g = migrate(JSON.parse(old)); g.slot = 1; localStorage.setItem(SLOT_KEY(1), JSON.stringify({ v: 3, savedAt: Date.now(), G: g })); localStorage.removeItem(LEGACY_SAVE); } } catch {}
 })();

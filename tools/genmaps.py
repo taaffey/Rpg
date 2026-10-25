@@ -34,27 +34,28 @@ def make_world(seed):
     Haven Isle (grassland, start, the Ashen Cavern and Storm Cavern), Mire Isle (swamp: Mirewood, the Crypt), Sunscar Isle (desert:
     the ruins) and Frost Isle (snow: Frostholm, the Spire). Narrow causeways join them; the one to Frost Isle is the gated pass."""
     import heapq
-    W, H = 112, 84
+    K = 1.5; S = lambda v: int(round(v * K)); S2 = lambda p: (S(p[0]), S(p[1]))
+    W, H = S(112), S(84)
     nC, nR, nF, nM = noise2(seed), noise2(seed+1), noise2(seed+2), noise2(seed+3)
-    isles = [('.', 36, 53, 28, 22), (':', 86, 62, 20, 16), ('d', 98, 35, 15, 11), (',', 50, 16, 30, 13)]
-    pois = {'haven': (22, 56), 'cavern': (46, 47), 'storm': (28, 15), 'mirewood': (78, 58), 'crypt': (92, 68), 'frost': (46, 14), 'spire': (68, 10)}
-    ruins = (100, 38)
+    isles = [(c, S(a), S(b), a2 * K, b2 * K) for c, a, b, a2, b2 in [('.', 36, 53, 28, 22), (':', 86, 62, 20, 16), ('d', 98, 35, 15, 11), (',', 50, 16, 30, 13)]]
+    pois = {k: S2(v) for k, v in {'haven': (22, 56), 'cavern': (46, 47), 'storm': (28, 15), 'mirewood': (78, 58), 'crypt': (92, 68), 'frost': (46, 14), 'spire': (68, 10)}.items()}
+    ruins = S2((100, 38))
     spawn_adj = {k: (x, y+1) for k, (x, y) in pois.items()}
-    gift, hermit = (27, 11), (36, 18)
-    GX = 58
+    gift, hermit = S2((27, 11)), S2((36, 18))
+    GX = S(58)
     g = [['~']*W for _ in range(H)]
     for ch, cx, cy, rx, ry in isles:
         for y in range(1, H-1):
             for x in range(1, W-1):
-                d = ((x-cx)/rx)**2 + ((y-cy)/ry)**2 + nC(x/7, y/7) * 0.2 + nC(x/16+40, y/16) * 0.45
+                d = ((x-cx)/rx)**2 + ((y-cy)/ry)**2 + nC(x/10, y/10) * 0.2 + nC(x/24+40, y/24) * 0.45 + nC(x/5, y/5) * 0.05
                 if d < 1: g[y][x] = ch
     # causeways: Haven->Mire, Mire->Sunscar (both open from the start), Haven->Frost (the gated pass, x = GX)
-    for y in range(58, 61):
-        for x in range(60, 69): g[y][x] = ':'
-    for y in range(43, 49):
-        for x in (91, 92, 93): g[y][x] = 'd' if y < 45 or (y == 45 and x > 91) else ':'
-    for y in range(28, 40):
-        for x in (GX-1, GX, GX+1): g[y][x] = ',' if y < 34 else '.'
+    for y in range(S(58), S(58) + 4):
+        for x in range(S(60), S(69)): g[y][x] = ':'
+    for y in range(S(43), S(49)):
+        for x in range(S(91), S(91) + 4): g[y][x] = 'd' if y < S(45) else ':'
+    for y in range(S(28), S(40)):
+        for x in (GX-1, GX, GX+1): g[y][x] = ',' if y < S(34) else '.'
     for (x, y) in list(pois.values()) + list(spawn_adj.values()) + [ruins, (ruins[0], ruins[1]+1), gift, hermit]:
         assert g[y][x] != '~', ('poi on water', x, y)
     land = lambda x, y: 0 <= x < W and 0 <= y < H and g[y][x] != '~'
@@ -75,40 +76,42 @@ def make_world(seed):
         while out[-1] != a: out.append(prev[out[-1]])
         return out
     A = spawn_adj
-    gate_s, gate_n = (GX, 39), (GX, 28)
+    gate_s, gate_n = (GX, S(39)), (GX, S(28))
     links = [(A['haven'], A['cavern']), (gate_n, A['storm']), (gate_n, hermit), (hermit, gift), (A['haven'], gate_s), (gate_s, gate_n), (gate_n, A['frost']),
-             (A['frost'], A['spire']), (A['haven'], (61, 59)), ((68, 59), A['mirewood']), (A['mirewood'], A['crypt']), (A['mirewood'], (92, 48)), ((92, 43), (ruins[0], ruins[1]+1))]
+             (A['frost'], A['spire']), (A['haven'], (S(61), S(59))), ((S(68), S(59)), A['mirewood']), (A['mirewood'], A['crypt']), (A['mirewood'], (S(92), S(48))), ((S(92), S(43)), (ruins[0], ruins[1]+1))]
     road = set()
     for a, b in links:
         for t in path(a, b): road.add(t)
     # --- regions' reliefs: mountain blobs (cx, cy, rx, ry), never on roads, places or reserved spots
     reserved = {(gift[0]+dx, gift[1]+dy) for dx in range(-1, 2) for dy in range(-1, 2)} | {(hermit[0]+dx, hermit[1]+dy) for dx in range(-1, 2) for dy in range(-1, 2)}
-    blobs = [(46, 45, 5, 3), (30, 66, 5, 3), (54, 60, 3, 5), (20, 70, 3, 2), (14, 52, 2.5, 3), (40, 36, 5, 2.5), (60, 44, 3, 3),
+    blobs0 = [(46, 45, 5, 3), (30, 66, 5, 3), (54, 60, 3, 5), (20, 70, 3, 2), (14, 52, 2.5, 3), (40, 36, 5, 2.5), (60, 44, 3, 3),
              (56, 36, 4, 2), (60, 31, 2.6, 2),                       # either end of the pass
              (68, 18, 7, 3), (82, 12, 5, 4), (40, 22, 6, 2.2), (58, 8, 4, 2.5), (33, 10, 4, 3), (74, 24, 3, 2),   # Frost Isle
              (86, 58, 4, 3), (96, 72, 5, 3), (74, 70, 4, 3), (92, 56, 3, 2),                                       # Mire Isle (rocks in the bog)
              (98, 32, 5, 3), (90, 38, 3, 2), (106, 40, 3, 3), (104, 30, 3, 2)]                                      # Sunscar mesas
+    blobs = [(S(a), S(b), c * K, d * K) for a, b, c, d in blobs0]
+    blobs += [(S(a) + 9, S(b) - 5, c * K * 0.7, d * K * 0.7) for a, b, c, d in blobs0[::3]]  # more foothills
     for cx, cy, rx_, ry_ in blobs:
         for y in range(int(cy-ry_-2), int(cy+ry_+3)):
             for x in range(int(cx-rx_-2), int(cx+rx_+3)):
                 if not land(x, y) or (x, y) in road or (x, y) in reserved or near(x, y, 1): continue
-                if ((x-cx)/rx_)**2 + ((y-cy)/ry_)**2 + nM(x/2, y/2) * 0.35 < 1: g[y][x] = 'M'
+                if ((x-cx)/rx_)**2 + ((y-cy)/ry_)**2 + nM(x/2.6, y/2.6) * 0.35 < 1: g[y][x] = 'M'
     # twin peaks above the old kings' gift
     for x, y in [(gift[0]-1, gift[1]-3), (gift[0]+1, gift[1]-3), (gift[0]-1, gift[1]-2), (gift[0]+1, gift[1]-2)]:
         if (x, y) not in road and land(x, y): g[y][x] = 'M'
     # walls on both sides of the gated pass
-    for y in range(32, 37):
+    for y in range(S(32), S(37)):
         for x in (GX-1, GX+1): g[y][x] = 'M'
-    for y in range(33, 36): g[y][GX] = 'B'
+    for y in range(S(33), S(36)): g[y][GX] = 'B'
     # --- woods
     for y in range(H):
         for x in range(W):
             c = g[y][x]
             if c not in '.,:' or (x, y) in road or (x, y) in reserved or near(x, y, 1): continue
-            f = nF(x/3.6, y/3.6) + (-0.02 if c == ',' else 0.05 if c == ':' else 0)
+            f = nF(x/4.8, y/4.8) + (-0.02 if c == ',' else 0.05 if c == ':' else 0)
             if f > 0.17: g[y][x] = 't' if c == ',' else 'T'
     # --- rivers: wander from a source to the sea; bridged where a road crosses
-    def river(src, dirv, maxn=90):
+    def river(src, dirv, maxn=160):
         x, y = src; out = []
         for k in range(maxn):
             if not land(x, y): break
@@ -120,9 +123,9 @@ def make_world(seed):
             else:
                 y += dirv[1] if (wob > -0.15 or k % 3) else 0; x += (1 if wob > 0.25 else -1 if wob < -0.25 else 0)
         return out
-    rivs = [river((34, 40), (0, 1)), river((20, 58), (-1, 0)), river((62, 24), (0, -1)), river((84, 51), (0, 1))]
+    rivs = [river(S2(a), d) for a, d in (((34, 40), (0, 1)), ((20, 58), (-1, 0)), ((62, 24), (0, -1)), ((84, 51), (0, 1)), ((72, 20), (0, 1)), ((98, 66), (1, 0)))]
     # the south-bound Haven river drops off the sea cliff: that is Redwake's waterfall
-    big = river((38, 44), (0, 1)); rivs.append(big)
+    big = river(S2((38, 44)), (0, 1)); rivs.append(big)
     wf = None
     for path_ in rivs:
         for x, y in path_:
@@ -147,9 +150,9 @@ def make_world(seed):
     # fix road tiles to the biome of their island (the blobs may have left grass in snow etc.)
     for x, y in road:
         if g[y][x] == '.':
-            g[y][x] = ',' if y < 30 else ':' if x > 62 and y > 46 else 'd' if x > 82 and y < 46 else '.'
-        elif g[y][x] == ',' and y > 29: g[y][x] = '.'
-    for y in range(33, 36): g[y][GX] = 'B'
+            g[y][x] = ',' if y < S(30) else ':' if x > S(62) and y > S(46) else 'd' if x > S(82) and y < S(46) else '.'
+        elif g[y][x] == ',' and y > S(29): g[y][x] = '.'
+    for y in range(S(33), S(36)): g[y][GX] = 'B'
     for k, (x, y) in spawn_adj.items():
         if g[y][x] not in '.,:d=': g[y][x] = g[y][x] if g[y][x] in '.,:d' else '.'
     for k, (x, y) in pois.items(): g[y][x] = 'H' if k in ('haven', 'frost', 'mirewood') else 'D'
@@ -165,9 +168,9 @@ def make_world(seed):
     opened = bfs(g, spawn_adj['haven'], lambda c: walk(c) or c == 'B')
     for k in pois: assert pois[k] in opened, ('after gate', k)
     assert wfs in open_ and gift in opened and hermit in opened and gift not in open_, 'secret spots'
-    for y in range(W and 33, 36): assert g[y][GX] == 'B'
-    deco = {'ruins': list(ruins), 'ship': [[3, 38], [5, 50], [3, 66], [5, 52]], 'gift': list(gift), 'hermit': list(hermit), 'waterfall': list(wfs), 'gate': [GX, 34],
-            'plainsY': 47}
+    for y in range(S(33), S(36)): assert g[y][GX] == 'B'
+    deco = {'ruins': list(ruins), 'ship': [[3, S(38)], [6, S(50)], [3, S(66)], [6, S(52)]], 'gift': list(gift), 'hermit': list(hermit), 'waterfall': list(wfs), 'gate': [GX, S(34)],
+            'plainsY': S(47)}
     for x, y in deco['ship']: assert g[y][x] == '~'
     return [''.join(row) for row in g], pois, spawn_adj, deco
 
