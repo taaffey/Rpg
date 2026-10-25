@@ -470,3 +470,8 @@ body:has(#overlay.title) #padL, body:has(#overlay.title) #padR{visibility:hidden
 .battle .br.subcmd{grid-template-columns:minmax(0,1.55fr) minmax(0,1fr)}
 .greet{font-style:italic;margin:4px 2px 6px;font-size:9px;line-height:1.6}
 .beast .note{font-style:italic;margin-top:4px;font-size:8px;line-height:1.6}
+/* short landscape screens: keep pub illustrations from eating the whole window so credits and buttons stay in view */
+@media (orientation:landscape) and (max-height:520px){
+  img.pubart{max-height:34vh;width:auto;max-width:100%}
+  #overlay .win .credits,#overlay .win.ending{max-height:none}
+}
