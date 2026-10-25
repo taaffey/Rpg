@@ -40,6 +40,8 @@ def make_world(seed):
     isles = [(c, S(a), S(b), a2 * K, b2 * K) for c, a, b, a2, b2 in [('.', 36, 53, 28, 22), (':', 86, 62, 20, 16), ('d', 98, 35, 15, 11), (',', 50, 16, 30, 13)]]
     pois = {k: S2(v) for k, v in {'haven': (22, 56), 'cavern': (46, 47), 'storm': (28, 15), 'mirewood': (78, 58), 'crypt': (92, 68), 'frost': (46, 14), 'spire': (68, 10)}.items()}
     ruins = S2((100, 38))
+    # wayside places: small stops dotted across the islands (interiors in maps.js). name -> base-grid guess; snapped to land below
+    extras = {'chippy': (40, 63, '.'), 'stones': (15, 64, '.'), 'bogshed': (84, 71, ':'), 'oasis': (108, 30, 'd'), 'lodge': (40, 8, ','), 'shed': (60, 22, ',')}
     spawn_adj = {k: (x, y+1) for k, (x, y) in pois.items()}
     gift, hermit = S2((27, 11)), S2((36, 18))
     GX = S(58)
@@ -56,6 +58,20 @@ def make_world(seed):
         for x in range(S(91), S(91) + 4): g[y][x] = 'd' if y < S(45) else ':'
     for y in range(S(28), S(40)):
         for x in (GX-1, GX, GX+1): g[y][x] = ',' if y < S(34) else '.'
+    taken = list(pois.values()) + [ruins, gift, hermit]
+    for k, v in extras.items():  # snap each wayside place to the nearest solid land tile (2 tiles of land around, clear of other places)
+        cx0, cy0 = S2(v[:2]); best = None; bio = v[2]
+        for r in range(0, 14):
+            for yy in range(cy0-r, cy0+r+1):
+                for xx in range(cx0-r, cx0+r+1):
+                    if max(abs(xx-cx0), abs(yy-cy0)) != r: continue
+                    if all(0 <= xx+i < W and 0 <= yy+j < H and g[yy+j][xx+i] == bio for i in (-2, -1, 0, 1, 2) for j in (-1, 0, 1, 2)) and all(abs(xx-a) + abs(yy-b) > 7 for a, b in taken):
+                        best = (xx, yy); break
+                if best: break
+            if best: break
+        assert best, ('no land for', k)
+        pois[k] = best; taken.append(best)
+    spawn_adj = {k: (x, y+1) for k, (x, y) in pois.items()}
     for (x, y) in list(pois.values()) + list(spawn_adj.values()) + [ruins, (ruins[0], ruins[1]+1), gift, hermit]:
         assert g[y][x] != '~', ('poi on water', x, y)
     land = lambda x, y: 0 <= x < W and 0 <= y < H and g[y][x] != '~'
@@ -78,7 +94,8 @@ def make_world(seed):
     A = spawn_adj
     gate_s, gate_n = (GX, S(39)), (GX, S(28))
     links = [(A['haven'], A['cavern']), (gate_n, A['storm']), (gate_n, hermit), (hermit, gift), (A['haven'], gate_s), (gate_s, gate_n), (gate_n, A['frost']),
-             (A['frost'], A['spire']), (A['haven'], (S(61), S(59))), ((S(68), S(59)), A['mirewood']), (A['mirewood'], A['crypt']), (A['mirewood'], (S(92), S(48))), ((S(92), S(43)), (ruins[0], ruins[1]+1))]
+             (A['frost'], A['spire']), (A['haven'], (S(61), S(59))), ((S(68), S(59)), A['mirewood']), (A['mirewood'], A['crypt']), (A['mirewood'], (S(92), S(48))), ((S(92), S(43)), (ruins[0], ruins[1]+1)),
+             (A['haven'], A['chippy']), (A['cavern'], A['chippy']), (A['haven'], A['stones']), (A['mirewood'], A['bogshed']), ((ruins[0], ruins[1]+1), A['oasis']), (A['frost'], A['lodge']), (A['frost'], A['shed']), (A['spire'], A['shed'])]
     road = set()
     for a, b in links:
         for t in path(a, b): road.add(t)
@@ -163,8 +180,8 @@ def make_world(seed):
     # --- checks
     walk = lambda c: c in '.,:d=HD'
     open_ = bfs(g, spawn_adj['haven'], walk)
-    for k in ('haven', 'cavern', 'crypt', 'mirewood', 'ruins'): assert pois[k] in open_, ('closed', k)
-    for k in ('frost', 'spire', 'storm'): assert pois[k] not in open_, 'gate leaks ' + k
+    for k in ('haven', 'cavern', 'crypt', 'mirewood', 'ruins', 'chippy', 'stones', 'bogshed', 'oasis'): assert pois[k] in open_, ('closed', k)
+    for k in ('frost', 'spire', 'storm', 'lodge', 'shed'): assert pois[k] not in open_, 'gate leaks ' + k
     opened = bfs(g, spawn_adj['haven'], lambda c: walk(c) or c == 'B')
     for k in pois: assert pois[k] in opened, ('after gate', k)
     assert wfs in open_ and gift in opened and hermit in opened and gift not in open_, 'secret spots'

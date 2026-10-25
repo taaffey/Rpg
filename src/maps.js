@@ -285,6 +285,15 @@ interior('mire_guild', 'Mirewood Guild', 'guild', back('mirewood', 'mire_guild')
 interior('mire_house', 'Warden\'s House', 'house', back('mirewood', 'mire_house'), { npcs: [{ x: 4, y: 3, type: 'guard', name: 'Retired Warden', text: ['Forty years I kept watch here. The marsh is patient. It waits for you to slip.', 'Take the chest, friend. I\'ve no use for gold anymore. I\'m retired. I do jigsaws.'], textBy: [['lich', ['Forty years I watched that Crypt. You emptied it in an afternoon. With beards.', 'Take the chest, friend. I\'ve no use for gold anymore.']]] }], chest: [9, 5, { gold: 250, gems: ['venom'] }] });
 interior('mire_hut', 'Hermit\'s Hut', 'house', back('mirewood', 'mire_hut'), { npcs: [{ x: 4, y: 3, type: 'elder', name: 'Hermit', text: ['Gems whisper to those who listen. Most folk never hear them. Your brother\'s slate whispers "three percent".', 'Stack Awkward Silence on a quick skill and even a boss may lose a turn... unless it is too proud to fall for it.'] }], chest: [9, 5, { items: { phoenix: 2, megaether: 1 } }] });
 
+// ---------------------------------------------------------------- wayside places (small stops dotted across the islands)
+const wb = (k) => ({ map: 'world', x: GEN.adj[k][0], y: GEN.adj[k][1] });
+interior('wayside_chippy', 'Wayside Chippy', 'general', wb('chippy'), { shop: 'chippy', npcs: [{ x: 2, y: 5, type: 'villager', name: 'Regular', text: ['Best chips between here and the sea. The sea is eleven miles that way. I measured. With chips.', 'Vinegar on everything. It is the law. It is also my personality.'] }] });
+interior('wayside_stones', 'The Standing Stones', 'house', wb('stones'), { npcs: [{ x: 4, y: 3, type: 'elder', name: 'Stone Keeper', text: ['They stand in a circle. Nobody knows why. I have a theory: it was a very slow game of skittles.', 'Take what the stones left. Mind the wobbly one. It has opinions about your trousers.'] }], chest: [9, 5, { gold: 300, gems: ['crit'], items: { elixir: 1 } }] });
+interior('wayside_bogshed', 'Bog Snorkel Shed', 'house', wb('bogshed'), { npcs: [{ x: 4, y: 3, type: 'villager2', name: 'Bog Snorkeller', text: ['Bog snorkelling! The world championships are held here. I came fourth. Out of four. But I came.', 'Don\'t drink the water. Don\'t touch the water. Don\'t look at the water too long. The shed has a lovely view of it though.'] }], chest: [9, 5, { items: { phoenix: 2, antidote: 3 }, gold: 200 }] });
+interior('wayside_oasis', 'Oasis Kebab Van', 'general', wb('oasis'), { shop: 'oasis', npcs: [{ x: 8, y: 5, type: 'villager', name: 'Camel Whisperer', text: ['He is not spitting at you. He is being friendly. Wipe your face, but gently, he is sensitive.', 'The kebab is camel. No it isn\'t. Probably. Eat it quickly.'] }] });
+interior('wayside_lodge', 'Ski Lodge', 'inn', wb('lodge'), { cost: 60, inn: { text: ['Welcome to the lodge! Fondue? No? We only have fondue. Sixty gold, and the beds are heated. By fondue.'] }, npcs: [{ x: 2, y: 5, type: 'villager2', name: 'Skier', text: ['I have been waiting for the lift since Tuesday. There is no lift. I have been told this. I am waiting.'] }] });
+interior('wayside_shed', 'Ice Fishing Shed', 'house', wb('shed'), { npcs: [{ x: 4, y: 3, type: 'elder', name: 'Ice Fisher', text: ['Forty years, one hole, no fish. Then yesterday, a boot. It was a good boot.', 'Take the chest. It was in the boot. The boot is staying.'] }], chest: [9, 5, { gold: 450, gems: ['frost'], items: { megaether: 1, hipotion: 2 } }] });
+
 // ---------------------------------------------------------------- overworld
 const [ux, uy] = GEN.pois.ruins, [mx, my] = GEN.pois.mirewood, [tx, ty] = GEN.pois.storm, [hx, hy] = GEN.pois.haven, [fx, fy] = GEN.pois.frost, [cx, cy] = GEN.pois.cavern, [rx, ry] = GEN.pois.crypt, [sx, sy] = GEN.pois.spire;
 MAPS.world = {
@@ -295,6 +304,7 @@ MAPS.world = {
     [P(rx, ry)]: portal('crypt', GEN.cryptInfo.spawn[0], GEN.cryptInfo.spawn[1]), [P(sx, sy)]: portal('spire', GEN.spireInfo.spawn[0], GEN.spireInfo.spawn[1]),
     [P(mx, my)]: portal('mirewood', 14, 26), [P(tx, ty)]: portal('storm', GEN.stormInfo.spawn[0], GEN.stormInfo.spawn[1]),
     [P(ux, uy)]: portal('ruins', GEN.ruinsInfo.spawn[0], GEN.ruinsInfo.spawn[1]),
+    ...Object.fromEntries(['chippy', 'stones', 'bogshed', 'oasis', 'lodge', 'shed'].map((k) => [P(...GEN.pois[k]), portal('wayside_' + k, 5, 6)])),
   },
   npcs: [
     { x: ux - 2, y: uy + 1, type: 'elder', name: 'Desert Oracle', quest: 'sphinx', text: ['The sand remembers everything, child. Even you. Especially the shorts.', 'Seek the hermit of the Frostfields, if the pass ever opens. He knows where the old kings hid their gifts.'],
@@ -307,10 +317,10 @@ MAPS.world = {
     [P(GEN.deco.waterfall[0], GEN.deco.waterfall[1])]: { gold: 1200, gems: ['crit'], qitem: 'doubloon' }, // Redwake's cache at the foot of the waterfall
     [P(GEN.deco.gift[0], GEN.deco.gift[1])]: { gems: ['echo'], items: { elixir: 2 }, accs: ['life_charm'] }, // the old kings' gift, north-west corner
   },
-  places: [[hx, hy, 'Haven Town'], [fx, fy, 'Frostholm'], [cx, cy, 'Ashen Cavern'], [rx, ry, 'Sunken Crypt'], [sx, sy, 'Frost Spire'], [mx, my, 'Mirewood'], [tx, ty, 'Storm Cavern'], [ux, uy, 'Sunscar Ruins']],
+  places: [[hx, hy, 'Haven Town'], [fx, fy, 'Frostholm'], [cx, cy, 'Ashen Cavern'], [rx, ry, 'Sunken Crypt'], [sx, sy, 'Frost Spire'], [mx, my, 'Mirewood'], [tx, ty, 'Storm Cavern'], [ux, uy, 'Sunscar Ruins'], [...GEN.pois.chippy, 'Wayside Chippy'], [...GEN.pois.stones, 'Standing Stones'], [...GEN.pois.bogshed, 'Bog Snorkel Shed'], [...GEN.pois.oasis, 'Oasis Kebab Van'], [...GEN.pois.lodge, 'Ski Lodge'], [...GEN.pois.shed, 'Ice Fishing Shed']],
 };
 // no random fights close to towns, and grassland fights ramp up with distance from Haven (gentle first steps)
-MAPS.world.safe = [[hx, hy, 6], [fx, fy, 4], [mx, my, 4], [cx, cy, 2], [rx, ry, 2], [sx, sy, 2], [tx, ty, 2], [ux, uy, 2]];
+MAPS.world.safe = [[hx, hy, 6], [fx, fy, 4], [mx, my, 4], [cx, cy, 2], [rx, ry, 2], [sx, sy, 2], [tx, ty, 2], [ux, uy, 2], ...['chippy', 'stones', 'bogshed', 'oasis', 'lodge', 'shed'].map((k) => [...GEN.pois[k], 2])];
 MAPS.world.ramp = [hx, hy];
 // the northern pass is gated until the Ashen Wyrm falls
 MAPS.world.gate = { tile: 'B', flag: 'wyrm' };

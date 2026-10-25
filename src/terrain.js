@@ -513,6 +513,18 @@ const caveMouth = (storm, f) => memo('cave' + storm + f, () => {
   return p.outline(K, 200).canvas();
 });
 // the Sunken Crypt: a mossy ruined shrine with broken columns (2 x 2 tiles)
+// wayside places: little roadside landmarks (one 24x20 sprite per kind)
+const waysideIcon = (kind) => memo('wayside' + kind, () => {
+  const p = new Pix(24, 20), W = pal('#9aa6b8 #c8d0dc #eef2f8 #ffffff'), G = pal('#3a3e46 #565c68 #747c8a #98a0ae #b8c0cc');
+  const hut = (x0, w, roof, wall, door) => { p.rect(x0, 9, w, 9, (i, j) => wall[2 + ((i + j) % 5 === 0 ? 1 : 0) - (j > 6 ? 1 : 0)]); for (let j = 0; j < 6; j++) p.rect(x0 - 2 + j, 4 + j, w + 4 - 2 * j, 1, roof[3 + (j & 1)]); p.rect(x0 + (w >> 1) - 1, 13, 3, 5, door); p.rect(x0 + 1, 11, 2, 2, [250, 220, 120]); };
+  if (kind === 'chippy') { hut(5, 14, RED, WOOD, WOOD[1]); p.rect(3, 9, 18, 2, (i) => (i & 2 ? [250, 250, 250] : [60, 100, 200])); p.rect(9, 1, 6, 3, [250, 230, 90]); p.set(11, 2, RED[2]); p.set(13, 2, RED[2]); }
+  else if (kind === 'stones') { p.rect(1, 15, 22, 4, (i, j) => [46, 92 + ((i + j) % 3) * 8, 40]); for (const [x, h] of [[3, 8], [8, 11], [13, 12], [18, 8]]) { p.rect(x, 17 - h, 3, h, (i, j) => G[2 + (i === 2 ? -1 : 0) + (j % 4 === 0 ? 1 : 0)]); p.set(x + 1, 17 - h - 1, G[3]); } p.rect(7, 5, 9, 2, G[3]); p.rect(8, 3, 7, 2, G[2]); }
+  else if (kind === 'bogshed') { for (const x of [6, 10, 14, 17]) p.rect(x, 15, 1, 4, WOOD[1]); p.rect(4, 14, 17, 1, WOOD[3]); hut(6, 12, WOOD, WOOD, WOOD[1]); p.rect(15, 5, 2, 3, [80, 120, 60]); p.rect(2, 18, 20, 2, [38, 70, 50]); }
+  else if (kind === 'oasis') { p.rect(2, 16, 20, 3, (i, j) => [210, 180 - (j & 1) * 10, 110]); p.rect(3, 17, 8, 2, [40, 130, 200]); p.rect(14, 8, 8, 6, [250, 210, 60]); p.rect(15, 9, 3, 2, [200, 230, 250]); p.rect(14, 13, 8, 1, [200, 120, 30]); p.set(15, 15, [20, 20, 20]); p.set(20, 15, [20, 20, 20]); for (let k = 0; k < 8; k++) p.set(6, 5 + k, WOOD[3]); for (const [dx, dy] of [[-3, 0], [-2, -1], [0, -2], [2, -1], [3, 0], [-1, -1], [1, -1]]) p.rect(6 + dx, 5 + dy, 2, 1, [60, 150, 60]); }
+  else if (kind === 'lodge') { p.rect(1, 17, 22, 3, W[2]); hut(5, 14, W, WOOD, WOOD[1]); p.rect(15, 1, 2, 4, G[1]); p.set(15, 0, W[3]); p.set(16, 0, W[2]); }
+  else { p.rect(1, 16, 22, 4, W[1]); p.rect(6, 8, 12, 9, (i, j) => [120 + j * 3, 170 + j * 3, 220]); for (let j = 0; j < 4; j++) p.rect(5 + j, 5 + j, 14 - 2 * j, 1, W[2 + (j & 1)]); p.rect(11, 11, 3, 6, [30, 50, 90]); p.rect(2, 17, 3, 1, G[1]); }
+  return p.outline(K).canvas();
+});
 const shrine = () => memo('shrine', () => {
   const p = new Pix(32, 32), P = pal('#1a201c #2a342e #3e4a42 #546258 #6c7c70 #889888 #a6b4a2 #c4d0bc'), MOSS = pal('#142410 #20381a #2e4e22 #40662c');
   p.rect(2, 22, 28, 8, (i, j) => P[j === 22 ? 6 : j < 26 ? 4 - ((i + j) % 4 === 0 ? 1 : 0) : 3 - ((i * 3 + j) % 5 === 0 ? 1 : 0)]); // platform steps
@@ -585,6 +597,7 @@ export function mapObjects(m, t, out) {
     else if (k === 'frost') out.push({ img: frostTown(), x: x - 1, y: y + 1 - 40 / 16, z: 1, sy: y + 1 });
     else if (k === 'mirewood') out.push({ img: village(), x: x - 0.75, y: y + 1 - 2, z: 1, sy: y + 1 });
     else if (k === 'cavern' || k === 'storm') out.push({ img: caveMouth(k === 'storm', k === 'storm' && (f8 === 3 || f8 === 5) ? 1 : 0), x: x - 0.5, y: y + 1 - 28 / 16, z: 1, sy: y + 1 });
+    else if (['chippy', 'stones', 'bogshed', 'oasis', 'lodge', 'shed'].includes(k)) out.push({ img: waysideIcon(k), x: x - 0.25, y: y + 1 - 1.25, z: 1, sy: y + 1 });
     else if (k === 'crypt') out.push({ img: shrine(), x: x - 0.5, y: y + 1 - 2, z: 1, sy: y + 1 });
     else if (k === 'spire') out.push({ img: spireIcon(f8 & 2 ? 1 : 0), x: x - 0.25, y: y + 1 - 3, z: 1, sy: y + 1 });
   }

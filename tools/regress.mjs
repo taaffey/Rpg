@@ -142,7 +142,7 @@ ok('fog persisted through save', after.seen === s1);
 ok('options persisted', (await ev(() => window.__game.OPT.minimap)) === false && (await ev(() => window.__game.OPT.speed)) === 'fast');
 
 // --- gate, region music/banners, battle by keyboard only
-await ev(() => window.__game.goto('world', 87, 54)); await key('ArrowUp', 3, 150);
+await ev(() => { window.__game.MAPS.world.rate = 0; window.__game.goto('world', 87, 54); }); await key('ArrowUp', 3, 150);
 ok('northern pass blocked before the Wyrm falls', (await ev(() => window.__game.G.y)) === 54);
 await ev(() => { window.__game.G.flags.bosses.wyrm = true; }); await key('ArrowUp', 16, 170);
 ok('pass opens after the Wyrm', (await ev(() => window.__game.G.y)) <= 42);
@@ -242,7 +242,7 @@ ok('Sphinx Pharaoh slain: flag, Khopesh and Sun Disc', (await ev(() => window.__
 await talkTo('world', 147, 58, 'ArrowRight');
 const gSph = await ev(() => window.__game.G.gold);
 ok('Oracle pays out the Sphinx quest', (await clickWhen('[data-act=qclaim]')) && (await ev(() => window.__game.G.gold)) === gSph + 2000);
-await closeAll(); await ev(() => window.__game.goto('world', 41, 110)); await pg.waitForTimeout(150); await key('ArrowRight', 1, 300);
+await closeAll(); await ev(() => window.__game.goto('world', 59, 91)); await pg.waitForTimeout(150); await key('ArrowRight', 1, 300);
 ok('hidden treasure under the waterfall is dug up', /Hidden treasure/.test(await overlayTitle()) && (await ev(() => window.__game.G.flags.qitems.doubloon)) === true);
 await closeAll();
 await ev(() => { window.__game.G.flags.bosses.wyrm = true; });

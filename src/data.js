@@ -362,6 +362,8 @@ Object.assign(ENEMIES, {
 });
 Object.assign(ENCOUNTERS, { storm: [['storm_bat', 'storm_bat'], ['thunder_imp', 'thunder_imp'], ['gale_wraith'], ['storm_bat', 'thunder_imp'], ['gale_wraith', 'storm_bat'], ['thunder_imp', 'gale_wraith', 'storm_bat']] });
 BOSSES.storm_drake = { name: 'Storm Drake', intro: 'Thunder splits the cavern. The Storm Drake drops from the dark, crackling! Devon\'s phone does not charge.', optional: true, loot: { weapons: ['storm_katana'], armors: ['storm_cloak'], gems: ['siphon', 'crit'] } };
+SHOPS.chippy = { title: '🍟 Wayside Chippy', greet: 'Salt and vinegar? Open wrapper or it gets soggy. That is science.', stock: { items: ['potion', 'hipotion', 'phoenix', 'antidote'] } };
+SHOPS.oasis = { title: '🌯 Oasis Kebab Van', greet: 'Chilli sauce? It is not a question. It is a warning.', stock: { items: ['hipotion', 'ether', 'phoenix', 'remedy'] } };
 SHOPS.mire_general = { title: '🛒 Mirewood Car Boot Shop', greet: 'Boot of a Fiat. No refunds, no questions, no receipts.', stock: { items: ['potion', 'hipotion', 'ether', 'phoenix'], gems: ['fire', 'frost', 'bolt', 'holy', 'shadow', 'chain', 'vamp', 'thrifty', 'venom', 'guard', 'crit'], weapons: ['healing_staff', 'viper_fang', 'serpent_lash', 'thunder_claw', 'bone_scythe', 'battle_axe', 'iron_katana', 'hunter_bow', 'flame_brand'], armors: ['chain', 'mage_cloak', 'yeti_fur'], accs: ['ward_amulet', 'fire_pendant', 'swift_boots'] } };
 
 // ---- side quests. goal: {type:'kill', ids, n} | {type:'find', item} | {type:'boss', id}
