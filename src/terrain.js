@@ -34,6 +34,7 @@ const pal = (s) => s.split(' ').map(hex);
 
 // ---------- palettes (dark -> light) ----------
 const GRASS = pal('#0b3210 #124a16 #1b621c #257a22 #32922a #42a832 #56bc3c #72ce4c #96e068 #c0f08c');
+const AMBER = pal('#3a2406 #5a3a0c #7c5212 #9c6c1a #bc8a26 #d8a634 #ecc044 #f8d864 #fff0a0'); // Hopsend's golden stubble and fallen leaves
 const SNOW = pal('#3a4878 #56689a #7686b8 #96a8d4 #b4c6e8 #d0def4 #e8f0fc #ffffff');
 const SWAMP = pal('#0e160a #172210 #213016 #2c3e1c #384e22 #465e28 #566e30 #6a823a #82964a');
 const POOL = pal('#0c1e1c #12302c #1a423c #26584c #3a7060 #5a8a74');
@@ -46,7 +47,9 @@ const CLIFF = { // rock faces where land drops into water, by the land's region
   2: pal('#141410 #222016 #302c1e #403a26 #524a30 #665c3a #7a7046 #908656'),
   3: pal('#3a200c #562e12 #74421a #925824 #ae7032 #c68a44 #daa45a #ecc078'),
 };
+CLIFF[4] = CLIFF[0];
 const FOREST = {
+  4: pal('#2a0c04 #4a1608 #6a220c #8c3412 #b04c18 #cc6a20 #e08a2c #f0aa40 #f8c860 #fce090 #ffffe0'), // autumn woods: rust, orange, gold
   0: pal('#021008 #04180a #07240e #0c3412 #134616 #1c5a1c #267024 #32882c #44a034 #62b844 #8ad060'),
   2: pal('#080e06 #0e160a #141e0e #1c2a12 #263616 #30441c #3c5222 #4a6228 #5a7230 #6e8438 #889c48'),
 };
@@ -66,11 +69,12 @@ function* bakeGen() { // generator: yields often so the bake can run in idle sli
   const poiAt = {}; for (const [k, [x, y]] of Object.entries(GEN.pois)) poiAt[`${x + PAD},${y + PAD}`] = k;
   const isCaveTile = (tx, ty) => ['cavern', 'storm', 'spire'].includes(poiAt[`${tx},${ty}`]);
   // region of every tile: 0 grass, 1 snow, 2 swamp, 3 desert; features take the region of their surroundings
-  const own = (c) => (c === '.' ? 0 : c === ',' || c === 't' ? 1 : c === ':' ? 2 : c === 'd' ? 3 : -1);
+  const AU = GEN.deco?.autumn || [1e9, 1e9, -1, -1]; // the autumn island (Hopsend) is a rectangle of 'grass' that is painted as region 4
+  const own = (c, tx, ty) => (c === '.' ? (tx - PAD >= AU[0] && tx - PAD <= AU[2] && ty - PAD >= AU[1] && ty - PAD <= AU[3] ? 4 : 0) : c === ',' || c === 't' ? 1 : c === ':' ? 2 : c === 'd' ? 3 : -1);
   const reg = new Int8Array(TW * TH);
   for (let ty = 0; ty < TH; ty++) for (let tx = 0; tx < TW; tx++) {
-    let r = own(ch(tx, ty));
-    if (r < 0) { const n = [0.5, 0, 0, 0]; for (let dy = -2; dy <= 2; dy++) for (let dx = -2; dx <= 2; dx++) { const o = own(ch(tx + dx, ty + dy)); if (o >= 0) n[o] += Math.abs(dx) + Math.abs(dy) <= 1 ? 3 : 1; } r = n.indexOf(Math.max(...n)); }
+    let r = own(ch(tx, ty), tx, ty);
+    if (r < 0) { const n = [0.5, 0, 0, 0, 0]; for (let dy = -2; dy <= 2; dy++) for (let dx = -2; dx <= 2; dx++) { const o = own(ch(tx + dx, ty + dy), tx + dx, ty + dy); if (o >= 0) n[o] += Math.abs(dx) + Math.abs(dy) <= 1 ? 3 : 1; } r = n.indexOf(Math.max(...n)); }
     reg[ty * TW + tx] = r;
   }
   const isWater = (c) => c === '~' || c === 'r' || c === '=';
@@ -90,7 +94,7 @@ function* bakeGen() { // generator: yields often so the bake can run in idle sli
     if (wb === '111111111' && !isRiver(ch(tx, ty))) continue; // open ocean: cls 0 already
     const mW = mask(wb, 6), mR = mask(bits(tx, ty, isRiver), 6), mO = mask(bits(tx, ty, (c) => c === '~'), 6);
     const mM = mask(bits(tx, ty, isMount), 5), mF = mask(bits(tx, ty, isForest), 6);
-    const mRg = [1, 2, 3].map((k) => mask(bits(tx, ty, (c, x, y, r) => r === k), 8));
+    const mRg = [1, 2, 3, 4].map((k) => mask(bits(tx, ty, (c, x, y, r) => r === k), 8));
     const ownRiver = isRiver(ch(tx, ty));
     const rgOne = mRg.findIndex((m) => m === ONE), rgFlat = mRg.every((m) => m === ZERO || m === ONE);
     for (let p = 0; p < 256; p++) {
@@ -99,7 +103,7 @@ function* bakeGen() { // generator: yields often so the bake can run in idle sli
       const w = mW === ZERO ? 0 : mW[p] + (riverish ? vn(X / 5, Y / 5, 2) * 0.12 : fbm(X / 11, Y / 11, 1) * 0.26);
       // region: argmax with noisy, dithered borders
       let r = rgOne + 1;
-      if (!rgFlat) { let best = 0.5 + fbm(X / 16, Y / 16, 20) * 0.22; r = 0; for (let k = 0; k < 3; k++) { if (mRg[k] === ZERO) continue; const v = mRg[k][p] + fbm(X / 15, Y / 15, 21 + k) * 0.34 + (bay(X, Y) - 0.5) * 0.14; if (v > best) { best = v; r = k + 1; } } }
+      if (!rgFlat) { let best = 0.5 + fbm(X / 16, Y / 16, 20) * 0.22; r = 0; for (let k = 0; k < 4; k++) { if (mRg[k] === ZERO) continue; const v = mRg[k][p] + fbm(X / 15, Y / 15, 21 + k) * 0.34 + (bay(X, Y) - 0.5) * 0.14; if (v > best) { best = v; r = k + 1; } } }
       rpx[i] = r; fmask[i] = mF[p];
       if (w > 0.5) { cls[i] = riverish ? 1 : 0; continue; }
       if (mM !== ZERO && mM[p] + vn(X / 6, Y / 6, 3) * 0.22 > 0.5) cls[i] = 4;
@@ -140,13 +144,14 @@ function* bakeGen() { // generator: yields often so the bake can run in idle sli
     // grass: bright, textured, darker patches, darker under woods and mountains
     let v = 4.7 + n1 * 1.5 + n2 * 0.7 + d * 1.15 - Math.max(0, fmask[i] - 0.15) * 2.2;
     if (hh < 0.07) v -= 1.7; else if (hh > 0.955) v += 1.3;
+    if (r === 4) return AMBER[clamp(Math.round(v + 0.2), 1, 8)];
     return GRASS[clamp(Math.round(v), 1, 8)];
   };
   for (let i = 0; i < N; i++) { if (!(i & 32767)) yield; if (cls[i] >= 2) { put(i, groundCol(i % PW, (i / PW) | 0, rpx[i], i)); kind[i] = 1; } }
   // grass tufts, reeds, snow sparkle (little multi-pixel marks)
   for (let i = 0; i < N; i++) {
     if (cls[i] !== 2) continue; const X = i % PW, Y = (i / PW) | 0, r = rpx[i], hh = h2(X, Y, 37);
-    if (r === 0 && hh < 0.022 && X > 1 && X < PW - 2 && Y > 1) { for (const [dx, dy] of [[-1, 0], [1, 0], [0, 1]]) if (cls[i + dx + dy * PW] === 2) put(i + dx + dy * PW, GRASS[2]); put(i - PW, GRASS[7]); }
+    if ((r === 0 || r === 4) && hh < 0.022 && X > 1 && X < PW - 2 && Y > 1) { const TF = r === 4 ? AMBER : GRASS; for (const [dx, dy] of [[-1, 0], [1, 0], [0, 1]]) if (cls[i + dx + dy * PW] === 2) put(i + dx + dy * PW, TF[2]); put(i - PW, TF[7]); }
     if (r === 2 && hh < 0.006 && Y > 3) { const c = hh < 0.015 ? SWAMP[7] : SWAMP[6]; put(i, SWAMP[2]); put(i - PW, c); put(i - 2 * PW, c); put(i - 3 * PW, SWAMP[8]); }
   }
 
@@ -229,7 +234,7 @@ function* bakeGen() { // generator: yields often so the bake can run in idle sli
     }
     for (const y of [Math.round(cy) + 1, Math.round(cy) + 2]) { const i = y * PW + Math.round(cx); if (kind[i] && kind[i] !== 3) { put(i, DIRT[y === Math.round(cy) + 1 ? 1 : 2]); kind[i] = 3; crown[i] = 1; } }
   };
-  for (let i = 0; i < N; i++) if (cls[i] === 3) { const r = rpx[i]; put(i, r === 1 ? SNOW[h2(i, 1, 82) < 0.5 ? 2 : 3] : FOREST[r === 2 ? 2 : 0][2 + (h2(i, 1, 82) < 0.3 ? 1 : 0)]); kind[i] = 4; }
+  for (let i = 0; i < N; i++) if (cls[i] === 3) { const r = rpx[i]; put(i, r === 1 ? SNOW[h2(i, 1, 82) < 0.5 ? 2 : 3] : FOREST[r === 2 ? 2 : r === 4 ? 4 : 0][2 + (h2(i, 1, 82) < 0.3 ? 1 : 0)]); kind[i] = 4; }
   for (let j = 0, Y = 1; Y < PH; j++, Y += 6) {
     if (!(j & 3)) yield;
     for (let X = (j & 1) * 4; X < PW; X += 8) {
@@ -237,7 +242,7 @@ function* bakeGen() { // generator: yields often so the bake can run in idle sli
       if (i < 0 || i >= N || cls[i] !== 3) continue;
       const tx = (cx / 16) | 0, ty = (cy / 16) | 0, c = ch(tx, ty), r = rpx[i];
       if (c === 't' || (c !== 'T' && r === 1)) { pineAt(cx, cy + 5, h2(X, Y, 85)); if (h2(X, Y, 89) < 0.5) pineAt(cx + 4, cy + 8, h2(X, Y, 90) * 0.5); }
-      else crownAt(cx, cy, 5 + h2(X, Y, 86) * 1.4, FOREST[r === 2 ? 2 : 0], 87 + r);
+      else crownAt(cx, cy, 5 + h2(X, Y, 86) * 1.4, FOREST[r === 2 ? 2 : r === 4 ? 4 : 0], 87 + r);
     }
   }
   // trunks + shadow below the bottom edge of the woods
@@ -522,6 +527,9 @@ const waysideIcon = (kind) => memo('wayside' + kind, () => {
   else if (kind === 'bogshed') { for (const x of [6, 10, 14, 17]) p.rect(x, 15, 1, 4, WOOD[1]); p.rect(4, 14, 17, 1, WOOD[3]); hut(6, 12, WOOD, WOOD, WOOD[1]); p.rect(15, 5, 2, 3, [80, 120, 60]); p.rect(2, 18, 20, 2, [38, 70, 50]); }
   else if (kind === 'oasis') { p.rect(2, 16, 20, 3, (i, j) => [210, 180 - (j & 1) * 10, 110]); p.rect(3, 17, 8, 2, [40, 130, 200]); p.rect(14, 8, 8, 6, [250, 210, 60]); p.rect(15, 9, 3, 2, [200, 230, 250]); p.rect(14, 13, 8, 1, [200, 120, 30]); p.set(15, 15, [20, 20, 20]); p.set(20, 15, [20, 20, 20]); for (let k = 0; k < 8; k++) p.set(6, 5 + k, WOOD[3]); for (const [dx, dy] of [[-3, 0], [-2, -1], [0, -2], [2, -1], [3, 0], [-1, -1], [1, -1]]) p.rect(6 + dx, 5 + dy, 2, 1, [60, 150, 60]); }
   else if (kind === 'lodge') { p.rect(1, 17, 22, 3, W[2]); hut(5, 14, W, WOOD, WOOD[1]); p.rect(15, 1, 2, 4, G[1]); p.set(15, 0, W[3]); p.set(16, 0, W[2]); }
+  else if (kind === 'hopsend') { p.rect(0, 15, 24, 5, (i, j) => [200, 150 + (i & 1) * 8, 50]); for (const [x0, w, h] of [[1, 8, 7], [10, 7, 6], [16, 7, 8]]) { p.rect(x0, 18 - h, w, h, (i, j) => WOOD[3 + ((i + j) % 4 === 0 ? 1 : 0)]); for (let j = 0; j < 4; j++) p.rect(x0 - 1 + j, 18 - h - 3 + j, w + 2 - 2 * j, 1, RED[2 + (j & 1)]); p.rect(x0 + (w >> 1), 15, 2, 3, WOOD[1]); } p.rect(21, 2, 2, 4, [240, 120, 30]); }
+  else if (kind === 'brewery') { p.rect(1, 17, 22, 3, [150, 110, 50]); p.rect(3, 8, 18, 10, (i, j) => WOOD[2 + ((i + j) % 5 === 0 ? 1 : 0)]); for (let j = 0; j < 5; j++) p.rect(2 + j, 3 + j, 20 - 2 * j, 1, [176 - j * 6, 96, 40]); p.rect(15, 0, 3, 6, STONE[3]); p.rect(14, 0, 5, 1, STONE[5]); p.rect(9, 11, 6, 7, WOOD[1]); p.rect(4, 12, 3, 5, [200, 140, 40]); p.rect(4, 11, 3, 1, [150, 100, 30]); p.set(16, 0, [250, 250, 250]); p.set(17, 1, [230, 230, 230]); }
+  else if (kind === 'dock') { p.rect(0, 12, 24, 8, (i, j) => [30 + j, 80 + j * 2, 170]); p.rect(0, 12, 10, 2, WOOD[4]); for (const x of [1, 4, 7]) p.rect(x, 12, 1, 6, WOOD[1]); p.rect(11, 8, 11, 5, W[2]); p.rect(11, 12, 11, 2, RED[3]); p.rect(15, 2, 1, 7, WOOD[2]); p.rect(16, 2, 4, 4, W[3]); }
   else { p.rect(1, 16, 22, 4, W[1]); p.rect(6, 8, 12, 9, (i, j) => [120 + j * 3, 170 + j * 3, 220]); for (let j = 0; j < 4; j++) p.rect(5 + j, 5 + j, 14 - 2 * j, 1, W[2 + (j & 1)]); p.rect(11, 11, 3, 6, [30, 50, 90]); p.rect(2, 17, 3, 1, G[1]); }
   return p.outline(K).canvas();
 });
@@ -597,7 +605,7 @@ export function mapObjects(m, t, out) {
     else if (k === 'frost') out.push({ img: frostTown(), x: x - 1, y: y + 1 - 40 / 16, z: 1, sy: y + 1 });
     else if (k === 'mirewood') out.push({ img: village(), x: x - 0.75, y: y + 1 - 2, z: 1, sy: y + 1 });
     else if (k === 'cavern' || k === 'storm') out.push({ img: caveMouth(k === 'storm', k === 'storm' && (f8 === 3 || f8 === 5) ? 1 : 0), x: x - 0.5, y: y + 1 - 28 / 16, z: 1, sy: y + 1 });
-    else if (['chippy', 'stones', 'bogshed', 'oasis', 'lodge', 'shed'].includes(k)) out.push({ img: waysideIcon(k), x: x - 0.25, y: y + 1 - 1.25, z: 1, sy: y + 1 });
+    else if (['chippy', 'stones', 'bogshed', 'oasis', 'lodge', 'shed', 'hopsend', 'brewery'].includes(k) || k.startsWith('dock')) out.push({ img: waysideIcon(k.startsWith('dock') ? 'dock' : k), x: x - 0.25, y: y + 1 - 1.25, z: 1, sy: y + 1 });
     else if (k === 'crypt') out.push({ img: shrine(), x: x - 0.5, y: y + 1 - 2, z: 1, sy: y + 1 });
     else if (k === 'spire') out.push({ img: spireIcon(f8 & 2 ? 1 : 0), x: x - 0.25, y: y + 1 - 3, z: 1, sy: y + 1 });
   }

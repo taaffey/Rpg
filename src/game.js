@@ -174,8 +174,9 @@ const FLAT_DECOR = new Set(['trapdoor']); // drawn on the floor: walk right over
 const decorAt = (x, y) => mapDef().decor?.some((d) => d[0] === x && d[1] === y && !FLAT_DECOR.has(d[2]));
 const here = (n) => !(n.local && G.party.some((c) => c.look === n.local)); // locals leave their post once they join
 const npcAt = (x, y) => mapDef().npcs?.find((n) => n.x === x && n.y === y && here(n));
-const regionOf = () => { if (G.map !== 'world') return null; const t = tileAt(G.x, G.y); return t === ',' || t === 't' ? 'snow' : t === ':' ? 'swamp' : t === 'd' ? 'desert' : G.y <= (GEN.deco?.plainsY ?? 13) ? 'plains' : 'green'; };
-const REGION_NAME = { snow: 'Frostfields', swamp: 'Mire Marsh', plains: 'Northern Plains', green: 'Greenmarch', desert: 'Sunscar Sands' };
+const inAutumn = (x, y) => { const a = GEN.deco?.autumn; return !!a && x >= a[0] && x <= a[2] && y >= a[1] && y <= a[3]; };
+const regionOf = () => { if (G.map !== 'world') return null; const t = tileAt(G.x, G.y); return t === ',' || t === 't' ? 'snow' : t === ':' ? 'swamp' : t === 'd' ? 'desert' : inAutumn(G.x, G.y) ? 'autumn' : G.y <= (GEN.deco?.plainsY ?? 13) ? 'plains' : 'green'; };
+const REGION_NAME = { snow: 'Frostfields', swamp: 'Mire Marsh', plains: 'Northern Plains', green: 'Greenmarch', desert: 'Sunscar Sands', autumn: 'Hopsend Isle' };
 function musicFor() { const m = mapDef(); if (m.kind !== 'outdoor') return m.music; const r = regionOf(); return r === 'snow' ? 'snow' : r === 'desert' ? 'desert' : r === 'swamp' ? 'mirewood' : 'world'; }
 function reveal() { // fog of war
   const m = mapDef(); if (!m.fog) return;
@@ -373,7 +374,8 @@ async function step(dx, dy) {
   tip('move', TOUCH ? 'Tap a spot to travel there, or press and slide on the pad. A talks/checks, B opens the menu.' : 'Arrows or WASD to walk. Esc opens your party menu. A yellow ! marks someone with news.');
   if (m.kind === 'outdoor') { const reg = regionOf(); if (reg !== G.region) { G.region = reg; banner(REGION_NAME[reg]); music(musicFor()); } }
   if (m.boss && t === 'X' && !G.flags.bosses[m.boss.id]) { busy = true; mapShake(); sfx('crit'); await sleep(350); busy = false; return battle([m.boss.id], m.boss.id); }
-  const table = m.enc || m.encByTile?.[t];
+  const zone = m.zones?.find((z) => nx >= z.rect[0] && nx <= z.rect[2] && ny >= z.rect[1] && ny <= z.rect[3] && t === '.'); // e.g. the autumn island's own monsters
+  const table = zone?.enc || m.enc || m.encByTile?.[t];
   if (table && !(m.safe || []).some(([sx2, sy2, r]) => Math.hypot(nx - sx2, ny - sy2) <= r) && Math.random() < m.rate) {
     let tb = ENCOUNTERS[table];
     const lure = Object.entries(QUESTS).find(([id, q]) => q.goal.lure?.table === table && qstate(id) === 'active' && !questDone(id))?.[1].goal.lure; // a hunt quest's quarry shows up more often
@@ -582,8 +584,14 @@ function speaker(l) { // a scene line's speaker: narration, a hero (by party slo
   const hero = G.party.find((c) => c.look === l.s); if (hero) return { name: hero.name, job: ak(hero) };
   const [name, type] = STORY.cast[l.s] || [l.s, 'villager']; return { name, type };
 }
+async function ferry(npc) { // a ferryman: free passage once the `need` boss is slain, with a short crossing scene
+  if (npc.need && !G.flags.bosses[npc.need]) return talk({ ...npc, service: null, quest: null, textBy: null, text: npc.no });
+  await scene((npc.go || []).map((t) => ({ s: 'n', t })).concat([{ s: 'n', t: 'The ferry chugs across the water...' }]));
+  goto(...npc.to);
+}
 function talk(npc) {
   sfx('click');
+  if (npc.service === 'ferry') return ferry(npc);
   if (npc.service === 'shop') return shop(npc.shop);
   if (npc.service === 'inn') return inn(npc);
   if (npc.service === 'guild') return guild();

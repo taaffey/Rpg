@@ -294,6 +294,58 @@ interior('wayside_oasis', 'Oasis Kebab Van', 'general', wb('oasis'), { shop: 'oa
 interior('wayside_lodge', 'Ski Lodge', 'inn', wb('lodge'), { cost: 60, inn: { text: ['Welcome to the lodge! Fondue? No? We only have fondue. Sixty gold, and the beds are heated. By fondue.'] }, npcs: [{ x: 2, y: 5, type: 'villager2', name: 'Skier', text: ['I have been waiting for the lift since Tuesday. There is no lift. I have been told this. I am waiting.'] }] });
 interior('wayside_shed', 'Ice Fishing Shed', 'house', wb('shed'), { npcs: [{ x: 4, y: 3, type: 'elder', name: 'Ice Fisher', text: ['Forty years, one hole, no fish. Then yesterday, a boot. It was a good boot.', 'Take the chest. It was in the boot. The boot is staying.'] }], chest: [9, 5, { gold: 450, gems: ['frost'], items: { megaether: 1, hipotion: 2 } }] });
 
+// ---------------------------------------------------------------- Hopsend Isle: the ferry, the autumn village, the Great Brewery
+TOWNS.hopsend = town([
+  'TTTTTTTTTTTTTTTTTTTTTTTTTTTTTT',
+  'TTTTTTTTTTTTTTTTTTTTTTTTTTTTTT',
+  'TT........T........T........TT',
+  'TT..........................TT',
+  'TT..................T.......TT',
+  'TT..........................TT',
+  'TT..........................TT',
+  'TT............._............TT',
+  'TT__________________________TT',
+  'TT__________________________TT',
+  'TTThhhh.......__.......hhhh.TT',
+  'TT.....w......__......w.....TT',
+  'TT.........................TTT',
+  'TT..................T.......TT',
+  'TT.......:::::::::::........TT',
+  'TT.......:::::::::::....T...TT',
+  'TT.......:::FFF::::.........TT',
+  'TT.......:::FFF::::.........TT',
+  'TT........:::::::::.........TT',
+  'TT________________________..TT',
+  'TT......T.....__............TT',
+  'TT............__.......T....TT',
+  'TT..T.........__............TT',
+  'TT............__............TT',
+  'TT############__############TT',
+  'TT############EE############TT'],
+  [[3, 3, 7, 5, 'inn', 3, 'hop_inn'], [12, 2, 5, 4, 'shop', 2, 'hop_shop'], [20, 3, 7, 5, 'smith', 2, 'hop_smith'], [3, 12, 5, 4, 'house', 2, 'hop_farm'], [22, 12, 5, 4, 'house', 2, 'hop_bees']],
+  [['lamp', 10, 11], ['lamp', 19, 11], ['lamp', 12, 19], ['lamp', 17, 19], ['hay', 7, 20], ['hay', 8, 20], ['cart', 22, 20], ['barrels', 25, 9], ['barrel', 2, 9], ['well', 6, 15], ['arch', 14, 24, { w: 2 }]]);
+interior('hop_inn', 'The Barley Mow', 'inn', back('hopsend', 'hop_inn', { music: 'pub' }), { cost: 70, inn: { text: ['Welcome to the Barley Mow! Rooms are seventy gold. Breakfast is a pint. Lunch is a pint. Dinner is two pints and a regret.'] } });
+interior('hop_shop', 'Hopsend General Shop', 'general', back('hopsend', 'hop_shop'), { shop: 'hop_general' });
+interior('hop_smith', 'Hopsend Forge & Tin Shed', 'smith', back('hopsend', 'hop_smith'), { shop: 'hop_smith' });
+interior('hop_farm', 'Farmhouse', 'house', back('hopsend', 'hop_farm'), { npcs: [{ x: 4, y: 3, type: 'elder', name: 'Farmer', text: ['Forty acres of hops, and every one of them is now arguing with me. Since the Brewery started bubbling, they have opinions.', 'Take the chest. It is full of hops. Well, gold. Mostly gold. One hop.'] }], chest: [9, 5, { gold: 700, items: { elixir: 2, megaether: 2 } }] });
+interior('hop_bees', 'Beekeeper\'s Cottage', 'house', back('hopsend', 'hop_bees'), { npcs: [{ x: 4, y: 3, type: 'villager2', name: 'Beekeeper', text: ['The bees are fine! They are not fine. They are the size of dinner plates. They have started a pension fund.', 'Do not run. Running makes them chase. Standing still makes them chase also. I have no advice.'] }], chest: [9, 5, { gems: ['venom'], gold: 400 }] });
+MAPS.hopsend = {
+  name: 'Hopsend', kind: 'town', theme: 'town', music: 'town', rows: TOWNS.hopsend.rows, base: TOWNS.hopsend.base, buildings: TOWNS.hopsend.buildings, props: TOWNS.hopsend.props, spawn: { x: 14, y: 24 },
+  portals: { [P(14, 25)]: portal('world', ...GEN.adj.hopsend), [P(15, 25)]: portal('world', ...GEN.adj.hopsend), ...doorPortals('hopsend') },
+  decor: [],
+  npcs: [
+    { x: 16, y: 21, type: 'guard', name: 'Watchman', text: ['Welcome to Hopsend, famous for beer, apples and the sort of weather that makes you want both.', 'The Great Brewery is east of the village. Since the mash tun woke up, nobody has had a decent pint. We are suffering.'] },
+    { x: 8, y: 13, type: 'villager', name: 'Cider Fan', text: ['Everyone here likes beer. I like cider. We do not talk about it. It is a very quiet bar.', 'Your friend asked if the cider has "good Wi-Fi". It has apples. It has apples, mate.'] },
+    { x: 20, y: 17, type: 'kid', name: 'Child', text: ['Mum says never go in the Brewery. It burps. The whole island feels it. Last Tuesday a gull exploded. Happily.'] },
+  ],
+};
+gen('brewery', 'The Great Brewery', 'cellar', GEN.breweryInfo, 'brewery', 'mash_tun',
+  [{ gems: ['crit'], gold: 600 }, { items: { elixir: 2, megaether: 2 }, gold: 500 }, { gold: 900 }, { items: { phoenix: 4, hipotion: 4 } }, { gems: ['echo'], gold: 1200 }], GEN.adj.brewery, 'dungeon');
+MAPS.brewery.minLv = 15; // optional: a warning toast below this average level
+// the docks: a ferryman in a hut at each end of the sea crossing (service 'ferry' in game.js)
+interior('port_s', 'Sunscar Jetty', 'house', wb('dock_s'), { npcs: [{ x: 4, y: 3, type: 'fisher', name: 'Ferryman', service: 'ferry', need: 'wyrm', to: ['world', ...GEN.adj.dock_h], no: ['Hopsend? Over the water? Not till that dragon is dead, my insurance says. Also my mother says. Mostly my mother.'], go: ['Hop on. The crossing takes a minute. I will tell you about my cousin. He has a boat too. His is bigger.', 'Mind the gulls.'] }] });
+interior('port_h', 'Hopsend Jetty', 'house', wb('dock_h'), { npcs: [{ x: 4, y: 3, type: 'fisher', name: 'Ferryman', service: 'ferry', to: ['world', ...GEN.adj.dock_s], go: ['Back to Sunscar? Sure. Hold the rail, the sea is feeling dramatic today.'] }] });
+
 // ---------------------------------------------------------------- overworld
 const [ux, uy] = GEN.pois.ruins, [mx, my] = GEN.pois.mirewood, [tx, ty] = GEN.pois.storm, [hx, hy] = GEN.pois.haven, [fx, fy] = GEN.pois.frost, [cx, cy] = GEN.pois.cavern, [rx, ry] = GEN.pois.crypt, [sx, sy] = GEN.pois.spire;
 MAPS.world = {
@@ -305,6 +357,8 @@ MAPS.world = {
     [P(mx, my)]: portal('mirewood', 14, 26), [P(tx, ty)]: portal('storm', GEN.stormInfo.spawn[0], GEN.stormInfo.spawn[1]),
     [P(ux, uy)]: portal('ruins', GEN.ruinsInfo.spawn[0], GEN.ruinsInfo.spawn[1]),
     ...Object.fromEntries(['chippy', 'stones', 'bogshed', 'oasis', 'lodge', 'shed'].map((k) => [P(...GEN.pois[k]), portal('wayside_' + k, 5, 6)])),
+    [P(...GEN.pois.hopsend)]: portal('hopsend', 14, 24), [P(...GEN.pois.brewery)]: portal('brewery', GEN.breweryInfo.spawn[0], GEN.breweryInfo.spawn[1]),
+    [P(...GEN.pois.dock_s)]: portal('port_s', 5, 6), [P(...GEN.pois.dock_h)]: portal('port_h', 5, 6),
   },
   npcs: [
     { x: ux - 2, y: uy + 1, type: 'elder', name: 'Desert Oracle', quest: 'sphinx', text: ['The sand remembers everything, child. Even you. Especially the shorts.', 'Seek the hermit of the Frostfields, if the pass ever opens. He knows where the old kings hid their gifts.'],
@@ -317,10 +371,12 @@ MAPS.world = {
     [P(GEN.deco.waterfall[0], GEN.deco.waterfall[1])]: { gold: 1200, gems: ['crit'], qitem: 'doubloon' }, // Redwake's cache at the foot of the waterfall
     [P(GEN.deco.gift[0], GEN.deco.gift[1])]: { gems: ['echo'], items: { elixir: 2 }, accs: ['life_charm'] }, // the old kings' gift, north-west corner
   },
-  places: [[hx, hy, 'Haven Town'], [fx, fy, 'Frostholm'], [cx, cy, 'Ashen Cavern'], [rx, ry, 'Sunken Crypt'], [sx, sy, 'Frost Spire'], [mx, my, 'Mirewood'], [tx, ty, 'Storm Cavern'], [ux, uy, 'Sunscar Ruins'], [...GEN.pois.chippy, 'Wayside Chippy'], [...GEN.pois.stones, 'Standing Stones'], [...GEN.pois.bogshed, 'Bog Snorkel Shed'], [...GEN.pois.oasis, 'Oasis Kebab Van'], [...GEN.pois.lodge, 'Ski Lodge'], [...GEN.pois.shed, 'Ice Fishing Shed']],
+  places: [[hx, hy, 'Haven Town'], [fx, fy, 'Frostholm'], [cx, cy, 'Ashen Cavern'], [rx, ry, 'Sunken Crypt'], [sx, sy, 'Frost Spire'], [mx, my, 'Mirewood'], [tx, ty, 'Storm Cavern'], [ux, uy, 'Sunscar Ruins'], [...GEN.pois.chippy, 'Wayside Chippy'], [...GEN.pois.stones, 'Standing Stones'], [...GEN.pois.bogshed, 'Bog Snorkel Shed'], [...GEN.pois.oasis, 'Oasis Kebab Van'], [...GEN.pois.lodge, 'Ski Lodge'], [...GEN.pois.shed, 'Ice Fishing Shed'], [...GEN.pois.dock_s, 'Sunscar Jetty'], [...GEN.pois.dock_h, 'Hopsend Jetty'], [...GEN.pois.hopsend, 'Hopsend'], [...GEN.pois.brewery, 'Great Brewery']],
 };
 // no random fights close to towns, and grassland fights ramp up with distance from Haven (gentle first steps)
-MAPS.world.safe = [[hx, hy, 6], [fx, fy, 4], [mx, my, 4], [cx, cy, 2], [rx, ry, 2], [sx, sy, 2], [tx, ty, 2], [ux, uy, 2], ...['chippy', 'stones', 'bogshed', 'oasis', 'lodge', 'shed'].map((k) => [...GEN.pois[k], 2])];
+MAPS.world.safe = [[hx, hy, 6], [fx, fy, 4], [mx, my, 4], [cx, cy, 2], [rx, ry, 2], [sx, sy, 2], [tx, ty, 2], [ux, uy, 2], ...['chippy', 'stones', 'bogshed', 'oasis', 'lodge', 'shed', 'dock_s', 'dock_h', 'hopsend', 'brewery'].map((k) => [...GEN.pois[k], 3])];
+// the far north-east island has its own tougher monsters (see zones in game.js)
+MAPS.world.zones = [{ rect: GEN.deco.autumn, enc: 'hops' }];
 MAPS.world.ramp = [hx, hy];
 // the northern pass is gated until the Ashen Wyrm falls
 MAPS.world.gate = { tile: 'B', flag: 'wyrm' };

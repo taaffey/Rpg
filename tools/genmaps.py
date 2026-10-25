@@ -38,10 +38,12 @@ def make_world(seed):
     W, H = S(112), S(84)
     nC, nR, nF, nM = noise2(seed), noise2(seed+1), noise2(seed+2), noise2(seed+3)
     isles = [(c, S(a), S(b), a2 * K, b2 * K) for c, a, b, a2, b2 in [('.', 36, 53, 28, 22), (':', 86, 62, 20, 16), ('d', 98, 35, 15, 11), (',', 50, 16, 30, 13)]]
+    isles.append(('.', 147, 19, 19, 12))  # Hopsend Isle (absolute coords): the autumn island of the far north-east, reached by ferry
     pois = {k: S2(v) for k, v in {'haven': (22, 56), 'cavern': (46, 47), 'storm': (28, 15), 'mirewood': (78, 58), 'crypt': (92, 68), 'frost': (46, 14), 'spire': (68, 10)}.items()}
     ruins = S2((100, 38))
     # wayside places: small stops dotted across the islands (interiors in maps.js). name -> base-grid guess; snapped to land below
-    extras = {'chippy': (40, 63, '.'), 'stones': (15, 64, '.'), 'bogshed': (84, 71, ':'), 'oasis': (108, 30, 'd'), 'lodge': (40, 8, ','), 'shed': (60, 22, ',')}
+    extras = {'chippy': (40, 63, '.'), 'stones': (15, 64, '.'), 'bogshed': (84, 71, ':'), 'oasis': (108, 30, 'd'), 'lodge': (40, 8, ','), 'shed': (60, 22, ','),
+              'hopsend': (146, 18, '.', 1), 'brewery': (156, 22, '.', 1), 'dock_h': (141, 29, '.', 1), 'dock_s': (146, 40, 'd', 1)}
     spawn_adj = {k: (x, y+1) for k, (x, y) in pois.items()}
     gift, hermit = S2((27, 11)), S2((36, 18))
     GX = S(58)
@@ -60,12 +62,12 @@ def make_world(seed):
         for x in (GX-1, GX, GX+1): g[y][x] = ',' if y < S(34) else '.'
     taken = list(pois.values()) + [ruins, gift, hermit]
     for k, v in extras.items():  # snap each wayside place to the nearest solid land tile (2 tiles of land around, clear of other places)
-        cx0, cy0 = S2(v[:2]); best = None; bio = v[2]
+        cx0, cy0 = (v[0], v[1]) if len(v) > 3 else S2(v[:2]); best = None; bio = v[2]; dock = k.startswith('dock')
         for r in range(0, 14):
             for yy in range(cy0-r, cy0+r+1):
                 for xx in range(cx0-r, cx0+r+1):
                     if max(abs(xx-cx0), abs(yy-cy0)) != r: continue
-                    if all(0 <= xx+i < W and 0 <= yy+j < H and g[yy+j][xx+i] == bio for i in (-2, -1, 0, 1, 2) for j in (-1, 0, 1, 2)) and all(abs(xx-a) + abs(yy-b) > 7 for a, b in taken):
+                    if all(0 <= xx+i < W and 0 <= yy+j < H and g[yy+j][xx+i] == bio for i in ((-1, 0, 1) if dock else (-2, -1, 0, 1, 2)) for j in ((0, 1) if dock else (-1, 0, 1, 2))) and all(abs(xx-a) + abs(yy-b) > (3 if dock else 7) for a, b in taken):
                         best = (xx, yy); break
                 if best: break
             if best: break
@@ -95,7 +97,7 @@ def make_world(seed):
     gate_s, gate_n = (GX, S(39)), (GX, S(28))
     links = [(A['haven'], A['cavern']), (gate_n, A['storm']), (gate_n, hermit), (hermit, gift), (A['haven'], gate_s), (gate_s, gate_n), (gate_n, A['frost']),
              (A['frost'], A['spire']), (A['haven'], (S(61), S(59))), ((S(68), S(59)), A['mirewood']), (A['mirewood'], A['crypt']), (A['mirewood'], (S(92), S(48))), ((S(92), S(43)), (ruins[0], ruins[1]+1)),
-             (A['haven'], A['chippy']), (A['cavern'], A['chippy']), (A['haven'], A['stones']), (A['mirewood'], A['bogshed']), ((ruins[0], ruins[1]+1), A['oasis']), (A['frost'], A['lodge']), (A['frost'], A['shed']), (A['spire'], A['shed'])]
+             (A['haven'], A['chippy']), (A['cavern'], A['chippy']), (A['haven'], A['stones']), (A['mirewood'], A['bogshed']), ((ruins[0], ruins[1]+1), A['oasis']), (A['hopsend'], A['brewery']), (A['hopsend'], A['dock_h']), ((ruins[0], ruins[1]+1), A['dock_s']), (A['frost'], A['lodge']), (A['frost'], A['shed']), (A['spire'], A['shed'])]
     road = set()
     for a, b in links:
         for t in path(a, b): road.add(t)
@@ -107,6 +109,7 @@ def make_world(seed):
              (86, 58, 4, 3), (96, 72, 5, 3), (74, 70, 4, 3), (92, 56, 3, 2),                                       # Mire Isle (rocks in the bog)
              (98, 32, 5, 3), (90, 38, 3, 2), (106, 40, 3, 3), (104, 30, 3, 2)]                                      # Sunscar mesas
     blobs = [(S(a), S(b), c * K, d * K) for a, b, c, d in blobs0]
+    blobs += [(138, 27, 4, 2.5), (158, 11, 4, 2.5)]  # hills on Hopsend Isle
     blobs += [(S(a) + 9, S(b) - 5, c * K * 0.7, d * K * 0.7) for a, b, c, d in blobs0[::3]]  # more foothills
     for cx, cy, rx_, ry_ in blobs:
         for y in range(int(cy-ry_-2), int(cy+ry_+3)):
@@ -167,7 +170,7 @@ def make_world(seed):
     # fix road tiles to the biome of their island (the blobs may have left grass in snow etc.)
     for x, y in road:
         if g[y][x] == '.':
-            g[y][x] = ',' if y < S(30) else ':' if x > S(62) and y > S(46) else 'd' if x > S(82) and y < S(46) else '.'
+            g[y][x] = '.' if x >= 127 and y <= 34 else ',' if y < S(30) and x < 125 else ':' if x > S(62) and y > S(46) else 'd' if x > S(82) and y < S(46) else '.'
         elif g[y][x] == ',' and y > S(29): g[y][x] = '.'
     for y in range(S(33), S(36)): g[y][GX] = 'B'
     for k, (x, y) in spawn_adj.items():
@@ -180,14 +183,19 @@ def make_world(seed):
     # --- checks
     walk = lambda c: c in '.,:d=HD'
     open_ = bfs(g, spawn_adj['haven'], walk)
-    for k in ('haven', 'cavern', 'crypt', 'mirewood', 'ruins', 'chippy', 'stones', 'bogshed', 'oasis'): assert pois[k] in open_, ('closed', k)
+    for k in ('haven', 'cavern', 'crypt', 'mirewood', 'ruins', 'chippy', 'stones', 'bogshed', 'oasis', 'dock_s'): assert pois[k] in open_, ('closed', k)
     for k in ('frost', 'spire', 'storm', 'lodge', 'shed'): assert pois[k] not in open_, 'gate leaks ' + k
     opened = bfs(g, spawn_adj['haven'], lambda c: walk(c) or c == 'B')
-    for k in pois: assert pois[k] in opened, ('after gate', k)
+    isle5 = ('hopsend', 'brewery', 'dock_h')
+    for k in pois:
+        if k not in isle5: assert pois[k] in opened, ('after gate', k)
+    open5 = bfs(g, spawn_adj['dock_h'], walk)
+    for k in isle5: assert pois[k] in open5, ('isle5', k)
+    assert pois['dock_s'] in open_, 'dock_s'
     assert wfs in open_ and gift in opened and hermit in opened and gift not in open_, 'secret spots'
     for y in range(S(33), S(36)): assert g[y][GX] == 'B'
     deco = {'ruins': list(ruins), 'ship': [[3, S(38)], [6, S(50)], [3, S(66)], [6, S(52)]], 'gift': list(gift), 'hermit': list(hermit), 'waterfall': list(wfs), 'gate': [GX, S(34)],
-            'plainsY': S(47)}
+            'plainsY': S(47), 'autumn': [123, 2, 169, 36]}
     for x, y in deco['ship']: assert g[y][x] == '~'
     return [''.join(row) for row in g], pois, spawn_adj, deco
 
@@ -244,7 +252,8 @@ crypt, cinfo = make_dungeon(100)
 spire, sinfo = make_dungeon(300, 28, 18, 8, 5)
 storm, stinfo = make_dungeon(500, 26, 18, 7, 4)
 ruins, rinfo = make_dungeon(700, 26, 18, 7, 5)
-out = {'world': world, 'pois': pois, 'adj': adj, 'deco': deco, 'crypt': crypt, 'cryptInfo': cinfo, 'spire': spire, 'spireInfo': sinfo, 'storm': storm, 'stormInfo': stinfo, 'ruins': ruins, 'ruinsInfo': rinfo}
+brewery, binfo = make_dungeon(900, 30, 20, 8, 5)
+out = {'world': world, 'pois': pois, 'adj': adj, 'deco': deco, 'crypt': crypt, 'cryptInfo': cinfo, 'spire': spire, 'spireInfo': sinfo, 'storm': storm, 'stormInfo': stinfo, 'ruins': ruins, 'ruinsInfo': rinfo, 'brewery': brewery, 'breweryInfo': binfo}
 js = '// GENERATED by tools/genmaps.py. Do not edit by hand.\nexport const GEN = ' + json.dumps(out, indent=1) + ';\n'
 open('src/mapgen.js', 'w').write(js)
 print('\n'.join(world)); print(); print('\n'.join(crypt)); print(cinfo); print(); print('\n'.join(spire)); print(sinfo); print(pois); print(); print('\n'.join(ruins)); print(rinfo)
