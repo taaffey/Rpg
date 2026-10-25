@@ -7,7 +7,7 @@ export const W = BA.BW, H = BA.BH; // 256 x 176 logical pixels
 const ELEM_COL = { fire: ['#ff9a2a', '#ffd25a', '#e04a20', '#fff2a0'], ice: ['#c8f4ff', '#7fd8f0', '#ffffff', '#4aa0e8'], bolt: ['#fff27a', '#ffffff', '#ffd25a'], holy: ['#ffffff', '#fff2a0', '#d0f0ff'], dark: ['#9a62e0', '#4a2a80', '#d0a0ff', '#20103a'], slash: ['#ffffff', '#d8e4ff'], heal: ['#7af0a0', '#c8ffd8', '#ffffff'], mp: ['#7ab0ff', '#c8e0ff', '#ffffff'] };
 const STYLE = { slime: 'squash', bat: 'swoop', wolf: 'pounce', wraith: 'float', zombie: 'sway', golem: 'stomp', yeti: 'stomp', wyrm: 'swoop', lich: 'float', titan: 'stomp', imp: 'pounce', goblin: 'lunge', skeleton: 'lunge',
   hornet: 'swoop', shroom: 'squash', boar: 'lunge', bandit: 'lunge', sapling: 'sway', spider: 'pounce', bog_toad: 'pounce', leech: 'squash', wisp: 'float', lizardman: 'lunge', scorpion: 'lunge', sandworm: 'stomp', cactus: 'sway', mummy: 'sway',
-  salamander: 'pounce', batswarm: 'swoop', ghoul_knight: 'lunge', banshee: 'float', bone_whelp: 'swoop', ice_elemental: 'float', harpy: 'swoop', mammoth: 'stomp', crystal_sentinel: 'stomp', thunderbird: 'swoop', cobra: 'sway', sphinx: 'pounce', cellar_rat: 'pounce', big_gary: 'squash' };
+  salamander: 'pounce', batswarm: 'swoop', ghoul_knight: 'lunge', banshee: 'float', bone_whelp: 'swoop', ice_elemental: 'float', harpy: 'swoop', mammoth: 'stomp', crystal_sentinel: 'stomp', thunderbird: 'swoop', cobra: 'sway', sphinx: 'pounce', cellar_rat: 'pounce', big_gary: 'squash', mash_tun: 'stomp' };
 const HOVER = new Set(['bat', 'wraith', 'lich', 'hornet', 'wisp', 'batswarm', 'banshee', 'bone_whelp', 'ice_elemental', 'harpy', 'thunderbird']); // genuine flyers drift above their own shadow
 const mk = (w, h) => { const c = document.createElement('canvas'); c.width = w; c.height = h; return c; };
 const whiteCache = new Map();
@@ -45,7 +45,7 @@ function wtypeOf(p) { const w = p.wpn; return w ? w.type : 'none'; }
 export class Stage {
   constructor(battle, kind) {
     this.b = battle; this.canvas = mk(W, H); this.canvas.className = 'stage'; this.ctx = this.canvas.getContext('2d');
-    const arena = battle.boss && ['crypt', 'spire', 'storm', 'ruins', 'cellar'].includes(kind) ? kind + ':boss' : kind;
+    const arena = battle.boss && ['crypt', 'spire', 'storm', 'ruins', 'cellar', 'brewery'].includes(kind) ? kind + ':boss' : kind;
     this.info = BA.backdropInfo(BA.BACKDROPS.includes(arena) ? arena : 'world'); this.bg = this.info.c; this.kind = this.info.kind;
     this.parts = []; this.floats = []; this.proj = []; this.shapes = []; this.running = true; this.last = performance.now(); this.lastElem = null; this.active = null; this.shake = 0; this.flashA = 0; this.flashC = '#ffffff';
     const live = battle.e, epos = POS[Math.min(5, live.length)] || POS[5]; let ni = 0;
@@ -200,7 +200,7 @@ export class Stage {
     else if (k === 'swamp') { for (let i = 0; i < 9; i++) if (Math.sin(t * 2 + i * 2) > 0.1) { x.fillStyle = '#e8ff80'; x.fillRect(Math.round((i * 31 + Math.sin(t * 0.7 + i) * 10) % W), 70 + ((i * 23) % 70) + Math.round(Math.sin(t + i) * 3), 1, 1); } }
     else if (k === 'crypt') { for (let i = 0; i < 12; i++) { x.fillStyle = i % 2 ? 'rgba(140,255,170,.6)' : 'rgba(200,255,220,.4)'; x.fillRect(Math.round((i * 23 + Math.sin(t * 0.7 + i) * 8) % W), Math.round(H - 10 - ((t * 6 + i * 19) % 130)), 1, 1); } }
     else if (k === 'forest') { for (let i = 0; i < 8; i++) { x.fillStyle = 'rgba(255,250,200,.7)'; x.fillRect(Math.round((i * 37 + Math.sin(t * 0.6 + i) * 10) % W), Math.round(40 + ((t * 4 + i * 23) % 110)), 1, 1); } }
-    else if (k === 'cellar') { for (let i = 0; i < 18; i++) { const u = (t * (0.03 + (i % 5) * 0.008) + i * 0.137) % 1, px = (i * 47 + Math.sin(t * 0.4 + i) * 12 + u * 30) % W, py = 20 + ((i * 31) % 120) + Math.sin(t * 0.7 + i * 2) * 6; x.fillStyle = i % 4 ? 'rgba(255,220,160,.5)' : 'rgba(255,240,200,.8)'; x.fillRect(Math.round(px), Math.round(py), 1, 1); } } // dust motes in the lantern light
+    else if (k === 'cellar' || k === 'brewery') { for (let i = 0; i < 18; i++) { const u = (t * (0.03 + (i % 5) * 0.008) + i * 0.137) % 1, px = (i * 47 + Math.sin(t * 0.4 + i) * 12 + u * 30) % W, py = 20 + ((i * 31) % 120) + Math.sin(t * 0.7 + i * 2) * 6; x.fillStyle = i % 4 ? 'rgba(255,220,160,.5)' : 'rgba(255,240,200,.8)'; x.fillRect(Math.round(px), Math.round(py), 1, 1); } } // dust motes in the lantern light
     else if (k === 'dungeon') { for (let i = 0; i < 10; i++) { x.fillStyle = i % 3 ? 'rgba(255,230,160,.45)' : 'rgba(190,150,255,.6)'; x.fillRect(Math.round((i * 29 + Math.sin(t + i) * 5) % W), Math.round(((t * 3 + i * 17) % 120) + 8), 1, 1); } }
   }
   shadowOf(x, v) {
