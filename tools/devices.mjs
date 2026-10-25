@@ -1,8 +1,8 @@
 // Device matrix: layout metrics + screenshots across iPhone sizes, orientations, iPad and desktop.
-// usage: node tools/devices.mjs <outdir> [url]
+// usage: node tools/devices.mjs <outdir> [url]   (or PORT=8124 / URL=... instead of the url argument)
 import { createRequire } from 'module';
 const pw = createRequire('/node-tools/node_modules/')('playwright');
-const OUT = process.argv[2] || '/tmp/devices', URL_ = process.argv[3] || 'http://localhost:8123/index.html';
+const OUT = process.argv[2] || '/tmp/devices', URL_ = process.argv[3] || process.env.URL || `http://localhost:${process.env.PORT || 8123}/index.html`;
 const DEVICES = [
   ['iphone-se', 375, 667, true, 2], ['iphone-14', 390, 844, true, 3], ['iphone-pro-max', 430, 932, true, 3],
   ['iphone-14-landscape', 844, 390, true, 3], ['iphone-pro-max-landscape', 932, 430, true, 3], ['ipad', 820, 1180, true, 2], ['desktop', 1280, 800, false, 1],
@@ -22,7 +22,7 @@ for (const [name, w, h, touch, dpr] of DEVICES) {
     const cv = document.getElementById('map');
     return { tiles: `${cv.width / 32}x${cv.height / 32}`, view: r('#view'), padL: r('#padL'), padR: r('#padR'), hud: r('#hud'), scrollW: document.documentElement.scrollWidth, scrollH: document.documentElement.scrollHeight, bodyScroll: document.body.scrollHeight };
   });
-  await pg.evaluate(() => window.__game.goto('haven', 12, 20)); await pg.waitForTimeout(600); await snap('3-town');
+  await pg.evaluate(() => window.__game.goto('haven', ...window.__game.MAPS.haven.spots.green)); await pg.waitForTimeout(600); await snap('3-town');
   pg.evaluate(() => { window.__game.battle(['goblin', 'wolf', 'slime']); }); await pg.waitForSelector('[data-act=c]', { timeout: 8000 }); await pg.waitForTimeout(900); await snap('4-battle');
   const bm = await pg.evaluate(() => { const o = document.getElementById('overlay'); return { overlayScrollable: o.scrollHeight > o.clientHeight, scrollW: o.scrollWidth, clientW: o.clientWidth }; });
   const touchOk = !touch || (m.padL && m.padL[2] > 0);

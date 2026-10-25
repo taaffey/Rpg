@@ -1,7 +1,7 @@
 // ===== Bearded Bros (and the Bell of Gemforge): UI, map, menus, battle flow =====
 import { SOCKET_COST, DIFFICULTY, DROPS, STORY, KEY_ITEMS, TRAITS, CALLING_BATCHES } from './data.js';
 import { JOBS, SKILLS, GEMS, WEAPONS, ARMORS, ACCS, ITEMS, WEAPON_TYPES, ENEMIES, ENCOUNTERS, ELEM_ICON, BOSSES, SHOPS, QUESTS } from './data.js';
-import { MAPS, WALK } from './maps.js';
+import { MAPS, WALK, START } from './maps.js';
 import { GEN } from './mapgen.js';
 import * as L from './logic.js';
 import { BROS, COMBOS, LOCALS, PARTY_SCALE, PHONE, PHONE_CHARGED, PUB, WAKE, CELLAR_IN, GARY_DOWN, CALLED, CALLED_AFTER, WENDELL } from './bros.js';
@@ -48,7 +48,7 @@ let lastWinKey = '';
 function show(html, cls = '', winCls = '') { // every window: emoji become pixel icons; the open animation only plays when the screen changes
   html = UI.deco(html);
   const key = `${cls}|${winCls}|${(html.match(/<h2[^>]*>([\s\S]*?)<\/h2>/) || [])[1] || ''}`, anim = key !== lastWinKey || !inOverlay(); lastWinKey = key;
-  ov.innerHTML = `<div class="win ${anim ? 'anim' : ''} ${winCls}">${html}</div>`; ov.className = 'on ' + cls;
+  ov.innerHTML = `<div class="win ${anim ? 'anim' : ''} ${winCls}">${html}</div>`; ov.className = 'on ' + cls; if (anim) ov.scrollTop = 0;
 }
 function closeGhost() { // a non-interactive copy of the windows folds shut while the real overlay is already gone
   if (!ov.classList.contains('on') || !ov.firstElementChild || ov.querySelector('.battle')) return;
@@ -88,8 +88,8 @@ const gemChip = (g, short = false) => `<span class="chip" title="${GEMS[g].desc}
 const statLine = (s) => `<div class="stats">${['hp', 'mp', 'atk', 'def', 'mag', 'spd'].map((k) => `<span>${k.toUpperCase()} <b>${s[k]}</b></span>`).join('')}</div>`;
 const gearLine = (g) => ['atk', 'mag', 'def', 'hp', 'mp', 'spd'].filter((k) => g[k]).map((k) => `${g[k] > 0 ? '+' : ''}${g[k]} ${k}`).concat(g.res ? g.res.map((r) => `resist ${r}`) : [], g.sockets ? [`${g.sockets}◇`] : [], g.innate ? [`innate ${GEMS[g.innate].name}`] : [], weaponTraits(g)).join(', ');
 // weapon traits (see WEAPONS in data.js) as short tags, plus the flavour line for shop / equip lists
-const weaponTraits = (g) => [g.elem ? `${UI.elemIcon(g.elem)} ${g.elem} attacks` : '', g.hits > 1 ? `${g.hits} hits/attack` : '', g.crit ? `crit +${Math.round(g.crit * 100)}%` : '', g.pierce ? `pierce ${Math.round(g.pierce * 100)}%` : '',
-  g.proc ? `${Math.round(g.proc[1] * 100)}% ${g.proc[0]} on hit` : '', g.heal ? `heal +${Math.round(g.heal * 100)}%` : '', g.sig ? `skill: ${SKILLS[g.sig].name}` : ''].filter(Boolean);
+const weaponTraits = (g) => [g.elem && g.type ? `${UI.elemIcon(g.elem)} ${g.elem} attacks` : '', g.hits > 1 ? `${g.hits} hits/attack` : '', g.crit ? `crit +${Math.round(g.crit * 100)}%` : '', g.pierce ? `pierce ${Math.round(g.pierce * 100)}%` : '',
+  g.proc ? `${Math.round(g.proc[1] * 100)}% ${g.proc[0]} on hit` : '', g.heal && g.type ? `heal +${Math.round(g.heal * 100)}%` : '', g.sig ? `skill: ${SKILLS[g.sig].name}` : ''].filter(Boolean);
 const gearDesc = (k, d) => (k === 'weapons' ? `${WEAPON_TYPES[d.type].name} · ${gearLine(d)}` : gearLine(d)) + (d.desc ? `<br><i class="dim">${d.desc}</i>` : ''); // stats first, then the joke
 const npcImg = (type, px = 48) => `<span class="face"><img src="${UI.npcFaceURL(type)}" width="${px}" height="${px}" alt=""></span>`;
 
@@ -110,7 +110,7 @@ function newGame(party = DEFAULT_PARTY) {
     party: party.map(([n, j, look]) => Object.assign(newChar(n, j, null, null, LIGHT_ARMOR.has(j) || j === 'bloke' ? 'cloth' : 'leather'), look ? { look } : {})),
     gold: 400, difficulty: 'normal', slot: 1,
     inv: { weapons: [], armors: [], accs: [], gems: [], items: { potion: 3 } },
-    map: 'haven', x: 17, y: 30, flags: { chests: {}, bosses: {}, seen: {}, talked: {}, visited: {}, quests: {}, qprog: {}, qitems: {}, tips: {}, bestiary: {}, story: {}, chat: {} }, playtime: 0,
+    map: START.map, x: START.x, y: START.y, flags: { chests: {}, bosses: {}, seen: {}, talked: {}, visited: {}, quests: {}, qprog: {}, qitems: {}, tips: {}, bestiary: {}, story: {}, chat: {} }, playtime: 0,
   };
 }
 // ---------- saves: 3 slots, autosave, migration ----------
@@ -128,7 +128,7 @@ function migrate(g) {
   for (const c of g.party) { if (c.weapon && !WEAPONS[c.weapon]) c.weapon = null; if (c.armor && !ARMORS[c.armor]) c.armor = null; if (c.acc && !ACCS[c.acc]) c.acc = null; c.exp = Math.max(0, c.exp || 0); c.level = Math.min(L.MAX_LEVEL, c.level || 1); gainExp(c, 0); } // gainExp(0) settles EXP banked under an older curve
   for (const c of g.party) migrateCallings(c, g.inv);
   const m = MAPS[g.map];
-  if (!m) { g.map = 'haven'; g.x = 17; g.y = 30; } else if (!WALK.has(m.rows[g.y]?.[g.x] ?? '#') && m.rows[g.y]?.[g.x] !== 'B') { g.x = m.spawn.x; g.y = m.spawn.y; }
+  if (!m) { g.map = START.map; g.x = START.x; g.y = START.y; } else if (!WALK.has(m.rows[g.y]?.[g.x] ?? '#') && m.rows[g.y]?.[g.x] !== 'B') { g.x = m.spawn.x; g.y = m.spawn.y; }
   return g;
 }
 // Saves from before Calling Points: skills came from the hero's level (main calling) and a sub calling two levels behind.
@@ -658,7 +658,7 @@ function socketer(msg = '') {
 ACT.addsock = (i) => { const c = G.party[+i], n = c.extra || 0, cost = SOCKET_COST[n]; if (cost == null || G.gold < cost) return; G.gold -= cost; c.extra = n + 1; sfx('chest'); socketer(`${c.name} now has ${gemCapacity(c)} sockets.`); };
 
 // ---------- Quiz Night at the Gilded Goose: five questions on the realm (QUIZ in data.js), once per night ----------
-const QUIZ_FEE = 20, QUIZ_PRIZE = [[0, null, 'Barnaby: "Nil points. Brave, though."'], [0, null, 'Barnaby: "One. My goat could do one."'], [20, null, 'Barnaby: "Two. Your entry fee back, and my pity."'], [80, 'potion', 'Barnaby: "Three! Respectable. Have a potion on the house."'], [180, 'hipotion', 'Barnaby: "Four! The table by the fire is yours."'], [400, 'elixir', 'Barnaby: "FIVE! A clean sweep! Brenna, ring the... no. NO bells."']];
+const QUIZ_FEE = 20, QUIZ_PRIZE = [[0, null, 'Barnaby: "Nil points. Brave, though."'], [0, null, 'Barnaby: "One. My goat could do one."'], [20, null, 'Barnaby: "Two. Your entry fee back, and my pity."'], [60, 'potion', 'Barnaby: "Three! Respectable. Have a pint on the house."'], [100, 'hipotion', 'Barnaby: "Four! The table by the fire is yours."'], [220, 'elixir', 'Barnaby: "FIVE! A clean sweep! Brenna, ring the... no. NO bells."']];
 let QZ = null;
 ACT.quiz = () => {
   if (G.flags.story.quizzed || G.gold < QUIZ_FEE) return;
@@ -695,7 +695,7 @@ ACT.buy = (k, id) => { // gear takes a second tap to buy (an easy mis-tap costs 
   if (k !== 'items' && shopPending !== `${k}:${id}`) { shopPending = `${k}:${id}`; sfx('click'); return shop(); }
   shopPending = null; G.gold -= d.price; sfx('coin'); if (k === 'items') G.inv.items[id] = (G.inv.items[id] || 0) + 1; else G.inv[k].push(id);
   const field = { weapons: 'weapon', armors: 'armor', accs: 'acc' }[k], can = field ? G.party.map((c, i) => [c, i]).filter(([c]) => (k !== 'weapons' || L.weaponOk(c, id)) && c[field] !== id) : [];
-  shop(null, `Bought ${d.name}.${can.length ? `<span class="equipnow"><small>Equip now:</small>${can.map(([c, i]) => btn('shopequip', `<img src="${UI.faceURL(ak(c))}" alt="">${esc(c.name)}${c[field] ? ` <small class="dim">(${esc(DB[k][c[field]].name)})</small>` : ''}`, k, `${id}|${i}`)).join('')}</span>` : ''}`);
+  ov.scrollTop = 0; shop(null, `Bought ${d.name}.${can.length ? `<span class="equipnow"><small>Equip now:</small>${can.map(([c, i]) => btn('shopequip', `<img src="${UI.faceURL(ak(c))}" alt="">${esc(c.name)}${c[field] ? ` <small class="dim">(${esc(DB[k][c[field]].name)})</small>` : ''}`, k, `${id}|${i}`)).join('')}</span>` : ''}`);
 };
 let shopPending = null;
 ACT.shopequip = (k, x) => {
@@ -896,7 +896,7 @@ function optionsScreen() {
   <div class="opt"><label>${ic('sound')} Sound effects <b>${Math.round(OPT.sfx * 100)}%</b></label><input type="range" min="0" max="100" value="${Math.round(OPT.sfx * 100)}" data-in="sfx"></div>
   <div class="opts">${G ? btn('optdiff', `<span>Difficulty</span><b>${DIFFICULTY[G.difficulty].name}</b>`) : ''}${btn('optspeed', `<span>Battle speed</span><b>${OPT.speed}</b>`)}${btn('optmini', `<span>Minimap</span><b>${onOff(OPT.minimap)}</b>`)}${btn('optshake', `<span>Screen shake</span><b>${onOff(OPT.shake)}</b>`)}${btn('optmute', `<span>${ic(isMuted() ? 'mute' : 'sound')}Sound</span><b>${isMuted() ? 'Muted' : 'On'}</b>`)}</div>
   <h3>Controls</h3><div class="dim controls"><div><b>Arrows / WASD</b> move</div><div><b>Esc / M</b> menu</div><div><b>N</b> toggle minimap</div><div><b>Arrows</b> move menu focus</div><div><b>Enter / Space</b> select</div><div><b>Esc / Backspace</b> back</div></div>
-  ${IS_IOS && !root.classList.contains('standalone') && !root.classList.contains('framed') ? '<div class="card"><b>📱 Install on iPhone</b><div class="dim">In Safari tap Share, then <b>Add to Home Screen</b>. Gemforge then runs full-screen, works offline, and remembers your saves.</div></div>' : ''}
+  ${IS_IOS && !root.classList.contains('standalone') && !root.classList.contains('framed') ? '<div class="card"><b>📱 Install on iPhone</b><div class="dim">In Safari tap Share, then <b>Add to Home Screen</b>. Bearded Bros then runs full-screen, works offline, and remembers your saves.</div></div>' : ''}
   <div class="foot"><span class="dim grow" style="font-size:8px;align-self:center">Bearded Bros v${VERSION}</span>${btn('optback', 'Back', '', '', 'primary')}</div>`);
 }
 ACT.opts = () => optionsScreen();
@@ -1287,7 +1287,7 @@ function awakening({ heart, jobs, gems }) {
 }
 const epilogueOf = (c) => { const e = STORY.epilogue[c.look] ?? STORY.epilogue[c.main]; return (typeof e === 'string' ? e : e?.[c.main] || e?.default) || '{n} went home.'; };
 async function ending() {
-  if (STORY.finale) { goto('haven', 17, 22); await sleep(600); await scene(STORY.finale); } // the bell rings for them in Haven: back to The Bell & Anvil, two minutes after they left
+  if (STORY.finale) { goto('haven', ...MAPS.haven.spots.bell); await sleep(600); await scene(STORY.finale); } // the bell rings for them in Haven: back to The Bell & Anvil, two minutes after they left
   music('ending');
   const left = ['wyrm', 'lich'].filter((k) => !G.flags.bosses[k]).map((k) => BOSSES[k].name);
   const quests = Object.keys(QUESTS).filter((id) => qstate(id) === 'done').length, gemsOn = G.party.reduce((n, c) => n + gemsUsed(c), 0);
@@ -1310,7 +1310,7 @@ async function defeat() {
   music('gameover');
   await new Promise((res) => {
     ov.innerHTML = `<div class="win red anim"><div class="vhead">${ic('ko')}<h2 class="bad">${DEFEAT[Math.floor(Math.random() * DEFEAT.length)]}</h2>${ic('ko')}</div><div class="vparty">${G.party.map((c) => `<div class="vp">${portrait(ak(c), 'sm ko')}<div class="vi">${esc(c.name)}</div></div>`).join('')}</div><p>You wake up outside the Goose with a banging headache. Half your gold is gone. Nobody will say where.</p><div class="foot">${btn('ddone', 'Wake up', '', '', 'primary')}</div></div>`;
-    ACT.ddone = () => { G.gold = Math.floor(G.gold / 2); for (const c of G.party) { const s = maxOf(c); c.hp = s.hp; c.mp = s.mp; } goto('haven', 11, 12); hide(); res(); };
+    ACT.ddone = () => { G.gold = Math.floor(G.gold / 2); for (const c of G.party) { const s = maxOf(c); c.hp = s.hp; c.mp = s.mp; } goto('haven', ...MAPS.haven.spots.respawn); hide(); res(); };
   });
 }
 

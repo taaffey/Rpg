@@ -67,7 +67,7 @@ MAPS.cellar = {
     textBy: [['!s:cellar', ['Cellar\'s through the trapdoor in the corner. Mind the slimes. And Gary.', 'No, I don\'t know why it\'s called Gary. It introduced itself.']]] });
 }
 // the Haven gate stays shut to two blokes in hoodies until the cellar is cleared
-for (const k of ['16,33', '17,33', '18,33']) if (MAPS.haven.portals[k]) Object.assign(MAPS.haven.portals[k], { need: 's:called', deny: [
+for (const pt of Object.values(MAPS.haven.portals)) if (pt.to === 'world') Object.assign(pt, { need: 's:called', deny: [
   { s: 'guard', t: 'Oi. Where do you two think you\'re going, dressed like that? No calling, no weapon, no chance.' },
   { s: 'devon', t: 'Bro, it\'s a tutorial area. We can\'t leave till we finish the tutorial.' },
   { s: 'adam', t: 'The Elder said the Gilded Goose. The tavern. Let\'s go and sort out the cellar.', if: '!s:cellar' },
@@ -166,7 +166,7 @@ export const PHONE = [
   [{ s: 'devon', t: 'Maps app says we\'re in the sea. Also says the nearest Greggs is "unavailable in your region".' }],
   [{ s: 'devon', t: 'Step counter says 48,000 steps today. That\'s a personal best. I hate it.' }, { s: 'adam', t: 'Proud of you.' }],
   [{ s: 'devon', t: 'Weather app: "Light dragon. 40% chance of lich."' }, { s: 'adam', t: 'It does not say that.' }, { s: 'devon', t: 'It might.' }],
-  [{ s: 'devon', t: 'Fantasy football. Adam, your team\'s top of the league. You\'ve not touched it in months.' }, { s: 'adam', t: 'Set and forget. Like a good sword.' }],
+  [{ s: 'devon', t: 'Fantasy football. Adam, your team\'s top of the league. You\'ve not touched it in months.' }, { s: 'adam', t: 'Set and forget. Like a good slow cooker.' }],
   [{ s: 'devon', t: 'Recording a voice note for future us: "If you\'re hearing this, the cargo shorts were worth it."' }],
   [{ s: 'devon', t: 'Flashlight on! ...Okay, the 3% is definitely real now. Flashlight off.' }],
   [{ s: 'devon', t: 'Showing Wendell a video of a horse on a trampoline.' }, { s: 'wendell', t: 'Witchcraft. Wonderful witchcraft. Is it Clarence? It looks happy.' }],
@@ -207,11 +207,6 @@ export const PHONE_CHARGED = [
   const f = STORY.finale || [], flash = f.findIndex((l) => /White light/.test(l.t)), back = f.findIndex((l) => /bar stools|Bell & Anvil/.test(l.t));
   if (flash >= 0) f[flash].art = 'flash';
   if (back >= 0) { for (let i = back; i < f.length; i++) f[i].art = 'return'; f[back].music = 'pub'; } // home at last: the tavern jig again
-}
-// the hay they wake up in, beside the main street where the game starts (props stamp solid 'p' tiles like town() does)
-{
-  const h = MAPS.haven; h.props.push({ k: 'hay', x: 20, y: 30 }, { k: 'hay', x: 21, y: 30 });
-  h.rows = h.rows.map((r, y) => (y === 30 ? r.slice(0, 20) + 'pp' + r.slice(22) : r));
 }
 // the Gilded Goose (and Quiz Night, which happens in it) has the tavern jig
 MAPS.haven_inn.music = 'pub';

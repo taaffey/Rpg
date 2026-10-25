@@ -1,5 +1,5 @@
 // Touch-control regression: tap-to-travel, tap a townsperson, slide d-pad, A button, tap-to-attack in battle.
-//   node tools/touch.mjs   (needs: python3 -m http.server 8123)
+//   node tools/touch.mjs   (needs: python3 -m http.server 8123; PORT=8124 or URL=... for another server)
 import { createRequire } from 'module';
 const pw = createRequire('/node-tools/node_modules/')('playwright');
 const b = await pw.chromium.launch({ executablePath: process.env.CHROME || '/opt/pw-browsers/chromium-1194/chrome-linux/chrome' });
@@ -7,7 +7,7 @@ let fails = 0; const ok = (n, c, x = '') => { console.log(c ? 'PASS' : 'FAIL', n
 for (const [name, w, h] of [['iPhone', 390, 844], ['iPad', 820, 1180]]) {
   const pg = await b.newPage({ viewport: { width: w, height: h }, hasTouch: true, isMobile: true });
   const errs = []; pg.on('pageerror', (e) => errs.push(e.message));
-  await pg.goto(process.env.URL || 'http://localhost:8123/index.html'); await pg.waitForTimeout(400);
+  await pg.goto(process.env.URL || `http://localhost:${process.env.PORT || 8123}/index.html`); await pg.waitForTimeout(400);
   const ev = (f, a) => pg.evaluate(f, a);
   await ev(() => { window.__game.ACT.diff(1, 'normal'); }); await pg.waitForTimeout(300);
   await ev(() => { const o = document.getElementById('overlay'); o.className = ''; o.innerHTML = ''; for (const m of Object.values(window.__game.MAPS)) m.rate = 0; window.__game.G.flags.tips = new Proxy({}, { get: () => true }); });
@@ -15,9 +15,9 @@ for (const [name, w, h] of [['iPhone', 390, 844], ['iPad', 820, 1180]]) {
     return [r.left + (r.width - cv.width * k) / 2 + ((x + 0.5 - g.camState.x) * g.TS) * k, r.top + (r.height - cv.height * k) / 2 + ((y + 0.5 - g.camState.y) * g.TS) * k]; }, [x, y]);
   const pos = () => ev(() => [window.__game.G.map, window.__game.G.x, window.__game.G.y]);
   // 1. tap-to-travel across Haven
-  await ev(() => window.__game.goto('haven', 17, 30)); await pg.waitForTimeout(400);
-  let [px, py] = await tileXY(17, 24); await pg.touchscreen.tap(px, py); await pg.waitForTimeout(2200);
-  ok(`${name}: tap a spot and the party walks there`, JSON.stringify(await pos()) === JSON.stringify(['haven', 17, 24]), JSON.stringify(await pos()));
+  const hop = await ev(() => { const sp = window.__game.MAPS.haven.spots; window.__game.goto('haven', ...sp.wake); return [sp.gate[0], sp.gate[1] - 7]; }); await pg.waitForTimeout(400); // tap a lane tile about 8 steps up the main street
+  let [px, py] = await tileXY(...hop); await pg.touchscreen.tap(px, py); await pg.waitForTimeout(2600);
+  ok(`${name}: tap a spot and the party walks there`, JSON.stringify(await pos()) === JSON.stringify(['haven', ...hop]), JSON.stringify(await pos()));
   // 2. tap a townsperson: walk up and talk
   const npc = await ev(() => { const n = window.__game.MAPS.haven.npcs.find((n) => n.name === 'Villager'); return [n.x, n.y]; });
   [px, py] = await tileXY(...npc); await pg.touchscreen.tap(px, py); await pg.waitForTimeout(4000);

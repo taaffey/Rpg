@@ -347,7 +347,7 @@ body:has(#overlay.on) #toast{top:auto;bottom:calc(env(safe-area-inset-bottom,0px
 .cmdlist button small{display:block;margin-top:2px;white-space:normal;text-transform:none}
 .cmdlist .dim{margin:0 0 2px 4px;font-size:8px}
 .cmdlist .tw{display:inline-flex;margin-left:4px}.cmdlist .tw .ic{margin:0 1px 0 0;width:16px;height:16px}
-.cmdlist .tgtname{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:left}
+.cmdlist .tgtname{flex:1;min-width:0;white-space:normal;line-height:1.1;overflow-wrap:anywhere;text-align:left}
 .battle .elist{display:flex;flex-direction:column;gap:6px;font-size:10px;padding:4px 2px}
 .battle .er{display:grid;grid-template-columns:1fr auto;align-items:baseline;gap:0 8px}
 .battle .er .en{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.battle .er .ec{color:var(--t);text-align:right}
