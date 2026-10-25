@@ -4,6 +4,7 @@ import { readFileSync } from 'node:fs';
 import { WEAPONS, ARMORS, ACCS, GEMS, ITEMS, SKILLS, JOBS, WEAPON_TYPES, ENEMIES, ENCOUNTERS, DROPS, BOSSES, SHOPS, QUESTS, ELEMENTS, STORY, KEY_ITEMS, TRAITS, CALLING_BATCHES } from '../src/data.js';
 import { MAPS } from '../src/maps.js';
 import * as BR from '../src/bros.js';
+import '../src/hopsend.js';
 import * as DATA from '../src/data.js';
 const DB = { weapons: WEAPONS, armors: ARMORS, accs: ACCS, gems: GEMS, items: ITEMS };
 const errs = [];

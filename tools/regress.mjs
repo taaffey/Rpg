@@ -242,7 +242,12 @@ ok('Sphinx Pharaoh slain: flag, Khopesh and Sun Disc', (await ev(() => window.__
 await talkTo('world', 147, 58, 'ArrowRight');
 const gSph = await ev(() => window.__game.G.gold);
 ok('Oracle pays out the Sphinx quest', (await clickWhen('[data-act=qclaim]')) && (await ev(() => window.__game.G.gold)) === gSph + 2000);
-await closeAll(); await ev(() => window.__game.goto('world', 59, 91)); await pg.waitForTimeout(150); await key('ArrowRight', 1, 300);
+
+// --- the ferry to Hopsend Isle: gated by the Wyrm (already slain here), lands on the far island
+await closeAll(); await ev(() => window.__game.goto('port_s', 5, 3)); await pg.waitForTimeout(200); await key('ArrowLeft', 1, 300);
+for (let i = 0; i < 10 && (await ev(() => window.__game.G.map)) === 'port_s'; i++) await key('Enter', 1, 200);
+ok('the ferry crosses to Hopsend Isle', await ev(() => { const g = window.__game; return g.G.map === 'world' && g.G.x >= 123; }));
+await closeAll();await closeAll(); await ev(() => window.__game.goto('world', 59, 91)); await pg.waitForTimeout(150); await key('ArrowRight', 1, 300);
 ok('hidden treasure under the waterfall is dug up', /Hidden treasure/.test(await overlayTitle()) && (await ev(() => window.__game.G.flags.qitems.doubloon)) === true);
 await closeAll();
 await ev(() => { window.__game.G.flags.bosses.wyrm = true; });

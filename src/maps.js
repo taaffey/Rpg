@@ -327,20 +327,21 @@ TOWNS.hopsend = town([
 interior('hop_inn', 'The Barley Mow', 'inn', back('hopsend', 'hop_inn', { music: 'pub' }), { cost: 70, inn: { text: ['Welcome to the Barley Mow! Rooms are seventy gold. Breakfast is a pint. Lunch is a pint. Dinner is two pints and a regret.'] } });
 interior('hop_shop', 'Hopsend General Shop', 'general', back('hopsend', 'hop_shop'), { shop: 'hop_general' });
 interior('hop_smith', 'Hopsend Forge & Tin Shed', 'smith', back('hopsend', 'hop_smith'), { shop: 'hop_smith' });
-interior('hop_farm', 'Farmhouse', 'house', back('hopsend', 'hop_farm'), { npcs: [{ x: 4, y: 3, type: 'elder', name: 'Farmer', text: ['Forty acres of hops, and every one of them is now arguing with me. Since the Brewery started bubbling, they have opinions.', 'Take the chest. It is full of hops. Well, gold. Mostly gold. One hop.'] }], chest: [9, 5, { gold: 700, items: { elixir: 2, megaether: 2 } }] });
-interior('hop_bees', 'Beekeeper\'s Cottage', 'house', back('hopsend', 'hop_bees'), { npcs: [{ x: 4, y: 3, type: 'villager2', name: 'Beekeeper', text: ['The bees are fine! They are not fine. They are the size of dinner plates. They have started a pension fund.', 'Do not run. Running makes them chase. Standing still makes them chase also. I have no advice.'] }], chest: [9, 5, { gems: ['venom'], gold: 400 }] });
+interior('hop_farm', 'Farmhouse', 'house', back('hopsend', 'hop_farm'), { npcs: [{ x: 4, y: 3, type: 'elder', name: 'Head Farmer', quest: 'mashtun', text: ['Forty acres of hops, and every one of them is now arguing with me. Since the Brewery started bubbling, they have opinions.', 'Take the chest. It is full of hops. Well, gold. Mostly gold. One hop.'] }], chest: [9, 5, { gold: 700, items: { elixir: 2, megaether: 2 } }] });
+interior('hop_bees', 'Beekeeper\'s Cottage', 'house', back('hopsend', 'hop_bees'), { npcs: [{ x: 4, y: 3, type: 'villager2', name: 'Beekeeper', quest: 'wasps', text: ['The bees are fine! They are not fine. They are the size of dinner plates. They have started a pension fund.', 'Do not run. Running makes them chase. Standing still makes them chase also. I have no advice.'] }], chest: [9, 5, { gems: ['venom'], gold: 400 }] });
 MAPS.hopsend = {
   name: 'Hopsend', kind: 'town', theme: 'town', music: 'town', rows: TOWNS.hopsend.rows, base: TOWNS.hopsend.base, buildings: TOWNS.hopsend.buildings, props: TOWNS.hopsend.props, spawn: { x: 14, y: 24 },
   portals: { [P(14, 25)]: portal('world', ...GEN.adj.hopsend), [P(15, 25)]: portal('world', ...GEN.adj.hopsend), ...doorPortals('hopsend') },
   decor: [],
   npcs: [
+    { x: 12, y: 20, type: 'villager2', name: 'Innkeeper', quest: 'barrels', text: ['Barrels gone missing, imps in the cellar, and the beer is still flat. Come back to me when you have dealt with the thieving little chaps.'] },
     { x: 16, y: 21, type: 'guard', name: 'Watchman', text: ['Welcome to Hopsend, famous for beer, apples and the sort of weather that makes you want both.', 'The Great Brewery is east of the village. Since the mash tun woke up, nobody has had a decent pint. We are suffering.'] },
     { x: 8, y: 13, type: 'villager', name: 'Cider Fan', text: ['Everyone here likes beer. I like cider. We do not talk about it. It is a very quiet bar.', 'Your friend asked if the cider has "good Wi-Fi". It has apples. It has apples, mate.'] },
     { x: 20, y: 17, type: 'kid', name: 'Child', text: ['Mum says never go in the Brewery. It burps. The whole island feels it. Last Tuesday a gull exploded. Happily.'] },
   ],
 };
 gen('brewery', 'The Great Brewery', 'cellar', GEN.breweryInfo, 'brewery', 'mash_tun',
-  [{ gems: ['crit'], gold: 600 }, { items: { elixir: 2, megaether: 2 }, gold: 500 }, { gold: 900 }, { items: { phoenix: 4, hipotion: 4 } }, { gems: ['echo'], gold: 1200 }], GEN.adj.brewery, 'dungeon');
+  [{ gems: ['crit'], gold: 600 }, { items: { elixir: 2, megaether: 2 }, gold: 500 }, { accs: ['hop_garland'], gold: 400 }, { items: { phoenix: 4, hipotion: 4 } }, { weapons: ['bottle_opener'], gems: ['echo'], gold: 1200 }], GEN.adj.brewery, 'dungeon');
 MAPS.brewery.minLv = 15; // optional: a warning toast below this average level
 // the docks: a ferryman in a hut at each end of the sea crossing (service 'ferry' in game.js)
 interior('port_s', 'Sunscar Jetty', 'house', wb('dock_s'), { npcs: [{ x: 4, y: 3, type: 'fisher', name: 'Ferryman', service: 'ferry', need: 'wyrm', to: ['world', ...GEN.adj.dock_h], no: ['Hopsend? Over the water? Not till that dragon is dead, my insurance says. Also my mother says. Mostly my mother.'], go: ['Hop on. The crossing takes a minute. I will tell you about my cousin. He has a boat too. His is bigger.', 'Mind the gulls.'] }] });
