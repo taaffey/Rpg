@@ -5,6 +5,7 @@ import { MAPS, WALK, START } from './maps.js';
 import { GEN } from './mapgen.js';
 import * as L from './logic.js';
 import { BROS, COMBOS, LOCALS, PARTY_SCALE, PHONE, PHONE_CHARGED, PUB, WAKE, CELLAR_IN, GARY_DOWN, CALLED, CALLED_AFTER, WENDELL } from './bros.js';
+import './embers.js'; // Cinder Isle content (post-ending volcano island)
 import './hopsend.js'; // Hopsend Isle content (enemies, gear, shops, quests, scenes)
 import * as SP from './sprites.js';
 import * as TR from './terrain.js';
@@ -893,6 +894,8 @@ const OBJECTIVES = [ // the main thread, in the story's voice. show / after / do
   { title: 'The Sun Pharaoh', optional: true, hint: 'Something asks riddles beneath the Sunscar Ruins, south-east of Haven (Lv 11+).', done: 'sphinx', doneHint: 'The riddle is answered.' },
   { title: 'Hopsend Isle', after: 'titan', optional: true, hint: 'A ferry now runs to Hopsend Isle, all orchards and hop fields. The harvest has gone wrong (Lv 17+).', done: 'v:hopsend', doneHint: 'Hopsend smells of apples and mild regret.' },
   { title: 'The Great Mash Tun', show: 'v:hopsend', optional: true, hint: 'The Great Brewery, at the far end of Hopsend, has been bubbling since harvest. Bring ice and bolts, never fire (Lv 18+).', done: 'mash_tun', doneHint: 'Flat, calm and drinkable.' },
+  { title: 'Cinder Isle', after: 'titan', optional: true, hint: 'A ferry now sails to Cinder Isle, a holiday volcano in the far north-west, packed with stag dos and fire-eaters (Lv 20).', done: 'v:kilnhaven', doneHint: 'Kilnhaven is warm, loud and smells of garlic.' },
+  { title: 'The Margherita', show: 'v:pizzaoven', optional: true, hint: 'The volcano is a pizza oven that has been on since 1987, and something has grown in the coals. Bring ice, never fire (Lv 20).', done: 'margherita', doneHint: 'The oven is cool, and the isle is free to eat.' },
 ];
 ACT.journal = () => {
   const n = ['wyrm', 'lich', 'titan'].filter((k) => G.flags.bosses[k]).length, hearts = Object.keys(KEY_ITEMS).filter((k) => G.flags.qitems[k]).map((k) => KEY_ITEMS[k]);
@@ -1067,9 +1070,9 @@ const fieldNote = (id) => {
 function stageKind(bossId) {
   if (bossId) return { big_gary: 'cellar', mash_tun: 'brewery', margherita: 'pizzaoven', wyrm: 'boss', lich: 'crypt', storm_drake: 'storm', sphinx: 'ruins' }[bossId] || 'spire';
   const m = mapDef();
-  if (m.kind === 'dungeon') return m.theme === 'cavern' ? 'dungeon' : m.theme;
+  if (m.kind === 'dungeon') return G.map === 'pizzaoven' ? 'pizzaoven' : m.theme === 'cavern' ? 'dungeon' : m.theme;
   const r = regionOf(), woods = [[1, 0], [-1, 0], [0, 1], [0, -1]].some(([a, b2]) => tileAt(G.x + a, G.y + b2) === 'T'); // fighting at a forest's edge
-  return r === 'snow' ? 'snow' : r === 'swamp' ? 'swamp' : r === 'desert' || r === 'ember' ? 'desert' : woods ? 'forest' : 'world';
+  return r === 'snow' ? 'snow' : r === 'swamp' ? 'swamp' : r === 'ember' ? 'embers' : r === 'desert' ? 'desert' : woods ? 'forest' : 'world';
 }
 async function battle(groupIds, bossId = null) {
   if (BT || busy) return; // never run two battles at once (BT is only set after the start-of-battle wipe, so check busy too)

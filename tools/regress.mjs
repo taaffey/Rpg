@@ -247,6 +247,14 @@ ok('Oracle pays out the Sphinx quest', (await clickWhen('[data-act=qclaim]')) &&
 await closeAll(); await ev(() => window.__game.goto('port_s', 5, 3)); await pg.waitForTimeout(200); await key('ArrowLeft', 1, 300);
 for (let i = 0; i < 10 && (await ev(() => window.__game.G.map)) === 'port_s'; i++) await key('Enter', 1, 200);
 ok('the ferry crosses to Hopsend Isle', await ev(() => { const g = window.__game; return g.G.map === 'world' && g.G.x >= 123; }));
+await closeAll();
+// --- Cinder Isle: the ferry needs the Titan; the island has its own region and enemy table
+await ev(() => { window.__game.G.flags.bosses.titan = false; window.__game.goto('port_f', 5, 3); }); await pg.waitForTimeout(200); await key('ArrowLeft', 1, 300);
+for (let i = 0; i < 6; i++) await key('Enter', 1, 160);
+ok('the Cinder ferry refuses before the Titan falls', (await ev(() => window.__game.G.map)) === 'port_f'); await closeAll();
+await ev(() => { window.__game.G.flags.bosses.titan = true; window.__game.goto('port_f', 5, 3); }); await pg.waitForTimeout(200); await key('ArrowLeft', 1, 300);
+for (let i = 0; i < 10 && (await ev(() => window.__game.G.map)) === 'port_f'; i++) await key('Enter', 1, 200);
+ok('the Cinder ferry crosses to Cinder Isle', await ev(() => { const g = window.__game; return g.G.map === 'world' && g.G.x <= 28 && g.G.y <= 46; }));
 await closeAll();await closeAll(); await ev(() => window.__game.goto('world', 59, 91)); await pg.waitForTimeout(150); await key('ArrowRight', 1, 300);
 ok('hidden treasure under the waterfall is dug up', /Hidden treasure/.test(await overlayTitle()) && (await ev(() => window.__game.G.flags.qitems.doubloon)) === true);
 await closeAll();
