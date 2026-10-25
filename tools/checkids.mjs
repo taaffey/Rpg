@@ -5,6 +5,7 @@ import { WEAPONS, ARMORS, ACCS, GEMS, ITEMS, SKILLS, JOBS, WEAPON_TYPES, ENEMIES
 import { MAPS } from '../src/maps.js';
 import * as BR from '../src/bros.js';
 import '../src/hopsend.js';
+import '../src/embers.js';
 import * as DATA from '../src/data.js';
 const DB = { weapons: WEAPONS, armors: ARMORS, accs: ACCS, gems: GEMS, items: ITEMS };
 const errs = [];
