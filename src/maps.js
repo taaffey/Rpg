@@ -347,6 +347,58 @@ MAPS.brewery.minLv = 15; // optional: a warning toast below this average level
 interior('port_s', 'Sunscar Jetty', 'house', wb('dock_s'), { npcs: [{ x: 4, y: 3, type: 'fisher', name: 'Ferryman', service: 'ferry', need: 'wyrm', to: ['world', ...GEN.adj.dock_h], no: ['Hopsend? Over the water? Not till that dragon is dead, my insurance says. Also my mother says. Mostly my mother.'], go: ['Hop on. The crossing takes a minute. I will tell you about my cousin. He has a boat too. His is bigger.', 'Mind the gulls.'] }] });
 interior('port_h', 'Hopsend Jetty', 'house', wb('dock_h'), { npcs: [{ x: 4, y: 3, type: 'fisher', name: 'Ferryman', service: 'ferry', to: ['world', ...GEN.adj.dock_s], go: ['Back to Sunscar? Sure. Hold the rail, the sea is feeling dramatic today.'] }] });
 
+// ---------------------------------------------------------------- Cinder Isle: the far north-west volcano holiday island (post-ending)
+TOWNS.kilnhaven = town([
+  'TTTTTTTTTTTTTTTTTTTTTTTTTTTTTT',
+  'TTTTTTTTTTTTTTTTTTTTTTTTTTTTTT',
+  'TT........T........T........TT',
+  'TT..........................TT',
+  'TT..................T.......TT',
+  'TT..........................TT',
+  'TT..........................TT',
+  'TT............._............TT',
+  'TT__________________________TT',
+  'TT__________________________TT',
+  'TTThhhh.......__.......hhhh.TT',
+  'TT.....w......__......w.....TT',
+  'TT.........................TTT',
+  'TT..................T.......TT',
+  'TT.......:::::::::::........TT',
+  'TT.......:::::::::::....T...TT',
+  'TT.......:::FFF::::.........TT',
+  'TT.......:::FFF::::.........TT',
+  'TT........:::::::::.........TT',
+  'TT________________________..TT',
+  'TT......T.....__............TT',
+  'TT............__.......T....TT',
+  'TT..T.........__............TT',
+  'TT............__............TT',
+  'TT############__############TT',
+  'TT############EE############TT'],
+  [[3, 3, 7, 5, 'inn', 3, 'kiln_inn'], [12, 2, 5, 4, 'shop', 2, 'kiln_shop'], [20, 3, 7, 5, 'smith', 2, 'kiln_smith'], [3, 12, 5, 4, 'house', 2, 'kiln_bar'], [22, 12, 5, 4, 'house', 2, 'kiln_warden']],
+  [['lamp', 10, 11], ['lamp', 19, 11], ['lamp', 12, 19], ['lamp', 17, 19], ['barrels', 25, 9], ['crates', 7, 20], ['cart', 22, 20], ['well', 6, 15], ['arch', 14, 24, { w: 2 }]]);
+interior('kiln_inn', 'The Lava Lounge', 'inn', back('kilnhaven', 'kiln_inn', { music: 'pub' }), { cost: 120, inn: { text: ['Welcome to the Lava Lounge! One hundred and twenty gold. Rooms are warm. Rooms are always warm. Please do not ask why the floor is warm.'] } });
+interior('kiln_shop', 'Kilnhaven Beach Shop', 'general', back('kilnhaven', 'kiln_shop'), { shop: 'kiln_general' });
+interior('kiln_smith', 'Kilnhaven Forge & Fire Pit', 'smith', back('kilnhaven', 'kiln_smith'), { shop: 'kiln_smith' });
+interior('kiln_bar', 'Beach Bar', 'house', back('kilnhaven', 'kiln_bar'), { npcs: [{ x: 4, y: 3, type: 'villager2', name: 'Beach Bar Owner', quest: 'kebabs', text: ['Cocktails, kebabs, and a view of an erupting volcano. Four stars on the app. It would be five but the app is also on fire.', 'Take the chest. Mind the umbrella. It is lit.'] }], chest: [9, 5, { gold: 1200, items: { elixir: 3, megaether: 3 } }] });
+interior('kiln_warden', 'Warden\'s Hut', 'house', back('kilnhaven', 'kiln_warden'), { npcs: [{ x: 4, y: 3, type: 'guard', name: 'Volcano Warden', quest: 'margherita', text: ['The mountain has been on since nineteen eighty-seven. Nobody dares turn it off. Nobody can find the dial.', 'It is a pizza oven. I want to be clear. It has always been a pizza oven. We just kept it quiet.'] }], chest: [9, 5, { gems: ['execute'], gold: 800 }] });
+MAPS.kilnhaven = {
+  name: 'Kilnhaven', kind: 'town', theme: 'town', music: 'town', rows: TOWNS.kilnhaven.rows, base: TOWNS.kilnhaven.base, buildings: TOWNS.kilnhaven.buildings, props: TOWNS.kilnhaven.props, spawn: { x: 14, y: 24 },
+  portals: { [P(14, 25)]: portal('world', ...GEN.adj.kilnhaven), [P(15, 25)]: portal('world', ...GEN.adj.kilnhaven), ...doorPortals('kilnhaven') },
+  decor: [],
+  npcs: [
+    { x: 12, y: 20, type: 'fisher', name: 'Lifeguard', quest: 'sunburn', text: ['I am a lifeguard. There is no water here. There is lava. I am not trained for lava. I have a whistle.'] },
+    { x: 16, y: 21, type: 'guard', name: 'Local', text: ['Welcome to Kilnhaven! Lovely beaches. They are made of obsidian and they are slightly on fire. We say "sizzling".', 'The Pizza Oven is up the path. We call it that because it is one. Please do not feed it.'] },
+    { x: 8, y: 13, type: 'villager', name: 'Stag Do Lad', text: ['LADS. We are on a STAG. We are on the SECOND day of a TWO day STAG. It has been nine days. The groom is somewhere in the volcano. We think.', 'Your mate has a phone on three percent? Same, bro. Same.'] },
+    { x: 20, y: 17, type: 'kid', name: 'Child', text: ['Mum says the volcano is just hungry. Dad says it is just misunderstood. The cat is in there. We do not talk about the cat.'] },
+  ],
+};
+gen('pizzaoven', 'The Pizza Oven', 'cavern', GEN.pizzaovenInfo, 'pizzaoven', 'margherita',
+  [{ gems: ['crit'], gold: 1000 }, { items: { elixir: 3, megaether: 3 }, gold: 800 }, { gold: 1500 }, { items: { phoenix: 5, hipotion: 5 } }, { gems: ['echo', 'execute'], gold: 2000 }], GEN.adj.pizzaoven, 'dungeon');
+MAPS.pizzaoven.minLv = 20; // optional: a warning toast below this average level
+interior('port_f', 'Frost Jetty', 'house', wb('dock_f'), { npcs: [{ x: 4, y: 3, type: 'fisher', name: 'Ferryman', service: 'ferry', need: 'titan', to: ['world', ...GEN.adj.dock_e], no: ['Cinder Isle? Holiday island, lovely, lava everywhere. I will take you once that mountain-sized fellow in the Spire has been put down. It is in the brochure.'], go: ['Cinder Isle! Pack sun cream. And a fire extinguisher. And sun cream for the fire extinguisher.'] }] });
+interior('port_e', 'Cinder Jetty', 'house', wb('dock_e'), { npcs: [{ x: 4, y: 3, type: 'fisher', name: 'Ferryman', service: 'ferry', to: ['world', ...GEN.adj.dock_f], go: ['Back to Frost Isle? Of course. It will feel like a fridge. You will love it.'] }] });
+
 // ---------------------------------------------------------------- overworld
 const [ux, uy] = GEN.pois.ruins, [mx, my] = GEN.pois.mirewood, [tx, ty] = GEN.pois.storm, [hx, hy] = GEN.pois.haven, [fx, fy] = GEN.pois.frost, [cx, cy] = GEN.pois.cavern, [rx, ry] = GEN.pois.crypt, [sx, sy] = GEN.pois.spire;
 MAPS.world = {
@@ -360,6 +412,8 @@ MAPS.world = {
     ...Object.fromEntries(['chippy', 'stones', 'bogshed', 'oasis', 'lodge', 'shed'].map((k) => [P(...GEN.pois[k]), portal('wayside_' + k, 5, 6)])),
     [P(...GEN.pois.hopsend)]: portal('hopsend', 14, 24), [P(...GEN.pois.brewery)]: portal('brewery', GEN.breweryInfo.spawn[0], GEN.breweryInfo.spawn[1]),
     [P(...GEN.pois.dock_s)]: portal('port_s', 5, 6), [P(...GEN.pois.dock_h)]: portal('port_h', 5, 6),
+    [P(...GEN.pois.kilnhaven)]: portal('kilnhaven', 14, 24), [P(...GEN.pois.pizzaoven)]: portal('pizzaoven', GEN.pizzaovenInfo.spawn[0], GEN.pizzaovenInfo.spawn[1]),
+    [P(...GEN.pois.dock_f)]: portal('port_f', 5, 6), [P(...GEN.pois.dock_e)]: portal('port_e', 5, 6),
   },
   npcs: [
     { x: ux - 2, y: uy + 1, type: 'elder', name: 'Desert Oracle', quest: 'sphinx', text: ['The sand remembers everything, child. Even you. Especially the shorts.', 'Seek the hermit of the Frostfields, if the pass ever opens. He knows where the old kings hid their gifts.'],
@@ -372,12 +426,12 @@ MAPS.world = {
     [P(GEN.deco.waterfall[0], GEN.deco.waterfall[1])]: { gold: 1200, gems: ['crit'], qitem: 'doubloon' }, // Redwake's cache at the foot of the waterfall
     [P(GEN.deco.gift[0], GEN.deco.gift[1])]: { gems: ['echo'], items: { elixir: 2 }, accs: ['life_charm'] }, // the old kings' gift, north-west corner
   },
-  places: [[hx, hy, 'Haven Town'], [fx, fy, 'Frostholm'], [cx, cy, 'Ashen Cavern'], [rx, ry, 'Sunken Crypt'], [sx, sy, 'Frost Spire'], [mx, my, 'Mirewood'], [tx, ty, 'Storm Cavern'], [ux, uy, 'Sunscar Ruins'], [...GEN.pois.chippy, 'Wayside Chippy'], [...GEN.pois.stones, 'Standing Stones'], [...GEN.pois.bogshed, 'Bog Snorkel Shed'], [...GEN.pois.oasis, 'Oasis Kebab Van'], [...GEN.pois.lodge, 'Ski Lodge'], [...GEN.pois.shed, 'Ice Fishing Shed'], [...GEN.pois.dock_s, 'Sunscar Jetty'], [...GEN.pois.dock_h, 'Hopsend Jetty'], [...GEN.pois.hopsend, 'Hopsend'], [...GEN.pois.brewery, 'Great Brewery']],
+  places: [[hx, hy, 'Haven Town'], [fx, fy, 'Frostholm'], [cx, cy, 'Ashen Cavern'], [rx, ry, 'Sunken Crypt'], [sx, sy, 'Frost Spire'], [mx, my, 'Mirewood'], [tx, ty, 'Storm Cavern'], [ux, uy, 'Sunscar Ruins'], [...GEN.pois.chippy, 'Wayside Chippy'], [...GEN.pois.stones, 'Standing Stones'], [...GEN.pois.bogshed, 'Bog Snorkel Shed'], [...GEN.pois.oasis, 'Oasis Kebab Van'], [...GEN.pois.lodge, 'Ski Lodge'], [...GEN.pois.shed, 'Ice Fishing Shed'], [...GEN.pois.dock_s, 'Sunscar Jetty'], [...GEN.pois.dock_h, 'Hopsend Jetty'], [...GEN.pois.hopsend, 'Hopsend'], [...GEN.pois.brewery, 'Great Brewery'], [...GEN.pois.dock_f, 'Frost Jetty'], [...GEN.pois.dock_e, 'Cinder Jetty'], [...GEN.pois.kilnhaven, 'Kilnhaven'], [...GEN.pois.pizzaoven, 'The Pizza Oven']],
 };
 // no random fights close to towns, and grassland fights ramp up with distance from Haven (gentle first steps)
-MAPS.world.safe = [[hx, hy, 6], [fx, fy, 4], [mx, my, 4], [cx, cy, 2], [rx, ry, 2], [sx, sy, 2], [tx, ty, 2], [ux, uy, 2], ...['chippy', 'stones', 'bogshed', 'oasis', 'lodge', 'shed', 'dock_s', 'dock_h', 'hopsend', 'brewery'].map((k) => [...GEN.pois[k], 3])];
+MAPS.world.safe = [[hx, hy, 6], [fx, fy, 4], [mx, my, 4], [cx, cy, 2], [rx, ry, 2], [sx, sy, 2], [tx, ty, 2], [ux, uy, 2], ...['chippy', 'stones', 'bogshed', 'oasis', 'lodge', 'shed', 'dock_s', 'dock_h', 'hopsend', 'brewery', 'dock_f', 'dock_e', 'kilnhaven', 'pizzaoven'].map((k) => [...GEN.pois[k], 3])];
 // the far north-east island has its own tougher monsters (see zones in game.js)
-MAPS.world.zones = [{ rect: GEN.deco.autumn, enc: 'hops' }];
+MAPS.world.zones = [{ rect: GEN.deco.autumn, enc: 'hops' }, { rect: GEN.deco.ember, enc: 'embers' }];
 MAPS.world.ramp = [hx, hy];
 // the northern pass is gated until the Ashen Wyrm falls
 MAPS.world.gate = { tile: 'B', flag: 'wyrm' };

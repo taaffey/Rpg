@@ -12,7 +12,7 @@ function reach(id, from, gateOpen, sub) {
   };
   const seen = new Set([`${from.x},${from.y}`]), q = [[from.x, from.y]];
   while (q.length) { const [x, y] = q.shift(); for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) { const nx = x + dx, ny = y + dy, k = `${nx},${ny}`; if (!seen.has(k) && ok(nx, ny)) { seen.add(k); if (!(m.portals?.[k])) q.push([nx, ny]); } } }
-  if (id === 'world' && !sub) for (const k of reach(id, { x: GEN.adj.dock_h[0], y: GEN.adj.dock_h[1] }, gateOpen, true)) seen.add(k); // the far island is reached by ferry, so it is its own walkable component
+  if (id === 'world' && !sub) for (const d of ['dock_h', 'dock_e']) for (const k of reach(id, { x: GEN.adj[d][0], y: GEN.adj[d][1] }, gateOpen, true)) seen.add(k); // the far island is reached by ferry, so it is its own walkable component
   return seen;
 }
 for (const [id, m] of Object.entries(MAPS)) {

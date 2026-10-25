@@ -176,9 +176,10 @@ const decorAt = (x, y) => mapDef().decor?.some((d) => d[0] === x && d[1] === y &
 const here = (n) => !(n.local && G.party.some((c) => c.look === n.local)); // locals leave their post once they join
 const npcAt = (x, y) => mapDef().npcs?.find((n) => n.x === x && n.y === y && here(n));
 const inAutumn = (x, y) => { const a = GEN.deco?.autumn; return !!a && x >= a[0] && x <= a[2] && y >= a[1] && y <= a[3]; };
-const regionOf = () => { if (G.map !== 'world') return null; const t = tileAt(G.x, G.y); return t === ',' || t === 't' ? 'snow' : t === ':' ? 'swamp' : t === 'd' ? 'desert' : inAutumn(G.x, G.y) ? 'autumn' : G.y <= (GEN.deco?.plainsY ?? 13) ? 'plains' : 'green'; };
-const REGION_NAME = { snow: 'Frostfields', swamp: 'Mire Marsh', plains: 'Northern Plains', green: 'Greenmarch', desert: 'Sunscar Sands', autumn: 'Hopsend Isle' };
-function musicFor() { const m = mapDef(); if (m.kind !== 'outdoor') return m.music; const r = regionOf(); return r === 'snow' ? 'snow' : r === 'desert' ? 'desert' : r === 'swamp' ? 'mirewood' : 'world'; }
+const inEmber = (x, y) => { const a = GEN.deco?.ember; return !!a && x >= a[0] && x <= a[2] && y >= a[1] && y <= a[3]; };
+const regionOf = () => { if (G.map !== 'world') return null; const t = tileAt(G.x, G.y); return t === ',' || t === 't' ? 'snow' : t === ':' ? 'swamp' : t === 'd' ? 'desert' : inEmber(G.x, G.y) ? 'ember' : inAutumn(G.x, G.y) ? 'autumn' : G.y <= (GEN.deco?.plainsY ?? 13) ? 'plains' : 'green'; };
+const REGION_NAME = { snow: 'Frostfields', swamp: 'Mire Marsh', plains: 'Northern Plains', green: 'Greenmarch', desert: 'Sunscar Sands', autumn: 'Hopsend Isle', ember: 'Cinder Isle' };
+function musicFor() { const m = mapDef(); if (m.kind !== 'outdoor') return m.music; const r = regionOf(); return r === 'snow' ? 'snow' : r === 'desert' || r === 'ember' ? 'desert' : r === 'swamp' ? 'mirewood' : 'world'; }
 function reveal() { // fog of war
   const m = mapDef(); if (!m.fog) return;
   const seen = (G.flags.seen[G.map] ||= m.rows.map((r) => '0'.repeat(r.length))), r = m.fog;
@@ -1068,7 +1069,7 @@ function stageKind(bossId) {
   const m = mapDef();
   if (m.kind === 'dungeon') return m.theme === 'cavern' ? 'dungeon' : m.theme;
   const r = regionOf(), woods = [[1, 0], [-1, 0], [0, 1], [0, -1]].some(([a, b2]) => tileAt(G.x + a, G.y + b2) === 'T'); // fighting at a forest's edge
-  return r === 'snow' ? 'snow' : r === 'swamp' ? 'swamp' : r === 'desert' ? 'desert' : woods ? 'forest' : 'world';
+  return r === 'snow' ? 'snow' : r === 'swamp' ? 'swamp' : r === 'desert' || r === 'ember' ? 'desert' : woods ? 'forest' : 'world';
 }
 async function battle(groupIds, bossId = null) {
   if (BT || busy) return; // never run two battles at once (BT is only set after the start-of-battle wipe, so check busy too)
