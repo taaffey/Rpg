@@ -399,6 +399,20 @@ MAPS.pizzaoven.minLv = 20; // optional: a warning toast below this average level
 interior('port_f', 'Frost Jetty', 'house', wb('dock_f'), { npcs: [{ x: 4, y: 3, type: 'fisher', name: 'Ferryman', service: 'ferry', need: 'titan', to: ['world', ...GEN.adj.dock_e], no: ['Cinder Isle? Holiday island, lovely, lava everywhere. I will take you once that mountain-sized fellow in the Spire has been put down. It is in the brochure.'], go: ['Cinder Isle! Pack sun cream. And a fire extinguisher. And sun cream for the fire extinguisher.'] }] });
 interior('port_e', 'Cinder Jetty', 'house', wb('dock_e'), { npcs: [{ x: 4, y: 3, type: 'fisher', name: 'Ferryman', service: 'ferry', to: ['world', ...GEN.adj.dock_f], go: ['Back to Frost Isle? Of course. It will feel like a fridge. You will love it.'] }] });
 
+// ---------------------------------------------------------------- four small optional dungeons on the main islands
+gen('windmill', 'The Old Windmill', 'cellar', GEN.windmillInfo, 'windmill', 'miller',
+  [{ gold: 120, items: { potion: 2 } }, { items: { ether: 1, antidote: 1 }, gold: 80 }, { gold: 200 }, { items: { hipotion: 1 }, gold: 100 }, { gold: 300, gems: ['fire'] }], GEN.adj.windmill, 'dungeon');
+MAPS.windmill.minLv = 4;
+gen('wreck', 'Wreck of the Salty Sue', 'crypt', GEN.wreckInfo, 'wreck', 'captain_barnacle',
+  [{ gold: 400, items: { hipotion: 2 } }, { items: { ether: 2 }, gold: 300 }, { gold: 600 }, { items: { phoenix: 2 }, gold: 300 }, { gold: 800, gems: ['venom'] }], GEN.adj.wreck, 'crypt');
+MAPS.wreck.minLv = 10;
+gen('pyramid', 'Pyramid of Mild Inconvenience', 'ruins', GEN.pyramidInfo, 'pyramid', 'clerk_pharaoh',
+  [{ gold: 500, items: { hipotion: 3 } }, { items: { megaether: 1 }, gold: 400 }, { gold: 800 }, { items: { phoenix: 2, remedy: 2 }, gold: 400 }, { gold: 1000, gems: ['crit'] }], GEN.adj.pyramid, 'ruins');
+MAPS.pyramid.minLv = 12;
+gen('icecave', 'The Ice Cave', 'spire', GEN.icecaveInfo, 'icecave', 'frozen_angler',
+  [{ gold: 700, items: { hipotion: 3 } }, { items: { megaether: 2 }, gold: 500 }, { gold: 1000 }, { items: { elixir: 1, phoenix: 2 }, gold: 500 }, { gold: 1200, gems: ['frost'] }], GEN.adj.icecave, 'spire');
+MAPS.icecave.minLv = 14;
+
 // ---------------------------------------------------------------- overworld
 const [ux, uy] = GEN.pois.ruins, [mx, my] = GEN.pois.mirewood, [tx, ty] = GEN.pois.storm, [hx, hy] = GEN.pois.haven, [fx, fy] = GEN.pois.frost, [cx, cy] = GEN.pois.cavern, [rx, ry] = GEN.pois.crypt, [sx, sy] = GEN.pois.spire;
 MAPS.world = {
@@ -412,6 +426,7 @@ MAPS.world = {
     ...Object.fromEntries(['chippy', 'stones', 'bogshed', 'oasis', 'lodge', 'shed'].map((k) => [P(...GEN.pois[k]), portal('wayside_' + k, 5, 6)])),
     [P(...GEN.pois.hopsend)]: portal('hopsend', 14, 24), [P(...GEN.pois.brewery)]: portal('brewery', GEN.breweryInfo.spawn[0], GEN.breweryInfo.spawn[1]),
     [P(...GEN.pois.dock_s)]: portal('port_s', 5, 6), [P(...GEN.pois.dock_h)]: portal('port_h', 5, 6),
+    ...Object.fromEntries(['windmill', 'wreck', 'pyramid', 'icecave'].map((k) => [P(...GEN.pois[k]), portal(k, GEN[k + 'Info'].spawn[0], GEN[k + 'Info'].spawn[1])])),
     [P(...GEN.pois.kilnhaven)]: portal('kilnhaven', 14, 24), [P(...GEN.pois.pizzaoven)]: portal('pizzaoven', GEN.pizzaovenInfo.spawn[0], GEN.pizzaovenInfo.spawn[1]),
     [P(...GEN.pois.dock_f)]: portal('port_f', 5, 6), [P(...GEN.pois.dock_e)]: portal('port_e', 5, 6),
   },
@@ -426,10 +441,10 @@ MAPS.world = {
     [P(GEN.deco.waterfall[0], GEN.deco.waterfall[1])]: { gold: 1200, gems: ['crit'], qitem: 'doubloon' }, // Redwake's cache at the foot of the waterfall
     [P(GEN.deco.gift[0], GEN.deco.gift[1])]: { gems: ['echo'], items: { elixir: 2 }, accs: ['life_charm'] }, // the old kings' gift, north-west corner
   },
-  places: [[hx, hy, 'Haven Town'], [fx, fy, 'Frostholm'], [cx, cy, 'Ashen Cavern'], [rx, ry, 'Sunken Crypt'], [sx, sy, 'Frost Spire'], [mx, my, 'Mirewood'], [tx, ty, 'Storm Cavern'], [ux, uy, 'Sunscar Ruins'], [...GEN.pois.chippy, 'Wayside Chippy'], [...GEN.pois.stones, 'Standing Stones'], [...GEN.pois.bogshed, 'Bog Snorkel Shed'], [...GEN.pois.oasis, 'Oasis Kebab Van'], [...GEN.pois.lodge, 'Ski Lodge'], [...GEN.pois.shed, 'Ice Fishing Shed'], [...GEN.pois.dock_s, 'Sunscar Jetty'], [...GEN.pois.dock_h, 'Hopsend Jetty'], [...GEN.pois.hopsend, 'Hopsend'], [...GEN.pois.brewery, 'Great Brewery'], [...GEN.pois.dock_f, 'Frost Jetty'], [...GEN.pois.dock_e, 'Cinder Jetty'], [...GEN.pois.kilnhaven, 'Kilnhaven'], [...GEN.pois.pizzaoven, 'The Pizza Oven']],
+  places: [[hx, hy, 'Haven Town'], [fx, fy, 'Frostholm'], [cx, cy, 'Ashen Cavern'], [rx, ry, 'Sunken Crypt'], [sx, sy, 'Frost Spire'], [mx, my, 'Mirewood'], [tx, ty, 'Storm Cavern'], [ux, uy, 'Sunscar Ruins'], [...GEN.pois.chippy, 'Wayside Chippy'], [...GEN.pois.stones, 'Standing Stones'], [...GEN.pois.bogshed, 'Bog Snorkel Shed'], [...GEN.pois.oasis, 'Oasis Kebab Van'], [...GEN.pois.lodge, 'Ski Lodge'], [...GEN.pois.shed, 'Ice Fishing Shed'], [...GEN.pois.dock_s, 'Sunscar Jetty'], [...GEN.pois.dock_h, 'Hopsend Jetty'], [...GEN.pois.hopsend, 'Hopsend'], [...GEN.pois.brewery, 'Great Brewery'], [...GEN.pois.dock_f, 'Frost Jetty'], [...GEN.pois.dock_e, 'Cinder Jetty'], [...GEN.pois.windmill, 'Old Windmill'], [...GEN.pois.wreck, 'Salty Sue Wreck'], [...GEN.pois.pyramid, 'Mild Pyramid'], [...GEN.pois.icecave, 'Ice Cave'], [...GEN.pois.kilnhaven, 'Kilnhaven'], [...GEN.pois.pizzaoven, 'The Pizza Oven']],
 };
 // no random fights close to towns, and grassland fights ramp up with distance from Haven (gentle first steps)
-MAPS.world.safe = [[hx, hy, 6], [fx, fy, 4], [mx, my, 4], [cx, cy, 2], [rx, ry, 2], [sx, sy, 2], [tx, ty, 2], [ux, uy, 2], ...['chippy', 'stones', 'bogshed', 'oasis', 'lodge', 'shed', 'dock_s', 'dock_h', 'hopsend', 'brewery', 'dock_f', 'dock_e', 'kilnhaven', 'pizzaoven'].map((k) => [...GEN.pois[k], 3])];
+MAPS.world.safe = [[hx, hy, 6], [fx, fy, 4], [mx, my, 4], [cx, cy, 2], [rx, ry, 2], [sx, sy, 2], [tx, ty, 2], [ux, uy, 2], ...['chippy', 'stones', 'bogshed', 'oasis', 'lodge', 'shed', 'dock_s', 'dock_h', 'hopsend', 'brewery', 'dock_f', 'dock_e', 'kilnhaven', 'pizzaoven', 'windmill', 'wreck', 'pyramid', 'icecave'].map((k) => [...GEN.pois[k], 3])];
 // the far north-east island has its own tougher monsters (see zones in game.js)
 MAPS.world.zones = [{ rect: GEN.deco.autumn, enc: 'hops' }, { rect: GEN.deco.ember, enc: 'embers' }];
 MAPS.world.ramp = [hx, hy];
