@@ -771,6 +771,16 @@ const ENEMY_VARIANTS = {
   storm_bat: ['bat', { fur: '#8a7020', wing: '#e0b830', bone: '#6a5010', eye: '#7af0ff' }],
   skeleton_knight: ['skeleton', { armor: '#4a62a8', shield: '#3a4a7a', trim: '#e0c050', eye: '#7ad8ff' }, { helm: true }],
   frozen_knight: ['skeleton', { bone: '#d8f0ff', armor: '#8ad0f0', shield: '#5a8ab8', trim: '#ffffff', metal: '#c8f0ff', eye: '#3ad0ff' }, { helm: true }],
+  // Hopsend Isle: autumn orchard-and-brewery recolours
+  hop_goblin: ['goblin', { skin: '#98b840', cloth: '#e8901c', metal: '#c8c090', hair: '#5a3a1a', club: '#4a7a2a', eye: '#ff5a2a' }],
+  scarecrow: ['bandit', { skin: '#ecd470', hood: '#d4721c', vest: '#7a3a2a', cloth: '#4a8a3a', pants: '#6a5030', boots: '#3a2a1a', steel: '#b8b0a0', eye: '#ffffff' }, { desert: true }],
+  pumpkin_slime: ['slime', { goo: '#ee7a1a', mouth: '#3a1a08', foam: '#f6e8cc' }, { foam: true }],
+  cider_wolf: ['wolf', { fur: '#c4502a', mane: '#6a2a14', belly: '#f0c880', eye: '#a8ff40', nose: '#2a1008' }],
+  barrel_imp: ['imp', { skin: '#d49a30', wing: '#5a3412', horn: '#f0e4c0', eye: '#ffffff', fire: '#fff0a0' }],
+  straw_golem: ['golem', { rock: '#dcba50', dark: '#a68228', glow: '#fff080', moss: '#8a9a30' }],
+  brew_wraith: ['wraith', { cloak: '#c8841a', inner: '#2a1408', hand: '#f0d890', eye: '#fff27a' }],
+  wasp_swarm: ['hornet', { body: '#f6d414', stripe: '#14100c', wing: '#e8f6ff', eye: '#ff2a2a', sting: '#ffffff' }],
+  mash_tun: ['golem', { rock: '#d4622a', dark: '#4e2c12', glow: '#fff4b0', moss: '#ffffff' }],
 };
 // ---------- bestiary expansion: new monster designs (all face right, lit from the upper left) ----------
 TEX.ribs = (x) => (x % 4 === 0 ? -0.16 : x % 4 === 1 ? 0.06 : 0);
