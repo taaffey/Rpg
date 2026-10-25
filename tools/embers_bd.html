@@ -1,0 +1,11 @@
+<!doctype html><body style="background:#222;margin:8px"><canvas id=c></canvas>
+<script type=module>
+// the Cinder Isle battle backdrops: open /tools/embers_bd.html[?k=embers,pizzaoven:boss&z=2] on a local server
+import * as BA from '../src/battleart.js';
+const q = new URLSearchParams(location.search), kinds = (q.get('k') || 'embers,pizzaoven,pizzaoven:boss').split(','), z = +q.get('z') || 2, cols = +q.get('cols') || 2;
+const [cx, cy, cw, ch] = (q.get('crop') || '0,0,256,176').split(',').map(Number);
+const c = document.getElementById('c'); c.width = cw * z * Math.min(cols, kinds.length) + 8; c.height = ch * z * Math.ceil(kinds.length / cols) + 8;
+const x = c.getContext('2d'); x.imageSmoothingEnabled = false;
+kinds.forEach((k, i) => x.drawImage(BA.backdrop(k), cx, cy, cw, ch, (i % cols) * (cw * z + 8), Math.floor(i / cols) * ch * z, cw * z, ch * z));
+document.title = 'ready';
+</script>

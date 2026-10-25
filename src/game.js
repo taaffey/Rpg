@@ -1065,7 +1065,7 @@ const fieldNote = (id) => {
   return { name: who.name, text: n[1] };
 };
 function stageKind(bossId) {
-  if (bossId) return { big_gary: 'cellar', mash_tun: 'brewery', wyrm: 'boss', lich: 'crypt', storm_drake: 'storm', sphinx: 'ruins' }[bossId] || 'spire';
+  if (bossId) return { big_gary: 'cellar', mash_tun: 'brewery', margherita: 'pizzaoven', wyrm: 'boss', lich: 'crypt', storm_drake: 'storm', sphinx: 'ruins' }[bossId] || 'spire';
   const m = mapDef();
   if (m.kind === 'dungeon') return m.theme === 'cavern' ? 'dungeon' : m.theme;
   const r = regionOf(), woods = [[1, 0], [-1, 0], [0, 1], [0, -1]].some(([a, b2]) => tileAt(G.x + a, G.y + b2) === 'T'); // fighting at a forest's edge

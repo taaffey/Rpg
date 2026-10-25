@@ -90,6 +90,8 @@ export function poly(pts, m, o = {}) {
     } };
 }
 export const cut = (p) => ((p.mode = 'cut'), p);
+// slide whole parts down by dy (room above a model for horns/antlers)
+const shiftAll = (parts, dy) => (dy ? parts.map((p) => ({ ...p, bb: [p.bb[0], p.bb[1] + dy, p.bb[2], p.bb[3] + dy], f: (px, py, hit) => p.f(px, py - dy, hit) })) : parts);
 export const paint = (p) => ((p.mode = 'paint'), p);
 
 // ---------- renderer ----------
@@ -650,16 +652,21 @@ const MODELS = {
       for (const [x, y] of [[16, 28], [20, 18], [35, 30], [38, 20], [24, 42]]) { a.px(x, y, a.ramp('rock', 0)); a.px(x + 1, y + 1, a.ramp('rock', 0)); }
     } };
   } },
-  wraith: { col: { cloak: '#5a6a9a', inner: '#141020', eye: '#7af0ff', hand: '#c8d8e8' }, build(P) {
-    const m = { cloak: mat(P.cloak, 5, { tex: 'cloth', lift: 0.03 }), inner: mat(P.inner, 3, { flat: 0.2 }), hand: mat(P.hand, 4) };
-    const hem = [[7, 38], [10, 33], [12, 40], [15, 34], [18, 41], [21, 35], [24, 40], [26, 33], [29, 37]];
-    return { w: 38, h: 44, mats: m, parts: [
+  wraith: { col: { cloak: '#5a6a9a', inner: '#141020', eye: '#7af0ff', hand: '#c8d8e8' }, build(P, V = {}) {
+    const m = { cloak: mat(P.cloak, 5, { tex: 'cloth', lift: 0.03 }), inner: mat(P.inner, 3, { flat: 0.2 }), hand: mat(P.hand, 4), antler: mat('#e8dcc0', 5, { tex: 'grain', spec: '#fffbe8', specAt: 0.9 }), sash: mat('#d8c030', 4, { tex: 'cloth' }) };
+    const hem = [[7, 38], [10, 33], [12, 40], [15, 34], [18, 41], [21, 35], [24, 40], [26, 33], [29, 37]], oy = V.antlers ? 14 : 0;
+    // a stag do gone wrong: a rack of antlers on the head (the whole figure drops down to make room) and a tattered BEST MAN sash
+    const ant = V.antlers ? [...chain([[15, 5], [12, -3], [9, -9], [6, -12]], [1.6, 1.3, 1.1, 0.5], 'antler', 5), ...chain([[12, -3], [7, -4.5], [3, -3]], [1, 0.8, 0.4], 'antler', 5), ...chain([[10, -7], [14, -11]], [0.9, 0.4], 'antler', 5),
+      ...chain([[21, 5], [22, -3], [21, -9], [19, -13]], [1.6, 1.3, 1.1, 0.5], 'antler', 6), ...chain([[22, -3], [27, -5], [31, -4]], [1, 0.8, 0.4], 'antler', 6), ...chain([[21.5, -7], [26, -11]], [0.9, 0.4], 'antler', 6)] : [];
+    const sash = V.antlers ? [paint(poly([[12, 20], [16, 18], [31, 33], [26, 34]], 'sash'))] : [];
+    return { w: 38, h: 44 + oy, mats: m, shift: oy, parts: shiftAll([...ant, 
       cap(12, 14, 6, 22, 2.4, 1.8, 'cloak', { z: -3 }), cap(6, 22, 9, 27, 1.8, 1.5, 'cloak', { z: -3 }), cap(9, 27, 7, 30, 0.6, 0.4, 'hand', { z: -2 }), cap(9.5, 27, 10, 31, 0.6, 0.4, 'hand', { z: -2 }),
       poly([[11, 12], [24, 11], [30, 24], [31, 34], ...hem.reverse(), [6, 30]], 'cloak', { z: 0, bev: 2.4 }),
       ell(17.5, 10, 7.5, 8, 'cloak', { z: 3 }), cap(14, 4, 7, 1, 2.4, 0.8, 'cloak', { z: 2 }), paint(ell(20.5, 11, 4.2, 5.2, 'inner')),
       cap(23, 15, 28, 21, 2.6, 2.1, 'cloak', { z: 6 }), cap(28, 21, 32, 18, 2.1, 1.8, 'cloak', { z: 6 }),
-      ...[[35.5, 14], [36.5, 17], [36, 20.5]].map(([x, y]) => cap(32.5, 18.3, x, y, 0.7, 0.4, 'hand', { z: 7 })),
-    ], post(a) { glowEye(a, 18, 10, P.eye); glowEye(a, 22, 10, P.eye); a.px(18, 11, shade(P.eye, 0.5)); a.px(23, 11, shade(P.eye, 0.5)); } };
+      ...[[35.5, 14], [36.5, 17], [36, 20.5]].map(([x, y]) => cap(32.5, 18.3, x, y, 0.7, 0.4, 'hand', { z: 7 })), ...sash,
+    ], oy), post(a) { const q = { px: (x, y, c) => a.px(x, y + oy, c), line: (x0, y0, x1, y1, c) => a.line(x0, y0 + oy, x1, y1 + oy, c), rect: (x, y, w2, h2, c) => a.rect(x, y + oy, w2, h2, c), ramp: a.ramp }; glowEye(q, 18, 10, P.eye); glowEye(q, 22, 10, P.eye); q.px(18, 11, shade(P.eye, 0.5)); q.px(23, 11, shade(P.eye, 0.5));
+      if (V.antlers) { q.line(15, 25, 19, 21.5, '#5a4a10'); q.line(18, 27, 22, 24.5, '#5a4a10'); for (const [x, y] of [[17, 21], [21, 25], [24, 28]]) q.px(x, y, '#2a2208'); } } };
   } },
   zombie: { col: { skin: '#8aa070', cloth: '#5a5a7a', pants: '#5a4030', hair: '#3a3028', eye: '#ffffa0' }, build(P) {
     const m = { skin: mat(P.skin, 5, { tex: 'rough' }), cloth: mat(P.cloth, 4, { tex: 'cloth' }), pants: mat(P.pants, 4, { tex: 'cloth' }), hair: mat(P.hair, 3), bone: mat('#e8e0c8', 3) };
@@ -805,8 +812,8 @@ Object.assign(MODELS, {
       ell(17, 7, 7, 2.4, 'wing', { z: 8, rot: -0.6 }), // near wing
     ], post(a) { a.px(31, 12, '#ffffff'); a.px(32, 13, '#ff6a6a'); a.px(36, 6, a.ramp('stripe', 2)); a.px(33, 4, a.ramp('stripe', 2)); a.line(12, 10, 21, 4, a.ramp('wing', 1)); } };
   } },
-  shroom: { col: { cap: '#d23a30', spot: '#f4ecd8', gill: '#c8a888', stem: '#e8d8b8', eye: '#2a1810' }, build(P) {
-    const m = { cap: mat(P.cap, 5, { spec: '#ffd8d0', specAt: 0.9 }), spot: mat(P.spot, 4), gill: mat(P.gill, 4, { tex: (x) => (x % 2 ? -0.12 : 0) }), stem: mat(P.stem, 5, { tex: 'rough' }) };
+  shroom: { col: { cap: '#d23a30', spot: '#f4ecd8', gill: '#c8a888', stem: '#e8d8b8', eye: '#2a1810' }, build(P, V = {}) {
+    const m = { cap: mat(P.cap, 5, { spec: V.knot ? '#fff4c8' : '#ffd8d0', specAt: 0.9 }), spot: mat(P.spot, 4), gill: mat(P.gill, 4, { tex: (x) => (x % 2 ? -0.12 : 0) }), stem: mat(P.stem, 5, { tex: 'rough' }) };
     return { w: 38, h: 40, mats: m, parts: [
       ell(19, 13, 16, 10.5, 'cap', { z: 4, d: 0.85 }), cut(poly([[0, 16.2], [38, 16.2], [38, 40], [0, 40]], null)),
       cap(12, 25, 7, 30, 1.8, 1.4, 'stem', { z: -3 }), ell(6.5, 30.5, 1.8, 1.6, 'stem', { z: -3 }),
@@ -817,6 +824,13 @@ Object.assign(MODELS, {
     ], post(a) {
       a.rect(21, 21, 2, 3, P.eye); a.rect(25, 21, 2, 3, P.eye); a.px(21, 21, '#ffffff'); a.px(25, 21, '#ffffff');
       a.line(22, 27, 25, 27, '#6a3020'); a.px(23, 28, '#6a3020'); a.px(19, 24, '#e89a8a'); a.px(28, 24, '#e89a8a');
+      if (V.knot) { // a twisted dough knot with garlic butter and parsley
+        const dk = a.ramp('cap', 0), hi = a.ramp('cap', 5);
+        for (let k = 0; k < 44; k++) { const x = 5 + k * 0.66, ph = k * 0.5, yA = 9 + Math.sin(ph) * 3.4, yB = 9 - Math.sin(ph) * 3.4; for (const [yy, c] of [[yA, Math.cos(ph) > 0 ? '#8a5420' : '#c88838'], [yB, Math.cos(ph) > 0 ? '#c88838' : '#8a5420']]) for (let d = 0; d < 2; d++) { const X = Math.round(x), Y = Math.round(yy) + d; if (a.mat(X, Y) === 'cap') a.px(X, Y, d ? dk : c); } }
+        for (const [x, y] of [[10, 5], [15, 12], [22, 4], [28, 11], [12, 14], [31, 14], [19, 14], [26, 6]]) { a.px(x, y, '#3a8a2a'); a.px(x + 1, y, '#8acc5a'); a.px(x, y + 1, '#2a6a20'); }
+        for (const [x, y] of [[14, 8], [24, 12], [29, 6]]) { a.px(x, y, '#fff6a0'); a.px(x + 1, y, '#ffe060'); }
+        a.line(15, 17, 15, 19, '#ffe060'); a.line(24, 17, 24, 20, '#ffe060'); a.px(24, 21, '#fff6a0');
+      }
     } };
   } },
   boar: { col: { fur: '#7a5038', mane: '#3e2a20', snout: '#c88a78', tusk: '#f4ecd8', hoof: '#2a2020', eye: '#ff5030' }, build(P, V) {
@@ -836,7 +850,7 @@ Object.assign(MODELS, {
       if (V.gold) for (const [x, y] of [[18, 14], [25, 20], [10, 17], [36, 15], [31, 25]]) { a.px(x, y, '#ffffff'); a.px(x - 1, y, '#fff6c0'); a.px(x + 1, y, '#fff6c0'); a.px(x, y - 1, '#fff6c0'); a.px(x, y + 1, '#fff6c0'); }
     } };
   } },
-  bandit: { col: { skin: '#d8a070', hood: '#5a4a3a', vest: '#7a5a30', cloth: '#b83a2a', pants: '#4a4a5a', boots: '#3a2a20', steel: '#b8c0d0', eye: '#ffffff' }, build(P, V) {
+  bandit: { col: { skin: '#d8a070', hood: '#5a4a3a', vest: '#7a5a30', cloth: '#b83a2a', pants: '#4a4a5a', boots: '#3a2a20', steel: '#b8c0d0', eye: '#ffffff' }, build(P, V = {}) {
     const m = { skin: mat(P.skin, 4, { ramp: { lo: 0.5 } }), hood: mat(P.hood, 5, { tex: 'cloth' }), vest: mat(P.vest, 4, { tex: 'rough' }), cloth: mat(P.cloth, 4, { tex: 'cloth' }), pants: mat(P.pants, 4, { tex: 'cloth' }), boots: mat(P.boots, 3), steel: mat(P.steel, 5, { spec: '#ffffff', specAt: 0.85, ramp: { hi: 0.85 } }) };
     const blade = V.desert ? [poly([[28, 15], [31, 4], [35, 0.5], [33.5, 6], [30, 16]], 'steel', { z: 10, bev: 1 })] : [cap(28.5, 14.5, 32.5, 1.5, 1.1, 0.35, 'steel', { z: 10 })];
     return { w: 38, h: 42, mats: m, parts: [
@@ -849,7 +863,11 @@ Object.assign(MODELS, {
       cap(13, 4, 8, 11, 2.4, 0.8, 'hood', { z: 3 }), ell(17, 8, 5.8, 6, 'hood', { z: 4 }), ell(20, 9, 3.4, 4, 'skin', { z: 6 }), paint(poly([[16, 10.5], [26, 10.5], [24, 14], [17, 14]], 'cloth')),
       cap(19, 16, 24, 19, 1.9, 1.6, 'hood', { z: 7 }), cap(24, 19, 28, 16, 1.6, 1.3, 'skin', { z: 7 }),
       cap(26, 16.5, 30.5, 14, 0.7, 0.7, 'steel', { z: 9 }), ...blade, ell(28.3, 15.6, 1.6, 1.5, 'skin', { z: 11 }),
-    ], post(a) { a.px(20, 8, P.eye); a.px(21, 8, '#1a1018'); a.px(23, 8, P.eye); a.px(24, 8, '#1a1018'); a.line(19, 7, 21, 6.6, a.ramp('hood', 0)); a.line(23, 6.6, 25, 7, a.ramp('hood', 0)); a.px(13, 20, a.ramp('vest', 0)); a.px(20, 22, a.ramp('vest', 0)); } };
+    ], post(a) { a.px(20, 8, P.eye); a.px(21, 8, '#1a1018'); a.px(23, 8, P.eye); a.px(24, 8, '#1a1018'); a.line(19, 7, 21, 6.6, a.ramp('hood', 0)); a.line(23, 6.6, 25, 7, a.ramp('hood', 0)); a.px(13, 20, a.ramp('vest', 0)); a.px(20, 22, a.ramp('vest', 0));
+      if (V.torch) { // a lit torch: the blade becomes a wooden handle with a roaring flame, and a fire-eater's glowing mouth
+        for (let y = 0; y <= 9; y++) for (let x = 27; x <= 38; x++) { const cx = 32.2 + Math.sin(y * 0.9) * 0.7, w = y < 3 ? 1.5 + y * 0.9 : y < 7 ? 4 - (y - 3) * 0.2 : 2.6 - (y - 7) * 0.3, d = Math.abs(x - cx); if (d < w) a.px(x, y, d < w * 0.35 ? (y < 4 ? '#ffffff' : '#fff2a0') : d < w * 0.7 ? '#ffc830' : y < 2 ? '#ff7a1a' : '#e04a18'); }
+        a.px(25, 11, '#ffc830'); a.px(26, 12, '#ff7a1a'); a.rect(22, 12, 2, 2, '#e04a18'); a.px(23, 12, '#ffd250');
+      } } };
   } },
   sapling: { col: { bark: '#7a5a3a', leaf: '#5aa040', bud: '#f0a0c0', eye: '#e8f060' }, build(P) {
     const m = { bark: mat(P.bark, 5, { tex: 'grain' }), leaf: mat(P.leaf, 5, { tex: (x, y) => (hash(x >> 1, y, 21) < 0.2 ? -0.18 : hash(x, y, 22) < 0.08 ? 0.15 : 0) }), void: mat('#1a120c', 2, { flat: 0.1 }) };
@@ -983,7 +1001,7 @@ Object.assign(MODELS, {
       ...[[34, 14.5], [34.2, 16.2], [33.5, 18]].map(([x, y]) => cap(31, 15.5, x, y, 0.5, 0.4, 'dark', { z: 8 })),
     ], post(a) { a.px(19, 8, P.eye); a.px(20, 8, '#ffd080'); a.px(22, 8, P.eye); a.px(23, 8, '#ffd080'); a.px(17, 9, '#100808'); a.line(10, 22, 13, 25, a.ramp('wrap', 0)); a.line(19, 24, 22, 22, a.ramp('wrap', 0)); } };
   } },
-  salamander: { col: { skin: '#c83a2a', belly: '#f0a040', fire: '#ff9a2a', eye: '#ffe040' }, build(P) {
+  salamander: { col: { skin: '#c83a2a', belly: '#f0a040', fire: '#ff9a2a', eye: '#ffe040' }, build(P, V = {}) {
     const m = { skin: mat(P.skin, 5, { tex: 'scale', spec: '#ffd0a0', specAt: 0.9 }), belly: mat(P.belly, 4, { tex: 'belly' }), fire: mat(P.fire, 5, { glow: true, lift: 0.25, nocrease: true, ramp: { hi: 0.95 } }) };
     const flames = []; for (let k = 0; k < 6; k++) { const x = 13 + k * 3.8, y = 15 - Math.sin(k / 5 * Math.PI) * 1.6, h = 4 + (k % 2) * 2.5; flames.push(...chain([[x, y + 2], [x - 1, y - h * 0.5], [x + 0.6, y - h]], [1.8, 1.1, 0.3], 'fire', -1)); }
     return { w: 48, h: 30, mats: m, parts: [
@@ -996,6 +1014,11 @@ Object.assign(MODELS, {
       a.px(38, 14, P.eye); a.px(39, 14, P.eye); a.px(39, 15, '#200808'); a.line(37, 13, 40, 13, a.ramp('skin', 0)); a.line(40, 19, 45, 19, '#3a0808'); a.px(46, 18, '#3a0808');
       for (const [x, y] of [[19, 17], [25, 16], [31, 18], [15, 20]]) { a.px(x, y, '#ffb040'); a.px(x + 1, y, '#3a0a10'); }
       for (const [x, y] of [[10, 25], [11, 28], [29, 28]]) a.px(x, y, '#f0e0c0');
+      if (V.pep) { // pepperoni discs stamped down its back and a cheese-drip mouth
+        for (const [cx, cy, r] of [[17, 17.5, 3.6], [25, 15.5, 4], [32, 18, 3.2], [22, 20.5, 2.6]]) for (let y = Math.floor(cy - r); y <= cy + r; y++) for (let x = Math.floor(cx - r); x <= cx + r; x++) { const d = Math.hypot(x - cx, (y - cy) * 1.15); if (d <= r && a.mat(x, y) === 'skin') a.px(x, y, d > r - 1 ? '#5a0e0c' : (x * 3 + y * 5) % 7 === 0 ? '#ffb090' : (x + y) % 3 === 0 ? '#e04a38' : '#c8382a'); }
+        for (const [x, y] of [[18, 16], [24, 14], [29, 17], [22, 19]]) a.px(x, y, '#ffd870');
+        a.px(41, 20, '#ffd870'); a.px(41, 21, '#ffd870'); a.px(43, 20, '#ffd870'); a.px(43, 21, '#ffd870'); a.px(43, 22, '#ffb040');
+      }
     } };
   } },
   batswarm: { col: { fur: '#4a3a5a', wing: '#6a4a7a', bone: '#2a1a3a', eye: '#ff3a3a' }, build(P) {
@@ -1307,6 +1330,87 @@ MODELS.mash_tun = { big: true, col: { copper: '#b4521e', oak: '#7e4c26', iron: '
     a.px(103, 74, '#ffffff'); a.px(102, 75, '#ffd0c0');
   } };
 } };
+// ---------- The Margherita (Cinder Isle boss): a colossal pizza stood upright on a wood fire, pepperoni-disc armour, basil eyebrows,
+// a crown of peel handles and a pizza peel for a spear ----------
+const flame = (x, y0, h, w = 4, lean = 0, mm = 'fire') => poly([[x - w, y0], [x - w * 0.9 + lean * 0.3, y0 - h * 0.4], [x - w * 0.3 + lean * 0.7, y0 - h * 0.75], [x + lean, y0 - h], [x + w * 0.35 + lean * 0.6, y0 - h * 0.62], [x + w * 0.95 + lean * 0.2, y0 - h * 0.35], [x + w, y0]], mm, { bev: 1.2 });
+MODELS.margherita = { big: true, col: { crust: '#b8702c', sauce: '#c42a1a', cheese: '#f6d058', brown: '#b0701c', pep: '#b4302a', basil: '#2e9a34', wood: '#b0743e', log: '#5c361a', dough: '#e4b86c', fire: '#ff8a1a', eye: '#ffb818' }, build(P) {
+  const m = { crust: mat(P.crust, 6, { tex: 'rough', spec: '#ffe4b0', specAt: 0.93, ramp: { hi: 0.6 } }), sauce: mat(P.sauce, 5, { spec: '#ff9a80', specAt: 0.9 }), cheese: mat(P.cheese, 6, { spec: '#fffbd0', specAt: 0.9, lift: 0.06, tex: 'wart', ramp: { hi: 0.7, lo: 0.4 } }),
+    brown: mat(P.brown, 4, { tex: 'wart' }), pep: mat(P.pep, 5, { tex: 'rough', spec: '#ffb8a8', specAt: 0.9 }), basil: mat(P.basil, 5, { spec: '#d8ffb0', specAt: 0.92 }),
+    wood: mat(P.wood, 5, { tex: 'grain', spec: '#ffe0b0', specAt: 0.94 }), log: mat(P.log, 5, { tex: 'grain' }), dough: mat(P.dough, 5, { tex: 'rough', spec: '#fff4d0', specAt: 0.93 }), iron: mat('#6a6a7c', 5, { spec: '#ffffff', ramp: { hi: 0.8 } }), brass: mat('#dcae34', 5, { spec: '#fffbe0', specAt: 0.88 }),
+    fire: mat(P.fire, 5, { glow: true, lift: -0.02, nocrease: true }), flame2: mat('#ffd040', 4, { glow: true, lift: 0.0, nocrease: true }), ember: mat('#ff4a10', 4, { glow: true, lift: -0.05, nocrease: true }),
+    steam: mat('#eef2f6', 4, { lift: 0.22, ramp: { lo: 0.7, hi: 0.5 } }) };
+  const pepDisc = (x, y, r, z = 40) => [ell(x, y, r, r, 'pep', { z, d: 0.4 })];
+  const back = [[18, 96, 40, 6, -3], [32, 94, 54, 7, -2], [100, 94, 52, 7, 3], [112, 96, 38, 6, 3], [8, 98, 22, 5, -3], [54, 92, 30, 6, 0]];
+  return { w: 128, h: 116, mats: m, parts: [
+    // the wood fire: flames licking up behind the pizza, then the logs and embers in front
+    ...back.map(([x, y, h, w, l]) => flame(x, y, h, w, l)), ...back.slice(0, 4).map(([x, y, h, w, l]) => paint(flame(x, y + 1, h * 0.55, w * 0.5, l, 'flame2'))),
+    // left arm (behind): a doughy limb ending in a fist, a string of melted cheese hanging from it
+    cap(26, 62, 12, 72, 6, 5.4, 'dough', { z: 50 }), cap(12, 72, 9, 86, 5.4, 4.8, 'dough', { z: 50 }), ell(9, 91, 6.6, 6, 'dough', { z: 52 }), cap(9, 96, 10, 108, 1.2, 0.7, 'cheese', { z: 52 }), ell(10, 109, 1.8, 1.6, 'cheese', { z: 52 }),
+    // the pizza: crust ring, a rim of sauce, then the melted cheese
+    ell(62, 56, 42, 42, 'crust', { z: 0, d: 0.5 }), ell(62, 56, 33.5, 33.5, 'sauce', { z: 22, d: 0.15 }), ell(62, 55.5, 31, 30.5, 'cheese', { z: 26, d: 0.25 }),
+    // cheese lava gloop: lumps spilling over the sauce, brown blisters
+    ...[[34, 70, 5, 4], [44, 83, 6, 4], [58, 87, 5, 3.4], [78, 84, 6, 4], [90, 70, 5, 4], [92, 44, 4.4, 4], [88, 33, 5, 3.6], [34, 38, 4.4, 4], [48, 26, 5, 3.4], [76, 25, 5, 3.4]].map(([x, y, rx, ry]) => ell(x, y, rx, ry, 'cheese', { z: 30, d: 0.5 })),
+    ...[[40, 36, 2.4, 1.8], [84, 62, 2.6, 2], [50, 78, 2.4, 1.8], [72, 79, 2.2, 1.6], [90, 52, 2, 1.6], [38, 58, 2, 1.6], [70, 30, 2.2, 1.6], [58, 33, 1.8, 1.4], [82, 78, 1.8, 1.4]].map(([x, y, rx, ry]) => paint(ell(x, y, rx, ry, 'brown'))),
+    // pepperoni-disc armour: pauldrons on the shoulders of the crust, discs low down
+    ...pepDisc(27, 34, 9.5, 40), ...pepDisc(97, 34, 9.5, 40), ...pepDisc(38, 77, 8.5, 40), ...pepDisc(86, 77, 8.5, 40), ...pepDisc(62, 90, 7.5, 40), ...pepDisc(18, 56, 6.4, 40), ...pepDisc(106, 56, 6.4, 40),
+    // a crown of pizza-peel handles stuck in the crust, with brass ferrules
+    cap(44, 21, 38, 3, 2.3, 2, 'wood', { z: 14 }), cap(62, 17, 62, 2, 2.5, 2.2, 'wood', { z: 14 }), cap(80, 21, 86, 3, 2.3, 2, 'wood', { z: 14 }),
+    ell(38, 3.5, 2.8, 2.8, 'brass', { z: 15 }), ell(62, 2.5, 3.2, 3, 'brass', { z: 15 }), ell(86, 3.5, 2.8, 2.8, 'brass', { z: 15 }), cap(43, 19, 41, 12, 2.8, 2.8, 'brass', { z: 15 }), cap(62, 15, 62, 9, 3, 3, 'brass', { z: 15 }), cap(81, 19, 83, 12, 2.8, 2.8, 'brass', { z: 15 }),
+    // basil leaf eyebrows, angled down in a scowl
+    poly([[36, 37], [44, 33], [54, 38], [58, 44], [49, 41], [38, 42]], 'basil', { z: 46, bev: 1.4 }), poly([[88, 37], [80, 33], [70, 38], [66, 44], [75, 41], [86, 42]], 'basil', { z: 46, bev: 1.4 }),
+    // the logs and the fire pit in front of the pizza's foot
+    cap(10, 104, 84, 99, 5.4, 5.4, 'log', { z: 90 }), cap(116, 104, 44, 98, 5.4, 5.4, 'log', { z: 64 }), cap(22, 110, 106, 109, 3.6, 3.6, 'log', { z: 62 }),
+    ...[[30, 96, 12, 3.6, -1], [48, 97, 10, 3.2, 1], [76, 96, 14, 3.8, -1], [92, 97, 11, 3.4, 1], [62, 98, 9, 3, 0]].map(([x, y, h, w, l]) => Object.assign(flame(x, y, h, w, l), { z: 70 })),
+    ...[[16, 106], [36, 108], [58, 103], [78, 106], [100, 108], [112, 104]].map(([x, y]) => ell(x, y, 3, 2.2, 'ember', { z: 80, d: 0.5 })),
+    // the right arm and the peel it holds like a spear: a long wooden handle and a scorched paddle head
+    cap(98, 62, 110, 66, 6, 5.4, 'dough', { z: 50 }),
+    cap(112, 28, 112, 112, 2.3, 2.3, 'wood', { z: 54 }), ell(112, 14, 12, 15, 'wood', { z: 26, d: 0.3 }), cap(112, 26, 112, 30, 4.2, 4.2, 'iron', { z: 55 }), ell(111, 66, 5.8, 5.6, 'dough', { z: 56 }),
+    // steam puffs
+    ell(6, 30, 5, 4.4, 'steam', { z: 90 }), ell(3, 18, 3.6, 3.2, 'steam', { z: 90 }), ell(14, 10, 4, 3.4, 'steam', { z: 90 }), ell(100, 10, 4, 3.4, 'steam', { z: 90 }), ell(95, 3, 3, 2.6, 'steam', { z: 90 }), ell(124, 36, 3.4, 3, 'steam', { z: 90 }),
+  ], post(a) {
+    const ch = (i) => a.ramp('cheese', i), pp = (i) => a.ramp('pep', i), cr = (i) => a.ramp('crust', i), bs = (i) => a.ramp('basil', i);
+    // crust: blistered, charred spots
+    for (let y = 14; y < 98; y++) for (let x = 20; x < 105; x++) if (a.mat(x, y) === 'crust' && hash(x, y, 21) < 0.06) a.px(x, y, hash(x, y, 22) < 0.5 ? '#6a3a14' : cr(0));
+    // pepperoni: bolted on like plate armour, with fat flecks and a lit rim
+    for (const [cx, cy, r] of [[27, 34, 9.5], [97, 34, 9.5], [38, 77, 8.5], [86, 77, 8.5], [62, 90, 7.5], [18, 56, 6.4], [106, 56, 6.4]]) {
+      for (let y = Math.floor(cy - r); y <= cy + r; y++) for (let x = Math.floor(cx - r); x <= cx + r; x++) { if (a.mat(x, y) !== 'pep') continue; const d = Math.hypot(x - cx, y - cy); if (d > r - 1.4 && d < r - 0.4 && x < cx + 2) a.px(x, y, pp(5)); else if (d < r - 2 && hash(x, y, 31) < 0.12) a.px(x, y, '#f0907a'); else if (d < r - 2 && hash(x, y, 33) < 0.1) a.px(x, y, pp(0)); }
+      for (const [dx, dy] of [[-0.55, -0.55], [0.55, -0.55], [-0.55, 0.55], [0.55, 0.55]]) { const rx = Math.round(cx + dx * r), ry = Math.round(cy + dy * r); a.px(rx, ry, '#c8c8d8'); a.px(rx + 1, ry + 1, '#3a3a48'); }
+    }
+    // the face: scowling amber eyes in dark sockets, a molten grin with garlic-clove teeth, glowing cracks in the cheese
+    for (const [ex, ey] of [[45, 47], [77, 47]]) {
+      for (let y = ey - 5; y <= ey + 5; y++) for (let x = ex - 7; x <= ex + 7; x++) { if (((x - ex) / 7.4) ** 2 + ((y - ey) / 5.2) ** 2 <= 1) a.px(x, y, y < ey - 3 ? '#1a0604' : '#2e0e06'); }
+      for (let y = ey - 3; y <= ey + 3; y++) for (let x = ex - 3; x <= ex + 5; x++) { const d = Math.hypot(x - (ex + 1.5), (y - ey) * 1.2); if (d < 3.6) a.px(x, y, d < 1.5 ? '#fff4a0' : d < 2.6 ? P.eye : '#e07a10'); }
+      a.rect(ex + 2, ey - 1, 2, 3, '#1a0604'); a.px(ex, ey - 2, '#ffffff');
+    }
+    for (const [x0, y0, x1, y1] of [[36, 37, 54, 39], [88, 37, 70, 39]]) a.line(x0, y0, x1, y1, bs(1)); // basil veins
+    for (const [x0, y0, x1, y1] of [[40, 38, 44, 40], [46, 36, 49, 39], [84, 38, 80, 40], [78, 36, 75, 39]]) a.line(x0, y0, x1, y1, bs(5));
+    a.line(61, 49, 59, 58, ch(2)); a.line(62, 49, 60, 58, ch(2)); a.line(58, 58, 63, 59, ch(1)); a.px(60, 60, ch(1)); // a lump of nose
+    for (let x = 41; x <= 83; x++) { // the mouth: a wide lopsided grin, lava glowing in the throat
+      const t = (x - 41) / 42, top = 66 + Math.round(Math.sin(t * Math.PI) * 1.5 - (t > 0.8 ? (t - 0.8) * 22 : 0)), bot = top + 2 + Math.round(Math.sin(t * Math.PI) * 9);
+      for (let y = top; y <= bot; y++) { const k = (y - top) / Math.max(1, bot - top); a.px(x, y, k < 0.25 ? '#1e0604' : k < 0.55 ? '#7a1a08' : k < 0.8 ? '#d8480c' : '#ff9a1a'); }
+      if (x % 5 === 2 && x > 44 && x < 80) { a.px(x, top + 1, '#fff6e0'); a.px(x + 1, top + 1, '#fff6e0'); a.px(x, top + 2, '#e8d8b8'); } // teeth
+    }
+    for (const [x, y, l] of [[48, 76, 9], [58, 79, 12], [69, 78, 7], [78, 74, 5]]) { a.line(x, y, x, y + l, ch(5)); a.px(x + 1, y + 1, ch(2)); a.rect(x - 1, y + l, 3, 2, ch(4)); a.px(x, y + l + 2, ch(3)); } // dripping cheese strings
+    for (const [x0, y0, x1, y1] of [[42, 64, 36, 62], [82, 64, 88, 61], [70, 28, 78, 24], [50, 28, 44, 30], [32, 52, 28, 48], [92, 50, 96, 46], [56, 74, 52, 84], [72, 74, 78, 82]]) { a.line(x0, y0, x1, y1, '#ff9a1a'); a.px(x0, y0, '#ffe060'); } // glowing lava cracks
+    for (const [x, y] of [[54, 30], [67, 28], [85, 46], [40, 44], [72, 86], [50, 86], [94, 62], [30, 64]]) { a.px(x, y, '#fff6a0'); a.px(x + 1, y, '#ffd040'); } // oil sizzle
+    // olive rings on the cheese
+    for (const [ox, oy] of [[62, 28], [90, 58], [33, 62]]) for (let y = -2; y <= 2; y++) for (let x = -2; x <= 2; x++) { const d = Math.hypot(x, y * 1.1); if (d < 2.6 && d > 1.2 && a.mat(ox + x, oy + y) === 'cheese') a.px(ox + x, oy + y, d > 2 ? '#14120e' : '#3a3a30'); }
+    for (let y = 1; y < 114; y++) for (let x = 108; x <= 117; x++) if (a.mat(x, y) === 'wood' && y < 29 && hash(x, y, 41) < 0.14) a.px(x, y, a.ramp('wood', 0)); // paddle grain
+    for (let y = 4; y < 26; y++) for (let x = 102; x <= 122; x++) if (a.mat(x, y) === 'wood') { const d = Math.hypot((x - 112) / 11.5, (y - 14) / 14); if (d > 0.5 && d < 0.72) a.px(x, y, a.ramp('wood', 1)); } // scorch ring
+    for (const [x, y] of [[6, 30], [14, 10], [100, 10]]) a.px(x, y, '#ffffff');
+  } };
+} };
+// ---------- Cinder Isle: volcano-holiday-pizza recolours (see src/embers.js) ----------
+Object.assign(ENEMY_VARIANTS, {
+  cinder_imp: ['imp', { skin: '#35282e', wing: '#8a2a10', horn: '#ffb040', eye: '#ffe860', fire: '#ff7a1a' }],
+  pepperoni_salamander: ['salamander', { skin: '#a82a20', belly: '#ffd870', fire: '#ff9a2a', eye: '#ffffff' }, { pep: true }],
+  garlic_knot: ['shroom', { cap: '#e0a850', spot: '#fff6d8', gill: '#b07a30', stem: '#f0d890', eye: '#2a1810' }, { knot: true }],
+  anchovy_eel: ['cobra', { scale: '#7a8ea4', belly: '#d8e4ee', hood: '#2c4a68', mark: '#e8f4ff', eye: '#ffe040', tongue: '#ff6a60' }],
+  magma_slime: ['slime', { goo: '#ffb02a', mouth: '#5a2008', foam: '#fff0b0' }, { foam: true }],
+  basalt_golem: ['golem', { rock: '#3a3844', dark: '#1e1c26', glow: '#ff7a20', moss: '#ffb030' }],
+  fire_eater: ['bandit', { skin: '#d89868', hood: '#c8301c', vest: '#2a2a3a', cloth: '#f0a020', pants: '#3a2a2a', boots: '#2a1a1a', steel: '#8a6a3a', eye: '#ffffff' }, { torch: true }],
+  stag_wraith: ['wraith', { cloak: '#6a7a60', inner: '#0e140c', hand: '#d8e4c8', eye: '#b8ff70' }, { antlers: true }],
+});
 const ECACHE = new Map();
 export function enemyArt(id) {
   if (ECACHE.has(id)) return ECACHE.get(id);
@@ -1323,7 +1427,7 @@ export const enemyIds = () => [...Object.keys(MODELS), ...Object.keys(ENEMY_VARI
 // ===== Painted backdrops =====
 // =====================================================================
 export const BW = 256, BH = 176;
-export const BACKDROPS = ['world', 'desert', 'forest', 'snow', 'swamp', 'dungeon', 'crypt', 'spire', 'storm', 'ruins', 'boss', 'crypt:boss', 'spire:boss', 'storm:boss', 'ruins:boss', 'cellar', 'cellar:boss', 'brewery', 'brewery:boss'];
+export const BACKDROPS = ['world', 'desert', 'forest', 'snow', 'swamp', 'dungeon', 'crypt', 'spire', 'storm', 'ruins', 'boss', 'crypt:boss', 'spire:boss', 'storm:boss', 'ruins:boss', 'cellar', 'cellar:boss', 'brewery', 'brewery:boss', 'embers', 'pizzaoven', 'pizzaoven:boss'];
 function painter(w, h, seed) {
   const img = new Uint8ClampedArray(w * h * 4), r = rng(seed);
   const P = {
@@ -1691,4 +1795,85 @@ BD_FNS.brewery = function (P, hy, L, boss) { // the Great Brewery: copper vats, 
   barrelUp(P, 10, hy + 66, 26, 40, 11); barrelUp(P, 247, hy + 58, 24, 36, 13); // foreground kegs framing the shot
   scatter(P, hy + 12, 24, 91, (x, y, s, k) => { if (k < 0.5) rock(P, x, y, s * 0.6, ['#1a1214', '#3a2c2a', '#5a4840', '#7a6254'], x); else if (s > 0.3) { const G2 = RG(['#1c5a1c', '#3a8c2a', '#7cc03c']); P.set(x, y, G2[1]); P.set(x + 1, y, G2[2]); P.set(x, y - 1, G2[0]); } }); // pebbles and fallen hops
   shadowBand(P, hy + 12, hy + 24, 0.3); vignette(P, 0.42);
+};
+// ---------- Cinder Isle backdrops ----------
+// 'embers': the island's random-battle scenery. A smouldering sunset behind a great black volcano, basalt flats cracked with lava, charred trees.
+BD_FNS.embers = function (P, hy, L) {
+  sky(P, 0, hy, ['#1a0c1c', '#34142a', '#5a1c30', '#8c2c34', '#c4502c', '#f08a38', '#ffc868'], 14);
+  cloud(P, 50, 26, 54, 12, ['#2a1626', '#4a2230', '#7a3a38', '#c0663c'], 5); cloud(P, 196, 18, 60, 11, ['#2a1626', '#4a2230', '#7a3a38', '#c0663c'], 9); cloud(P, 130, 44, 40, 8, ['#4a2230', '#7a3a38', '#d0804a'], 12);
+  ridge(P, hy - 2, 24, 0.012, 61, ['#1c1420', '#2a1c2c', '#3c283a', '#563448'], {}); // far basalt hills
+  // the volcano: a big cone with a glowing crater, lava rivers down its flank and a dark plume of smoke
+  const VX = 150, VT = 14, VB = hy + 4, CR = RG(['#0e0a12', '#1a1220', '#281c2c', '#3a2838', '#52384a']), LV = RG(['#6a1008', '#b02a0a', '#e85a10', '#ff9a2a', '#ffd25a']);
+  for (let y = VT; y < VB; y++) { const k = (y - VT) / (VB - VT), half = 8 + Math.pow(k, 0.8) * 86 + (hash(y, 1, 71) - 0.5) * 2;
+    for (let x = Math.floor(VX - half); x <= VX + half; x++) { const u = (x - VX) / half, t = clamp(0.5 - u * 0.4 + (fbm(x / 4, y / 5, 72) - 0.5) * 0.5 - k * 0.12, 0, 1); P.set(x, y, P.pick(CR, t, x, y)); } }
+  for (let y = VT - 1; y < VT + 5; y++) for (let x = VX - 11; x <= VX + 11; x++) { const q = ((x - VX) / 11) ** 2 + ((y - (VT + 1)) / 3) ** 2; if (q <= 1) P.set(x, y, P.pick(LV, clamp(0.95 - q * 0.5, 0, 1), x, y)); } // crater glow
+  for (const [sx, sw] of [[-7, 2.6], [4, 2], [12, 1.6]]) { let x = VX + sx; for (let y = VT + 4; y < hy + 3; y++) { x += Math.sin(y * 0.3 + sx) * 0.35 + sx * 0.012; for (let k = -Math.round(sw); k <= sw; k++) P.set(Math.round(x) + k, y, P.pick(LV, clamp(0.9 - Math.abs(k) / sw * 0.5 - (y - VT) / 90 + (hash(y, k, 73) - 0.5) * 0.3, 0, 1), x + k, y)); } } // lava rivers
+  glow(P, VX, VT, 42, '#ff8a2a', 0.45);
+  const SM = RG(['#1a1018', '#2c1c26', '#4a303a', '#6a4a50']);
+  for (let i = 0; i < 9; i++) { const sx = VX - 4 + i * 5 + Math.sin(i * 1.3) * 5, sy = VT - 4 - i * 4, r = 7 + i * 1.5; for (let y = Math.floor(sy - r); y <= sy + r; y++) for (let x = Math.floor(sx - r); x <= sx + r; x++) { const d = Math.hypot(x - sx, (y - sy) * 1.2) / r; if (d > 1 || y < 0) continue; P.set(x, y, P.pick(SM, clamp(0.7 - d * 0.5 + (fbm(x / 4, y / 4, 74) - 0.5) * 0.4 - i * 0.03, 0, 1), x, y)); } } // smoke plume
+  glow(P, VX, 2, 50, '#ff7a2a', 0.18);
+  hills(P, hy + 1, 8, 0.05, 75, ['#1a1220', '#281c2c', '#382838']);
+  // basalt columns: a Voronoi network of glowing lava cracks (crack width grows with distance so it stays at least a pixel wide)
+  const vor = (X, Z) => { const gx = Math.floor(X / 2.1), gz = Math.floor(Z / 2.1); let d1 = 9, d2 = 9; for (let i = -1; i <= 1; i++) for (let j = -1; j <= 1; j++) { const cx = gx + i, cz = gz + j, fx = (cx + hash(cx, cz, 85)) * 2.1, fz = (cz + hash(cx, cz, 86)) * 2.1, d = Math.hypot(X - fx, (Z - fz) * 1.15); if (d < d1) { d2 = d1; d1 = d; } else if (d < d2) d2 = d; } return d2 - d1; };
+  ground(P, hy + 3, ['#0c0a10', '#161219', '#201a26', '#2c2434', '#3a3044', '#ff5a18', '#ffb030'], (X, Z) => {
+    const n = fbm(X * 1.1, Z * 1.5, 81, 4), e = vor(X, Z), w = 0.07 + Z * 0.011;
+    if (Z < 6.5 && e < w) return e < w * 0.45 ? 0.95 : 0.8;
+    return 0.04 + n * 0.42 + (e < w * 2.2 ? 0.07 : 0) + (hash(Math.floor(X * 6), Math.floor(Z * 8), 3) < 0.06 ? 0.05 : 0); }, { haze: '#6a2a30', hazeMax: 0.55 });
+  for (let y = hy + 3; y < P.h; y++) for (let x = 0; x < P.w; x++) { const d = Math.hypot((x - VX) / 170, (y - hy - 3) / 52); if (bayer(x, y) < (1 - d) * 0.14) P.blend(x, y, [255, 120, 50], 0.14); } // volcano-light on the flats
+  pool(P, 52, 142, 22, 4, ['#4a0e06', '#a02a0a', '#e85a10', '#ffb030'], '#ffe080'); pool(P, 196, 128, 16, 3.4, ['#4a0e06', '#a02a0a', '#e85a10', '#ffb030'], '#ffe080'); // little lava pools
+  glow(P, 52, 140, 30, '#ff7a2a', 0.3); glow(P, 196, 127, 24, '#ff7a2a', 0.25);
+  const bare = (x, y, s) => { const h = Math.round(9 + 20 * s), B = RG(['#050306', '#120c10', '#241a1c']); for (let j = 0; j < h; j++) { const w = j < 3 ? 1 : 0; for (let k = -w; k <= w; k++) P.set(x + k, y - j, B[k < 0 ? 2 : 0]); }
+    for (const [dx, dy, l] of [[-1, 0.45, 0.5], [1, 0.58, 0.45], [-1, 0.75, 0.32], [1, 0.82, 0.28], [0, 1, 0.2]]) { const len = Math.round(h * l), by = y - Math.round(h * dy); for (let k = 1; k <= len; k++) { P.set(x + dx * k, by - Math.round(k * 0.7), B[0]); if (k > 2 && k % 3 === 0) P.set(x + dx * k, by - Math.round(k * 0.7) - 1, B[1]); } } };
+  scatter(P, hy + 3, 40, 88, (x, y, s, k) => { if (k < 0.4) bare(x, y, s); else if (k < 0.8) rock(P, x, y, s, ['#0c0810', '#201a26', '#382c44', '#54445c'], x); else { const R2 = RG(['#6a1008', '#e85a10', '#ffd25a']); P.set(x, y, R2[1]); P.set(x + 1, y, R2[2]); P.set(x, y - 1, R2[0]); } }); // charred trees, basalt chunks, embers
+  bare(14, hy + 60, 1.5); bare(244, hy + 54, 1.3);
+  shadowBand(P, hy + 3, hy + 14, 0.25); vignette(P, 0.4);
+};
+
+// 'pizzaoven': the boss arena inside the volcano. A vast fire-brick dome with a great sooty arch, two roaring wood-fire pits,
+// glowing embers in the air and a flagstone floor slick with oil.
+BD_FNS.pizzaoven = function (P, hy, L, boss, info) {
+  const BR = ['#140806', '#241210', '#3a1e16', '#522a1e', '#6c3a28', '#8a4c34', '#a8603e'];
+  bricks(P, 0, 0, P.w, hy + 12, BR, 191, 13, 6);
+  const top = 6, floor = hy + 12, archY = (x) => top + ((x - 128) / 92) ** 2 * (floor - top);
+  const BD = RG(['#080303', '#120706', '#1e0e0a', '#2e1610', '#44221a']), VS = RG(['#3a1c14', '#5a2e20', '#7e4430', '#a8603e', '#c47a4c']), TH = RG(['#ff4a10', '#ff7a1a', '#ffa830', '#ffd860']);
+  // the deep arch: a darker, soot-black inner brickwork with a fierce orange glow rising from the pits
+  for (let y = 0; y < floor; y++) for (let x = 36; x <= 220; x++) { if (y < archY(x)) continue; const g = clamp((y - 20) / (floor - 20), 0, 1), u = Math.abs(x - 128) / 92;
+    const row = Math.floor(y / 5), lx = (x + (row % 2) * 6) % 12, mortar = lx === 0 || y % 5 === 0, n = hash(Math.floor((x + (row % 2) * 6) / 12), row, 17);
+    let t = mortar ? 0.04 : clamp(0.14 + n * 0.22 + (fbm(x / 6, y / 6, 19) - 0.5) * 0.2, 0, 1) + g * (1 - u * 0.6) * 0.5 * (mortar ? 0.4 : 1);
+    P.set(x, y, P.pick(g * (1 - u * 0.7) > 0.55 && !mortar ? RG(['#1e0a06', '#3e1608', '#7a2a0c', '#c04a14']) : BD, clamp(t, 0, 1), x, y)); }
+  // voussoirs: pale radial bricks round the arch, a keystone, soot streaks above
+  for (let x = 28; x <= 228; x++) { const y0 = Math.floor(archY(x)); for (let k = -9; k < 0; k++) { const y = y0 + k; if (y < 0 || y >= floor) continue; const ang = Math.atan2(x - 128, 90 + (y - 40)), seam = Math.abs(((ang * 18) % 1 + 1) % 1 - 0.5) > 0.46 || k === -9 || k === -1;
+    const t = clamp(0.62 - Math.abs(x - 128) / 260 + (hash(Math.floor(ang * 18), k, 23) - 0.5) * 0.25 + (k > -4 ? 0.12 : 0) + (seam ? -0.4 : 0), 0, 1); P.set(x, y, P.pick(VS, t, x, y)); } }
+  for (let y = 0; y < 10; y++) for (let k = -5; k <= 5; k++) { const kx = 128 + k, ky = Math.floor(archY(kx)) - 9 + y * 0.0; if (Math.abs(k) < 4 - y * 0.2) P.set(kx, Math.max(0, Math.floor(archY(128)) - 9 + y), P.pick(VS, clamp(0.8 - Math.abs(k) * 0.08 - (y === 0 ? 0.3 : 0), 0, 1), kx, y)); }
+  for (let i = 0; i < 40; i++) { const sx = 6 + hash(i, 5, 29) * 244, sh = 8 + hash(i, 6, 29) * 28; for (let y = 0; y < sh; y++) if (bayer(Math.floor(sx), y) < 0.7 - y / sh * 0.6) P.blend(Math.floor(sx), y, [4, 2, 2], 0.5); } // soot streaks
+  // a flue slot at the crown of the dome, breathing smoke
+  for (let y = 0; y < 5; y++) for (let x = 112; x < 144; x++) P.set(x, y, P.pick(BD, 0.12 + y * 0.02 + hash(x, y, 3) * 0.04, x, y));
+  glow(P, 128, floor - 30, 110, '#ff6a18', 0.3); glow(P, 128, 40, 80, '#ff8a2a', 0.18);
+  // the two fire pits: iron baskets on stubby legs, stacked split logs, a sea of embers
+  const pit = (cx, by, w) => {
+    const I2 = RG(IRONC), W2 = RG(WOODC);
+    for (const side of [-1, 1]) for (let y = by - 8; y <= by + 2; y++) for (let k = 0; k < 3; k++) P.set(cx + side * (w / 2 - 1) - 1 + k, y, I2[k === 0 ? 4 : k === 1 ? 3 : 1]); // legs
+    for (let x = cx - w / 2; x <= cx + w / 2; x++) for (let k = 0; k < 3; k++) P.set(x, by - 8 + k, I2[k === 0 ? 4 : k === 1 ? 2 : 0]); // rim bar
+    for (let k = 0; k < 6; k++) { const lx = cx - w / 2 + 3 + k * (w - 6) / 5, ly = by - 12 - (k % 2) * 3; for (let j = 0; j < 4; j++) for (let i = -5; i <= 5; i++) P.set(Math.round(lx + i + j * 0.0), ly + j + (i > 2 ? 1 : 0), P.pick(W2, clamp(0.5 - j * 0.14 + (i < -2 ? 0.2 : 0), 0, 1), lx + i, j)); } // logs
+    for (let x = cx - w / 2 + 2; x <= cx + w / 2 - 2; x++) { const fx = (x - cx) / (w / 2), h = (18 + 20 * Math.max(0, 1 - Math.abs(fx) * 0.9)) * (0.7 + hash(x, 5, 77) * 0.5);
+      for (let j = 0; j < h; j++) { const t = j / h, wob = Math.sin(j * 0.5 + x * 0.7) * (1.5 + t * 2.5), xx = Math.round(x + wob * 0.4), core = 1 - t - Math.abs(fx) * 0.35; P.set(xx, by - 12 - j, P.pick(TH, clamp(core * 1.3 + (hash(x, j, 8) - 0.5) * 0.2, 0, 1), xx, j)); } } // roaring flames
+    glow(P, cx, by - 18, 50, '#ffb040', 0.5); glow(P, cx, by - 22, 26, '#ffe070', 0.3);
+    info.pits.push([cx, by - 14, w]);
+    L.push([cx - 8, by - 12, '#ffb04a'], [cx + 8, by - 13, '#ff9a3a']);
+  };
+  info.pits = [];
+  pit(56, hy + 6, 44); pit(200, hy + 4, 40);
+  ground(P, floor, ['#0e0806', '#1c100c', '#2e1c14', '#44281c', '#5e3a28', '#7a4c34'], (X, Z) => { const row = Math.floor(Z * 0.5), fx = (((X * 0.3 + row * 0.5) % 1) + 1) % 1, fz = (((Z * 0.5) % 1) + 1) % 1, grout = fx < 0.05 || fz < 0.08 ? -0.34 : 0; return 0.4 + grout + (fbm(X * 1.2, Z * 1.6, 91, 3) - 0.5) * 0.42 + (hash(Math.floor(X * 0.3 + row * 0.5), row, 5) - 0.5) * 0.22; }, { haze: '#4a2414', hazeMax: 0.4 });
+  for (let y = floor; y < P.h; y++) for (let x = 0; x < P.w; x++) { const d = Math.hypot((x - 128) / 150, (y - floor) / 70); if (bayer(x, y) < (1 - d) * 0.3) P.blend(x, y, [255, 140, 50], 0.22); } // firelight pooling on the flags
+  for (const [cx, cy, rw, rh] of boss ? [[128, 130, 60, 10], [44, 152, 34, 6], [214, 160, 30, 6], [100, 168, 24, 4]] : [[150, 140, 34, 6]]) pool(P, cx, cy, rw, rh, ['#1c0e08', '#3e2010', '#8a4a1c', '#e8903a'], '#ffd070'); // oil sheen reflecting the fire
+  const logEnd = (cx, cy, r, sd) => { const W2 = RG(WOODC), BK = RG(['#0e0804', '#2a1810', '#4a3020']); for (let y = Math.floor(cy - r); y <= cy + r; y++) for (let x = Math.floor(cx - r); x <= cx + r; x++) { const d = Math.hypot(x + 0.5 - cx, y + 0.5 - cy) / r; if (d > 1) continue;
+    if (d > 0.82) { P.set(x, y, P.pick(BK, clamp(0.55 - (x - cx + y - cy) / (r * 3) + (hash(x, y, sd) - 0.5) * 0.3, 0, 1), x, y)); continue; }
+    const ring = (d * 5 + hash(sd, 1) * 2) % 1 < 0.2 ? -0.2 : 0, crack = Math.abs(y - cy - (x - cx) * 0.2) < 0.6 && x > cx ? -0.3 : 0; P.set(x, y, P.pick(W2, clamp(0.66 - (x - cx + y - cy) / (r * 4) + ring + crack, 0, 1), x, y)); }
+    const sc = Math.round(r * 0.25); P.set(cx, cy, W2[1]); P.set(cx + sc, cy + sc, W2[2]); };
+  for (const [cx, cy, r] of [[12, hy + 84, 11], [32, hy + 86, 10], [52, hy + 87, 9], [22, hy + 68, 10], [42, hy + 70, 9], [32, hy + 54, 9]]) logEnd(cx, cy, r, cx + cy); // foreground: a pyramid of split logs bottom-left
+  for (const [cx, cy, r] of [[236, hy + 86, 11], [216, hy + 88, 10], [226, hy + 70, 10]]) logEnd(cx, cy, r, cx * 3 + cy); // ... and bottom-right
+  const peel = RG(WOODC); for (let y = 18; y < hy + 56; y++) { const x0 = Math.round(238 - (y - 18) * 0.1) + 0; for (let k = 0; k < 4; k++) P.set(x0 + k, y, P.pick(peel, clamp(0.7 - k * 0.18 + (hash(k, y >> 2, 6) - 0.5) * 0.1, 0, 1), x0 + k, y)); } // a giant pizza peel leaning on the wall
+  for (let y = 0; y < 28; y++) for (let x = 218; x < 256; x++) { const q = ((x - 242) / 19) ** 2 + ((y - 14) / 15) ** 2; if (q > 1 || x > 255) continue; P.set(x, y + 6, P.pick(peel, clamp(0.64 - q * 0.3 - (x - 242) / 90 + (hash(x >> 2, y, 7) - 0.5) * 0.12 + (q > 0.7 ? -0.2 : 0), 0, 1), x, y)); }
+  scatter(P, floor, 24, 93, (x, y, s, k) => { if (k < 0.5) rock(P, x, y, s * 0.55, ['#140a08', '#322018', '#54382a', '#78523c'], x); else if (s > 0.3) { const E2 = RG(['#6a1008', '#e85a10', '#ffd25a']); P.set(x, y, E2[1]); P.set(x + 1, y, E2[2]); } }); // ash chunks and live coals
+  shadowBand(P, floor, floor + 12, 0.3); vignette(P, 0.42);
 };

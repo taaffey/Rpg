@@ -7,7 +7,7 @@ export const W = BA.BW, H = BA.BH; // 256 x 176 logical pixels
 const ELEM_COL = { fire: ['#ff9a2a', '#ffd25a', '#e04a20', '#fff2a0'], ice: ['#c8f4ff', '#7fd8f0', '#ffffff', '#4aa0e8'], bolt: ['#fff27a', '#ffffff', '#ffd25a'], holy: ['#ffffff', '#fff2a0', '#d0f0ff'], dark: ['#9a62e0', '#4a2a80', '#d0a0ff', '#20103a'], slash: ['#ffffff', '#d8e4ff'], heal: ['#7af0a0', '#c8ffd8', '#ffffff'], mp: ['#7ab0ff', '#c8e0ff', '#ffffff'] };
 const STYLE = { slime: 'squash', bat: 'swoop', wolf: 'pounce', wraith: 'float', zombie: 'sway', golem: 'stomp', yeti: 'stomp', wyrm: 'swoop', lich: 'float', titan: 'stomp', imp: 'pounce', goblin: 'lunge', skeleton: 'lunge',
   hornet: 'swoop', shroom: 'squash', boar: 'lunge', bandit: 'lunge', sapling: 'sway', spider: 'pounce', bog_toad: 'pounce', leech: 'squash', wisp: 'float', lizardman: 'lunge', scorpion: 'lunge', sandworm: 'stomp', cactus: 'sway', mummy: 'sway',
-  salamander: 'pounce', batswarm: 'swoop', ghoul_knight: 'lunge', banshee: 'float', bone_whelp: 'swoop', ice_elemental: 'float', harpy: 'swoop', mammoth: 'stomp', crystal_sentinel: 'stomp', thunderbird: 'swoop', cobra: 'sway', sphinx: 'pounce', cellar_rat: 'pounce', big_gary: 'squash', mash_tun: 'stomp' };
+  salamander: 'pounce', batswarm: 'swoop', ghoul_knight: 'lunge', banshee: 'float', bone_whelp: 'swoop', ice_elemental: 'float', harpy: 'swoop', mammoth: 'stomp', crystal_sentinel: 'stomp', thunderbird: 'swoop', cobra: 'sway', sphinx: 'pounce', cellar_rat: 'pounce', big_gary: 'squash', mash_tun: 'stomp', margherita: 'stomp' };
 const HOVER = new Set(['bat', 'wraith', 'lich', 'hornet', 'wisp', 'batswarm', 'banshee', 'bone_whelp', 'ice_elemental', 'harpy', 'thunderbird']); // genuine flyers drift above their own shadow
 const mk = (w, h) => { const c = document.createElement('canvas'); c.width = w; c.height = h; return c; };
 const whiteCache = new Map();
@@ -45,7 +45,7 @@ function wtypeOf(p) { const w = p.wpn; return w ? w.type : 'none'; }
 export class Stage {
   constructor(battle, kind) {
     this.b = battle; this.canvas = mk(W, H); this.canvas.className = 'stage'; this.ctx = this.canvas.getContext('2d');
-    const arena = battle.boss && ['crypt', 'spire', 'storm', 'ruins', 'cellar', 'brewery'].includes(kind) ? kind + ':boss' : kind;
+    const arena = battle.boss && ['crypt', 'spire', 'storm', 'ruins', 'cellar', 'brewery', 'pizzaoven'].includes(kind) ? kind + ':boss' : kind;
     this.info = BA.backdropInfo(BA.BACKDROPS.includes(arena) ? arena : 'world'); this.bg = this.info.c; this.kind = this.info.kind;
     this.parts = []; this.floats = []; this.proj = []; this.shapes = []; this.running = true; this.last = performance.now(); this.lastElem = null; this.active = null; this.shake = 0; this.flashA = 0; this.flashC = '#ffffff';
     const live = battle.e, epos = POS[Math.min(5, live.length)] || POS[5]; let ni = 0;
@@ -190,6 +190,11 @@ export class Stage {
     const k = this.kind;
     if (k === 'world') { x.fillStyle = 'rgba(255,255,255,.55)'; for (let i = 0; i < 2; i++) { const cx = ((t * 2.5 + i * 140) % (W + 60)) - 30, cy = 46 + i * 7; x.fillRect(Math.round(cx), cy, 20, 2); x.fillRect(Math.round(cx) + 4, cy - 1, 10, 1); } }
     else if (k === 'swamp') { x.fillStyle = 'rgba(190,210,170,.10)'; for (let i = 0; i < 5; i++) x.fillRect(0, 80 + i * 14 + Math.round(Math.sin(t * 0.5 + i) * 3), W, 6); }
+    else if (k === 'pizzaoven') { // the two fire pits roar: layered flame tongues, and the whole dome breathes with the firelight
+      for (const [px, py, pw] of this.info.pits || []) for (let i = -4; i <= 4; i++) { const fx = px + i * (pw / 10), f = Math.sin(t * 9 + i * 1.7 + px) * 0.5 + Math.sin(t * 17 + i * 3.1) * 0.5, hgt = 14 + (4 - Math.abs(i)) * 3 + Math.round(f * 4);
+        x.fillStyle = '#d8300a'; x.fillRect(Math.round(fx) - 1, py - hgt, 3, hgt); x.fillStyle = '#ff7a1a'; x.fillRect(Math.round(fx), py - hgt + 2, 2, hgt - 2); x.fillStyle = '#ffd860'; x.fillRect(Math.round(fx), py - Math.round(hgt * 0.55), 1, Math.round(hgt * 0.5)); }
+      x.fillStyle = `rgba(255,110,30,${0.04 + Math.sin(t * 2.3) * 0.02 + Math.sin(t * 7.1) * 0.015})`; x.fillRect(0, 0, W, 110); }
+    else if (k === 'embers') { x.fillStyle = `rgba(255,120,40,${0.05 + Math.sin(t * 1.3) * 0.025})`; x.fillRect(0, 0, W, 80); }
     else if (k === 'storm') { const ph = (t * 0.35) % 1; if (ph < 0.025 || (ph > 0.05 && ph < 0.065)) { x.fillStyle = 'rgba(220,230,255,.35)'; x.fillRect(0, 0, W, 80); } }
   }
   ambientFront(x, t) {
@@ -201,6 +206,8 @@ export class Stage {
     else if (k === 'crypt') { for (let i = 0; i < 12; i++) { x.fillStyle = i % 2 ? 'rgba(140,255,170,.6)' : 'rgba(200,255,220,.4)'; x.fillRect(Math.round((i * 23 + Math.sin(t * 0.7 + i) * 8) % W), Math.round(H - 10 - ((t * 6 + i * 19) % 130)), 1, 1); } }
     else if (k === 'forest') { for (let i = 0; i < 8; i++) { x.fillStyle = 'rgba(255,250,200,.7)'; x.fillRect(Math.round((i * 37 + Math.sin(t * 0.6 + i) * 10) % W), Math.round(40 + ((t * 4 + i * 23) % 110)), 1, 1); } }
     else if (k === 'cellar' || k === 'brewery') { for (let i = 0; i < 18; i++) { const u = (t * (0.03 + (i % 5) * 0.008) + i * 0.137) % 1, px = (i * 47 + Math.sin(t * 0.4 + i) * 12 + u * 30) % W, py = 20 + ((i * 31) % 120) + Math.sin(t * 0.7 + i * 2) * 6; x.fillStyle = i % 4 ? 'rgba(255,220,160,.5)' : 'rgba(255,240,200,.8)'; x.fillRect(Math.round(px), Math.round(py), 1, 1); } } // dust motes in the lantern light
+    else if (k === 'pizzaoven') { for (let i = 0; i < 30; i++) { const px = (i * 41 + t * 7 + Math.sin(t * 1.4 + i) * 9) % W, py = H - ((t * (18 + (i % 5) * 5) + i * 23) % (H + 10)); x.fillStyle = i % 3 ? '#ff9a3a' : i % 3 === 0 ? '#ffd25a' : '#ff5a18'; x.fillRect(Math.round(px), Math.round(py), 1, i % 4 ? 1 : 2); } } // sparks and embers swirling up
+    else if (k === 'embers') { for (let i = 0; i < 24; i++) { const px = (i * 43 + t * 9 + Math.sin(t * 0.9 + i) * 8) % W, py = H - ((t * (10 + (i % 4) * 4) + i * 29) % (H + 10)); x.fillStyle = i % 5 ? '#ff8a2a' : 'rgba(180,160,170,.7)'; x.fillRect(Math.round(px), Math.round(py), 1, 1); } } // drifting embers and ash
     else if (k === 'dungeon') { for (let i = 0; i < 10; i++) { x.fillStyle = i % 3 ? 'rgba(255,230,160,.45)' : 'rgba(190,150,255,.6)'; x.fillRect(Math.round((i * 29 + Math.sin(t + i) * 5) % W), Math.round(((t * 3 + i * 17) % 120) + 8), 1, 1); } }
   }
   shadowOf(x, v) {
