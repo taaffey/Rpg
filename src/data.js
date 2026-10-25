@@ -665,7 +665,7 @@ export const STORY = {
       { s: 'sereth', t: 'Then the Titan walks south, and Haven is the first thing it steps on. Climb, heroes. I will be at the top.' },
       { s: 'n', t: 'When the snow clears, he is gone.' },
       { s: 'wendell', t: 'Have at thee, knave! ...Ah. He has gone. I was mid-flourish.' },
-      { s: 'devon', t: 'Should\'ve filmed that. Phone\'s on 2% now, bro. That\'s how you know it\'s serious.' },
+      { s: 'devon', t: 'Should\'ve filmed that. Phone\'s on 3% and I still filmed nothing, bro. That\'s how you know it\'s serious.' },
     ] },
     storm: [
       { s: 'n', t: 'The air tastes of copper. Every hair on your arms stands up. Devon\'s beard achieves a perfect sphere.' },
@@ -750,7 +750,7 @@ export const STORY = {
     { s: 'landlord', t: 'Last orders, lads! And whoever rang my bell is paying for that round.' },
     { s: 'landlord', t: 'Final quiz question: which legendary smith bound three evils into gems? Bonus point for spelling.' },
     { s: 'adam', t: 'Gemforge. G-E-M... Devon, why is there a glowing blue gem in your hoodie?' },
-    { s: 'devon', t: 'Souvenir. Also, phone\'s on 3%. It never moved. Not once. Same again?' },
+    { s: 'devon', t: 'Souvenir. Also, phone\'s on 3%. It hit 4% once, got nervous and went back. Same again?' },
   ],
   // ending: one line per hero, by character, then by main calling (default if the calling has none)
   epilogue: {

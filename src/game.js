@@ -881,7 +881,7 @@ ACT.mapscreen = () => {
 const OBJECTIVES = [ // the main thread, in the story's voice. show / after / done are conditions (see cond()); hints switch once done
   { title: 'The Goose Cellar', show: '!s:called', hint: 'Elder Mott wants proof you can throw a punch. Clear the slimes out of the Gilded Goose\'s cellar: the trapdoor is in the tavern\'s corner.', done: 's:cellar', doneHint: 'Big Gary is foam. Brenna has joined, mostly out of pity.' },
   { title: 'Get a Proper Job', show: 's:cellar !s:called', hint: 'The Adventurer\'s Guild in Haven hands out callings. Apparently "content creator" isn\'t one.', done: 's:called', doneHint: 'Employed at last.' },
-  { title: 'Get Home', show: 's:called', hint: 'Elder Mott reckons the bell will only ring for you again once Gemforge\'s three evils are slain. Devon\'s phone is on 3%.', done: 'titan', doneHint: 'The bell is ringing.' },
+  { title: 'Get Home', show: 's:called', hint: 'Elder Mott reckons the bell will only ring for you again once Gemforge\'s three evils are slain. Devon\'s phone is on a few percent.', done: 'titan', doneHint: 'The bell is ringing.' },
   { title: 'The Ashen Wyrm', show: 's:called', hint: 'The Elder says its seal is the weakest. The Ashen Cavern lies east of Haven.', done: 'wyrm', doneHint: 'Slain. Its heart is yours, and the northern pass is open.' },
   { title: 'The Drowned King', show: 's:called', hint: 'Morvath stirs in the Sunken Crypt, out in the marsh south of Haven.', done: 'lich', doneHint: 'Slain. Mirewood keeps its lamps lit again.' },
   { title: 'The Grey Hand', show: 'wyrm|lich', hint: 'The seals were not broken. They were cut. Who would free such things?', done: 's:met', doneHint: 'Sereth, last apprentice of Gemforge. He wants the hearts.' },

@@ -145,9 +145,9 @@ export function withWeapon(m, w, isAttack, isSig) {
 export function describeSkill(m) {
   const t = { one: 'one foe', all: 'all foes', ally: 'one ally', allies: 'all allies', self: 'self' }[m.tgt];
   const bits = [`${m.mp} MP`, t];
-  if (m.pow) bits.push(`×${m.pow.toFixed(2)}${m.hits > 1 ? ` ×${m.hits} hits` : ''}`);
+  if (m.pow) bits.push(`${m.kind === 'heal' ? 'heals ' : ''}×${m.pow.toFixed(2)}${m.hits > 1 ? ` ×${m.hits} hits` : ''}`);
   if (m.elem) bits.push(m.elem);
-  if (m.fx.length) bits.push(m.fx.join('/'));
+  if (m.fx.length) bits.push(m.fx.map((f) => ({ poison: 'dodgy tum', slow: 'hungover', defup: 'tougher', atkup: 'pumped up', defdown: 'softened', atkdown: 'deflated', stun: 'gobsmacked' })[f] || f).join('/'));
   for (const f of ['chain', 'echo', 'swift']) if (m[f]) bits.push(f);
   if (m.vamp) bits.push('lifesteal');
   if (m.stun) bits.push('stun 35%'); if (m.crit) bits.push(`crit ${Math.round(m.crit * 100)}%`); if (m.execute) bits.push('execute'); if (m.siphon) bits.push('MP siphon'); if (m.guard) bits.push('self-guard'); if (m.recoil) bits.push('recoil');
