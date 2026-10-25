@@ -237,7 +237,10 @@ function miniOverlay(t) {
 // ---------- map rendering ----------
 const plr = { x: 256, y: 192 };
 let face = 'down', vx = 0, vy = 0, trans = 0, lastT = 0, trail = [], fv = [];
-const snap = () => { vx = G.x; vy = G.y; trail = [{ x: G.x, y: G.y }]; fv = [0, 1, 2].map(() => ({ x: G.x, y: G.y, d: face, mv: false })); reveal(); };
+const snap = () => { // place the leader, with the followers lined up behind when there is walkable room (else they share the tile and spread out once moving)
+  vx = G.x; vy = G.y; const [bx, by] = { up: [0, 1], down: [0, -1], left: [1, 0], right: [-1, 0] }[face] || [0, -1], spots = [];
+  for (let k = 1; k <= 3; k++) { const x = G.x + bx * k, y = G.y + by * k; if (!WALK.has(tileAt(x, y) ?? '#') || (spots.length && spots.length < k - 1)) break; spots.push({ x, y }); }
+  trail = [...spots.slice().reverse(), { x: G.x, y: G.y }]; fv = [0, 1, 2].map((i) => ({ x: (spots[i] || { x: G.x }).x, y: (spots[i] || { y: G.y }).y, d: face, mv: false })); reveal(); };
 const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
 const LIGHT = { cellar: { glow: '255,180,90', dark: 0.8, r: 185 }, ruins: { glow: '255,190,100', dark: 0.74, r: 205 }, storm: { glow: '255,230,90', dark: 0.8, r: 180 }, cavern: { glow: '255,150,50', dark: 0.88, r: 175 }, crypt: { glow: '90,255,140', dark: 0.9, r: 165 }, spire: { glow: '130,210,255', dark: 0.5, r: 250 } };
 function draw(t = performance.now() / 1000) {
@@ -370,7 +373,7 @@ async function step(dx, dy) {
   if (!walkable(t)) return;
   G.x = nx; G.y = ny; trail.push({ x: nx, y: ny }); if (trail.length > 8) trail.shift();
   const pt = m.portals?.[`${nx},${ny}`];
-  if (pt?.need && !cond(pt.need)) { G.x -= dx; G.y -= dy; trail.pop(); snap(); draw(); return scene(pt.deny || []); } // not yet: a word at the gate, and back a step
+  if (pt?.need && !cond(pt.need)) { G.x -= dx; G.y -= dy; trail.pop(); snap(); draw(); const seenKey = `deny:${G.map}:${G.x + dx},${G.y + dy}`; if (G.flags.talked[seenKey]) { toast('Still sealed. ' + ((pt.deny || []).slice(-1)[0]?.t || ''), 4200); return; } G.flags.talked[seenKey] = true; return scene(pt.deny || []); } // not yet: a word at the gate, and back a step
   if (pt) return goto(pt.to, pt.x, pt.y);
   reveal(); draw();
   const sec = m.secrets?.[`${nx},${ny}`]; if (sec && !G.flags.chests[chestKey(nx, ny)]) return openChest(nx, ny, sec);
