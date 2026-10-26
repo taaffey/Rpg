@@ -504,6 +504,73 @@ const frostTown = () => memo('frost', () => {
   p.rect(21, 32, 6, 7, (i, j) => (j === 32 ? P[1] : hex('#0c0c14')));
   return p.outline(hex('#0e1222')).canvas();
 });
+// Hopsend: a ring of orange-roofed cottages round a maypole, a timber barn, an orchard, and a red-roofed oast house with a white cowl (3 x 2.5 tiles)
+const ORT = pal('#2a1008 #5a2210 #8a3a18 #b85624 #dc7a34 #f0a050 #ffc880');
+const hopsendIcon = () => memo('hopsendV', () => {
+  const p = new Pix(48, 40), put = (x, y, c) => p.set(x, y, c), W0 = hex('#ffffff');
+  for (let y = 10; y < 40; y++) for (let x = 0; x < 48; x++) { // the golden meadow with a ragged edge
+    const dx = (x - 24) / 23.6, dy = (y - 26) / 14.2, d = dx * dx + dy * dy + (bay(x, y) - 0.5) * 0.12; if (d > 1) continue;
+    put(x, y, d > 0.86 ? AMBER[2 + ((x + y) % 2)] : GRASS[clamp(3 + ((x * 7 + y * 3) % 5 === 0 ? 1 : 0) - ((x + y * 2) % 7 === 0 ? 1 : 0) - (d > 0.7 ? 1 : 0) + (d < 0.3 && (x + y) % 4 === 0 ? 1 : 0), 0, 9)]);
+  }
+  for (let j = 0; j < 12; j++) { const hw = 2 + j * 0.18, cx = 24 + Math.sin(j * 0.5) * 0.7; for (let i = Math.floor(cx - hw); i <= cx + hw; i++) put(i, 39 - j, DIRT[3 + ((i + j) % 3 === 0 ? 1 : 0) - (i === Math.floor(cx - hw) ? 1 : 0)]); } // the lane in
+  for (let k = 0; k < 26; k++) { const x = 3 + ((k * 37) % 42), y = 18 + ((k * 23) % 20); if (p.on(x, y)) put(x, y, [[232, 116, 42], [212, 80, 30], [240, 160, 48]][k % 3]); } // fallen leaves
+  const PD = pal('#14507a #1e6e9e #3a8ec0 #6ab4dc #b4dcf2'); // the pond
+  for (let y = 34; y < 39; y++) for (let x = 33; x < 46; x++) { const dx = (x - 39.5) / 6.4, dy = (y - 36.5) / 2.8; if (dx * dx + dy * dy > 1) continue; put(x, y, PD[clamp(Math.round(2 + (dx + dy) * -0.8 + ((x * 3 + y) % 5 === 0 ? 1 : 0) + (dx * dx + dy * dy > 0.7 ? -1 : 0)), 0, 4)]); }
+  const roof = (x, y, w, h, R) => { for (let j = 0; j < h; j++) for (let i = 0; i < w; i++) { let v = j === 0 ? 5 : j < h / 2 ? 4 - (i % 3 === 0 ? 1 : 0) : 3 - (i % 3 === 0 ? 1 : 0); if (j === h - 1) v = 1; if (i === w - 1) v -= 1; put(x + i, y + j, R[clamp(Math.round(v), 0, R.length - 1)]); } };
+  const cottage = (x, y, w, rh, door) => { roof(x, y, w, rh, ORT); for (let i = 0; i < w; i += 3) put(x + i, y + 1, ORT[6]); for (let j = 0; j < 3; j++) for (let i = 1; i < w - 1; i++) put(x + i, y + rh + j, CREAM[i === w - 2 ? 3 : j === 0 ? 4 : 5]); put(x + door, y + rh + 2, hex('#3a2010')); put(x + door, y + rh + 1, hex('#4a2c14')); put(x + w - 3, y + rh + 1, hex('#f8d870')); p.rect(x + w - 4, y - 3, 2, 4, [150, 60, 40]); put(x + w - 4, y - 3, [190, 90, 60]); };
+  // the timber barn with a hay-loft door (back left)
+  for (let j = 0; j < 8; j++) for (let i = 0; i < 12; i++) put(2 + i, 17 + j, i % 4 === 0 || j % 4 === 3 ? [104, 42, 28] : i > 8 ? [118, 50, 32] : [146, 68, 40]);
+  for (let j = 0; j < 6; j++) { const hw = 1 + j * 1.05; for (let i = Math.floor(8 - hw); i < 8 + hw; i++) put(i, 11 + j, [[92, 40, 26], [130, 58, 36]][i < 8 ? 1 : 0]); }
+  p.rect(7, 15, 3, 3, hex('#1c1008')); p.rect(7, 17, 3, 1, THATCH[6]); p.rect(5, 21, 6, 4, hex('#2a1810')); put(5, 21, hex('#e8d8b0')); put(10, 24, hex('#e8d8b0'));
+  for (let i = 0; i < 12; i++) put(2 + i, 25, [70, 30, 22]);
+  // the oast house: a round brick kiln, a conical roof, a white cowl
+  for (let j = 0; j < 10; j++) for (let i = 0; i < 10; i++) { const u = (i + 0.5) / 10; put(19 + i, 21 + j, RED[clamp(Math.round(3.6 - u * 2.6 + (j % 3 === 2 ? -0.8 : 0) + (((i + (j / 3 | 0)) % 3 === 0) ? -0.4 : 0)), 0, 4)]); }
+  put(23, 30, hex('#2a1408')); put(24, 30, hex('#2a1408')); put(23, 29, hex('#3a1c0c')); put(24, 29, hex('#3a1c0c')); put(21, 26, hex('#f8d870')); put(27, 26, hex('#f8d870'));
+  for (let j = 0; j < 11; j++) { const hw = 1.3 + j * 0.62; for (let i = Math.floor(24 - hw); i < 24 + hw; i++) { const u = (i - (24 - hw)) / (2 * hw); put(i, 10 + j, ORT[clamp(Math.round(5.4 - u * 4 + (j % 3 === 2 ? -0.7 : 0)), 0, 6)]); } }
+  for (let i = 18; i < 30; i++) put(i, 21, ORT[1]);
+  for (let j = 0; j < 4; j++) for (let i = 0; i < 5; i++) put(22 + i, 6 + j, CREAM[clamp(6 - i + (j === 3 ? -2 : 0), 1, 6)]); put(27, 7, hex('#201810')); put(27, 8, hex('#201810')); put(23, 5, hex('#c8c0a8')); put(24, 4, hex('#e0d8c0')); put(25, 3, hex('#c8c0a8')); // the cowl and its smoke
+  cottage(33, 15, 12, 5, 2); cottage(1, 28, 12, 5, 3); cottage(14, 30, 11, 4, 4);
+  cottage(30, 24, 11, 4, 6);
+  // the maypole in front of the lane, ribbons streaming
+  for (const [dx, c] of [[-3, [232, 96, 42]], [-2, [248, 176, 48]], [2, [200, 50, 28]], [3, [248, 240, 216]]]) for (let j = 0; j < 8; j++) put(24 + Math.round(dx * Math.min(1, j / 4)), 30 + j, c);
+  for (let j = 0; j < 10; j++) put(24, 28 + j, WOOD[4]); put(24, 27, [248, 208, 72]); put(23, 28, [60, 160, 60]); put(25, 28, [60, 160, 60]);
+  // orchard and maples round the edge
+  for (const [cx, cy, r, k] of [[3, 24, 3.6, 0], [45, 31, 3.6, 0], [29, 14, 3.4, 1], [10, 38, 3.2, 1], [44, 22, 3.6, 2], [16, 15, 3, 2]]) for (let y = Math.floor(cy - r); y <= cy + r; y++) for (let x = Math.floor(cx - r); x <= cx + r; x++) { const dx = (x + 0.5 - cx) / r, dy = (y + 0.5 - cy) / r; if (dx * dx + dy * dy > 1 || (p.on(x, y) && y > cy + 1 && k !== 0)) continue;
+    const base = k === 2 ? [[110, 46, 14], [180, 80, 24], [236, 132, 38], [255, 190, 80]] : [[34, 74, 22], [64, 120, 36], [104, 156, 52], [160, 196, 80]]; let v = clamp(Math.round(2 - dx * 1.6 - dy * 1.6 + ((x + y) % 3 === 0 ? 0.6 : 0)), 0, 3); put(x, y, base[v]); if (k < 2 && (x * 5 + y * 3) % 7 === 0) put(x, y, [224, 60, 44]); }
+  // hop poles with bines at the lower left
+  for (const x of [4, 8, 12]) for (let j = 0; j < 8; j++) put(x, 30 + j, j % 2 ? [92, 168, 56] : [56, 120, 40]);
+  return p.outline(K).canvas();
+});
+// Kilnhaven: a smoking volcano behind a cluster of beach huts with striped awnings, black basalt and glowing lava (3 x 2.5 tiles)
+const CONE = pal('#241c1e #3a2e32 #52424a #6c5a62 #8a747c #a8929a #c8b2b8');
+const kilnIcon = () => memo('kilnV', () => {
+  const p = new Pix(48, 40), put = (x, y, c) => p.set(x, y, c);
+  for (let y = 12; y < 40; y++) for (let x = 0; x < 48; x++) { // black basalt with a ragged edge and glowing cracks
+    const dx = (x - 24) / 23.6, dy = (y - 27) / 13.6, d = dx * dx + dy * dy + (bay(x, y) - 0.5) * 0.12; if (d > 1) continue;
+    let c = ASH[clamp(2 + ((x * 7 + y * 3) % 5 === 0 ? 1 : 0) - ((x + y * 2) % 7 === 0 ? 1 : 0) - (d > 0.84 ? 1 : 0), 0, 7)]; if (d > 0.9 && (x + y) % 3 === 0) c = LAVA[1]; put(x, y, c);
+  }
+  for (const seg of [[[2, 34], [6, 37], [10, 36], [13, 39]], [[36, 38], [40, 36], [44, 33], [46, 30]], [[2, 26], [4, 24], [3, 21]], [[40, 22], [44, 24], [45, 27]]]) for (let k = 0; k < seg.length - 1; k++) { const [a, b] = [seg[k], seg[k + 1]], n = Math.max(Math.abs(b[0] - a[0]), Math.abs(b[1] - a[1])); for (let i = 0; i <= n; i++) { const x = Math.round(a[0] + (b[0] - a[0]) * i / n), y = Math.round(a[1] + (b[1] - a[1]) * i / n); if (p.on(x, y)) put(x, y, LAVA[i % 3 === 0 ? 3 : 2]); } }
+  // the volcano, peeking up behind the huts
+  for (let j = 0; j < 20; j++) { const y = 3 + j, hw = 2.5 + j * 0.98, cx = 24 + 0.5; for (let i = Math.floor(cx - hw); i <= cx + hw; i++) { if (i < 0 || i > 47) continue; const u = (i - (cx - hw)) / (2 * hw); let v = clamp(Math.round(4.4 - u * 3 + (1 - j / 20) * 1.2 + ((i * 3 + j * 5) % 7 === 0 ? -1 : 0)), 0, 6); put(i, y, CONE[clamp(v - 1, 0, 6)]); } }
+  for (let i = 19; i < 30; i++) { put(i, 4, LAVA[3 + (i % 2)]); put(i, 5, LAVA[2]); } put(23, 3, LAVA[4]); put(25, 3, LAVA[3]); // the crater
+  for (const [x0, y0, len] of [[22, 6, 13], [27, 6, 11], [18, 8, 9], [31, 9, 8]]) for (let j = 0; j < len; j++) put(x0 + Math.round(Math.sin(j * 0.6) * 1.2) + (x0 > 24 ? j * 0.25 : -j * 0.25), y0 + j, LAVA[j < 3 ? 4 : j % 3 === 0 ? 3 : 2]); // rivers of lava
+  for (const [x, y, c] of [[26, 2, [90, 80, 80]], [28, 1, [110, 98, 96]], [31, 1, [90, 80, 80]], [34, 0, [120, 108, 104]], [37, 1, [90, 80, 80]]]) { put(x, y, c); put(x + 1, y, c); put(x, y + 1, [60, 52, 52]); } // the plume
+  const sand = pal('#8a6a3a #b08a4a #d4a862 #ecc880 #f8e4a8'); // sand in front of the huts
+  for (let y = 24; y < 40; y++) for (let x = 0; x < 48; x++) { const dx = (x - 24) / 22.4, dy = (y - 31.5) / 8.4, d = dx * dx + dy * dy; if (d > 1) continue; put(x, y, sand[clamp(Math.round(3 + ((x * 3 + y * 5) % 5 === 0 ? 1 : 0) - (d > 0.74 ? 1.4 : 0)), 0, 4)]); }
+  const hut = (x, y, w, h, A, B, door) => { // bamboo walls, thatched roof, striped awning
+    for (let j = 0; j < 5; j++) { const hw = (w / 2 + 1.4) * (j + 1) / 5, cx = x + w / 2 - 0.5; for (let i = Math.floor(cx - hw); i <= Math.ceil(cx + hw); i++) { if (Math.abs(i - cx) > hw) continue; put(i, y + j, THATCH[clamp(Math.round(5.3 - (i < cx ? 0 : 1.6) - (j % 2 ? 0.6 : 0)), 0, 6)]); } }
+    for (let j = 0; j < h; j++) for (let i = 1; i < w - 1; i++) put(x + i, y + 5 + j, SAND_B[clamp(Math.round(3.6 - (i === w - 2 ? 1.5 : 0) - (i % 2 ? 0.7 : 0) + (j === 0 ? -1 : 0)), 0, 4)]);
+    put(x + door, y + 5 + h - 1, hex('#2a1408')); put(x + door, y + 5 + h - 2, hex('#3a2010')); put(x + w - 3, y + 6, hex('#ffd060'));
+    for (let i = 0; i < w + 2; i++) { const c = (i >> 1) & 1 ? B : A; put(x - 1 + i, y + 5, c[3]); put(x - 1 + i, y + 6, i % 2 ? c[2] : c[4]); } // striped awning
+  };
+  const SAND_B = pal('#2e3c10 #46581a #6a8426 #8aa838 #b0c85a'); // bamboo walls
+  const PINK = pal('#a01c50 #d02870 #ff3c8c #ff7ab0 #ffd0e4'), TEAL2 = pal('#106860 #18a098 #20c8c0 #70e4de #c4f8f4'), YEL = pal('#b87808 #e8a010 #ffd030 #ffe880 #fff6c8');
+  hut(2, 18, 12, 6, PINK, YEL, 3); hut(34, 19, 12, 6, TEAL2, PINK, 7); hut(15, 20, 17, 7, YEL, TEAL2, 8);
+  for (let i = 0; i < 6; i++) { put(21 + i, 29, [255, 60, 140]); } put(22, 28, [60, 240, 255]); put(24, 28, [60, 240, 255]); put(26, 28, [60, 240, 255]); // the neon over the bar
+  for (const [x, y, c] of [[8, 34, PINK], [29, 35, TEAL2], [40, 34, YEL]]) { for (let j = 0; j < 4; j++) put(x, y + j, [120, 90, 50]); for (let i = -3; i <= 3; i++) put(x + i, y - 1 + (Math.abs(i) > 2 ? 1 : 0), c[Math.abs(i) % 2 ? 2 : 4]); put(x, y - 2, c[3]); } // parasols
+  for (const [x, y] of [[2, 33], [45, 34], [14, 35], [34, 36]]) { put(x, y, [255, 210, 70]); put(x, y - 1, [255, 120, 20]); for (let j = 1; j < 4; j++) put(x, y + j, [90, 60, 30]); } // tiki torches
+  return p.outline(K).canvas();
+});
 // Mirewood: stilt huts behind a wooden palisade (2.5 x 2 tiles)
 const village = () => memo('village', () => {
   const p = new Pix(40, 32);
@@ -541,8 +608,6 @@ const waysideIcon = (kind) => memo('wayside' + kind, () => {
   else if (kind === 'bogshed') { for (const x of [6, 10, 14, 17]) p.rect(x, 15, 1, 4, WOOD[1]); p.rect(4, 14, 17, 1, WOOD[3]); hut(6, 12, WOOD, WOOD, WOOD[1]); p.rect(15, 5, 2, 3, [80, 120, 60]); p.rect(2, 18, 20, 2, [38, 70, 50]); }
   else if (kind === 'oasis') { p.rect(2, 16, 20, 3, (i, j) => [210, 180 - (j & 1) * 10, 110]); p.rect(3, 17, 8, 2, [40, 130, 200]); p.rect(14, 8, 8, 6, [250, 210, 60]); p.rect(15, 9, 3, 2, [200, 230, 250]); p.rect(14, 13, 8, 1, [200, 120, 30]); p.set(15, 15, [20, 20, 20]); p.set(20, 15, [20, 20, 20]); for (let k = 0; k < 8; k++) p.set(6, 5 + k, WOOD[3]); for (const [dx, dy] of [[-3, 0], [-2, -1], [0, -2], [2, -1], [3, 0], [-1, -1], [1, -1]]) p.rect(6 + dx, 5 + dy, 2, 1, [60, 150, 60]); }
   else if (kind === 'lodge') { p.rect(1, 17, 22, 3, W[2]); hut(5, 14, W, WOOD, WOOD[1]); p.rect(15, 1, 2, 4, G[1]); p.set(15, 0, W[3]); p.set(16, 0, W[2]); }
-  else if (kind === 'hopsend') { p.rect(0, 15, 24, 5, (i, j) => [200, 150 + (i & 1) * 8, 50]); for (const [x0, w, h] of [[1, 8, 7], [10, 7, 6], [16, 7, 8]]) { p.rect(x0, 18 - h, w, h, (i, j) => WOOD[3 + ((i + j) % 4 === 0 ? 1 : 0)]); for (let j = 0; j < 4; j++) p.rect(x0 - 1 + j, 18 - h - 3 + j, w + 2 - 2 * j, 1, RED[2 + (j & 1)]); p.rect(x0 + (w >> 1), 15, 2, 3, WOOD[1]); } p.rect(21, 2, 2, 4, [240, 120, 30]); }
-  else if (kind === 'kilnhaven') { p.rect(0, 15, 24, 5, (i, j) => [40 + (i & 1) * 6, 30, 28]); for (const [x0, w, h] of [[1, 7, 6], [9, 7, 7], [17, 6, 5]]) { p.rect(x0, 18 - h, w, h, (i, j) => [150 + ((i + j) % 3) * 10, 100, 70]); for (let j = 0; j < 3; j++) p.rect(x0 - 1 + j, 18 - h - 2 + j, w + 2 - 2 * j, 1, [230, 90 - j * 10, 40]); p.rect(x0 + (w >> 1), 15, 2, 3, [40, 20, 10]); } p.rect(11, 1, 2, 4, [255, 160, 30]); }
   else if (kind === 'pizzaoven') { for (let j = 0; j < 14; j++) p.rect(12 - j - 1, 5 + j, 2 * j + 3, 1, [62 + (j & 1) * 8, 44, 40]); p.rect(8, 4, 8, 2, [255, 130, 20]); p.rect(9, 3, 6, 1, [255, 220, 80]); p.rect(11, 0, 2, 3, [90, 90, 96]); p.set(13, 0, [140, 140, 150]); p.rect(10, 14, 4, 5, [255, 120, 20]); p.rect(11, 15, 2, 3, [255, 220, 80]); }
   else if (kind === 'windmill') { p.rect(2, 17, 20, 3, [90, 150, 60]); p.rect(8, 8, 8, 10, (i, j) => [200 - j * 3, 180 - j * 3, 150]); for (let j = 0; j < 4; j++) p.rect(8 + j, 5 + j, 8 - 2 * j, 1, WOOD[3 + (j & 1)]); p.rect(11, 14, 3, 4, WOOD[1]); for (const [x0, y0] of [[2, 4], [16, 4], [4, 0], [18, 1]]) for (let k = 0; k < 5; k++) p.set(x0 + k, y0 + ((k * (x0 < 12 ? 1 : -1)) | 0), [235, 225, 200]); p.rect(11, 5, 2, 2, [60, 40, 30]); }
   else if (kind === 'wreck') { p.rect(0, 14, 24, 6, (i, j) => [40 + j * 2, 70 + j * 2, 50]); p.rect(3, 9, 18, 6, (i, j) => WOOD[2 + ((i + j) % 4 === 0 ? 1 : 0)]); for (let j = 0; j < 3; j++) p.rect(3 + j, 9 - j, 1, 1, WOOD[1]); p.rect(12, 1, 1, 9, WOOD[1]); p.rect(13, 2, 5, 4, [190, 190, 180]); p.rect(5, 12, 2, 2, [20, 20, 20]); p.rect(10, 12, 2, 2, [20, 20, 20]); }
@@ -625,7 +690,9 @@ export function mapObjects(m, t, out) {
     else if (k === 'frost') out.push({ img: frostTown(), x: x - 1, y: y + 1 - 40 / 16, z: 1, sy: y + 1 });
     else if (k === 'mirewood') out.push({ img: village(), x: x - 0.75, y: y + 1 - 2, z: 1, sy: y + 1 });
     else if (k === 'cavern' || k === 'storm') out.push({ img: caveMouth(k === 'storm', k === 'storm' && (f8 === 3 || f8 === 5) ? 1 : 0), x: x - 0.5, y: y + 1 - 28 / 16, z: 1, sy: y + 1 });
-    else if (['chippy', 'stones', 'bogshed', 'oasis', 'lodge', 'shed', 'hopsend', 'brewery', 'kilnhaven', 'pizzaoven', 'windmill', 'wreck', 'pyramid', 'icecave'].includes(k) || k.startsWith('dock')) out.push({ img: waysideIcon(k.startsWith('dock') ? 'dock' : k), x: x - 0.25, y: y + 1 - 1.25, z: 1, sy: y + 1 });
+    else if (k === 'hopsend') out.push({ img: hopsendIcon(), x: x - 1, y: y + 1 - 40 / 16, z: 1, sy: y + 1 });
+    else if (k === 'kilnhaven') out.push({ img: kilnIcon(), x: x - 1, y: y + 1 - 40 / 16, z: 1, sy: y + 1 });
+    else if (['chippy', 'stones', 'bogshed', 'oasis', 'lodge', 'shed', 'brewery', 'pizzaoven', 'windmill', 'wreck', 'pyramid', 'icecave'].includes(k) || k.startsWith('dock')) out.push({ img: waysideIcon(k.startsWith('dock') ? 'dock' : k), x: x - 0.25, y: y + 1 - 1.25, z: 1, sy: y + 1 });
     else if (k === 'crypt') out.push({ img: shrine(), x: x - 0.5, y: y + 1 - 2, z: 1, sy: y + 1 });
     else if (k === 'spire') out.push({ img: spireIcon(f8 & 2 ? 1 : 0), x: x - 0.25, y: y + 1 - 3, z: 1, sy: y + 1 });
   }

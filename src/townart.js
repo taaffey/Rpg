@@ -5,6 +5,7 @@
 // holes. Buildings, trees, lamps, stalls, the fountain, boats and the castle are cached sprites sorted with the characters.
 // Art is authored at 16 px per tile (TS = 32 on screen) with 6-12 shade ramps, ordered dithering and selective outlines.
 import { mk } from './autotile.js';
+import { makeFestTowns } from './townart2.js';
 
 // ---------------------------------------------------------------- colour + pixel helpers
 const PKC = new Map();
@@ -128,7 +129,10 @@ const CLS = {
   snowtown: { ',': G_DIRT, _: G_ST, E: G_ST, H: G_ST, ':': G_PLZ, F: G_PLZ, '~': G_WAT, '=': G_DOCK, '#': G_WALL },
   swamptown: { ',': G_DIRT, _: G_DOCK, E: G_DOCK, H: G_DOCK, '=': G_DOCK, ':': G_PLZ, F: G_PLZ, '~': G_WAT, '#': G_WALL },
   village: { ',': G_DIRT, _: G_ST, E: G_DIRT, H: G_ST, ':': G_PLZ, '~': G_WAT, '=': G_WAT, '#': G_WALL },
+  autumntown: {}, volcanotown: {}, // Hopsend and Kilnhaven: drawn by townart2.js (own ground, trees, buildings and props)
 };
+const FEST = (theme) => theme === 'autumntown' || theme === 'volcanotown';
+let FT = null; const ft = () => FT || (FT = makeFestTowns(KIT));
 export const isTheme = (theme) => !!CLS[theme];
 
 // ---------------------------------------------------------------- animated water (seen through the ground canvas)
@@ -152,7 +156,7 @@ function waterTex(theme, f) { // 64x64 tileable frame
 function waterTile(theme, x, y, f) {
   return once(`wq${theme}${f}${x & 3}${y & 3}`, () => { const t = waterTex(theme, f), p = new Pix(16, 16); for (let j = 0; j < 16; j++) for (let i = 0; i < 16; i++) p.d[j * 16 + i] = t.d[((y & 3) * 16 + j) * 64 + (x & 3) * 16 + i]; return canv(p); });
 }
-export const ground = (theme, get, x, y, t) => waterTile(theme === 'snowtown' ? 'town' : theme, x, y, Math.floor(t * 5) % WF);
+export const ground = (theme, get, x, y, t) => FEST(theme) ? ft().ground(theme, get, x, y, t) : waterTile(theme === 'snowtown' ? 'town' : theme, x, y, Math.floor(t * 5) % WF);
 
 // ---------------------------------------------------------------- ground materials (world pixel coords, never repeating)
 const V = { e: 0, h: 0, dx: 0, dy: 0 };
@@ -745,12 +749,14 @@ function mapState(m) {
 }
 const TREE_KIND = (theme, ch) => (theme === 'snowtown' || ch === 't' ? 'pine' : theme === 'swamptown' ? 'swamp' : 'leaf');
 export function objects(theme, get, x, y, t, out, m) {
+  if (FEST(theme)) return ft().objects(theme, get, x, y, t, out, m);
   if (theme === 'village') return m && x >= 0 && y >= 0 && x < m.rows[0].length && y < m.rows.length ? villageTree(get, x, y, out) : undefined;
   const ch = get(x, y); if (ch !== 'T' && ch !== 't') return;
   const kind = TREE_KIND(theme, ch), h = hash(x, y, 1), v = kind === 'pine' ? (theme === 'snowtown' ? (h < 0.5 ? 0 : 1) : 2 + (h < 0.5 ? 0 : 1)) : kind === 'leaf' ? (h < 0.12 ? 2 : h < 0.45 ? 1 : 0) : (h < 0.5 ? 0 : 1);
   const img = treePix(kind, v); out.push({ img, x: x + 0.5 - img.width / 32, y: y + 1 - img.height / 16 + (kind === 'leaf' ? 0.12 : 0.06), z: 1, sy: y + 1 });
 }
 export function mapObjects(m, t, out) {
+  if (FEST(m.theme)) return ft().mapObjects(m, t, out);
   if (m.theme === 'village') return villageObjects(m, t, out);
   const s = mapState(m), G = s.g, snow = m.theme === 'snowtown', swamp = m.theme === 'swamptown';
   out.push({ x: -MG, y: -MG, w: 1, h: 1, z: 0, draw: (ctx, X, Y, TS) => { const k = TS / 16, sx0 = Math.max(0, Math.floor(-X / k)), sy0 = Math.max(0, Math.floor(-Y / k)), sw = Math.min(G.GW - sx0, Math.ceil(ctx.canvas.width / k) + 2), sh = Math.min(G.GH - sy0, Math.ceil(ctx.canvas.height / k) + 2); if (sw > 0 && sh > 0) ctx.drawImage(G.cv, sx0, sy0, sw, sh, X + sx0 * k, Y + sy0 * k, sw * k, sh * k); } });
@@ -1716,3 +1722,6 @@ function villageObjects(m, t, out) {
 }
 
 // VB>>
+
+// helpers shared with townart2.js (the Hopsend and Kilnhaven themes); handed over lazily so the two modules never import each other
+const KIT = { Pix, PAL, ramp, pk, cR, cG, cB, cA, rgba, cl, mix, dk, hash, vnoise, fbm, bay, pick, outline, rim, blob, canv, once, vor, tuft, boxblur, MG, trunk, thatch, tileRoof, chimney, masonryPx, masonry, oakPost, oakRail, lattice, doorAt, windowAt, eaveShadow, eyebrow, climber, cob, wob, lampPix, puffPix, mk, cylinder, crate, txt, txtW, flipped, wander, braceLine, edgeMask, stoneBlob, PROPS, propPix, plazaPx, MAT, treePix, haystackPix, hivesPix, goosePix, hayCartPix, goatPix, bellPennant, F5, dryWallPx };

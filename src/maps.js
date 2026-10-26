@@ -7,7 +7,7 @@
 // in data.js, e.g. 'wyrm !lich', 's:met', 'titan'; '@base' inside lines = the default text). The world reacts to the story this way.
 import { GEN } from './mapgen.js';
 
-export const WALK = new Set(['.', ',', ':', 'd', '_', '=', 'H', 'D', 'E', 'X']); // d = overworld desert; towns add: b building, F fountain, G grave (all solid)
+export const WALK = new Set(['.', ',', ':', ';', 'd', '_', '=', 'H', 'D', 'E', 'X']); // d = overworld desert; towns add: b building, F fountain, G grave (all solid)
 export const MAPS = {};
 const portal = (to, x, y) => ({ to, x, y });
 const P = (x, y) => `${x},${y}`;
@@ -41,7 +41,11 @@ const PROP_FOOT = { stall: [3, 2], lamp: [1, 1], barrel: [1, 1], barrels: [2, 1]
   // the Bell Village (Haven): bell tower 5x2, shrine chapel, Gemforge's grave slab, market cross, maypole, stocks, farm-cart stalls, notice board,
   // trestle table, hay cart, haystack, prize marrow, beehives, the waterwheel's walkway
   tower: [3, 2], chapel: [4, 3], gemgrave: [2, 1], cross: [1, 1], maypole: [1, 1], stocks: [2, 1], cartstall: [3, 2], noticeboard: [2, 1], trestle: [2, 1], haycart: [3, 2],
-  haystack: [2, 2], marrow: [2, 1], hives: [3, 1], wheel: [2, 1], post: [1, 1] };
+  haystack: [2, 2], marrow: [2, 1], hives: [3, 1], wheel: [2, 1], post: [1, 1],
+  // Hopsend: round hay bales, a pumpkin patch, scarecrow, cider press
+  bales: [2, 1], pumpkins: [2, 1], scarecrow: [1, 1], press: [3, 2],
+  // Kilnhaven: tiki torch, beach parasol, sun lounger, kebab grill, the groom tied to a post
+  tiki: [1, 1], parasol: [1, 1], lounger: [2, 1], grill: [2, 1], groom: [1, 1] };
 // props whose solid cells are not one rectangle: [dx, dy] offsets from the prop's x, y (lych gate posts, the bridge's parapets)
 const PROP_CELLS = { lychgate: (o) => [[0, 0], [(o.w || 3) + 1, 0]], bridge: (o) => { const c = []; for (let i = 0; i < (o.w || 3); i++) c.push([i, -1], [i, 1]); return c; } };
 function town(art, buildings, props = []) {
@@ -298,39 +302,40 @@ interior('wayside_shed', 'Ice Fishing Shed', 'house', wb('shed'), { npcs: [{ x: 
 TOWNS.hopsend = town([
   'TTTTTTTTTTTTTTTTTTTTTTTTTTTTTT',
   'TTTTTTTTTTTTTTTTTTTTTTTTTTTTTT',
-  'TT........T........T........TT',
-  'TT..........................TT',
-  'TT..................T.......TT',
-  'TT..........................TT',
-  'TT..........................TT',
-  'TT............._............TT',
+  'TT........a.......e........aTT',
+  'TT................k.........TT',
+  'TT................k........hTT',
+  'TT........e.......k........hTT',
+  'TT............_...k........hTT',
+  'TT.........a.._...k.........TT',
   'TT__________________________TT',
   'TT__________________________TT',
-  'TTThhhh.......__.......hhhh.TT',
-  'TT.....w......__......w.....TT',
-  'TT.........................TTT',
-  'TT..................T.......TT',
-  'TT.......:::::::::::........TT',
-  'TT.......:::::::::::....T...TT',
-  'TT.......:::FFF::::.........TT',
-  'TT.......:::FFF::::.........TT',
-  'TT........:::::::::.........TT',
-  'TT________________________..TT',
-  'TT......T.....__............TT',
-  'TT............__.......T....TT',
-  'TT..T.........__............TT',
+  'TT.wwww.......__.......wwww.TT',
   'TT............__............TT',
+  'TT............__............TT',
+  'TT.......::::::::::::.......TT',
+  'TT.......:;;;;;;;;;;:.......TT',
+  'TT.......:;;;;;;;;;;:.......TT',
+  'TT.......:;;;;;;;;;;:fff.fffTT',
+  'TT.kkkkkk:;;;;;;;;;;:.......TT',
+  'TT.kkkkkk::::::::::::.......TT',
+  'TT__________________________TT',
+  'TT.a.a.a.a....__...........TTT',
+  'TT............__.....~~~~~~.TT',
+  'TT..e.e.e.e...__.....~~~~~~.TT',
+  'TTT...........__.....~~~~~~.TT',
   'TT############__############TT',
   'TT############EE############TT'],
-  [[3, 3, 7, 5, 'inn', 3, 'hop_inn'], [12, 2, 5, 4, 'shop', 2, 'hop_shop'], [20, 3, 7, 5, 'smith', 2, 'hop_smith'], [3, 12, 5, 4, 'house', 2, 'hop_farm'], [22, 12, 5, 4, 'house', 2, 'hop_bees']],
-  [['lamp', 10, 11], ['lamp', 19, 11], ['lamp', 12, 19], ['lamp', 17, 19], ['hay', 7, 20], ['hay', 8, 20], ['cart', 22, 20], ['barrels', 25, 9], ['barrel', 2, 9], ['well', 6, 15], ['arch', 14, 24, { w: 2 }]]);
+  [[3, 3, 7, 5, 'inn', 3, 'hop_inn'], [12, 3, 5, 4, 'shop', 2, 'hop_shop'], [20, 3, 7, 5, 'smith', 2, 'hop_smith'], [3, 12, 5, 4, 'house', 2, 'hop_farm'], [22, 12, 5, 4, 'house', 2, 'hop_bees']],
+  [['lamp', 10, 12], ['lamp', 19, 12], ['lamp', 12, 19], ['lamp', 17, 19], ['maypole', 14, 16], ['haystack', 8, 10], ['bales', 20, 10], ['pumpkins', 21, 17], ['scarecrow', 26, 17], ['hives', 21, 18], ['bales', 26, 18],
+    ['press', 17, 20], ['barrels', 17, 22], ['crate', 19, 22], ['fowl', 23.5, 22, { rx: 1.8, ry: 0.5, n: 2 }], ['arch', 14, 24, { w: 2 }]]);
 interior('hop_inn', 'The Barley Mow', 'inn', back('hopsend', 'hop_inn', { music: 'pub' }), { cost: 70, inn: { text: ['Welcome to the Barley Mow! Rooms are seventy gold. Breakfast is a pint. Lunch is a pint. Dinner is two pints and a regret.'] } });
 interior('hop_shop', 'Hopsend General Shop', 'general', back('hopsend', 'hop_shop'), { shop: 'hop_general' });
 interior('hop_smith', 'Hopsend Forge & Tin Shed', 'smith', back('hopsend', 'hop_smith'), { shop: 'hop_smith' });
 interior('hop_farm', 'Farmhouse', 'house', back('hopsend', 'hop_farm'), { npcs: [{ x: 4, y: 3, type: 'elder', name: 'Head Farmer', quest: 'mashtun', text: ['Forty acres of hops, and every one of them is now arguing with me. Since the Brewery started bubbling, they have opinions.', 'Take the chest. It is full of hops. Well, gold. Mostly gold. One hop.'] }], chest: [9, 5, { gold: 700, items: { elixir: 2, megaether: 2 } }] });
 interior('hop_bees', 'Beekeeper\'s Cottage', 'house', back('hopsend', 'hop_bees'), { npcs: [{ x: 4, y: 3, type: 'villager2', name: 'Beekeeper', quest: 'wasps', text: ['The bees are fine! They are not fine. They are the size of dinner plates. They have started a pension fund.', 'Do not run. Running makes them chase. Standing still makes them chase also. I have no advice.'] }], chest: [9, 5, { gems: ['venom'], gold: 400 }] });
 MAPS.hopsend = {
-  name: 'Hopsend', kind: 'town', theme: 'town', music: 'town', rows: TOWNS.hopsend.rows, base: TOWNS.hopsend.base, buildings: TOWNS.hopsend.buildings, props: TOWNS.hopsend.props, spawn: { x: 14, y: 24 },
+  name: 'Hopsend', kind: 'town', theme: 'autumntown', music: 'town', rows: TOWNS.hopsend.rows, base: TOWNS.hopsend.base, buildings: TOWNS.hopsend.buildings, props: TOWNS.hopsend.props, spawn: { x: 14, y: 24 },
   portals: { [P(14, 25)]: portal('world', ...GEN.adj.hopsend), [P(15, 25)]: portal('world', ...GEN.adj.hopsend), ...doorPortals('hopsend') },
   decor: [],
   npcs: [
@@ -349,41 +354,42 @@ interior('port_h', 'Hopsend Jetty', 'house', wb('dock_h'), { npcs: [{ x: 4, y: 3
 
 // ---------------------------------------------------------------- Cinder Isle: the far north-west volcano holiday island (post-ending)
 TOWNS.kilnhaven = town([
-  'TTTTTTTTTTTTTTTTTTTTTTTTTTTTTT',
-  'TTTTTTTTTTTTTTTTTTTTTTTTTTTTTT',
-  'TT........T........T........TT',
-  'TT..........................TT',
-  'TT..................T.......TT',
-  'TT..........................TT',
-  'TT..........................TT',
-  'TT............._............TT',
+  'MMMMMMMMMMMMMMMMMMMMMMMMMMMMMM',
+  'MMMMMMMMMMMMMMMMMMMMMMMMMMMMMM',
+  'MMMMMMMMMMMMMMMMMMMMMMMMMMMMMM',
+  'MMMMMMMMMMMMMMMMMMMMMMMMMMMMMM',
+  'TT................L.........TT',
+  'TT........T.......L........hTT',
+  'TT................L........hTT',
+  'TTh........T......L........hTT',
+  'TTh..........._..LLL........TT',
   'TT__________________________TT',
   'TT__________________________TT',
-  'TTThhhh.......__.......hhhh.TT',
-  'TT.....w......__......w.....TT',
-  'TT.........................TTT',
-  'TT..................T.......TT',
-  'TT.......:::::::::::........TT',
-  'TT.......:::::::::::....T...TT',
-  'TT.......:::FFF::::.........TT',
-  'TT.......:::FFF::::.........TT',
-  'TT........:::::::::.........TT',
-  'TT________________________..TT',
-  'TT......T.....__............TT',
-  'TT............__.......T....TT',
-  'TT..T.........__............TT',
   'TT............__............TT',
+  'TTh.......h...__...hh.......TT',
+  'TTh...........__............TT',
+  'TTh......::::::::::::.......TT',
+  'TTh......::::FFF:::::.......TT',
+  'TT,,,,,,,::::FFF:::::.......TT',
+  'TT,,,,,,,::::::::::::T......TT',
+  'TT,,,,,,,::::::::::::.......TT',
+  'TT__________________________TT',
+  'TT,,,,,,,,,,,.__.....LLLLLLTTT',
+  'TT,,,,,,,,,,,.__.....LLLLLL.TT',
+  'TT,,,,,,,,,,,.__.....LLLLLL.TT',
+  'TT,,,,,,,,,,,.__.....LLLLLL.TT',
   'TT############__############TT',
   'TT############EE############TT'],
-  [[3, 3, 7, 5, 'inn', 3, 'kiln_inn'], [12, 2, 5, 4, 'shop', 2, 'kiln_shop'], [20, 3, 7, 5, 'smith', 2, 'kiln_smith'], [3, 12, 5, 4, 'house', 2, 'kiln_bar'], [22, 12, 5, 4, 'house', 2, 'kiln_warden']],
-  [['lamp', 10, 11], ['lamp', 19, 11], ['lamp', 12, 19], ['lamp', 17, 19], ['barrels', 25, 9], ['crates', 7, 20], ['cart', 22, 20], ['well', 6, 15], ['arch', 14, 24, { w: 2 }]]);
+  [[3, 4, 7, 5, 'inn', 3, 'kiln_inn'], [12, 4, 5, 4, 'shop', 2, 'kiln_shop'], [20, 4, 7, 5, 'smith', 2, 'kiln_smith'], [3, 12, 5, 4, 'house', 2, 'kiln_bar'], [22, 12, 5, 4, 'house', 2, 'kiln_warden']],
+  [['tiki', 10, 11], ['tiki', 19, 11], ['tiki', 12, 19], ['groom', 17, 19], ['tiki', 9, 14], ['tiki', 20, 14], ['grill', 8, 15], ['parasol', 5, 17, { c: 'pink' }], ['lounger', 3, 17], ['towel', 6, 18, { c: 1 }],
+    ['parasol', 3, 21, { c: 'yellow' }], ['lounger', 4, 22], ['parasol', 7, 21, { c: 'teal' }], ['lounger', 8, 22], ['towel', 10, 22, { c: 0 }], ['towel', 2, 23, { c: 3 }], ['barrels', 25, 17], ['crates', 20, 16], ['arch', 14, 24, { w: 2 }]]);
 interior('kiln_inn', 'The Lava Lounge', 'inn', back('kilnhaven', 'kiln_inn', { music: 'pub' }), { cost: 120, inn: { text: ['Welcome to the Lava Lounge! One hundred and twenty gold. Rooms are warm. Rooms are always warm. Please do not ask why the floor is warm.'] } });
 interior('kiln_shop', 'Kilnhaven Beach Shop', 'general', back('kilnhaven', 'kiln_shop'), { shop: 'kiln_general' });
 interior('kiln_smith', 'Kilnhaven Forge & Fire Pit', 'smith', back('kilnhaven', 'kiln_smith'), { shop: 'kiln_smith' });
 interior('kiln_bar', 'Beach Bar', 'house', back('kilnhaven', 'kiln_bar'), { npcs: [{ x: 4, y: 3, type: 'villager2', name: 'Beach Bar Owner', quest: 'kebabs', text: ['Cocktails, kebabs, and a view of an erupting volcano. Four stars on the app. It would be five but the app is also on fire.', 'Take the chest. Mind the umbrella. It is lit.'] }], chest: [9, 5, { gold: 1200, items: { elixir: 3, megaether: 3 } }] });
 interior('kiln_warden', 'Warden\'s Hut', 'house', back('kilnhaven', 'kiln_warden'), { npcs: [{ x: 4, y: 3, type: 'guard', name: 'Volcano Warden', quest: 'margherita', text: ['The mountain has been on since nineteen eighty-seven. Nobody dares turn it off. Nobody can find the dial.', 'It is a pizza oven. I want to be clear. It has always been a pizza oven. We just kept it quiet.'] }], chest: [9, 5, { gems: ['execute'], gold: 800 }] });
 MAPS.kilnhaven = {
-  name: 'Kilnhaven', kind: 'town', theme: 'town', music: 'town', rows: TOWNS.kilnhaven.rows, base: TOWNS.kilnhaven.base, buildings: TOWNS.kilnhaven.buildings, props: TOWNS.kilnhaven.props, spawn: { x: 14, y: 24 },
+  name: 'Kilnhaven', kind: 'town', theme: 'volcanotown', music: 'town', rows: TOWNS.kilnhaven.rows, base: TOWNS.kilnhaven.base, buildings: TOWNS.kilnhaven.buildings, props: TOWNS.kilnhaven.props, spawn: { x: 14, y: 24 },
   portals: { [P(14, 25)]: portal('world', ...GEN.adj.kilnhaven), [P(15, 25)]: portal('world', ...GEN.adj.kilnhaven), ...doorPortals('kilnhaven') },
   decor: [],
   npcs: [
