@@ -765,3 +765,6 @@ export function mapObjects(m, t, out) {
     if (f > 0) out.push({ x: 0, y: 0, w: 1, h: 1, z: 2, draw: (ctx) => { ctx.fillStyle = `rgba(200,215,255,${(f * 0.22).toFixed(3)})`; ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height); } });
   }
 }
+
+// shared helpers for the themed interiors in roomart2.js (a bundle, so that file stays independent of this one's internals)
+export const RH = { pk, ramp, PAL, Pix, cl, mix, dk, hash, vnoise, fbm, vor, pick, bay, outline, blob, cylinder, once, glowItem, glowCv, firePix, flamePix, coalsPix, place, plankPx, flagPx, barrelPix, tablePix, bedPix, rackPix, anvilPix, chestPix, candlePix, rgba, cR, cG, cB, cA, VOID, counters };

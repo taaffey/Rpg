@@ -12,6 +12,7 @@ import * as SP from './sprites.js';
 import * as TR from './terrain.js';
 import * as TA from './townart.js';
 import * as RA from './roomart.js';
+import * as RB from './roomart2.js';
 import * as WK from './walkers.js';
 import { Stage, FX } from './stage.js';
 import * as UI from './uiart.js';
@@ -257,7 +258,7 @@ function draw(t = performance.now() / 1000) {
   const x0 = Math.max(0, Math.floor(camX)), x1 = Math.min(W, Math.ceil(camX + VW) + 1), y0 = Math.max(0, Math.floor(camY)), y1 = Math.min(H, Math.ceil(camY + VH) + 1);
   const defeated = (id) => !!G.flags.bosses[id];
   m.chestOpen = (x, y) => !!G.flags.chests[chestKey(x, y)];
-  const R = TR.isTheme(m.theme) ? TR : TA.isTheme(m.theme) ? TA : RA.isTheme(m.theme) ? RA : null, items = []; // R = autotiled renderer (overworld / towns)
+  const R = TR.isTheme(m.theme) ? TR : TA.isTheme(m.theme) ? TA : RA.isTheme(m.theme) ? RA : RB.isTheme(m.theme) ? RB : null, items = []; // R = autotiled renderer (overworld / towns)
   if (!R) { // rooms and dungeons: classic tiles; beyond the edge more wall, shaded, instead of black bars
     for (let y = Math.floor(camY) - 1; y <= Math.ceil(camY + VH) + 1; y++) for (let x = Math.floor(camX) - 1; x <= Math.ceil(camX + VW) + 1; x++) if (x < 0 || y < 0 || x >= W || y >= H) cx.drawImage(SP.tile(m.theme, '#', x, y, 0), sx(x), sy(y), TS, TS);
     cx.fillStyle = 'rgba(0,0,0,.55)'; cx.fillRect(0, 0, cv.width, cv.height);
