@@ -109,6 +109,7 @@ foot of the Frost Spire the party meets the one who wants them. The Titan is the
   (swamp), Sunscar Isle (desert) and Frost Isle (snow), plus far-off Hopsend Isle (autumn orchards, reached by ferry from the Sunscar jetty
   once the Wyrm falls). Six small wayside stops (a chippy, standing stones, an oasis kebab van, a ski lodge...) are dotted about. Fog of war, a
   minimap and a full map screen. A rockslide gates the pass to Frost Isle until the Ashen Wyrm falls. `tools/genmaps.py` generates it all.
+- **Night Bus Pass** (fast travel): the Elder gives it once the Ashen Wyrm falls. Menu > Items > Ride the N9 to any town, jetty or dungeon door you have already visited (never inside dungeons).
 - **Towns**: Haven Town, the swamp stilt-village Mirewood, and Frostholm. Buildings are enterable interiors (inn, general store, smithy, guild, houses) with
   NPCs, dialogue, shops and chests. A `!` over an NPC marks news.
 - **Dungeons** with their own lighting, music and enemies: Ashen Cavern (Ashen Wyrm), Sunken Crypt (Lich King Morvath),

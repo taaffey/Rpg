@@ -947,11 +947,30 @@ ACT.optmute = () => { setMuted(!isMuted()); syncMute(); optionsScreen(); };
 function itemsMenu(msg = '') {
   const it = Object.entries(G.inv.items).filter(([, n]) => n > 0);
   show(`<h2>🎒 Items</h2><div class="card"><div class="gilbox"><span>Gold</span>${coin(G.gold + ' G')}</div></div>${msg ? `<p class="gold">${msg}</p>` : ''}${it.length ? it.map(([id, n]) => `<div class="slot"><span class="lead">${itemIc('items', id)}</span><div class="t"><b>${ITEMS[id].name} <span class="dim">×${n}</span></b><small>${ITEMS[id].desc}</small></div>${btn('useitem', 'Use', id)}</div>`).join('') : '<p class="dim">No consumables.</p>'}
-  ${G.party.some((c) => c.look === 'devon') ? `<h3>Key items</h3><div class="slot"><span class="lead">${ic('tip')}</span><div class="t"><b>Devon's Phone</b><small>${G.flags.story.charged ? '4% battery! No signal.' : '3% battery. No signal. Never changes.'}</small></div>${btn('phone', 'Use', '', '')}</div>` : ''}
+  ${(G.party.some((c) => c.look === 'devon') || G.flags.story.buspass) ? `<h3>Key items</h3>${G.flags.story.buspass ? `<div class="slot"><span class="lead">${ic('tip')}</span><div class="t"><b>Night Bus Pass</b><small>The N9 stops at every place you have visited. Not in dungeons. "Every stop is a request stop."</small></div>${btn('bus', 'Ride', '', '')}</div>` : ''}${G.party.some((c) => c.look === 'devon') ? `<div class="slot"><span class="lead">${ic('tip')}</span><div class="t"><b>Devon's Phone</b><small>${G.flags.story.charged ? '4% battery! No signal.' : '3% battery. No signal. Never changes.'}</small></div>${btn('phone', 'Use', '', '')}</div>` : ''}` : ''}
   ${gemsOn() ? `<h3>💎 Gems (${G.inv.gems.length})</h3><div>${G.inv.gems.map((g) => gemChip(g)).join('') || '<span class="dim">none</span>'}</div>` : G.inv.gems.length ? `<h3>Oddments</h3><div class="dim">Dull Stone ×${G.inv.gems.length}</div>` : ''}
   <div class="foot">${btn('menu', 'Back', '', '', 'primary')}</div>`);
 }
 ACT.items = () => itemsMenu(); ACT.menu = mainMenu;
+function busStops() { // every visited town, jetty and dungeon door on the overworld, with where the bus lands you (the tile outside)
+  const out = [], w = MAPS.world;
+  for (const [k, [px, py]] of Object.entries(GEN.pois)) {
+    const pt = w.portals[`${px},${py}`], place = w.places.find((q) => q[0] === px && q[1] === py); if (!pt || !place) continue;
+    if (!G.flags.visited[pt.to] || !GEN.adj[k]) continue;
+    out.push({ name: place[2], to: GEN.adj[k], kind: MAPS[pt.to]?.kind });
+  }
+  return out.sort((a, b) => (a.kind === 'town' ? 0 : 1) - (b.kind === 'town' ? 0 : 1) || a.name.localeCompare(b.name));
+}
+ACT.bus = () => {
+  const m = mapDef(); if (m.kind === 'dungeon') return show(`<h2>🚌 Night Bus</h2><p>The N9 does not run in dungeons. The driver has been very clear about this.</p><div class="foot">${btn('items', 'Back', '', '', 'primary')}</div>`);
+  const stops = busStops();
+  show(`<h2>🚌 Night Bus</h2><p class="dim">Where to, lads? Every stop is a request stop.</p><div class="cmdlist">${stops.map((s2, i) => `<button data-act="busgo" data-a="${i}">${esc(s2.name)}</button>`).join('') || '<p class="dim">Nowhere yet. Go and visit somewhere.</p>'}</div><div class="foot">${btn('items', 'Back', '', '', 'primary')}</div>`);
+};
+ACT.busgo = async (i) => {
+  const s2 = busStops()[+i]; if (!s2) return;
+  hide(); await scene([{ s: 'n', t: 'The N9 rattles up, windows steamed. "Mind the gap," says a voice from nowhere.' }]);
+  goto('world', ...s2.to); autosave();
+};
 ACT.phone = async () => { // Devon's phone: still 3%, still no signal, a different joke each time
   const jokes = G.flags.story.charged ? [...PHONE_CHARGED, ...PHONE.slice(1)] : PHONE, n = (G.flags.story.phone || 0) % jokes.length; G.flags.story.phone = n + 1; sfx('blip');
   await scene(jokes[n]);
@@ -1302,6 +1321,10 @@ async function victory(b, bossId) {
   });
   if (bossId === 'big_gary') { G.flags.story.cellar = true; joinLocal('brenna'); }
   if (bossId && STORY.after[bossId]) { await scene(STORY.after[bossId]); autosave(); } // aftermath: what the evil left behind, and who was watching
+  if (bossId === 'wyrm' && !G.flags.story.buspass) { // the Elder's thank-you: a fast-travel pass
+    G.flags.story.buspass = true;
+    await scene([{ s: 'elder', t: 'Take this, heroes. A Night Bus pass: the N9, which runs to every place you have set foot in. Do not ask who drives. Nobody has ever asked who drives.' }, { s: 'devon', t: 'Bro. A bus pass. In a fantasy world.' }, { s: 'adam', t: 'Use it from the menu, Items. It only stops where we have already been. And not in dungeons.' }, { s: 'n', t: 'Got the Night Bus Pass! (Menu, Items.)' }]); autosave();
+  }
   if (awake) await awakening(awake);
   if (def?.final) await ending();
 }

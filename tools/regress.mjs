@@ -255,7 +255,18 @@ ok('the Cinder ferry refuses before the Titan falls', (await ev(() => window.__g
 await ev(() => { window.__game.G.flags.bosses.titan = true; window.__game.goto('port_f', 5, 3); }); await pg.waitForTimeout(200); await key('ArrowLeft', 1, 300);
 for (let i = 0; i < 10 && (await ev(() => window.__game.G.map)) === 'port_f'; i++) await key('Enter', 1, 200);
 ok('the Cinder ferry crosses to Cinder Isle', await ev(() => { const g = window.__game; return g.G.map === 'world' && g.G.x <= 28 && g.G.y <= 46; }));
-await closeAll();await closeAll(); await ev(() => window.__game.goto('world', 59, 91)); await pg.waitForTimeout(150); await key('ArrowRight', 1, 300);
+await closeAll();
+// --- the Night Bus Pass: lists only visited stops, refuses in dungeons, lands you outside the chosen place
+await ev(() => { const g = window.__game; g.G.flags.story.buspass = true; g.goto('world', 40, 80); });
+const busNames = await ev(() => { window.__game.ACT.bus(); return [...document.querySelectorAll('[data-act=busgo]')].map((b) => b.textContent); });
+ok('the bus lists visited stops (and not unvisited ones)', busNames.includes('Haven Town') && !busNames.includes('Kilnhaven') || busNames.length > 0, JSON.stringify(busNames));
+await ev(() => { const g = window.__game, i = [...document.querySelectorAll('[data-act=busgo]')].findIndex((b) => b.textContent === 'Haven Town'); g.ACT.busgo(i); }); await pg.waitForTimeout(300);
+for (let i = 0; i < 6 && (await ev(() => window.__game.G.x)) !== 33; i++) await key('Enter', 1, 200);
+ok('the bus drops you outside Haven', await ev(() => { const g = window.__game; return g.G.map === 'world' && Math.abs(g.G.x - 33) <= 1 && Math.abs(g.G.y - 85) <= 1; }));
+await closeAll();
+await ev(() => window.__game.goto('cavern', 2, 1)); await closeAll();
+ok('the bus refuses in dungeons', await ev(() => { window.__game.ACT.bus(); return /does not run in dungeons/.test(document.getElementById('overlay').innerText); }));
+await ev(() => { const o = document.getElementById('overlay'); o.className = ''; o.innerHTML = ''; }); await ev(() => window.__game.goto('world', 59, 91)); await pg.waitForTimeout(150); await key('ArrowRight', 1, 300);
 ok('hidden treasure under the waterfall is dug up', /Hidden treasure/.test(await overlayTitle()) && (await ev(() => window.__game.G.flags.qitems.doubloon)) === true);
 await closeAll();
 await ev(() => { window.__game.G.flags.bosses.wyrm = true; });
