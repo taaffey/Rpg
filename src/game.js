@@ -5,6 +5,7 @@ import { MAPS, WALK, START } from './maps.js';
 import { GEN } from './mapgen.js';
 import * as L from './logic.js';
 import { BROS, COMBOS, LOCALS, PARTY_SCALE, PHONE, PHONE_CHARGED, PUB, WAKE, CELLAR_IN, GARY_DOWN, CALLED, CALLED_AFTER, WENDELL } from './bros.js';
+import './sidequests.js'; // four small optional dungeons on the main islands
 import './embers.js'; // Cinder Isle content (post-ending volcano island)
 import './hopsend.js'; // Hopsend Isle content (enemies, gear, shops, quests, scenes)
 import * as SP from './sprites.js';
@@ -896,6 +897,10 @@ const OBJECTIVES = [ // the main thread, in the story's voice. show / after / do
   { title: 'Thunder on the Plains', after: 'wyrm', optional: true, hint: 'A drake nests in the Storm Cavern in the Frostfields. Not for the faint (Lv 11+).', done: 'storm_drake', doneHint: 'Stars over the plains again.' },
   { title: 'The Sun Pharaoh', optional: true, hint: 'Something asks riddles beneath the Sunscar Ruins, south-east of Haven (Lv 11+).', done: 'sphinx', doneHint: 'The riddle is answered.' },
   { title: 'Hopsend Isle', after: 'titan', optional: true, hint: 'A ferry now runs to Hopsend Isle, all orchards and hop fields. The harvest has gone wrong (Lv 17+).', done: 'v:hopsend', doneHint: 'Hopsend smells of apples and mild regret.' },
+  { title: 'The Old Windmill', optional: true, hint: 'The Old Windmill, Haven Isle. Ghostly flour and a very angry goose. The Miller does not like visitors. Bring holy or fire, never dark (Lv 8).', done: 'miller', doneHint: 'The mill stands still, and the bread has never been better.' },
+  { title: 'The Salty Sue', after: 'wyrm', optional: true, hint: 'A pirate ship stuck in the Mire Isle bog. Fire or holy for the crew, bolts for the crabs and the barnacle things (Lv 14).', done: 'captain_barnacle', doneHint: 'The Salty Sue has settled into the mud for good.' },
+  { title: 'Mild Inconvenience', after: 'wyrm', optional: true, hint: 'A pyramid built by a pharaoh who loved forms. Fire or holy, take a number, and do not read the small print (Lv 16).', done: 'clerk_pharaoh', doneHint: 'The queue is moving. Somebody approved something.' },
+  { title: 'The Ice Cave', after: 'wyrm', optional: true, hint: 'Behind the Frost Isle pass, a frozen fishing lake. Fire or bolts for the Frozen Angler. Avoid the coffee-break yeti (Lv 18).', done: 'frozen_angler', doneHint: 'The anglers have gone home.' },
   { title: 'The Great Mash Tun', show: 'v:hopsend', optional: true, hint: 'The Great Brewery, at the far end of Hopsend, has been bubbling since harvest. Bring ice and bolts, never fire (Lv 18+).', done: 'mash_tun', doneHint: 'Flat, calm and drinkable.' },
   { title: 'Cinder Isle', after: 'titan', optional: true, hint: 'A ferry now sails to Cinder Isle, a holiday volcano in the far north-west, packed with stag dos and fire-eaters (Lv 20).', done: 'v:kilnhaven', doneHint: 'Kilnhaven is warm, loud and smells of garlic.' },
   { title: 'The Margherita', show: 'v:pizzaoven', optional: true, hint: 'The volcano is a pizza oven that has been on since 1987, and something has grown in the coals. Bring ice, never fire (Lv 20).', done: 'margherita', doneHint: 'The oven is cool, and the isle is free to eat.' },
@@ -1071,7 +1076,7 @@ const fieldNote = (id) => {
   return { name: who.name, text: n[1] };
 };
 function stageKind(bossId) {
-  if (bossId) return { big_gary: 'cellar', mash_tun: 'brewery', margherita: 'pizzaoven', wyrm: 'boss', lich: 'crypt', storm_drake: 'storm', sphinx: 'ruins' }[bossId] || 'spire';
+  if (bossId) return { big_gary: 'cellar', miller: 'cellar', captain_barnacle: 'crypt', clerk_pharaoh: 'ruins', frozen_angler: 'spire', mash_tun: 'brewery', margherita: 'pizzaoven', wyrm: 'boss', lich: 'crypt', storm_drake: 'storm', sphinx: 'ruins' }[bossId] || 'spire';
   const m = mapDef();
   if (m.kind === 'dungeon') return G.map === 'pizzaoven' ? 'pizzaoven' : m.theme === 'cavern' ? 'dungeon' : m.theme;
   const r = regionOf(), woods = [[1, 0], [-1, 0], [0, 1], [0, -1]].some(([a, b2]) => tileAt(G.x + a, G.y + b2) === 'T'); // fighting at a forest's edge

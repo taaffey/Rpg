@@ -401,16 +401,16 @@ interior('port_e', 'Cinder Jetty', 'house', wb('dock_e'), { npcs: [{ x: 4, y: 3,
 
 // ---------------------------------------------------------------- four small optional dungeons on the main islands
 gen('windmill', 'The Old Windmill', 'cellar', GEN.windmillInfo, 'windmill', 'miller',
-  [{ gold: 120, items: { potion: 2 } }, { items: { ether: 1, antidote: 1 }, gold: 80 }, { gold: 200 }, { items: { hipotion: 1 }, gold: 100 }, { gold: 300, gems: ['fire'] }], GEN.adj.windmill, 'dungeon');
+  [{ gold: 120, items: { potion: 2 } }, { items: { ether: 1, antidote: 1 }, gold: 80 }, { weapons: ['rolling_pin'], gold: 200 }, { items: { hipotion: 1 }, gold: 100 }, { gold: 300, gems: ['fire'] }], GEN.adj.windmill, 'dungeon');
 MAPS.windmill.minLv = 4;
 gen('wreck', 'Wreck of the Salty Sue', 'crypt', GEN.wreckInfo, 'wreck', 'captain_barnacle',
-  [{ gold: 400, items: { hipotion: 2 } }, { items: { ether: 2 }, gold: 300 }, { gold: 600 }, { items: { phoenix: 2 }, gold: 300 }, { gold: 800, gems: ['venom'] }], GEN.adj.wreck, 'crypt');
+  [{ gold: 400, items: { hipotion: 2 } }, { items: { ether: 2 }, gold: 300 }, { weapons: ['soggy_cutlass'] }, { items: { phoenix: 2 }, gold: 300 }, { gold: 800, gems: ['venom'] }], GEN.adj.wreck, 'crypt');
 MAPS.wreck.minLv = 10;
 gen('pyramid', 'Pyramid of Mild Inconvenience', 'ruins', GEN.pyramidInfo, 'pyramid', 'clerk_pharaoh',
-  [{ gold: 500, items: { hipotion: 3 } }, { items: { megaether: 1 }, gold: 400 }, { gold: 800 }, { items: { phoenix: 2, remedy: 2 }, gold: 400 }, { gold: 1000, gems: ['crit'] }], GEN.adj.pyramid, 'ruins');
+  [{ gold: 500, items: { hipotion: 3 } }, { items: { megaether: 1 }, gold: 400 }, { armors: ['lost_property_coat'], gold: 800 }, { items: { phoenix: 2, remedy: 2 }, gold: 400 }, { gold: 1000, gems: ['crit'] }], GEN.adj.pyramid, 'ruins');
 MAPS.pyramid.minLv = 12;
 gen('icecave', 'The Ice Cave', 'spire', GEN.icecaveInfo, 'icecave', 'frozen_angler',
-  [{ gold: 700, items: { hipotion: 3 } }, { items: { megaether: 2 }, gold: 500 }, { gold: 1000 }, { items: { elixir: 1, phoenix: 2 }, gold: 500 }, { gold: 1200, gems: ['frost'] }], GEN.adj.icecave, 'spire');
+  [{ gold: 700, items: { hipotion: 3 } }, { items: { megaether: 2 }, gold: 500 }, { weapons: ['ice_fishing_rod'], gold: 1000 }, { items: { elixir: 1, phoenix: 2 }, gold: 500 }, { gold: 1200, gems: ['frost'] }], GEN.adj.icecave, 'spire');
 MAPS.icecave.minLv = 14;
 
 // ---------------------------------------------------------------- overworld
