@@ -653,7 +653,7 @@ const MODELS = {
     } };
   } },
   wraith: { col: { cloak: '#5a6a9a', inner: '#141020', eye: '#7af0ff', hand: '#c8d8e8' }, build(P, V = {}) {
-    const m = { cloak: mat(P.cloak, 5, { tex: 'cloth', lift: 0.03 }), inner: mat(P.inner, 3, { flat: 0.2 }), hand: mat(P.hand, 4), antler: mat('#e8dcc0', 5, { tex: 'grain', spec: '#fffbe8', specAt: 0.9 }), sash: mat('#d8c030', 4, { tex: 'cloth' }) };
+    const m = { cloak: mat(P.cloak, 5, { tex: 'cloth', lift: 0.03 }), inner: mat(P.inner, 3, { flat: 0.2 }), hand: mat(P.hand, 4), antler: mat('#e8dcc0', 5, { tex: 'grain', spec: '#fffbe8', specAt: 0.9 }), sash: mat('#d8c030', 4, { tex: 'cloth' }), stone: mat('#9a968c', 5, { tex: 'rough' }) };
     const hem = [[7, 38], [10, 33], [12, 40], [15, 34], [18, 41], [21, 35], [24, 40], [26, 33], [29, 37]], oy = V.antlers ? 14 : 0;
     // a stag do gone wrong: a rack of antlers on the head (the whole figure drops down to make room) and a tattered BEST MAN sash
     const ant = V.antlers ? [...chain([[15, 5], [12, -3], [9, -9], [6, -12]], [1.6, 1.3, 1.1, 0.5], 'antler', 5), ...chain([[12, -3], [7, -4.5], [3, -3]], [1, 0.8, 0.4], 'antler', 5), ...chain([[10, -7], [14, -11]], [0.9, 0.4], 'antler', 5),
@@ -665,7 +665,9 @@ const MODELS = {
       ell(17.5, 10, 7.5, 8, 'cloak', { z: 3 }), cap(14, 4, 7, 1, 2.4, 0.8, 'cloak', { z: 2 }), paint(ell(20.5, 11, 4.2, 5.2, 'inner')),
       cap(23, 15, 28, 21, 2.6, 2.1, 'cloak', { z: 6 }), cap(28, 21, 32, 18, 2.1, 1.8, 'cloak', { z: 6 }),
       ...[[35.5, 14], [36.5, 17], [36, 20.5]].map(([x, y]) => cap(32.5, 18.3, x, y, 0.7, 0.4, 'hand', { z: 7 })), ...sash,
+      ...(V.mill ? [ell(27, 33, 9, 9, 'stone', { z: 9 }), paint(ell(27, 33, 2.4, 2.4, 'inner'))] : []), // the Miller's millstone, held against his belly
     ], oy), post(a) { const q = { px: (x, y, c) => a.px(x, y + oy, c), line: (x0, y0, x1, y1, c) => a.line(x0, y0 + oy, x1, y1 + oy, c), rect: (x, y, w2, h2, c) => a.rect(x, y + oy, w2, h2, c), ramp: a.ramp }; glowEye(q, 18, 10, P.eye); glowEye(q, 22, 10, P.eye); q.px(18, 11, shade(P.eye, 0.5)); q.px(23, 11, shade(P.eye, 0.5));
+      if (V.mill) { for (let k = 0; k < 7; k++) { const t = k * 0.9 + 0.3; q.line(27 + Math.cos(t) * 3.4, 33 + Math.sin(t) * 3.4, 27 + Math.cos(t) * 8, 33 + Math.sin(t) * 8, a.ramp('stone', -2)); } q.px(22, 28, a.ramp('stone', 4)); q.px(23, 27, a.ramp('stone', 4)); q.px(31, 38, '#f4f0e0'); q.px(20, 35, '#f4f0e0'); q.px(33, 30, '#f4f0e0'); } // dusted with flour
       if (V.antlers) { q.line(15, 25, 19, 21.5, '#5a4a10'); q.line(18, 27, 22, 24.5, '#5a4a10'); for (const [x, y] of [[17, 21], [21, 25], [24, 28]]) q.px(x, y, '#2a2208'); } } };
   } },
   zombie: { col: { skin: '#8aa070', cloth: '#5a5a7a', pants: '#5a4030', hair: '#3a3028', eye: '#ffffa0' }, build(P) {
@@ -895,8 +897,8 @@ Object.assign(MODELS, {
       ...leg([30, 21], [39, 11], [45, 30], 8), ...leg([28, 22], [33, 10], [38, 31], 7), ...leg([26, 22], [22, 10], [24, 31], 6), ...leg([24, 21], [16, 12], [13, 31], 5),
     ], post(a) { for (const [x, y] of [[34, 17], [36, 17], [35, 16], [37, 18]]) a.px(x, y, P.eye); a.px(36, 17, '#ffd0a0'); } };
   } },
-  bog_toad: { col: { skin: '#6a7a3a', spot: '#3a4a20', belly: '#d8c878', eye: '#e8d040', mouth: '#2a1810' }, build(P) {
-    const m = { skin: mat(P.skin, 5, { tex: 'wart', spec: '#e8f0c0', specAt: 0.9 }), spot: mat(P.spot, 4), belly: mat(P.belly, 4, { tex: 'belly' }), eye: mat(P.eye, 4, { spec: '#ffffff' }) };
+  bog_toad: { col: { skin: '#6a7a3a', spot: '#3a4a20', belly: '#d8c878', eye: '#e8d040', mouth: '#2a1810' }, build(P, V = {}) {
+    const m = { lure: mat('#fff2a0', 5, { glow: true, lift: 0.25, ramp: { hi: 0.95 }, nocrease: true }), skin: mat(P.skin, 5, { tex: 'wart', spec: '#e8f0c0', specAt: 0.9 }), spot: mat(P.spot, 4), belly: mat(P.belly, 4, { tex: 'belly' }), eye: mat(P.eye, 4, { spec: '#ffffff' }) };
     return { w: 44, h: 34, mats: m, parts: [
       ell(9, 24, 6.5, 6.5, 'skin', { z: -3 }), cap(6, 30, 15, 31.5, 1.8, 1.5, 'skin', { z: -3 }),
       ell(21, 22, 14, 9.5, 'skin', { z: 0 }), paint(ell(27, 27, 9, 4.5, 'belly')), ...[[14, 16, 2.4], [19, 14, 1.8], [11, 21, 2], [24, 17, 1.6]].map(([x, y, r]) => paint(ell(x, y, r, r * 0.8, 'spot'))),
@@ -904,10 +906,12 @@ Object.assign(MODELS, {
       ell(31, 18.5, 8.5, 6.5, 'skin', { z: 3 }), ell(34, 24, 4.5, 3, 'belly', { z: 4 }),
       ell(29, 12, 3.4, 3.4, 'skin', { z: 5 }), ell(35, 13, 3.2, 3.2, 'skin', { z: 6 }), ell(29.5, 11.4, 2.3, 2.3, 'eye', { z: 6 }), ell(35.4, 12.4, 2.2, 2.2, 'eye', { z: 7 }),
       cap(33, 25, 35, 31, 1.9, 1.5, 'skin', { z: 5 }), ell(36, 31.5, 2.6, 1.2, 'skin', { z: 5, d: 0.5 }),
+      ...(V.lure ? [...chain([[30, 11], [33, 5], [38, 2.2], [41, 4.5]], [1.2, 1, 0.8, 0.6], 'skin', 4), ell(41.4, 8.6, 2.8, 2.8, 'lure', { z: 9 }), poly([[16, 14], [18.5, 6.5], [21, 12.5]], 'spot', { z: 1, bev: 0.6 }), poly([[21, 12.5], [24.5, 5.5], [27, 11.5]], 'spot', { z: 1, bev: 0.6 }), poly([[4, 22], [-0.5, 16], [5, 17]], 'spot', { z: -4, bev: 0.6 })] : []),
     ], post(a) {
       a.rect(30, 11, 1, 2, '#100808'); a.rect(36, 12, 1, 2, '#100808');
       for (let x = 27; x <= 39; x++) a.px(x, 20 + (x > 36 ? -1 : 0), P.mouth); a.px(39, 18, P.mouth);
       a.px(38, 16, a.ramp('skin', 0)); a.px(37, 16, a.ramp('skin', 0));
+      if (V.lure) { for (let x = 28; x <= 39; x += 2) { a.px(x, 19, '#f4f8ff'); a.px(x, 18, '#f4f8ff'); a.px(x + 1, 21, '#f4f8ff'); a.px(x + 1, 22, '#f4f8ff'); } a.px(41, 7, '#ffffff'); a.px(40, 9, '#ffffff'); }
     } };
   } },
   leech: { col: { skin: '#5a3a4a', belly: '#a87878', mouth: '#2a0a14', tooth: '#f0e0d0' }, build(P) {
@@ -988,8 +992,8 @@ Object.assign(MODELS, {
       for (const [x, y] of [[10, 14], [10, 24], [10, 32], [25, 30], [25, 36], [13, 7], [22, 7], [2, 16], [8, 17], [33, 14], [27, 15], [33, 19], [14, 30], [20, 34]]) { a.px(x, y, P.spine); a.px(x + (x < 18 ? -1 : 1), y - 1, P.spine); }
     } };
   } },
-  mummy: { col: { wrap: '#d8c8a0', dark: '#2a2018', gold: '#e0b040', eye: '#ff6a3a' }, build(P) {
-    const m = { wrap: mat(P.wrap, 5, { tex: 'wrap', ramp: { lo: 0.4 } }), dark: mat(P.dark, 3, { flat: 0.2 }), gold: mat(P.gold, 4, { spec: '#ffffff' }) };
+  mummy: { col: { wrap: '#d8c8a0', dark: '#2a2018', gold: '#e0b040', eye: '#ff6a3a' }, build(P, V = {}) {
+    const m = { blue: mat('#2a50c0', 4, { tex: 'cloth' }), red: mat('#c02a2a', 4), wrap: mat(P.wrap, 5, { tex: 'wrap', ramp: { lo: 0.4 } }), dark: mat(P.dark, 3, { flat: 0.2 }), gold: mat(P.gold, 4, { spec: '#ffffff' }) };
     return { w: 36, h: 44, mats: m, parts: [
       cap(13, 16, 20, 18, 1.9, 1.6, 'wrap', { z: -4 }), cap(20, 18, 27, 17.5, 1.6, 1.4, 'wrap', { z: -4 }), cap(27, 17.5, 29, 24, 0.6, 0.4, 'wrap', { z: -4 }),
       cap(14, 28, 12, 34, 2.4, 2, 'wrap', { z: -2 }), cap(12, 34, 12, 39.5, 2, 1.7, 'wrap', { z: -2 }), ell(13, 40.5, 3, 1.4, 'wrap', { z: -2, d: 0.5 }),
@@ -999,7 +1003,10 @@ Object.assign(MODELS, {
       ell(17.5, 8, 5.6, 6, 'wrap', { z: 4, rot: 0.2 }), paint(poly([[16, 7], [24, 6.5], [24, 9.6], [16, 10]], 'dark')), cap(12, 6, 8, 12, 1, 0.5, 'wrap', { z: 3 }),
       cap(17, 16, 24, 15.5, 2, 1.7, 'wrap', { z: 7 }), cap(24, 15.5, 31, 15.5, 1.7, 1.4, 'wrap', { z: 7 }), cap(28, 16, 30, 23, 0.6, 0.4, 'wrap', { z: 7 }),
       ...[[34, 14.5], [34.2, 16.2], [33.5, 18]].map(([x, y]) => cap(31, 15.5, x, y, 0.5, 0.4, 'dark', { z: 8 })),
-    ], post(a) { a.px(19, 8, P.eye); a.px(20, 8, '#ffd080'); a.px(22, 8, P.eye); a.px(23, 8, '#ffd080'); a.px(17, 9, '#100808'); a.line(10, 22, 13, 25, a.ramp('wrap', 0)); a.line(19, 24, 22, 22, a.ramp('wrap', 0)); } };
+      ...(V.pharaoh ? [poly([[10.5, 5], [24, 4], [27.5, 22], [22, 19], [18, 22], [13, 19], [8, 21]], 'blue', { z: 3, bev: 1.4 }), poly([[11, 6], [24, 5], [23, 8], [12, 9]], 'gold', { z: 5, bev: 1 }), poly([[13, 4.5], [14.5, 1], [20.5, 1], [22, 4.5]], 'gold', { z: 6, bev: 1 }),
+        cap(32, 11, 32, 19, 1.5, 1.5, 'gold', { z: 9 }), ell(32, 10.5, 2.3, 1.8, 'gold', { z: 9 }), poly([[28.6, 19], [35.4, 19], [35.4, 23.5], [28.6, 23.5]], 'dark', { z: 9, bev: 1 }), paint(poly([[29.5, 22], [34.5, 22], [34.5, 23.5], [29.5, 23.5]], 'red'))] : []),
+    ], post(a) { a.px(19, 8, P.eye); a.px(20, 8, '#ffd080'); a.px(22, 8, P.eye); a.px(23, 8, '#ffd080'); a.px(17, 9, '#100808'); a.line(10, 22, 13, 25, a.ramp('wrap', 0)); a.line(19, 24, 22, 22, a.ramp('wrap', 0));
+      if (V.pharaoh) { for (const x of [11, 15, 19, 23]) a.line(x, 9, x + 1, 15, a.ramp('blue', 1)); a.rect(18, 6, 3, 4, '#f4f4ff'); a.rect(22, 6, 3, 4, '#f4f4ff'); a.line(17, 5.5, 25, 5.5, '#2a2018'); a.line(17, 10, 25, 10, '#2a2018'); a.px(17, 6, '#2a2018'); a.px(21, 7, '#2a2018'); a.px(25, 6, '#2a2018'); a.px(19, 8, P.eye); a.px(23, 8, P.eye); } } };
   } },
   salamander: { col: { skin: '#c83a2a', belly: '#f0a040', fire: '#ff9a2a', eye: '#ffe040' }, build(P, V = {}) {
     const m = { skin: mat(P.skin, 5, { tex: 'scale', spec: '#ffd0a0', specAt: 0.9 }), belly: mat(P.belly, 4, { tex: 'belly' }), fire: mat(P.fire, 5, { glow: true, lift: 0.25, nocrease: true, ramp: { hi: 0.95 } }) };
@@ -1033,8 +1040,8 @@ Object.assign(MODELS, {
     bat(13, 12, 0.85, -6, true); bat(33, 10, 0.95, -3, false); bat(9, 28, 0.9, 0, false); bat(36, 27, 1, 2, true); bat(22, 20, 1.15, 5, false);
     return { w: 46, h: 36, mats: m, parts, post(a) { for (const [x, y] of eyes) a.px(x, y, P.eye); } };
   } },
-  ghoul_knight: { col: { armor: '#4a4a5a', cape: '#5a1a24', steel: '#a8a8b8', skin: '#7a8a6a', eye: '#7aff9a', trim: '#8a7a40' }, build(P) {
-    const m = { armor: mat(P.armor, 6, { spec: '#d8e0f0', specAt: 0.88, ramp: { hi: 0.7 } }), armor2: mat(shade(P.armor, 0.65), 4), cape: mat(P.cape, 4, { tex: 'cloth' }), steel: mat(P.steel, 5, { spec: '#ffffff', ramp: { hi: 0.8 }, tex: (x, y) => (hash(x, y, 31) < 0.1 ? -0.25 : 0) }), skin: mat(P.skin, 4, { tex: 'rough' }), trim: mat(P.trim, 4) };
+  ghoul_knight: { col: { armor: '#4a4a5a', cape: '#5a1a24', steel: '#a8a8b8', skin: '#7a8a6a', eye: '#7aff9a', trim: '#8a7a40' }, build(P, V = {}) {
+    const m = { barn: mat('#e8f0e4', 4, { tex: 'wart' }), armor: mat(P.armor, 6, { spec: '#d8e0f0', specAt: 0.88, ramp: { hi: 0.7 } }), armor2: mat(shade(P.armor, 0.65), 4), cape: mat(P.cape, 4, { tex: 'cloth' }), steel: mat(P.steel, 5, { spec: '#ffffff', ramp: { hi: 0.8 }, tex: (x, y) => (hash(x, y, 31) < 0.1 ? -0.25 : 0) }), skin: mat(P.skin, 4, { tex: 'rough' }), trim: mat(P.trim, 4) };
     return { w: 42, h: 48, mats: m, crease: 1.6, parts: [
       poly([[11, 12], [22, 12], [25, 28], [23, 45], [19, 40], [15, 46], [11, 41], [7, 45], [5, 30]], 'cape', { z: -9, bev: 1.6 }),
       cap(13, 15, 9, 23, 2.4, 2, 'armor2', { z: -5 }), ell(8.5, 24, 2.3, 2.2, 'armor2', { z: -5 }),
@@ -1045,6 +1052,8 @@ Object.assign(MODELS, {
       ell(20.5, 7.5, 5.8, 5.8, 'armor', { z: 5 }), ...chain([[16.5, 4.5], [13, 2], [11, 4.5]], [1.6, 1, 0.4], 'trim', 6), ...chain([[23.5, 3], [27, 0.8], [29.5, 3]], [1.5, 0.9, 0.4], 'trim', 6),
       cap(30, 25, 35, 25, 0.9, 0.9, 'trim', { z: 9 }), cap(32, 26, 37, 46, 1.9, 0.7, 'steel', { z: 8 }), cap(31.4, 22.5, 32.1, 25, 0.7, 0.7, 'trim', { z: 9 }),
       ell(26, 14, 5, 4, 'armor', { z: 8 }), poly([[24, 11], [26, 6], [28, 11]], 'armor', { z: 9, bev: 0.8 }), cap(27, 17, 30.5, 23, 2.2, 1.9, 'armor', { z: 10 }), ell(31.5, 24, 2.2, 2, 'skin', { z: 11 }),
+      ...(V.barnacle ? [poly([[12, 6], [20, 0.5], [30, 4.5], [27, 7], [20, 4.5], [15, 8]], 'cape', { z: 12, bev: 1 }), cap(14, 6.5, 28, 5, 0.7, 0.7, 'trim', { z: 13 }),
+        ...[[12, 17, 2.4, 1.8], [27, 15, 2, 1.6], [12.5, 28, 2.2, 1.6], [24, 34, 2.6, 1.8], [17, 24, 1.8, 1.4], [22, 41, 1.8, 1.4], [8.5, 24, 1.8, 1.4], [30, 33, 1.6, 1.2]].map(([x, y, rx, ry]) => ell(x, y, rx, ry, 'barn', { z: 14 }))] : []),
     ], post(a) { a.rect(19, 7, 6, 1, '#0a0810'); a.rect(21, 5, 1, 5, '#0a0810'); a.px(20, 7, P.eye); a.px(23, 7, P.eye); a.px(24, 7, '#ffffff'); a.px(15, 33, a.ramp('armor2', 3)); a.px(23, 34, a.ramp('armor2', 3)); a.px(21, 19, '#7aff9a'); } };
   } },
   banshee: { col: { gown: '#8aa0c8', hair: '#e8eef8', skin: '#c8d8e8', eye: '#a0f0ff' }, build(P) {
@@ -1410,6 +1419,29 @@ Object.assign(ENEMY_VARIANTS, {
   basalt_golem: ['golem', { rock: '#3a3844', dark: '#1e1c26', glow: '#ff7a20', moss: '#ffb030' }],
   fire_eater: ['bandit', { skin: '#d89868', hood: '#c8301c', vest: '#2a2a3a', cloth: '#f0a020', pants: '#3a2a2a', boots: '#2a1a1a', steel: '#8a6a3a', eye: '#ffffff' }, { torch: true }],
   stag_wraith: ['wraith', { cloak: '#6a7a60', inner: '#0e140c', hand: '#d8e4c8', eye: '#b8ff70' }, { antlers: true }],
+});
+// ---------- Bearded Bros side quests: the Old Windmill, the Salty Sue, the Pyramid of Mild Inconvenience, the Ice Cave (see src/sidequests.js) ----------
+Object.assign(ENEMY_VARIANTS, {
+  wm_mouse: ['cellar_rat', { fur: '#8a8a94', belly: '#d8d0d0', tail: '#e8b0b0', nose: '#e89090', eye: '#100810', tooth: '#fff4e0' }],
+  wm_goose: ['thunderbird', { feather: '#f4f4f0', wing: '#ffffff', wing2: '#c8ccd8', chest: '#ffffff', beak: '#ff8a20', crest: '#ffffff', eye: '#ff3030' }],
+  wm_imp: ['imp', { skin: '#c8a878', wing: '#e8dcc0', horn: '#fff6e0', eye: '#ff5030', fire: '#ffffff' }],
+  wm_ghost: ['banshee', { gown: '#f0ece0', hair: '#ffffff', skin: '#e8e0d0', eye: '#ffb040' }],
+  miller: ['wraith', { cloak: '#e0d6c0', inner: '#1a1410', eye: '#ffb040', hand: '#fff6e0' }, { mill: true }],
+  wr_sailor: ['zombie', { skin: '#7a9a8a', cloth: '#3a5a8a', pants: '#2a3a4a', hair: '#2a4a3a', eye: '#a0ffe0' }],
+  wr_crab: ['scorpion', { shell: '#e0502a', shell2: '#a02a18', sting: '#ffb060', eye: '#100808' }],
+  wr_barnacle: ['golem', { rock: '#6a7a80', moss: '#e8f0e8', glow: '#40d0c0', dark: '#3a4a50' }],
+  wr_parrot: ['thunderbird', { feather: '#d02a2a', wing: '#2aa04a', wing2: '#1a6a8a', chest: '#f0c030', beak: '#f0e8c0', crest: '#f0c030', eye: '#ffffff' }],
+  captain_barnacle: ['ghoul_knight', { armor: '#233a5a', cape: '#7a1a20', steel: '#c0ccd4', skin: '#6a9a88', eye: '#40ffe0', trim: '#e0b840' }, { barnacle: true }],
+  py_mummy: ['mummy', { wrap: '#f4f0e0', dark: '#1a2a4a', gold: '#c8b040', eye: '#4060ff' }],
+  py_scarab: ['spider', { chitin: '#1a8a8a', abd: '#2a6a9a', mark: '#ffd040', leg: '#0e5a5a', eye: '#fff080', fang: '#ffd040' }],
+  py_golem: ['golem', { rock: '#a07a4a', moss: '#c8a068', glow: '#ffe060', dark: '#5a3a20' }],
+  py_cobra: ['cobra', { scale: '#c83a30', belly: '#ffe0d0', hood: '#8a1a20', mark: '#fff0c0', eye: '#fff080', tongue: '#ffffff' }],
+  clerk_pharaoh: ['mummy', { wrap: '#f0ead0', dark: '#1a2a6a', gold: '#f0c020', eye: '#2a2018' }, { pharaoh: true }],
+  ic_fisher: ['zombie', { skin: '#a8d0e8', cloth: '#e0a030', pants: '#3a4a6a', hair: '#e8f4ff', eye: '#80e0ff' }],
+  ic_eel: ['cobra', { scale: '#38c8e0', belly: '#e8fcff', hood: '#206890', mark: '#c0f0ff', eye: '#ffff60', tongue: '#80d0ff' }],
+  ic_yeti: ['yeti', { fur: '#9a7a5a', chest: '#7a5a40', face: '#d8b898', horn: '#e8dcc0', eye: '#ffd23a' }],
+  ic_wisp: ['wisp', { flame: '#ffb040', core: '#fff4c0', eye: '#5a2a08' }],
+  frozen_angler: ['bog_toad', { skin: '#3a6a9a', spot: '#1a3a6a', belly: '#c8e8f8', eye: '#ffe860', mouth: '#0a1a2a' }, { lure: true }],
 });
 const ECACHE = new Map();
 export function enemyArt(id) {

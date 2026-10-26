@@ -1,0 +1,13 @@
+<!doctype html><body style="background:#222;margin:8px"><canvas id=c></canvas>
+<script type=module>
+// contact sheet of the side-quest sprites: open /tools/sidequests_sheet.html[?z=3&ids=a,b,c] on a local server
+import * as BA from '../src/battleart.js';
+const q = new URLSearchParams(location.search), z = +q.get('z') || 3;
+const ids = (q.get('ids') || 'wm_mouse,wm_goose,wm_imp,wm_ghost,miller,wr_sailor,wr_crab,wr_barnacle,wr_parrot,captain_barnacle,py_mummy,py_scarab,py_golem,py_cobra,clerk_pharaoh,ic_fisher,ic_eel,ic_yeti,ic_wisp,frozen_angler').split(',');
+const arts = ids.map((id) => [id, BA.enemyArt(id)]).filter(([, s]) => s);
+const cols = +q.get('cols') || 4, cw = Math.max(...arts.map(([, s]) => s.width)) * z + 16, ch = Math.max(...arts.map(([, s]) => s.height)) * z + 24;
+const c = document.getElementById('c'); c.width = cw * Math.min(cols, arts.length) + 8; c.height = ch * Math.ceil(arts.length / cols) + 8;
+const x = c.getContext('2d'); x.imageSmoothingEnabled = false; x.fillStyle = '#58463c'; x.fillRect(0, 0, c.width, c.height);
+arts.forEach(([id, s], i) => { const ox = 8 + (i % cols) * cw, oy = 8 + Math.floor(i / cols) * ch; x.drawImage(s, ox, oy, s.width * z, s.height * z); x.fillStyle = '#fff'; x.font = '10px monospace'; x.fillText(id + ' ' + s.width + 'x' + s.height, ox, oy + ch - 10); });
+document.title = 'ready';
+</script>
