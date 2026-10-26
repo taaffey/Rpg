@@ -104,10 +104,10 @@ ENCOUNTERS.wreck = [['wr_sailor', 'wr_sailor'], ['wr_crab', 'wr_crab'], ['wr_par
 ENCOUNTERS.pyramid = [['py_scarab', 'py_scarab'], ['py_mummy', 'py_mummy'], ['py_cobra', 'py_scarab'], ['py_golem'], ['py_mummy', 'py_cobra', 'py_scarab'], ['py_golem', 'py_scarab'], ['py_golem', 'py_mummy'], ['py_golem', 'py_cobra', 'py_mummy']];
 ENCOUNTERS.icecave = [['ic_fisher', 'ic_fisher'], ['ic_eel', 'ic_eel'], ['ic_yeti'], ['ic_wisp', 'ic_fisher', 'ic_wisp'], ['ic_yeti', 'ic_eel'], ['ic_yeti', 'ic_wisp'], ['ic_yeti', 'ic_fisher', 'ic_eel'], ['ic_yeti', 'ic_yeti']];
 
-BOSSES.miller = { name: 'The Miller', intro: 'The great millstone grinds to a halt. A pale figure in a floury apron lifts it overhead with one ghostly hand. "WHO IS THIS, WALKING ON MY FLOOR?" he moans. "I JUST MOPPED."', optional: true, loot: { armors: ['miller_apron'] } };
-BOSSES.captain_barnacle = { name: 'Captain Barnacle', intro: 'The deck groans. A figure crusted in barnacles rises from the captain\'s chair, tricorn dripping, parrot swearing on his shoulder. "AVAST, LANDLUBBERS! Nobody boards the Salty Sue without a boarding pass!"', optional: true, loot: { accs: ['compass_charm'] } };
-BOSSES.clerk_pharaoh = { name: 'The Clerk Pharaoh', intro: 'A stack of forms the size of a sarcophagus lurches upright. Behind it sits a pharaoh in a crooked crown and reading glasses. "Have you got an appointment?" he sighs, lifting a giant rubber stamp. "No? Then it is the wrong queue."', optional: true, loot: { weapons: ['rubber_stamp'] } };
-BOSSES.frozen_angler = { name: 'The Frozen Angler', intro: 'The ice cracks. Out of the fishing hole slithers a fish the size of a bus, glowing lure bobbing over crooked teeth. "BLUB," it says. Not a greeting.', optional: true, loot: { armors: ['thermal_onesie'] } };
+BOSSES.miller = { name: 'The Miller', intro: 'A floury ghost lifts the millstone overhead. "WHO IS WALKING ON MY FLOOR?" he moans. "I JUST MOPPED."', optional: true, loot: { armors: ['miller_apron'] } };
+BOSSES.captain_barnacle = { name: 'Captain Barnacle', intro: 'A barnacle-crusted captain rises, parrot swearing. "AVAST! Nobody boards the Salty Sue without a pass!"', optional: true, loot: { accs: ['compass_charm'] } };
+BOSSES.clerk_pharaoh = { name: 'The Clerk Pharaoh', intro: 'A pharaoh in reading glasses lifts a giant rubber stamp. "Appointment? No? Wrong queue."', optional: true, loot: { weapons: ['rubber_stamp'] } };
+BOSSES.frozen_angler = { name: 'The Frozen Angler', intro: 'The ice cracks. A bus-sized fish slithers out, lure glowing. "BLUB," it says. Not a greeting.', optional: true, loot: { armors: ['thermal_onesie'] } };
 
 // ---------------------------------------------------------------- gear (2 per dungeon; one is boss loot, the other a rare drop)
 Object.assign(WEAPONS, {
@@ -143,7 +143,7 @@ Object.assign(DROPS, {
 
 // ---------------------------------------------------------------- bestiary field notes (<= 100 chars)
 Object.assign(BESTIARY_NOTES, {
-  wm_mouse: ['devon', 'Bro, it is the size of a Labrador. Fire works. The nibble poisons, so bring antidotes.'],
+  wm_mouse: ['devon', 'Bro, it is the size of a Labrador. Fire works. The nibble poisons, so bring Cups of Tea.'],
   wm_goose: ['adam', 'Honk means trouble. Bolts or fire. The ankle peck can stun, so keep your legs back.'],
   wm_imp: ['brenna', 'Made of flour and spite. Fire sets it right off. Its flour cloud slows the lot of us.'],
   wm_ghost: ['wendell', 'A spectre of the baking arts! Holy or fire. Dark is no use. Its haunting hits all of us.'],

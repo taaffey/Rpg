@@ -69,7 +69,7 @@ Object.assign(ACCS, {
 // ---------------------------------------------------------------- shops
 Object.assign(SHOPS, {
   hop_general: { title: '🛒 Hopsend Farm Shop', greet: 'Apples, honey, pickles, and a jar labelled "ASK ME". Nobody has dared.', stock: { items: ['potion', 'hipotion', 'ether', 'megaether', 'phoenix', 'antidote', 'remedy', 'elixir'], gems: ['fire', 'frost', 'bolt', 'holy', 'shadow', 'chain', 'vamp', 'pierce', 'thrifty', 'guard', 'crit', 'venom'] } },
-  hop_smith: { title: '⚒️ Hopsend Cooper & Smithy', greet: 'We make barrels, hoops and the odd sword. The barrels are better, honestly.', stock: { weapons: ['barrel_stave', 'bottle_opener', 'rocket_launcher', 'coopers_mallet', 'bine_strimmer', 'stiletto', 'sage_staff', 'steel_fist', 'arcane_tome'], armors: ['field_jacket', 'mythril_mail', 'frost_robe'], accs: ['hop_garland', 'corkscrew', 'wellie_charm', 'life_charm', 'socket_jewel'] } },
+  hop_smith: { title: '⚒️ Hopsend Cooper & Forge', greet: 'We make barrels, hoops and the odd sword. The barrels are better, honestly.', stock: { weapons: ['barrel_stave', 'bottle_opener', 'rocket_launcher', 'coopers_mallet', 'bine_strimmer', 'stiletto', 'sage_staff', 'steel_fist', 'arcane_tome'], armors: ['field_jacket', 'mythril_mail', 'frost_robe'], accs: ['hop_garland', 'corkscrew', 'wellie_charm', 'life_charm', 'socket_jewel'] } },
 });
 
 // ---------------------------------------------------------------- drops

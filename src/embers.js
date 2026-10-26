@@ -62,7 +62,7 @@ Object.assign(ENEMIES, {
 ENCOUNTERS.embers = [['cinder_imp', 'cinder_imp'], ['pepperoni_salamander'], ['garlic_knot', 'garlic_knot'], ['anchovy_eel', 'anchovy_eel'], ['fire_eater'], ['magma_slime', 'cinder_imp'], ['stag_wraith', 'fire_eater'], ['basalt_golem'], ['pepperoni_salamander', 'garlic_knot'], ['anchovy_eel', 'magma_slime']];
 ENCOUNTERS.pizzaoven = [['pepperoni_salamander', 'pepperoni_salamander'], ['basalt_golem', 'cinder_imp'], ['fire_eater', 'fire_eater'], ['magma_slime', 'garlic_knot', 'magma_slime'], ['stag_wraith', 'stag_wraith'], ['basalt_golem', 'garlic_knot'], ['anchovy_eel', 'fire_eater', 'cinder_imp'], ['stag_wraith', 'basalt_golem']];
 
-BOSSES.margherita = { name: 'The Margherita', intro: 'The Pizza Oven roars. A colossal pizza rises from the coals on a wooden peel, cheese-lava face bubbling, basil eyebrows furrowed. "WHO TURNED ME ON," it booms. "AND WHO FORGOT ME?"', optional: true, loot: { weapons: ['pizza_cutter', 'laminated_menu'], armors: ['pepperoni_plate'] } };
+BOSSES.margherita = { name: 'The Margherita', intro: 'A colossal pizza rises from the coals, basil eyebrows furrowed. "WHO TURNED ME ON," it booms. "AND WHO FORGOT ME?"', optional: true, loot: { weapons: ['pizza_cutter', 'laminated_menu'], armors: ['pepperoni_plate'] } };
 
 // ---------------------------------------------------------------- gear
 Object.assign(WEAPONS, {
@@ -85,7 +85,7 @@ Object.assign(ACCS, {
 
 // ---------------------------------------------------------------- shops
 Object.assign(SHOPS, {
-  kiln_general: { title: '🛒 Kilnhaven Beach Shop', greet: 'Sun cream, inflatables, postcards and miracle potions. The postcards are the miracle.', stock: { items: ['hipotion', 'ether', 'megaether', 'phoenix', 'antidote', 'remedy', 'elixir'], gems: ['fire', 'frost', 'bolt', 'holy', 'shadow', 'chain', 'echo', 'vamp', 'pierce', 'thrifty', 'guard', 'crit', 'swift', 'wide'] } },
+  kiln_general: { title: '🛒 Kilnhaven Beach Shop', greet: 'Sun cream, inflatables, postcards and miracle pints. The postcards are the miracle.', stock: { items: ['hipotion', 'ether', 'megaether', 'phoenix', 'antidote', 'remedy', 'elixir'], gems: ['fire', 'frost', 'bolt', 'holy', 'shadow', 'chain', 'echo', 'vamp', 'pierce', 'thrifty', 'guard', 'crit', 'swift', 'wide'] } },
   kiln_smith: { title: '⚒️ Kilnhaven Forge & Fire Pit', greet: 'We forge swords, flip burgers and juggle the odd torch. Please do not ask which is which.', stock: { weapons: ['cricket_bat', 'ice_pick', 'super_soaker', 'oven_gloves', 'sage_staff', 'arcane_tome', 'blizzard_tome', 'thorn_whip'], armors: ['hivis_overalls', 'mythril_mail', 'frost_robe'], accs: ['beach_towel', 'flipflop_charm', 'ice_bucket', 'life_charm', 'sage_ring', 'socket_jewel'] } },
 });
 

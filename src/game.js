@@ -121,7 +121,7 @@ const VERSION = '2.0.0', LEGACY_SAVE = 'gemforge-save-v2', SLOT_KEY = (i) => `ge
 function migrate(g) {
   g.v = 3; g.flags ||= {};
   for (const k of ['chests', 'bosses', 'seen', 'talked', 'visited', 'quests', 'qprog', 'qitems', 'tips', 'bestiary', 'story', 'chat']) g.flags[k] ||= {};
-  if (g.flags.worldv !== WORLD_V) { delete g.flags.seen.world; if (g.map === 'world') { [g.x, g.y] = GEN.adj.haven; g.dir = 'down'; } }
+  if (g.flags.worldv !== WORLD_V) { delete g.flags.seen.world; for (const k of Object.keys(g.flags.chests)) if (k.startsWith('world:')) delete g.flags.chests[k]; g.flags.worldMoved = true; if (g.map === 'world') { [g.x, g.y] = GEN.adj.haven; g.dir = 'down'; } }
   g.playtime ||= 0; g.stats ||= { wins: 0 }; g.difficulty = DIFFICULTY[g.difficulty] ? g.difficulty : 'normal';
   for (const c of g.party) { c.extra ||= 0; c.gems ||= []; while (c.gems.length < 5) c.gems.push([]); }
   // old saves keep their gear; only ids that no longer exist are dropped (never a crash on load)
@@ -149,7 +149,7 @@ function migrateCallings(c, inv) {
 }
 const readSlot = (i) => { try { const raw = localStorage.getItem(SLOT_KEY(i)); return raw ? JSON.parse(raw) : null; } catch { return null; } };
 const anySave = () => SLOT_IDS.some((i) => readSlot(i));
-const WORLD_V = 4; // bump when the overworld layout changes: older saves drop their fog and a party standing on the old map is walked back to Haven's gate
+const WORLD_V = 5; // bump when the overworld layout changes: older saves drop their fog and a party standing on the old map is walked back to Haven's gate
 const save = () => { if (!G || !G.slot) return false; G.flags.worldv = WORLD_V; try { localStorage.setItem(SLOT_KEY(G.slot), JSON.stringify({ v: 3, savedAt: Date.now(), G })); return true; } catch { return false; } };
 (function importLegacy() { // a v2 single-slot save becomes slot 1 the first time this version runs
   try { const old = localStorage.getItem(LEGACY_SAVE); if (old && !readSlot(1)) { const g = migrate(JSON.parse(old)); g.slot = 1; localStorage.setItem(SLOT_KEY(1), JSON.stringify({ v: 3, savedAt: Date.now(), G: g })); localStorage.removeItem(LEGACY_SAVE); } } catch {}
@@ -223,16 +223,18 @@ function drawMini(c2, id, scale, ox, oy, t, noPlayer = false) {
 }
 function miniOverlay(t) {
   const m = mapDef(); if (!OPT.minimap || !m.fog) return;
-  const W = m.rows[0].length, H = m.rows.length, sc = Math.max(1, Math.min(Math.floor(104 / W), Math.floor(80 / H))), w = W * sc, h = H * sc, ox = cv.width - w - 8, oy = 8;
-  if (miniDirty || miniCache.id !== G.map) { // redraw the static layer only when something was revealed or changed
-    miniCache.id = G.map; miniCache.sc = sc; miniCache.canvas.width = w; miniCache.canvas.height = h; miniDirty = false;
+  const W = m.rows[0].length, H = m.rows.length, big = W > 80, VW = big ? 44 : W, VH = big ? 34 : H; // big maps show a window around the party instead of a postage stamp
+  const sc = Math.max(1, Math.min(Math.floor(104 / VW), Math.floor(80 / VH)), big ? 3 : 1), w = VW * sc, h = VH * sc, ox = cv.width - w - 8, oy = 8;
+  const vx0 = big ? clamp(G.x - (VW >> 1), 0, W - VW) : 0, vy0 = big ? clamp(G.y - (VH >> 1), 0, H - VH) : 0;
+  if (miniDirty || miniCache.id !== G.map || miniCache.vx0 !== vx0 || miniCache.vy0 !== vy0) { // redraw the static layer only when something was revealed or changed
+    miniCache.id = G.map; miniCache.sc = sc; miniCache.vx0 = vx0; miniCache.vy0 = vy0; miniCache.canvas.width = w; miniCache.canvas.height = h; miniDirty = false;
     const mc = miniCache.canvas.getContext('2d'), art = G.map === 'world' && TR.mapImage ? TR.mapImage(m) : null, seen = G.flags.seen[G.map] || [];
     if (!art) drawMini(mc, G.map, sc, 0, 0, 0, true);
-    else { mc.imageSmoothingEnabled = true; mc.drawImage(art, 0, 0, w, h); mc.fillStyle = '#04061a'; for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) if (seen[y]?.[x] !== '1') mc.fillRect(x * sc, y * sc, sc, sc); }
+    else { mc.imageSmoothingEnabled = true; mc.drawImage(art, vx0 * 16, vy0 * 16, VW * 16, VH * 16, 0, 0, w, h); mc.fillStyle = '#04061a'; for (let y = 0; y < VH; y++) for (let x = 0; x < VW; x++) if (seen[vy0 + y]?.[vx0 + x] !== '1') mc.fillRect(x * sc, y * sc, sc, sc); }
   }
   cx.fillStyle = 'rgba(6,10,40,.72)'; cx.fillRect(ox - 3, oy - 3, w + 6, h + 6); cx.strokeStyle = '#e8ecf8'; cx.lineWidth = 1; cx.strokeRect(ox - 2.5, oy - 2.5, w + 5, h + 5);
   cx.drawImage(miniCache.canvas, ox, oy);
-  if (Math.floor(t * 3) % 2 === 0) { cx.fillStyle = '#ffffff'; cx.fillRect(ox + G.x * sc - 1, oy + G.y * sc - 1, sc + 2, sc + 2); }
+  if (Math.floor(t * 3) % 2 === 0) { cx.fillStyle = '#ffffff'; cx.fillRect(ox + (G.x - vx0) * sc - 1, oy + (G.y - vy0) * sc - 1, sc + 2, sc + 2); }
 }
 
 // ---------- map rendering ----------
@@ -357,8 +359,8 @@ requestAnimationFrame(tick);
 const frame = () => new Promise((r) => requestAnimationFrame(r));
 async function transition() { sfx('encounter'); for (trans = 0.02; trans < 1.2; trans += 0.065) await frame(); trans = 1; await sleep(60); }
 function banner(text) { const b = $('#banner'); b.textContent = text; b.classList.remove('show'); void b.offsetWidth; b.classList.add('show'); }
-function goto(id, x, y) {
-  const first = !G.flags.visited[id]; G.map = id; G.x = x; G.y = y; G.flags.visited[id] = true; snap(); music(musicFor()); sfx('door');
+function goto(id, x, y) { // (a wipe wakes you in the last town you were in: G.home)
+  const first = !G.flags.visited[id]; G.map = id; G.x = x; G.y = y; G.flags.visited[id] = true; if (MAPS[id].kind === 'town') G.home = id === 'haven' ? null : { map: id, x: MAPS[id].spawn.x, y: MAPS[id].spawn.y }; snap(); music(musicFor()); sfx('door');
   banner(id === 'world' ? REGION_NAME[regionOf()] : MAPS[id].name); G.region = regionOf(); layoutView(); draw(); autosave();
   arrive(id, first);
 }
@@ -375,6 +377,10 @@ async function step(dx, dy) {
   G.x = nx; G.y = ny; trail.push({ x: nx, y: ny }); if (trail.length > 8) trail.shift();
   const pt = m.portals?.[`${nx},${ny}`];
   if (pt?.need && !cond(pt.need)) { G.x -= dx; G.y -= dy; trail.pop(); snap(); draw(); const seenKey = `deny:${G.map}:${G.x + dx},${G.y + dy}`; if (G.flags.talked[seenKey]) { toast('Still sealed. ' + ((pt.deny || []).slice(-1)[0]?.t || ''), 4200); return; } G.flags.talked[seenKey] = true; return scene(pt.deny || []); } // not yet: a word at the gate, and back a step
+  if (pt && pt.to === 'world' && TR.bakeReady && !TR.bakeReady()) { // first trip to the overworld: chart the land behind a short loader instead of freezing
+    busy = true; let dots = 0; const el = document.createElement('div'); el.id = 'charting'; el.textContent = 'Charting the land'; document.body.appendChild(el);
+    await TR.finishBake(() => { el.textContent = 'Charting the land' + '.'.repeat(1 + (++dots >> 2) % 4); }); el.remove(); busy = false;
+  }
   if (pt) return goto(pt.to, pt.x, pt.y);
   reveal(); draw();
   const sec = m.secrets?.[`${nx},${ny}`]; if (sec && !G.flags.chests[chestKey(nx, ny)]) return openChest(nx, ny, sec);
@@ -825,6 +831,7 @@ async function arrive(id, first) { // story beats tied to entering a place
 function loadSlot(i) {
   const d = readSlot(i); if (!d?.G) return;
   G = migrate(d.G); G.slot = i; snap(); music(musicFor()); hide(); banner(mapDef().name); toast(`Loaded slot ${i}`);
+  if (G.flags.worldMoved) { delete G.flags.worldMoved; toast('The world has been redrawn since this save. Fog reset' + (G.map === 'world' ? ' and you are back at Haven\'s gate' : '') + '.', 5200); }
 }
 // ---------- party chat (menu > CHAT): skits about where you are and what just happened (STORY.chat) ----------
 function chatHere(at) { // how well a skit's place fits: 2 = this map, 1 = this region / kind of place, 0 = anywhere, -1 = elsewhere
@@ -896,13 +903,13 @@ const OBJECTIVES = [ // the main thread, in the story's voice. show / after / do
   { title: 'The Walking Mountain', after: 'wyrm lich', lockHint: 'The Frost Spire\'s door is sealed with the drowned king\'s mark. Morvath first.', hint: 'The Frost Spire rises north-east of Frostholm. The Titan waits at its summit.', metHint: 'Sereth waits atop the Frost Spire. So does the Titan.', done: 'titan', doneHint: 'The mountain sleeps. Sereth is dust.' },
   { title: 'Thunder on the Plains', after: 'wyrm', optional: true, hint: 'A drake nests in the Storm Cavern in the Frostfields. Not for the faint (Lv 11+).', done: 'storm_drake', doneHint: 'Stars over the plains again.' },
   { title: 'The Sun Pharaoh', optional: true, hint: 'Something asks riddles beneath the Sunscar Ruins, south-east of Haven (Lv 11+).', done: 'sphinx', doneHint: 'The riddle is answered.' },
-  { title: 'Hopsend Isle', after: 'titan', optional: true, hint: 'A ferry now runs to Hopsend Isle, all orchards and hop fields. The harvest has gone wrong (Lv 17+).', done: 'v:hopsend', doneHint: 'Hopsend smells of apples and mild regret.' },
-  { title: 'The Old Windmill', optional: true, hint: 'The Old Windmill, Haven Isle. Ghostly flour and a very angry goose. The Miller does not like visitors. Bring holy or fire, never dark (Lv 8).', done: 'miller', doneHint: 'The mill stands still, and the bread has never been better.' },
-  { title: 'The Salty Sue', after: 'wyrm', optional: true, hint: 'A pirate ship stuck in the Mire Isle bog. Fire or holy for the crew, bolts for the crabs and the barnacle things (Lv 14).', done: 'captain_barnacle', doneHint: 'The Salty Sue has settled into the mud for good.' },
-  { title: 'Mild Inconvenience', after: 'wyrm', optional: true, hint: 'A pyramid built by a pharaoh who loved forms. Fire or holy, take a number, and do not read the small print (Lv 16).', done: 'clerk_pharaoh', doneHint: 'The queue is moving. Somebody approved something.' },
-  { title: 'The Ice Cave', after: 'wyrm', optional: true, hint: 'Behind the Frost Isle pass, a frozen fishing lake. Fire or bolts for the Frozen Angler. Avoid the coffee-break yeti (Lv 18).', done: 'frozen_angler', doneHint: 'The anglers have gone home.' },
+  { title: 'The Old Windmill', show: 's:called', optional: true, hint: 'The Old Windmill, Haven Isle. Ghostly flour and a very angry goose. The Miller does not like visitors. Bring holy or fire, never dark (Lv 8).', done: 'miller', doneHint: 'The mill stands still, and the bread has never been better.' },
+  { title: 'The Salty Sue', show: 's:called', optional: true, hint: 'A pirate ship stuck in the Mire Isle bog. Fire or holy for the crew, bolts for the crabs and the barnacle things (Lv 14).', done: 'captain_barnacle', doneHint: 'The Salty Sue has settled into the mud for good.' },
+  { title: 'Mild Inconvenience', show: 's:called', optional: true, hint: 'A pyramid built by a pharaoh who loved forms. Fire or holy, take a number, and do not read the small print (Lv 16).', done: 'clerk_pharaoh', doneHint: 'The queue is moving. Somebody approved something.' },
+  { title: 'The Ice Cave', after: 'wyrm', lockHint: 'A rockslide buries the northern pass.', optional: true, hint: 'Behind the Frost Isle pass, a frozen fishing lake. Fire or bolts for the Frozen Angler. Avoid the coffee-break yeti (Lv 18).', done: 'frozen_angler', doneHint: 'The anglers have gone home.' },
+  { title: 'Hopsend Isle', after: 'titan', lockHint: 'The ferryman will not sail to Hopsend until the Titan has fallen.', optional: true, hint: 'A ferry now runs to Hopsend Isle, all orchards and hop fields. The harvest has gone wrong (Lv 17+).', done: 'v:hopsend', doneHint: 'Hopsend smells of apples and mild regret.' },
   { title: 'The Great Mash Tun', show: 'v:hopsend', optional: true, hint: 'The Great Brewery, at the far end of Hopsend, has been bubbling since harvest. Bring ice and bolts, never fire (Lv 18+).', done: 'mash_tun', doneHint: 'Flat, calm and drinkable.' },
-  { title: 'Cinder Isle', after: 'titan', optional: true, hint: 'A ferry now sails to Cinder Isle, a holiday volcano in the far north-west, packed with stag dos and fire-eaters (Lv 20).', done: 'v:kilnhaven', doneHint: 'Kilnhaven is warm, loud and smells of garlic.' },
+  { title: 'Cinder Isle', after: 'titan', lockHint: 'The Frost Jetty ferryman will not sail until the Titan has fallen.', optional: true, hint: 'A ferry now sails to Cinder Isle, a holiday volcano in the far north-west, packed with stag dos and fire-eaters (Lv 20).', done: 'v:kilnhaven', doneHint: 'Kilnhaven is warm, loud and smells of garlic.' },
   { title: 'The Margherita', show: 'v:pizzaoven', optional: true, hint: 'The volcano is a pizza oven that has been on since 1987, and something has grown in the coals. Bring ice, never fire (Lv 20).', done: 'margherita', doneHint: 'The oven is cool, and the isle is free to eat.' },
 ];
 ACT.journal = () => {
@@ -1334,8 +1341,8 @@ async function ending() {
 async function defeat() {
   music('gameover');
   await new Promise((res) => {
-    ov.innerHTML = `<div class="win red anim"><div class="vhead">${ic('ko')}<h2 class="bad">${DEFEAT[Math.floor(Math.random() * DEFEAT.length)]}</h2>${ic('ko')}</div><div class="vparty">${G.party.map((c) => `<div class="vp">${portrait(ak(c), 'sm ko')}<div class="vi">${esc(c.name)}</div></div>`).join('')}</div><p>You wake up outside the Goose with a banging headache. Half your gold is gone. Nobody will say where.</p><div class="foot">${btn('ddone', 'Wake up', '', '', 'primary')}</div></div>`;
-    ACT.ddone = () => { G.gold = Math.floor(G.gold / 2); for (const c of G.party) { const s = maxOf(c); c.hp = s.hp; c.mp = s.mp; } goto('haven', ...MAPS.haven.spots.respawn); hide(); res(); };
+    ov.innerHTML = `<div class="win red anim"><div class="vhead">${ic('ko')}<h2 class="bad">${DEFEAT[Math.floor(Math.random() * DEFEAT.length)]}</h2>${ic('ko')}</div><div class="vparty">${G.party.map((c) => `<div class="vp">${portrait(ak(c), 'sm ko')}<div class="vi">${esc(c.name)}</div></div>`).join('')}</div><p>You wake up outside ${G.home && G.home.map !== 'haven' && MAPS[G.home.map] ? `the ${esc(MAPS[G.home.map].name)} inn` : 'the Goose'} with a banging headache. Half your gold is gone. Nobody will say where.</p><div class="foot">${btn('ddone', 'Wake up', '', '', 'primary')}</div></div>`;
+    ACT.ddone = () => { G.gold = Math.floor(G.gold / 2); for (const c of G.party) { const s = maxOf(c); c.hp = s.hp; c.mp = s.mp; } const home = G.home && MAPS[G.home.map] ? G.home : null; if (home) goto(home.map, home.x, home.y); else goto('haven', ...MAPS.haven.spots.respawn); hide(); res(); };
   });
 }
 

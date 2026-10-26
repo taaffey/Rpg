@@ -349,6 +349,14 @@ export function prebake() { // run the bake in ~6 ms slices while the player is 
   const step = () => { if (BK) return; const t0 = performance.now(); while (performance.now() - t0 < 6) if (GENR.next().done) return; setTimeout(step, 16); };
   step();
 }
+export const bakeReady = () => !!BK;
+export function finishBake(onTick) { // finish the bake in 12 ms slices (the page stays responsive and can show progress); resolves when the world is ready
+  return new Promise((res) => {
+    if (BK) return res(); GENR = GENR || bakeGen(); let n = 0;
+    const step = () => { if (BK) return res(); const t0 = performance.now(); while (performance.now() - t0 < 12) if (GENR.next().done) return res(); onTick?.(++n); setTimeout(step, 0); };
+    step();
+  });
+}
 if (typeof window !== 'undefined') setTimeout(prebake, 400);
 
 // ---------- animated water ----------
