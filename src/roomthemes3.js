@@ -163,7 +163,7 @@ const hut = {
   mg: 4, light: { base: 0.72, vk: 0.34, min: 0.3, tint: [0.02, 0.02, 0.1] }, spill: '#d8f0ff', thr: PAL.snow, doorOut: pk('#5a7aa8'), out: (x, y) => pk('#04060c'),
   floor: (x, y) => hutFloor(x, y), face: (x, f) => hutFace(x, f),
   cap: (x, y, d, outer, jamb) => { let s = d <= 1 ? 0.9 : d === 2 ? 0.7 : 0.5 + (vnoise(x, y, 4, 31) - 0.5) * 0.14; if (outer === 0) return pick(TW, 0.05, x, y); if (outer === 1) s -= 0.2; if (jamb) s = 0.3; return outer >= 3 && hash(x, y, 7) < 0.4 ? pk('#e8f4fc') : pick(TW, cl(s), x, y); },
-  feat: () => [['fish', 2.2], ['win', 5], ['sign', 7.2], ['pipe', 8.5]],
+  feat: () => [['fish', 2.2], ['win', 5], ['sign', 6.75], ['pipe', 8.5]],
   pre(u) { u.lights.push([136, 14, 0.5, 52]); },
   flat: {
     hole(u, tx, ty) { // the fishing hole: cut through the planks to the black water, ragged ice around the rim

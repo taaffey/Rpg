@@ -45,7 +45,7 @@ function wtypeOf(p) { const w = p.wpn; return w ? w.type : 'none'; }
 export class Stage {
   constructor(battle, kind) {
     this.b = battle; this.canvas = mk(W, H); this.canvas.className = 'stage'; this.ctx = this.canvas.getContext('2d');
-    const arena = battle.boss && ['crypt', 'spire', 'storm', 'ruins', 'cellar', 'brewery', 'pizzaoven'].includes(kind) ? kind + ':boss' : kind;
+    const arena = battle.boss && ['crypt', 'spire', 'storm', 'ruins', 'cellar', 'brewery', 'wreck', 'windmill', 'pizzaoven'].includes(kind) ? kind + ':boss' : kind;
     this.info = BA.backdropInfo(BA.BACKDROPS.includes(arena) ? arena : 'world'); this.bg = this.info.c; this.kind = this.info.kind;
     this.parts = []; this.floats = []; this.proj = []; this.shapes = []; this.running = true; this.last = performance.now(); this.lastElem = null; this.active = null; this.shake = 0; this.flashA = 0; this.flashC = '#ffffff';
     const live = battle.e, epos = POS[Math.min(5, live.length)] || POS[5]; let ni = 0;
@@ -194,6 +194,14 @@ export class Stage {
       for (const [px, py, pw] of this.info.pits || []) for (let i = -4; i <= 4; i++) { const fx = px + i * (pw / 10), f = Math.sin(t * 9 + i * 1.7 + px) * 0.5 + Math.sin(t * 17 + i * 3.1) * 0.5, hgt = 14 + (4 - Math.abs(i)) * 3 + Math.round(f * 4);
         x.fillStyle = '#d8300a'; x.fillRect(Math.round(fx) - 1, py - hgt, 3, hgt); x.fillStyle = '#ff7a1a'; x.fillRect(Math.round(fx), py - hgt + 2, 2, hgt - 2); x.fillStyle = '#ffd860'; x.fillRect(Math.round(fx), py - Math.round(hgt * 0.55), 1, Math.round(hgt * 0.5)); }
       x.fillStyle = `rgba(255,110,30,${0.04 + Math.sin(t * 2.3) * 0.02 + Math.sin(t * 7.1) * 0.015})`; x.fillRect(0, 0, W, 110); }
+    else if (k === 'windmill' && this.info.gear) { // the great spur wheel turns slowly on its shaft; flour dust hangs in the light shafts
+      const [gx, gy, gr] = this.info.gear, rot = t * 0.35, teeth = 14;
+      x.fillStyle = '#3a2412'; x.beginPath(); x.arc(gx, gy, gr - 5, 0, 7); x.fill(); x.fillStyle = '#6a4424'; x.beginPath(); x.arc(gx, gy, gr - 8, 0, 7); x.fill(); x.fillStyle = '#2a180c'; x.beginPath(); x.arc(gx, gy, gr - 14, 0, 7); x.fill();
+      for (let i = 0; i < teeth; i++) { const a = rot + (i / teeth) * Math.PI * 2, c = Math.cos(a), s = Math.sin(a); x.fillStyle = i % 2 ? '#8a5c30' : '#a87440'; x.save(); x.translate(gx + c * (gr - 3), gy + s * (gr - 3)); x.rotate(a); x.fillRect(-1, -3, 6, 6); x.restore(); x.fillStyle = '#4a2e18'; x.save(); x.translate(gx, gy); x.rotate(a); x.fillRect(4, -1, gr - 12, 3); x.restore(); }
+      x.fillStyle = '#b8b8c8'; x.beginPath(); x.arc(gx, gy, 4, 0, 7); x.fill(); x.fillStyle = '#4a4a58'; x.beginPath(); x.arc(gx, gy, 2, 0, 7); x.fill(); }
+    else if (k === 'wreck' && this.info.ports) { // sunlight rippling through the green water behind each porthole
+      for (const [px, py, pr] of this.info.ports) { x.save(); x.beginPath(); x.arc(px, py, pr - 3, 0, 7); x.clip(); for (let i = 0; i < 5; i++) { const wy = py - pr + ((t * 9 + i * 6) % (pr * 2)), wv = Math.sin(t * 2 + i * 1.7 + px) * 3; x.fillStyle = `rgba(200,255,230,${(0.16 + 0.1 * Math.sin(t * 3 + i)).toFixed(2)})`; x.fillRect(px - pr + wv, Math.round(wy), pr * 2 - 4, 1); } x.restore(); }
+      x.fillStyle = `rgba(80,255,170,${0.03 + Math.sin(t * 1.1) * 0.015})`; x.fillRect(0, 0, W, 110); }
     else if (k === 'embers') { x.fillStyle = `rgba(255,120,40,${0.05 + Math.sin(t * 1.3) * 0.025})`; x.fillRect(0, 0, W, 80); }
     else if (k === 'storm') { const ph = (t * 0.35) % 1; if (ph < 0.025 || (ph > 0.05 && ph < 0.065)) { x.fillStyle = 'rgba(220,230,255,.35)'; x.fillRect(0, 0, W, 80); } }
   }
@@ -206,6 +214,8 @@ export class Stage {
     else if (k === 'crypt') { for (let i = 0; i < 12; i++) { x.fillStyle = i % 2 ? 'rgba(140,255,170,.6)' : 'rgba(200,255,220,.4)'; x.fillRect(Math.round((i * 23 + Math.sin(t * 0.7 + i) * 8) % W), Math.round(H - 10 - ((t * 6 + i * 19) % 130)), 1, 1); } }
     else if (k === 'forest') { for (let i = 0; i < 8; i++) { x.fillStyle = 'rgba(255,250,200,.7)'; x.fillRect(Math.round((i * 37 + Math.sin(t * 0.6 + i) * 10) % W), Math.round(40 + ((t * 4 + i * 23) % 110)), 1, 1); } }
     else if (k === 'cellar' || k === 'brewery') { for (let i = 0; i < 18; i++) { const u = (t * (0.03 + (i % 5) * 0.008) + i * 0.137) % 1, px = (i * 47 + Math.sin(t * 0.4 + i) * 12 + u * 30) % W, py = 20 + ((i * 31) % 120) + Math.sin(t * 0.7 + i * 2) * 6; x.fillStyle = i % 4 ? 'rgba(255,220,160,.5)' : 'rgba(255,240,200,.8)'; x.fillRect(Math.round(px), Math.round(py), 1, 1); } } // dust motes in the lantern light
+    else if (k === 'windmill') { for (let i = 0; i < 46; i++) { const u = (t * (0.025 + (i % 5) * 0.006) + i * 0.137) % 1, px = (i * 41 + Math.sin(t * 0.5 + i) * 14 + u * 40) % W, py = 12 + ((i * 29) % 130) + Math.sin(t * 0.8 + i * 2) * 7; x.fillStyle = i % 4 ? 'rgba(255,250,235,.55)' : 'rgba(255,255,250,.85)'; x.fillRect(Math.round(px), Math.round(py), 1, i % 7 === 0 ? 2 : 1); } } // flour drifting in the light
+    else if (k === 'wreck') { for (let i = 0; i < 26; i++) { const u = (t * (0.12 + (i % 5) * 0.03) + i * 0.173) % 1, px = (i * 37 + Math.sin(t * 1.3 + i * 2) * 5) % W, py = H - u * (H + 8); x.fillStyle = i % 3 ? 'rgba(190,255,230,.6)' : 'rgba(230,255,245,.85)'; x.fillRect(Math.round(px), Math.round(py), 1, 1); if (i % 4 === 0) { x.fillStyle = 'rgba(150,255,210,.4)'; x.fillRect(Math.round(px) - 1, Math.round(py), 3, 1); x.fillRect(Math.round(px), Math.round(py) - 1, 1, 3); } } } // bubbles rising through the hold
     else if (k === 'pizzaoven') { for (let i = 0; i < 30; i++) { const px = (i * 41 + t * 7 + Math.sin(t * 1.4 + i) * 9) % W, py = H - ((t * (18 + (i % 5) * 5) + i * 23) % (H + 10)); x.fillStyle = i % 3 ? '#ff9a3a' : i % 3 === 0 ? '#ffd25a' : '#ff5a18'; x.fillRect(Math.round(px), Math.round(py), 1, i % 4 ? 1 : 2); } } // sparks and embers swirling up
     else if (k === 'embers') { for (let i = 0; i < 24; i++) { const px = (i * 43 + t * 9 + Math.sin(t * 0.9 + i) * 8) % W, py = H - ((t * (10 + (i % 4) * 4) + i * 29) % (H + 10)); x.fillStyle = i % 5 ? '#ff8a2a' : 'rgba(180,160,170,.7)'; x.fillRect(Math.round(px), Math.round(py), 1, 1); } } // drifting embers and ash
     else if (k === 'dungeon') { for (let i = 0; i < 10; i++) { x.fillStyle = i % 3 ? 'rgba(255,230,160,.45)' : 'rgba(190,150,255,.6)'; x.fillRect(Math.round((i * 29 + Math.sin(t + i) * 5) % W), Math.round(((t * 3 + i * 17) % 120) + 8), 1, 1); } }

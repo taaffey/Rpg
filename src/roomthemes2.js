@@ -109,7 +109,7 @@ const stones = {
 const PLK = ramp('#0c1008 #181c0e #262c16 #363e20 #485228 #5c6a32 #72823e #8a9a50');
 const SW = ramp('#06140c #0c2416 #143a20 #1e5230 #2c7040 #44904c #78b858');
 const RUST = ramp('#2a0e06 #4a1a0a #6e2c10 #8e4018 #b05a22 #cc7a34');
-const HOLES = [[30, 36, 26, 9], [108, 40, 20, 8], [50, 68, 14, 10], [112, 82, 28, 9], [22, 90, 20, 8], [74, 98, 24, 8], [138, 24, 14, 9]];
+const HOLES = [[26, 34, 30, 12], [106, 38, 22, 10], [48, 66, 16, 12], [108, 80, 32, 11], [20, 88, 22, 10], [72, 96, 28, 10], [136, 22, 16, 10]];
 function holeAt(x, y) {
   for (const [hx, hy, hw, hh] of HOLES) { const j = hash(y, hx, 3) * 1.5; if (x >= hx + j && x < hx + hw - hash(y, hy, 4) * 1.5 && y >= hy && y < hy + hh) return Math.min(x - hx, hx + hw - x, y - hy, hy + hh - y); }
   return -1;

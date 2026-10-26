@@ -1084,9 +1084,9 @@ const fieldNote = (id) => {
   return { name: who.name, text: n[1] };
 };
 function stageKind(bossId) {
-  if (bossId) return { big_gary: 'cellar', miller: 'cellar', captain_barnacle: 'crypt', clerk_pharaoh: 'ruins', frozen_angler: 'spire', mash_tun: 'brewery', margherita: 'pizzaoven', wyrm: 'boss', lich: 'crypt', storm_drake: 'storm', sphinx: 'ruins' }[bossId] || 'spire';
+  if (bossId) return { big_gary: 'cellar', miller: 'windmill', captain_barnacle: 'wreck', clerk_pharaoh: 'ruins', frozen_angler: 'spire', mash_tun: 'brewery', margherita: 'pizzaoven', wyrm: 'boss', lich: 'crypt', storm_drake: 'storm', sphinx: 'ruins' }[bossId] || 'spire';
   const m = mapDef();
-  if (m.kind === 'dungeon') return G.map === 'pizzaoven' ? 'pizzaoven' : m.theme === 'cavern' ? 'dungeon' : m.theme;
+  if (m.kind === 'dungeon') return G.map === 'pizzaoven' || G.map === 'wreck' || G.map === 'windmill' ? G.map : m.theme === 'cavern' ? 'dungeon' : m.theme;
   const r = regionOf(), woods = [[1, 0], [-1, 0], [0, 1], [0, -1]].some(([a, b2]) => tileAt(G.x + a, G.y + b2) === 'T'); // fighting at a forest's edge
   return r === 'snow' ? 'snow' : r === 'swamp' ? 'swamp' : r === 'ember' ? 'embers' : r === 'desert' ? 'desert' : woods ? 'forest' : 'world';
 }

@@ -1459,7 +1459,7 @@ export const enemyIds = () => [...Object.keys(MODELS), ...Object.keys(ENEMY_VARI
 // ===== Painted backdrops =====
 // =====================================================================
 export const BW = 256, BH = 176;
-export const BACKDROPS = ['world', 'desert', 'forest', 'snow', 'swamp', 'dungeon', 'crypt', 'spire', 'storm', 'ruins', 'boss', 'crypt:boss', 'spire:boss', 'storm:boss', 'ruins:boss', 'cellar', 'cellar:boss', 'brewery', 'brewery:boss', 'embers', 'pizzaoven', 'pizzaoven:boss'];
+export const BACKDROPS = ['world', 'desert', 'forest', 'snow', 'swamp', 'dungeon', 'crypt', 'spire', 'storm', 'ruins', 'boss', 'crypt:boss', 'spire:boss', 'storm:boss', 'ruins:boss', 'cellar', 'cellar:boss', 'brewery', 'brewery:boss', 'wreck', 'wreck:boss', 'windmill', 'windmill:boss', 'embers', 'pizzaoven', 'pizzaoven:boss'];
 function painter(w, h, seed) {
   const img = new Uint8ClampedArray(w * h * 4), r = rng(seed);
   const P = {
@@ -1827,6 +1827,111 @@ BD_FNS.brewery = function (P, hy, L, boss) { // the Great Brewery: copper vats, 
   barrelUp(P, 10, hy + 66, 26, 40, 11); barrelUp(P, 247, hy + 58, 24, 36, 13); // foreground kegs framing the shot
   scatter(P, hy + 12, 24, 91, (x, y, s, k) => { if (k < 0.5) rock(P, x, y, s * 0.6, ['#1a1214', '#3a2c2a', '#5a4840', '#7a6254'], x); else if (s > 0.3) { const G2 = RG(['#1c5a1c', '#3a8c2a', '#7cc03c']); P.set(x, y, G2[1]); P.set(x + 1, y, G2[2]); P.set(x, y - 1, G2[0]); } }); // pebbles and fallen hops
   shadowBand(P, hy + 12, hy + 24, 0.3); vignette(P, 0.42);
+};
+// ---------- side-quest dungeon backdrops ----------
+// 'wreck': the hold of the Salty Sue, a pirate ship stuck in the bog: warped hull planks, barnacled ribs, brass portholes with green water light.
+// The boss version is the captain's stern cabin: a great window, a wheel, a spilt hoard.
+BD_FNS.wreck = function (P, hy, L, boss, info) {
+  const PLK = RG(['#0e0c08', '#1c1a10', '#2c2818', '#3e3822', '#54492c', '#6c5f38', '#88794a']), BRN = RG(['#0c0806', '#1c1410', '#2e221a', '#44342a', '#5c4838', '#745c48']), BRASS = RG(['#3a2606', '#6a4a10', '#a07a20', '#d8aa3c', '#f8d870', '#fff4b8']);
+  const wallH = hy + 12, mix3 = (c, d, a) => [lerp(c[0], d[0], a), lerp(c[1], d[1], a), lerp(c[2], d[2], a)];
+  for (let y = 0; y < wallH; y++) for (let x = 0; x < P.w; x++) { // hull planking, warped by the sea and the years
+    const warp = Math.round(Math.sin(x * 0.05 + y * 0.012) * 4 + Math.sin(x * 0.17 + 1) * 1.1), yy = y + warp + 100, row = Math.floor(yy / 9), v = yy % 9, segLen = 70 + Math.floor(hash(row, 2, 3) * 3) * 20, off = Math.floor(hash(row, 1, 3) * segLen), u = (x + off) % segLen, seg = Math.floor((x + off) / segLen);
+    let t = 0.46 + (hash(row, seg, 3) - 0.5) * 0.28 + (fbm(x / 9, y / 3, 5) - 0.5) * 0.3 - (y / wallH) * 0.12;
+    if (v === 8 || u === 0) t = 0.03; else if (v === 0) t += 0.14; else if (u === 1) t += 0.08;
+    if ((u === 4 || u === segLen - 4) && v === 4) t = 0.95; // nail heads
+    const alg = fbm(x / 6, y / 8, 11) + (y / wallH) * 0.12 - (y < 30 ? 0.1 : 0); P.set(x, y, alg > 0.66 ? P.pick(RG(['#0c2a14', '#16421e', '#26602a', '#3e8636']), clamp(0.35 + (alg - 0.66) * 2.4, 0, 1), x, y) : mix3(P.pick(PLK, clamp(t, 0, 1), x, y), [30, 90, 70], 0.22 + (y / wallH) * 0.12));
+  }
+  const barnacles = (x0, x1, y0, y1, seed, dens) => { for (let i = 0; i < dens; i++) { const bx = x0 + hash(i, 1, seed) * (x1 - x0), by = y0 + Math.pow(hash(i, 2, seed), 0.6) * (y1 - y0), r = 1 + Math.floor(hash(i, 3, seed) * 2.6); for (let j = -r; j <= r; j++) for (let k = -r; k <= r; k++) { const d = Math.hypot(k, j * 1.2); if (d > r + 0.3) continue; P.set(bx + k, by + j, P.pick(RG(['#3a3a38', '#6a6a64', '#a8a89c', '#e0e0d0']), clamp(0.7 - (k + j) / (r * 3), 0, 1), bx + k, by + j)); } P.set(bx, by, [24, 24, 22]); } };
+  for (const rx of [18, 92, 164, 238]) { // heavy ribs, leaning in as the hull curves up
+    for (let y = 0; y < wallH; y++) { const lean = Math.round((1 - y / wallH) * (rx < 128 ? 7 : -7) * 0.8), w = 13;
+      for (let k = 0; k < w; k++) { const x = rx + lean + k, t = clamp(0.72 - k / w * 0.6 + (hash(x >> 1, y >> 2, 9) - 0.5) * 0.1 - (k === 0 || k === w - 1 ? 0.3 : 0), 0, 1); P.set(x, y, P.pick(BRN, t, x, y)); } }
+    barnacles(rx - 3, rx + 18, 38, wallH - 4, rx, 14);
+  }
+  barnacles(0, P.w, 90, wallH, 41, 34);
+  for (let y = 0; y < 8; y++) for (let x = 0; x < P.w; x++) P.set(x, y, P.pick(BRN, clamp(0.78 - y * 0.1 + (hash(x >> 2, y, 6) - 0.5) * 0.12, 0, 1), x, y)); // deck beam overhead
+  for (let x = 0; x < P.w; x++) P.set(x, 8, BRN[0]);
+  const ports = boss ? [[44, 38, 12], [212, 38, 12]] : [[56, 34, 13], [128, 34, 13], [200, 34, 13]]; info.ports = ports;
+  for (const [cx, cy, r] of ports) { // brass portholes: bolted rim, thick glass, green water and drifting light beyond
+    glow(P, cx, cy, r + 26, '#5affb0', 0.5);
+    for (let y = cy - r - 3; y <= cy + r + 3; y++) for (let x = cx - r - 3; x <= cx + r + 3; x++) { const dx = x + 0.5 - cx, dy = y + 0.5 - cy, d = Math.hypot(dx, dy);
+      if (d > r + 3) continue;
+      if (d > r) P.set(x, y, P.pick(BRASS, clamp(0.55 - (dx + dy) / (r * 3.2) + (d > r + 2 ? -0.3 : 0), 0, 1), x, y));
+      else if (d > r - 2.6) P.set(x, y, P.pick(BRASS, clamp(0.45 + (dx + dy) / (r * 3), 0, 1) * 0.8, x, y));
+      else { const t = clamp(0.35 + (cy - y) / (r * 2) * -0.1 + (fbm(x / 4, y / 5, 7) - 0.5) * 0.5 + Math.max(0, 1 - Math.abs((dx + dy * 0.6) - 2) / 3) * 0.35, 0, 1); P.set(x, y, P.pick(RG(['#04140e', '#0a2c22', '#146048', '#26a07a', '#5ae0b0', '#b8ffe0']), t, x, y)); } }
+    for (let k = 0; k < 8; k++) { const a = k * Math.PI / 4 + 0.4; P.set(cx + Math.cos(a) * (r + 1.5), cy + Math.sin(a) * (r + 1.5), [255, 244, 190]); } // rivets
+    for (const [bx, by] of [[cx - 4, cy + 5], [cx + 3, cy + 1], [cx - 1, cy - 4]]) P.set(bx, by, [230, 255, 245]); // bubbles beyond the glass
+    if (cx === 128 || boss) { for (let k = 0; k < 7; k++) { P.set(cx + 2 + k, cy + 2 - (k > 3 ? 1 : 0), [10, 40, 30]); } P.set(cx + 9, cy + 1, [10, 40, 30]); P.set(cx + 10, cy + 2, [10, 40, 30]); } // a fish, or the memory of one
+    for (let y = cy + r + 4; y < hy + 40; y++) { const sp = (y - cy - r) * 0.35; for (let x = Math.floor(cx - r * 0.5 - sp); x < cx + r * 0.5 + sp + (y - cy) * 0.5; x++) if (bayer(x, y) < 0.14 * (1 - (y - cy) / (hy + 40 - cy))) P.blend(x, y, [150, 255, 200], 0.3); } // light shafts falling through the hold
+  }
+  if (boss) { // the captain's stern window, the wheel, the hoard
+    const cx = 128, top = 14, hw = 40;
+    for (let y = top; y < hy + 6; y++) for (let x = cx - hw - 3; x <= cx + hw + 3; x++) { const arch = y < top + hw ? Math.hypot((x - cx) / (hw + 3), (y - top - hw) / (hw + 3)) : 0, ins = y < top + hw ? arch <= 1 : Math.abs(x - cx) <= hw + 3; if (!ins) continue; const inner = y < top + hw ? arch < 0.92 : Math.abs(x - cx) < hw;
+      if (!inner) { P.set(x, y, P.pick(BRN, clamp(0.5 + (cx - x) / 90 + (hash(x, y >> 2, 2) - 0.5) * 0.1, 0, 1), x, y)); continue; }
+      const mull = Math.abs(x - cx) < 1.2 || (y - top) % 18 < 1.6 || Math.abs(Math.abs(x - cx) - 20) < 1; if (mull) { P.set(x, y, P.pick(BRN, 0.35, x, y)); continue; }
+      const t = clamp(0.3 + (y - top) / 110 + (fbm(x / 7, y / 6, 15) - 0.5) * 0.5 + Math.max(0, 1 - Math.abs((x - 60 + (y - top)) % 38 - 8) / 5) * 0.2, 0, 1); P.set(x, y, P.pick(RG(['#082a22', '#106a4c', '#28a87c', '#6ce8b4', '#c0ffe4']), t, x, y)); }
+    glow(P, cx, 50, 90, '#6affb8', 0.4);
+    for (let i = 0; i < 90; i++) { const gx = 128 + (hash(i, 1, 4) - 0.5) * 120, gy = hy + 6 + hash(i, 2, 4) * 8 - Math.abs(gx - 128) * 0.06, g = 1 + Math.floor(hash(i, 3, 4) * 2); P.set(gx, gy, [250, 210, 80]); P.set(gx + 1, gy, [190, 150, 40]); if (g > 1) P.set(gx, gy - 1, [255, 240, 150]); } // spilt coins
+    for (const [mx, my, mw] of [[104, hy + 10, 26], [156, hy + 10, 30]]) for (let y = my - mw * 0.4; y <= my; y++) for (let x = mx - mw; x <= mx + mw; x++) { const q = ((x - mx) / mw) ** 2 + ((y - my) / (mw * 0.4)) ** 2; if (q > 1) continue; const h2 = hash(x >> 1, y >> 1, 3); P.set(x, y, P.pick(RG(['#5a3a06', '#a07a14', '#e0b030', '#ffe070', '#fff6b0']), clamp(0.7 - (x - mx) / (mw * 2) - (y - my) / (mw * 0.6) + (h2 - 0.5) * 0.45, 0, 1), x, y)); } // gold mounds
+  }
+  for (const [lx, ly] of boss ? [[64, 66], [192, 66]] : [[88, 66], [168, 66]]) { torch(P, lx, ly, '#ffd070', L); glow(P, lx, ly + 6, 30, '#ffb050', 0.34); }
+  for (let y = 0; y < 22; y++) for (let x = 0; x < P.w; x++) if (hash(x >> 1, 4, 5) < 0.06 && y > 8 && y < 8 + 6 + hash(x >> 1, 7, 5) * 14) P.set(x, y, P.pick(RG(['#0c2a14', '#26602a', '#5ab048']), clamp(0.7 - (y - 8) / 18, 0, 1), x, y)); // weed hanging from the beam
+  ground(P, wallH, ['#08120e', '#101e18', '#1a3026', '#2a463a', '#3c6050', '#527a64'], (X, Z) => { const fx = (((X * 0.3) % 1) + 1) % 1, row = Math.floor(Z * 0.6), fz = ((((Z * 0.6) % 1) + 1) % 1), grout = fx < 0.06 || (fz < 0.08 && hash(Math.floor(X * 0.3), row, 3) < 0.5) ? -0.36 : 0; return 0.42 + grout + (fbm(X * 1.2, Z * 1.6, 61, 3) - 0.5) * 0.4 + (hash(Math.floor(X * 0.3), row, 4) - 0.5) * 0.22; }, { haze: '#0a2a22', hazeMax: 0.4 });
+  for (const [cx, cy, rw, rh] of boss ? [[128, 118, 56, 8], [54, 152, 34, 6], [212, 160, 30, 6]] : [[84, 118, 30, 5], [182, 142, 38, 7], [40, 166, 22, 4]]) pool(P, cx, cy, rw, rh, ['#04100c', '#0a2a22', '#16503f', '#2a8a6a'], '#b0ffe0'); // standing bilge water
+  for (let y = wallH; y < P.h; y++) for (let x = 0; x < P.w; x++) { const d = Math.hypot((x - 128) / 150, (y - wallH) / 70); if (bayer(x, y) < (1 - d) * 0.18) P.blend(x, y, [120, 255, 190], 0.14); } // green light pooling on the boards
+  barrelUp(P, 12, hy + 66, 26, 40, 17); barrelUp(P, 246, hy + 58, 24, 36, 19); // foreground barrels, furred with weed
+  for (const bx of [12, 246]) for (let i = 0; i < 18; i++) { const wx = bx - 10 + hash(i, bx, 3) * 20, wy = hy + 30 + hash(i, 2, 3) * 36; P.blend(wx, wy, [60, 150, 60], 0.55); }
+  barnacles(0, 28, hy + 40, hy + 66, 77, 6); barnacles(232, 256, hy + 38, hy + 60, 79, 6);
+  scatter(P, wallH, 26, 83, (x, y, s, k) => { if (k < 0.35) rock(P, x, y, s * 0.6, ['#14201a', '#2a3c30', '#4e6a58', '#7a9a80'], x); else if (k < 0.55 && s > 0.3) { P.set(x, y, [240, 210, 90]); P.set(x + 1, y, [190, 150, 40]); } else if (s > 0.3) { P.set(x, y, [232, 224, 200]); P.set(x + 1, y - 1, [200, 192, 170]); P.set(x + 2, y, [232, 224, 200]); } });
+  cobweb(P, 0, 8, 1, 14); shadowBand(P, wallH, wallH + 12, 0.28); vignette(P, 0.44);
+};
+// 'windmill': inside the Old Windmill: millstones, flour sacks, great beams, a slatted window throwing dusty light. The Miller's version stands a huge runner stone on its edge.
+BD_FNS.windmill = function (P, hy, L, boss, info) {
+  const TB = RG(['#120a06', '#26160c', '#3e2616', '#58381e', '#744c2a', '#946438', '#b88050']), FL = RG(['#8a8478', '#aaa498', '#c8c2b4', '#e0dccc', '#f2eee0', '#ffffff']), ST = RG(['#241f1c', '#3c3630', '#56504a', '#706a62', '#8c867c', '#aaa498', '#c4beb0']);
+  const wallH = hy + 12;
+  for (let y = 0; y < wallH; y++) for (let x = 0; x < P.w; x++) { // vertical boards, grey with age and dusted with flour
+    const bw = 9, b = Math.floor(x / bw), u = x % bw, top = Math.floor(hash(b, 1, 5) * 6);
+    let t = 0.5 + (hash(b, 2, 5) - 0.5) * 0.28 + (fbm(x / 3, y / 12, 6) - 0.5) * 0.3 - (y / wallH) * 0.1;
+    if (u === 0) t = 0.05; else if (u === 1) t += 0.12; else if (u === bw - 1) t -= 0.1;
+    if (y % 46 === 20 && u === 4) t = 0.95; // nail heads
+    let c = P.pick(TB, clamp(t, 0, 1), x, y);
+    const fl = fbm(x / 7, y / 14, 12) - 0.5 + (y > 60 ? (y - 60) / 120 : 0) - (y < 20 ? 0.2 : 0); if (fl > 0.14) { const f2 = P.pick(FL, clamp(0.25 + (fl - 0.14) * 1.4, 0, 0.7), x, y); c = [lerp(c[0], f2[0], 0.5), lerp(c[1], f2[1], 0.5), lerp(c[2], f2[2], 0.5)]; }
+    P.set(x, y, c);
+  }
+  const beamH = (y0, h) => { for (let y = y0; y < y0 + h; y++) for (let x = 0; x < P.w; x++) P.set(x, y, P.pick(TB, clamp(0.85 - (y - y0) / h * 0.75 + (hash(x >> 3, y, 8) - 0.5) * 0.1, 0, 1), x, y)); };
+  beamH(0, 9); beamH(wallH - 22, 7); // roof beam, tie beam
+  for (const px of [0, 84, 170, 248]) for (let y = 0; y < wallH; y++) for (let k = 0; k < 8; k++) P.set(px + k, y, P.pick(TB, clamp(0.7 - k * 0.1 + (hash(px, y >> 2, 3) - 0.5) * 0.1 - (k === 7 ? 0.2 : 0), 0, 1), px + k, y)); // posts
+  // slatted window, throwing shafts of dusty light down the room
+  const wx0 = 18, wx1 = 72, wy0 = 12, wy1 = 64;
+  for (let y = wy0 - 3; y < wy1 + 3; y++) for (let x = wx0 - 3; x < wx1 + 3; x++) { const inside = x >= wx0 && x < wx1 && y >= wy0 && y < wy1; if (!inside) { P.set(x, y, P.pick(TB, clamp(0.75 - (x < wx0 ? 0.35 : 0) - (y < wy0 ? 0 : 0.1) + (hash(x, y, 2) - 0.5) * 0.08, 0, 1), x, y)); continue; }
+    const slat = (y - wy0) % 8 < 5; if (slat) { const v = (y - wy0) % 8; P.set(x, y, P.pick(TB, clamp(0.78 - v * 0.14 + (hash(x >> 2, y, 3) - 0.5) * 0.1, 0, 1), x, y)); } else P.set(x, y, P.pick(RG(['#e8d8a0', '#f8ecc0', '#fff8dc', '#ffffff']), clamp(0.5 + (x - wx0) / 160 + (fbm(x / 6, y / 3, 4) - 0.5) * 0.4, 0, 1), x, y)); }
+  glow(P, 46, 42, 70, '#fff0b0', 0.5);
+  for (let k = 0; k < 5; k++) { const x0 = 20 + k * 12; for (let y = wy1; y < hy + 40; y++) for (let x = Math.floor(x0 + (y - wy1) * 0.55); x < x0 + 8 + (y - wy1) * 0.55; x++) if (bayer(x, y) < 0.22 * (1 - (y - wy1) / (hy + 40 - wy1))) P.blend(x, y, [255, 240, 180], 0.42); } // light shafts
+  info.gear = [214, 52, boss ? 34 : 28];
+  for (let y = 0; y < wallH; y++) for (let k = 0; k < 14; k++) { const x = 208 + k; P.set(x, y, P.pick(TB, clamp(0.76 - Math.abs(k - 5) * 0.09 + (hash(x, y >> 2, 3) - 0.5) * 0.1, 0, 1), x, y)); } // the great upright shaft
+  for (const by of [24, 80, 118]) for (let x = 206; x < 224; x++) { P.set(x, by, [70, 70, 84]); P.set(x, by + 1, [150, 150, 168]); P.set(x, by + 2, [40, 40, 52]); } // iron bands
+  const sack = (cx, by, w, h, tone = 0) => { for (let y = by - h; y <= by; y++) { const t = (y - (by - h)) / h, half = (w / 2) * (t < 0.15 ? 0.45 + t * 3.5 : 0.98 - (t > 0.8 ? (t - 0.8) * 0.8 : 0) + Math.sin(t * 3.14) * 0.08); for (let x = Math.floor(cx - half); x <= cx + half; x++) { const u = (x + 0.5 - cx) / half; P.set(x, y, P.pick(RG(['#6a5c44', '#8a7a5c', '#b0a07c', '#d0c29c', '#ece0bc']), clamp(0.62 - u * 0.36 - t * 0.12 + (hash(x >> 1, y, 4 + tone) - 0.5) * 0.12 + (((x + y) % 5) === 0 ? -0.06 : 0), 0, 1), x, y)); } }
+    for (let x = Math.floor(cx - w * 0.28); x <= cx + w * 0.28; x++) P.set(x, by - h + 3, [90, 60, 36]); P.set(cx, by - h + 4, [60, 40, 24]); const lg = Math.round(by - h * 0.5); for (let k = -2; k <= 2; k++) P.set(cx + k, lg, [170, 40, 40]); P.set(cx, lg + 1, [170, 40, 40]); P.set(cx, lg - 1, [170, 40, 40]); };
+  if (!boss) { // the stones: a wooden tun around the runner stone, with the hopper and shoe above
+    const cx = 126, by = hy + 14; for (let y = by - 24; y <= by; y++) { const t = (y - (by - 24)) / 24, half = 54 * (0.94 + Math.sin(t * 2.4) * 0.05); for (let x = Math.floor(cx - half); x <= cx + half; x++) { const u = (x + 0.5 - cx) / half, hoop = y === by - 22 || y === by - 4 || y === by - 3; P.set(x, y, hoop ? P.pick(RG(['#14121a', '#3a3844', '#6a6878', '#a8a8b8']), clamp(0.55 - u * 0.4, 0, 1), x, y) : P.pick(TB, clamp(0.66 - u * 0.4 + ((x - Math.floor(cx - half)) % 9 === 0 ? -0.28 : 0) + (hash(x, y >> 3, 2) - 0.5) * 0.08, 0, 1), x, y)); } }
+    for (let y = by - 38; y <= by - 20; y++) for (let x = cx - 52; x <= cx + 52; x++) { const q = ((x - cx) / 52) ** 2 + ((y - (by - 29)) / 9) ** 2; if (q > 1) continue; const furrow = ((Math.atan2((y - (by - 29)) * 3, x - cx) * 6 / Math.PI + 12) % 1) < 0.12 && q > 0.12; P.set(x, y, P.pick(ST, clamp(0.62 - (q > 0.8 ? 0.28 : 0) - (furrow ? 0.3 : 0) - (x - cx) / 200 + (fbm(x / 5, y / 4, 13) - 0.5) * 0.3 + (q < 0.1 ? -0.4 : 0), 0, 1), x, y)); }
+    for (let y = 4; y < by - 36; y++) { const t = (y - 4) / (by - 40), half = 26 - t * 16; for (let x = Math.floor(cx - half); x <= cx + half; x++) P.set(x, y, P.pick(TB, clamp(0.66 - (x - cx) / (half * 2.4) + (y % 7 === 0 ? -0.22 : 0), 0, 1), x, y)); } // hopper
+    for (let k = 0; k < 14; k++) { P.set(cx - 6 + k, by - 40 + (k >> 1), [210, 200, 170]); P.set(cx - 6 + k, by - 41 + (k >> 1), [246, 240, 224]); } // the flour chute
+    for (const [fx, fy, fr] of [[cx - 38, by + 1, 18], [cx + 30, by + 2, 22], [cx, by + 4, 40]]) for (let y = fy - fr * 0.25; y <= fy + 3; y++) for (let x = fx - fr; x <= fx + fr; x++) { const q = ((x - fx) / fr) ** 2 + ((y - fy) / (fr * 0.25)) ** 2; if (q > 1) continue; P.set(x, y, P.pick(FL, clamp(0.78 - (x - fx) / (fr * 3) - (y - fy) / (fr * 0.5) * 0.3 + (hash(x, y, 7) - 0.5) * 0.18, 0, 1), x, y)); } // spilt flour
+  } else { // boss: a huge runner stone stood on its edge behind the Miller
+    const cx = 128, cy = hy - 8, R = 46;
+    for (let y = cy - R; y <= cy + R; y++) for (let x = cx - R; x <= cx + R; x++) { const dx = x + 0.5 - cx, dy = y + 0.5 - cy, d = Math.hypot(dx, dy) / R; if (d > 1) continue; const furrow = ((Math.atan2(dy, dx) * 8 / Math.PI + 16) % 1) < 0.1 && d > 0.22 && d < 0.94;
+      P.set(x, y, d < 0.1 ? [8, 6, 6] : d > 0.94 ? P.pick(RG(['#14121a', '#3a3844', '#6a6878', '#a8a8b8']), clamp(0.5 - (dx + dy) / (R * 3), 0, 1), x, y) : P.pick(ST, clamp(0.6 - (dx + dy) / (R * 2.4) - (furrow ? 0.3 : 0) + (fbm(x / 5, y / 5, 14) - 0.5) * 0.34 - (d < 0.2 ? 0.2 : 0), 0, 1), x, y)); }
+    for (let y = cy + R - 4; y < wallH; y++) for (let x = cx - 40; x <= cx + 40; x++) P.set(x, y, P.pick(TB, clamp(0.55 - (x - cx) / 140 + (hash(x >> 3, y, 3) - 0.5) * 0.1, 0, 1), x, y)); // the cradle
+    glow(P, 128, 50, 80, '#fff0c0', 0.3);
+  }
+  sack(26, hy + 12, 22, 30, 1); sack(50, hy + 14, 24, 28, 2); sack(38, hy - 12, 20, 24, 3); sack(236, hy + 10, 24, 30, 4); sack(214, hy + 14, 22, 26, 5);
+  for (const [lx, ly] of boss ? [[78, 70], [184, 70]] : [[82, 64], [174, 64]]) { torch(P, lx, ly, '#ffd890', L); glow(P, lx, ly + 6, 28, '#ffc870', 0.3); }
+  ground(P, wallH, ['#1a120c', '#2c1e14', '#443020', '#604630', '#7c5c40', '#9a7a58'], (X, Z) => { const fx = (((X * 0.34) % 1) + 1) % 1, row = Math.floor(Z * 0.55), fz = ((((Z * 0.55) % 1) + 1) % 1), grout = fx < 0.06 || (fz < 0.08 && hash(Math.floor(X * 0.34), row, 3) < 0.45) ? -0.34 : 0, dust = fbm(X * 0.5, Z * 0.6, 22, 3); return 0.4 + grout + (fbm(X * 1.2, Z * 1.6, 51, 3) - 0.5) * 0.4 + Math.max(0, dust - 0.52) * 1.2; }, { haze: '#6a5848', hazeMax: 0.4 });
+  for (let y = wallH; y < P.h; y++) for (let x = 0; x < P.w; x++) { const d = Math.hypot((x - 96) / 160, (y - wallH) / 70); if (bayer(x, y) < (1 - d) * 0.2) P.blend(x, y, [255, 230, 160], 0.16); } // sunlight on the boards
+  for (const [cx, cy, rw, rh] of [[200, 140, 36, 6], [60, 156, 30, 5], [140, 168, 24, 4]]) { for (let y = cy - rh; y <= cy + rh; y++) for (let x = cx - rw; x <= cx + rw; x++) { const q = ((x - cx) / rw) ** 2 + ((y - cy) / rh) ** 2; if (q > 1 + (hash(x, y, 7) - 0.5) * 0.2) continue; P.set(x, y, P.pick(FL, clamp(0.8 - q * 0.4 + (hash(x, y, 5) - 0.5) * 0.2, 0, 1), x, y)); } } // flour drifts
+  sack(10, hy + 70, 34, 48, 6); sack(247, hy + 62, 32, 44, 7); // foreground sacks framing the shot
+  scatter(P, wallH, 26, 85, (x, y, s, k) => { if (k < 0.4) rock(P, x, y, s * 0.6, ['#2a241e', '#4a4238', '#7a7062', '#aaa090'], x); else if (s > 0.3) { P.set(x, y, [250, 246, 232]); P.set(x + 1, y, [220, 214, 196]); } });
+  cobweb(P, 0, 9, 1, 14); cobweb(P, P.w - 1, 9, -1, 12); shadowBand(P, wallH, wallH + 12, 0.28); vignette(P, 0.4);
 };
 // ---------- Cinder Isle backdrops ----------
 // 'embers': the island's random-battle scenery. A smouldering sunset behind a great black volcano, basalt flats cracked with lava, charred trees.
