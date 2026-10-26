@@ -94,7 +94,7 @@ export const WAKE = [
   { s: 'elder', t: 'The bell rings for those who set right Gemforge\'s seals. Slay the three evils and perhaps it will ring for you again.' },
   { s: 'devon', t: 'Main quest unlocked. Let\'s GO.' },
   { s: 'elder', t: 'You have no calling, no weapons and no idea. Prove you can swing a fist first. The Gilded Goose has a slime problem.' },
-  { s: 'elder', t: 'Barnaby\'s tavern, north-west of the fountain. The sign says INN. We are not a subtle people. Mind the cellar trapdoor.' },
+  { s: 'elder', t: 'Barnaby\'s tavern, up past the maypole on the green. The sign says INN. We are not a subtle people. Mind the cellar trapdoor.' },
   { s: 'elder', t: 'Do try not to die. The paperwork is dreadful.' },
 ];
 export const CELLAR_IN = [
@@ -154,7 +154,7 @@ export const PARTY_SCALE = { 1: { hp: 0.5, atk: 0.75 }, 2: { hp: 0.62, atk: 0.82
     { s: 'n', t: 'The Spire\'s great door is sealed with a sigil of black water: a crown, sinking.' },
     { s: 'wendell', t: 'The mark of Morvath, the drowned king! I would know it anywhere. I have seen it in a book. Once.' },
     { s: 'devon', t: 'Locked door, bro. Classic. Key\'s in the other dungeon.' },
-    { s: 'adam', t: 'The Sunken Crypt, in the marsh south of Haven. We deal with Morvath, then we come back for the Titan.' },
+    { s: 'adam', t: 'The Sunken Crypt, out in the marsh, a long way east past Mirewood. We deal with Morvath, then we come back for the Titan.' },
   ] });
 }
 // Devon's phone (Items > Key items): 3%, no signal, forever

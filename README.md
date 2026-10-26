@@ -79,7 +79,7 @@ unique weapon, 4-8%); bosses always drop their treasure. The Bestiary lists each
 The EXP curve (`EXP_TABLE` in `src/logic.js`) gives a level every 1-4 fights near Haven and ~6-10 regional fights later; KO'd heroes
 get half EXP. `node tools/progress.mjs` simulates a full playthrough and checks the level reached at every stage and boss.
 
-**Gentle start:** safe zones around every town, an encounter ramp that unlocks tougher monsters the farther you walk from Haven, and a warning toast when you enter swamp or snow below the recommended level.
+**Gentle start:** safe zones around every town, an encounter ramp that unlocks tougher monsters the farther you walk from Haven. There are no tutorial pop-ups or level warnings: NPCs and the journal drop hints in the story's voice instead.
 
 **Towns** are laid out like Corneria: multi-tile buildings with slate roofs, a sign over the door (INN plaque, potion, sword, guild crest), white walls with windows and arched doors, solid drop shadows, cobbled streets with rounded corners, round trees, canals with bridges, a fountain plaza, graves and a low stone wall. Frostholm has snowy roofs and pines; Mirewood is thatch and boardwalks over the bog.
 
@@ -112,8 +112,8 @@ foot of the Frost Spire the party meets the one who wants them. The Titan is the
 - **Towns**: Haven Town, the swamp stilt-village Mirewood, and Frostholm. Buildings are enterable interiors (inn, general store, smithy, guild, houses) with
   NPCs, dialogue, shops and chests. A `!` over an NPC marks news.
 - **Dungeons** with their own lighting, music and enemies: Ashen Cavern (Ashen Wyrm), Sunken Crypt (Lich King Morvath),
-  Frost Spire (Frost Titan, the final boss), the optional Storm Cavern on the Northern Plains (Storm Drake) and the optional
-  **Sunscar Ruins** (Lv 11-14): a sandstone temple under the desert ruins south-east of Haven, with column-lined halls, glyph panels,
+  Frost Spire (Frost Titan, the final boss), the optional Storm Cavern on Frost Isle (Storm Drake) and the optional
+  **Sunscar Ruins** (Lv 11-14): a sandstone temple under the desert ruins far to the east of Haven, with column-lined halls, glyph panels,
   drifting sand, five treasure chests (Scarab Bow, Sandwalker Garb, Mirage Staff...) and the **Sphinx Pharaoh** on its sun-disc altar
   (drops the Pharaoh's Khopesh and Sun Disc Amulet; weak to ice and dark). 65 enemies including recolored tiers and rare elites. Level cap 20.
 - **Gem-wright** (in each smithy): spend gold for up to 3 bonus sockets per hero, so more gems fit on their skills.
@@ -121,7 +121,7 @@ foot of the Frost Spire the party meets the one who wants them. The Titan is the
   a **delivery** (Mirewood child -> her brother at the Frostholm Forge), a **treasure hunt** (Haven's old sailor and Captain Redwake's gold),
   and **rare-elite hunts** (Golden Boar, Crystal Golem: while the hunt is open the quarry turns up more often). New in Haven: Acolyte, Huntress,
   Old Sailor; Mirewood: Apothecary; Frostholm: Prospector; in the wilds: the Desert Oracle and the Plains Hermit.
-- **Hidden treasures** (4): spots on the overworld and in towns that glint faintly now and then; step on one to dig it up. The hermit, the
+- **Hidden treasures** (4): hidden spots on the overworld and in towns; step on one to dig it up (no glints: the hermit and the journal hint where). The hermit, the
   oracle and a few townsfolk drop hints. The journal counts them.
 - **Ending**: the finale scene, then a cinematic dawn with an epilogue for each hero, scrolling credits and your stats.
 
