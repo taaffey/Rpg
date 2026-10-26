@@ -239,39 +239,38 @@ export function makeAutumn(U) {
       rim(p, 0.42, 'tl'); const c = canv(p); c.dx = -M / 16; c.smoke = smoke; return c;
     });
   }
-  function oastPix(b) { // a round brick kiln under a conical tile roof with a white cowl, between two low whitewashed wings
+  function oastPix(b) { // twin round brick kilns under conical tile roofs, each with a white cowl, either side of a tiled stowage with the shop door
     return once(`ahb${b.x},${b.y}`, () => {
-      const W = b.w * 16 + 2 * M, H = 100, p = new Pix(W, H), yB = H - 1, seed = 23, cx = W / 2, smoke = [], KR = 22, wallTop = yB - 40, coneTop = 17;
-      // low whitewashed wings with hipped tile roofs
-      for (const [a, z] of [[M, cx - KR + 3], [cx + KR - 3, W - M - 1]]) {
-        for (let y = yB - 27; y <= yB; y++) for (let x = a; x <= z; x++) p.set(x, y, y > yB - 5 ? masonryPx(x, y, yB - 5, seed, PA.stone, 9, 3) : pick(PAL.wash, cl(0.78 + (fbm(x * 1.5, y * 1.5, seed) - 0.5) * 0.28 - (y > yB - 8 ? 0.1 : 0)), x, y));
-        oakRail(p, a, z, yB - 28, 2); oakPost(p, a, yB - 27, yB - 5, 2); oakPost(p, z - 1, yB - 27, yB - 5, 2);
-        const rr = tileRoof(p, { x0: a - 3, x1: z + 3, yR: yB - 44, yE: yB - 25, hx: 8, seed: seed + a, R: PA.tile, moss: 0.2, ch: 3, tw: 4 }); eaveShadow(p, a - 2, z + 2, rr.eave, 3);
+      const W = b.w * 16 + 2 * M, H = 104, p = new Pix(W, H), yB = H - 1, seed = 23, dc = M + b.door * 16 + 8, smoke = [], R = 17, wallTop = yB - 40, tip = 31, kc = [M + R, W - M - R];
+      // the stowage in the middle: whitewashed weatherboard under a hipped tile roof, lower than the kilns
+      for (let y = yB - 30; y <= yB; y++) for (let x = kc[0]; x <= kc[1]; x++) p.set(x, y, y > yB - 5 ? masonryPx(x, y, yB - 5, seed, PA.stone, 9, 3) : pick(PAL.wash, cl(0.8 + (fbm(x * 1.5, y * 1.5, seed) - 0.5) * 0.24 - (x % 5 === 0 ? 0.14 : 0) - (y > yB - 8 ? 0.1 : 0), 0.2, 1), x, y));
+      oakRail(p, kc[0], kc[1], yB - 31, 2);
+      const sr = tileRoof(p, { x0: kc[0] - 4, x1: kc[1] + 4, yR: yB - 56, yE: yB - 28, hx: 10, seed: seed + 3, R: PA.tile, moss: 0.2, ch: 3, tw: 4 }); eaveShadow(p, kc[0] - 3, kc[1] + 3, sr.eave, 3);
+      doorAt(p, dc - 6, yB - 2, 12, 22, { frame: PAL.plaster, wood: PAL.oakT, step: true });
+      lattice(p, dc - 4, yB - 49, 8, 9, { shut: PAL.green, seed: 1 }); // a little loft window under the stowage roof
+      for (const [k, cx] of kc.entries()) {
+        const flip = k ? 1 : 0;
+        for (let y = wallTop; y <= yB; y++) for (let x = cx - R; x < cx + R; x++) { // the drum: brick in curving courses, lit from the left
+          const u = (x + 0.5 - cx) / R, row = Math.floor((yB - y) / 3), ry = (yB - y) % 3, bx = Math.floor((x + row * 3 + Math.round(u * u * 3)) / 6), bu = (x + row * 3 + 600) % 6; let v = 0.66 - u * 0.42 + (hash(bx, row, seed + k) - 0.5) * 0.22 - u * u * 0.18;
+          if (ry === 2 || bu === 0) v -= 0.2; else if (ry === 0) v += 0.07; if (y > yB - 5) v -= 0.12; if (vnoise(x, y * 0.6, 6, seed + 4 + k) > 0.8 && y > wallTop + 18) v -= 0.14;
+          p.set(x, y, pick(PA.brick, cl(v, 0.04, 0.95), x, y)); }
+        for (let y = wallTop; y < wallTop + 3; y++) for (let x = cx - R; x < cx + R; x++) p.set(x, y, pick(PAL.wash, y === wallTop ? 0.95 : 0.6 - (x - cx) * 0.004, x, y)); // whitewashed band under the eaves
+        lattice(p, cx - 3, yB - 24, 6, 9, {}); // a round-headed window in the drum
+        // the cone: tile courses wrapped round it, eaves overhanging the drum
+        for (let y = tip; y <= wallTop + 2; y++) { const t = (y - tip) / (wallTop + 2 - tip), hw = 2.2 + (R + 3 - 2.2) * Math.pow(t, 1.25);
+          for (let x = Math.floor(cx - hw); x < cx + hw; x++) { const u = (x + 0.5 - cx) / hw, kk = Math.floor((wallTop + 2 - y) / 4), j = (wallTop + 2 - y) % 4, tw = 4, xs = x + (kk & 1) * 2, ti = Math.floor(xs / tw), tu = ((xs % tw) + tw) % tw;
+            let v = 0.58 - u * 0.4 + (hash(ti, kk, seed + k) - 0.5) * 0.24 - u * u * 0.12; if (j === 3) v -= 0.24; else if (j === 0) v += 0.08; if (tu === 0) v -= 0.12; if (y >= wallTop) v -= 0.25; if (Math.abs(u) > 0.9) v -= 0.1;
+            p.set(x, y, pick(PA.tile, cl(v, 0.04, 0.95), x, y)); } }
+        for (let x = cx - R - 2; x < cx + R + 2; x++) for (let kk = 1; kk <= 4; kk++) { const c = p.get(x, wallTop + 2 + kk); if (cA(c) === 255) p.set(x, wallTop + 2 + kk, dk(c, 0.6 + kk * 0.08)); }
+        // the white cowl: a bonnet on a turntable, its dark mouth turned to the wind, and a vane
+        const cy = tip - 1; for (let x = cx - 7; x <= cx + 6; x++) { const top = cy - 12 + Math.round(Math.pow((x - (cx - 7)) / 13, 1.4) * -3 * (flip ? -1 : 1) + (flip ? 0 : 0)), tp = Math.round(cy - 12 + (flip ? (cx + 6 - x) : (x - cx + 7)) * -0.2 + 2.6); for (let y = tp; y <= cy; y++) { const uu = (x - cx + 0.5) / 7; let v = 0.84 - uu * 0.26 - (y - tp) * 0.012; if (y === tp) v += 0.14; if (y === cy) v -= 0.3; p.set(x, y, pick(PAL.cloth, cl(v, 0.12, 1), x, y)); } }
+        for (let y = cy - 9; y <= cy; y++) for (let i = 0; i < 3; i++) { const x = flip ? cx - 8 + i : cx + 6 + i; p.set(x, y, i === 2 ? pick(PAL.cloth, 0.35, x, y) : pick(PAL.iron, 0.08, x, y)); } // the mouth
+        for (let y = cy - 8; y < cy; y += 2) for (let x = cx - 5; x < cx + 4; x++) p.set(x, y, pick(PAL.cloth, 0.45, x, y)); // louvres
+        for (let y = cy - 19; y < cy - 11; y++) p.set(cx - 1, y, pick(PAL.iron, 0.5, 0, 0)); for (let q = 0; q < 6; q++) p.set(cx - 4 + q, cy - 18 + (q > 3 ? 1 : 0), pick(PAL.iron, 0.55, 0, 0)); p.set(cx + 2, cy - 19, pk('#e8602a')); p.set(cx + 2, cy - 17, pk('#e8602a'));
+        for (let x = cx - 8; x <= cx + 7; x++) p.set(x, cy + 1, pick(PAL.iron, 0.3, x, 0)); // the collar
+        smoke.push([cx + (flip ? -6 : 7), cy - 12]);
       }
-      lattice(p, M + 4, yB - 21, 7, 9, { shut: PAL.green, box: true, seed: 1 }); lattice(p, W - M - 11, yB - 21, 7, 9, { shut: PAL.green, box: true, seed: 2 });
-      // the kiln drum: brick laid in curving courses, lit from the left
-      for (let y = wallTop; y <= yB; y++) for (let x = cx - KR; x < cx + KR; x++) {
-        const u = (x + 0.5 - cx) / KR, row = Math.floor((yB - y) / 3), ry = (yB - y) % 3, bx = Math.floor((x + row * 3 + Math.round(u * u * 3)) / 6), bu = (x + row * 3 + 600) % 6; let v = 0.62 - u * 0.4 + (hash(bx, row, seed) - 0.5) * 0.22 - u * u * 0.18;
-        if (ry === 2 || bu === 0) v -= 0.2; else if (ry === 0) v += 0.07; if (y > yB - 5) v -= 0.12; if (vnoise(x, y * 0.6, 6, seed + 4) > 0.8 && y > wallTop + 18) v -= 0.14;
-        p.set(x, y, pick(PA.brick, cl(v, 0.04, 0.95), x, y));
-      }
-      for (let y = wallTop; y < wallTop + 3; y++) for (let x = cx - KR; x < cx + KR; x++) p.set(x, y, pick(PAL.wash, y === wallTop ? 0.95 : 0.6 - (x - cx) * 0.004, x, y)); // whitewashed band under the eaves
-      doorAt(p, cx - 6, yB - 2, 12, 22, { frame: PAL.plaster, wood: PAL.oakT, step: true });
-      lattice(p, cx - 17, yB - 36, 5, 8, {}); lattice(p, cx + 12, yB - 36, 5, 8, {});
-      // the cone: tile courses wrapped round it, an eave that overhangs the drum
-      for (let y = coneTop; y <= wallTop + 2; y++) { const t = (y - coneTop) / (wallTop + 2 - coneTop), hw = 3.4 + (KR + 3 - 3.4) * Math.pow(t, 1.18);
-        for (let x = Math.floor(cx - hw); x < cx + hw; x++) { const u = (x + 0.5 - cx) / hw, k = Math.floor((wallTop + 2 - y) / 4), j = (wallTop + 2 - y) % 4, tw = 4, xs = x + (k & 1) * 2, ti = Math.floor(xs / tw), tu = ((xs % tw) + tw) % tw;
-          let v = 0.55 - u * 0.4 + (hash(ti, k, seed) - 0.5) * 0.24 - u * u * 0.12; if (j === 3) v -= 0.24; else if (j === 0) v += 0.08; if (tu === 0) v -= 0.12; if (y >= wallTop) v -= 0.25; if (Math.abs(u) > 0.9) v -= 0.1;
-          p.set(x, y, pick(PA.tile, cl(v, 0.04, 0.95), x, y)); } }
-      for (let x = cx - KR - 2; x < cx + KR + 2; x++) for (let k = 1; k <= 4; k++) { const c = p.get(x, wallTop + 2 + k); if (cA(c) === 255 && k > 0) p.set(x, wallTop + 2 + k, dk(c, 0.6 + k * 0.08)); }
-      // the white cowl on top: a bonnet that turns to face the wind, with a dark mouth, and a vane
-      for (let x = cx - 8; x <= cx + 7; x++) { const top = Math.round(7 - (x - (cx - 8)) * 0.25), bot = 16; for (let y = top; y <= bot; y++) { const u = (x - cx + 0.5) / 8; let v = 0.82 - u * 0.25 - (y - top) * 0.012; if (y === top) v += 0.15; if (y === bot) v -= 0.3; p.set(x, y, pick(PAL.cloth, cl(v, 0.15, 1), x, y)); } }
-      for (let y = 6; y <= 16; y++) for (let x = cx + 7; x < cx + 10; x++) { const top = Math.round(7 - 15 * 0.25) + (x - cx - 7); if (y >= top + 2) p.set(x, y, x === cx + 9 ? pick(PAL.cloth, 0.4, x, y) : pick(PAL.iron, 0.1, x, y)); }
-      for (let y = 9; y < 15; y += 2) for (let x = cx - 6; x < cx + 5; x++) p.set(x, y, pick(PAL.cloth, 0.45, x, y));
-      for (let y = 0; y < 5; y++) p.set(cx - 2, y, pick(PAL.iron, 0.5, 0, 0)); for (let k = 0; k < 6; k++) p.set(cx - 2 + k, 1 + (k > 3 ? 1 : 0), pick(PAL.iron, 0.55, 0, 0)); p.set(cx + 4, 0, pk('#e8602a')); p.set(cx + 4, 2, pk('#e8602a'));
-      for (let x = cx - 9; x <= cx + 8; x++) p.set(x, 17, pick(PAL.iron, 0.3, x, 17)); // the collar
-      climber(p, M - 1, yB - 28, 12, 24, 7); garland(p, cx - 26, cx + 26, wallTop + 7, 3, 7);
-      smoke.push([cx + 2, 1]);
+      climber(p, M - 1, yB - 30, 10, 26, 7); garland(p, kc[0] - 12, kc[1] + 12, wallTop + 7, 3, 7);
       rim(p, 0.42, 'tl'); const c = canv(p); c.dx = -M / 16; c.smoke = smoke; return c;
     });
   }

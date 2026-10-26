@@ -151,7 +151,7 @@ export function makeVolcano(U) {
       for (let y = 14; y < 43; y++) for (let x = 5; x < 11; x++) { const u = (x - 5) / 5; let v = 0.62 - u * 0.5 + (y % 9 === 0 ? -0.25 : 0) + (hash(x, y, 2) - 0.5) * 0.1; p.set(x, y, pick(PV.bamboo, cl(v), x, y)); }
       for (const [fy, h] of [[20, 5], [30, 5]]) { for (let x = 6; x < 10; x++) { p.set(x, fy + 2, pk('#1a0c06')); } p.set(6, fy, pk('#1a0c06')); p.set(9, fy, pk('#1a0c06')); p.set(7, fy + 4, pk('#1a0c06')); p.set(8, fy + 4, pk('#1a0c06')); } // carved faces
       for (let y = 9; y < 15; y++) for (let x = 3; x < 13; x++) { const e = Math.abs(x - 7.5) > 4 - (y - 9) * 0.3; if (!e) p.set(x, y, pick(PV.char, 0.5 - (x - 3) * 0.03 + (y === 9 ? 0.2 : 0), x, y)); } // the bowl
-      for (let y = 3; y < 10; y++) for (let x = 3; x < 13; x++) { const t = (9 - y) / 6, hw = (1 - t) * 4.4 * (f % 3 === 1 ? 0.85 : 1) + 0.4, dx = Math.abs(x + 0.5 - 8 - (f % 3 - 1) * t * 1.6); if (dx > hw || y < 3 + (f % 3)) continue; p.set(x, y, pick(PV.lava, cl(0.9 - dx / 4 - t * 0.55 + (hash(x, y, f) - 0.5) * 0.2), x, y)); }
+      for (let y = 3; y < 10; y++) for (let x = 3; x < 13; x++) { const t = (9 - y) / 6, hw = (1 - t) * 4.4 * (f % 3 === 1 ? 0.85 : 1) + 0.4, dx = Math.abs(x + 0.5 - 8 - (f % 3 - 1) * t * 1.6); if (dx > hw || y < 3 + (f % 3)) continue; p.set(x, y, pick(PV.lava, cl(1.0 - dx / 5 - t * 0.4 + (hash(x, y, f) - 0.5) * 0.2), x, y)); }
       outline(p, 0.4); return canv(p); });
   }
   function grillPix(f) {
@@ -310,7 +310,7 @@ export function makeVolcano(U) {
       const R = thatch(p, { x0: 0, x1: W - 1, yR: 24, yE: wallTop - 2, hx: 16, sag: 1, hem: 8, seed, R: PAL.thatchG, moss: 0 }); eaveShadow(p, 2, W - 3, R.eave, 4);
       for (let x = 6; x < W - 6; x++) { const yy = Math.round(wallTop + 3 + Math.sin((x - 6) / (W - 12) * Math.PI * 3) * 2); p.set(x, yy, pk('#3a2a4a')); if ((x - 6) % 8 === 3) { p.set(x, yy + 1, pk(['#ff3c8c', '#ffd030', '#20c8c0', '#ff7a20'][((x - 6) / 8 | 0) % 4])); p.set(x, yy + 2, pk('#fff4e0')); p.set(x + 1, yy + 1, pk('#ffe8a0')); } } // string lights
       // a chalkboard: today's special
-      for (let y = yB - 20; y < yB - 4; y++) for (let x = M - 6; x < M + 8; x++) p.set(x, y, y === yB - 20 || x === M - 6 || x === M + 7 || y === yB - 5 ? pick(PAL.wood, 0.6, x, y) : pk('#1c2c24')); txtS(p, 'KEBAB', M - 4, yB - 17, pk('#f8f0d8'), 1); for (let x = M - 4; x < M + 6; x++) p.set(x, yB - 10, pk('#e8b060')); txtS(p, 'EVERY', M - 4, yB - 9, pk('#f8d8e8'), 1);
+      for (let y = yB - 20; y < yB - 4; y++) for (let x = M - 6; x < M + 8; x++) p.set(x, y, y === yB - 20 || x === M - 6 || x === M + 7 || y === yB - 5 ? pick(PAL.wood, 0.6, x, y) : pk('#1c2c24')); txtS(p, 'KEBAB', M - 4, yB - 17, pk('#f8f0d8'), 1); for (let x = M - 4; x < M + 6; x++) p.set(x, yB - 10, pk('#e8b060')); txtS(p, 'NOW!', M - 3, yB - 9, pk('#f8d8e8'), 1);
       palmFrond(p, W - 12, 30, 1, 11); palmFrond(p, 12, 30, -1, 11);
       rim(p, 0.42, 'tl'); const c = canv(p); c.dx = -M / 16; c.smoke = smoke; return c;
     });
