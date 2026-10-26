@@ -6,6 +6,7 @@ import { GEN } from './mapgen.js';
 import * as L from './logic.js';
 import { BROS, COMBOS, LOCALS, PARTY_SCALE, PHONE, PHONE_CHARGED, PUB, WAKE, CELLAR_IN, GARY_DOWN, CALLED, CALLED_AFTER, WENDELL } from './bros.js';
 import './sidequests.js'; // four small optional dungeons on the main islands
+import './obsidian.js'; // the Obsidian Ruins: the last optional island and its superboss
 import './embers.js'; // Cinder Isle content (post-ending volcano island)
 import './hopsend.js'; // Hopsend Isle content (enemies, gear, shops, quests, scenes)
 import * as SP from './sprites.js';
@@ -952,6 +953,8 @@ const OBJECTIVES = [ // the main thread, in the story's voice. show / after / do
   { title: 'The Great Mash Tun', show: 'v:hopsend', optional: true, hint: 'The Great Brewery, at the far end of Hopsend, has been bubbling since harvest. Bring ice and bolts, never fire (Lv 18+).', done: 'mash_tun', doneHint: 'Flat, calm and drinkable.' },
   { show: 'wyrm', title: 'Cinder Isle', after: 'titan', lockHint: 'The Frost Jetty ferryman will not sail until the Titan has fallen.', optional: true, hint: 'A ferry now sails to Cinder Isle, a holiday volcano in the far north-west, packed with stag dos and fire-eaters (Lv 20).', done: 'v:kilnhaven', doneHint: 'Kilnhaven is warm, loud and smells of garlic.' },
   { title: 'The Margherita', show: 'v:pizzaoven', optional: true, hint: 'The volcano is a pizza oven that has been on since 1987, and something has grown in the coals. Bring ice, never fire (Lv 20).', done: 'margherita', doneHint: 'The oven is cool, and the isle is free to eat.' },
+  { title: 'The Obsidian Ruins', show: 'v:pizzaoven', after: 'margherita', optional: true, lockHint: 'The ferryman will not sail to the black isle until the Margherita is out.', hint: 'A ferry now runs to a tiny black-glass island far to the south-east: all that is left of a pub older than the world (Lv 20).', done: 'v:obsidian', doneHint: 'The jetty is glass and the sea is very quiet.' },
+  { title: 'The Last Landlord', show: 'v:obsidian', optional: true, hint: 'Beneath the Ruins, the cellar-bar of the Last Orders. A ghost has called time for ten thousand years. Holy and bolts hurt him; dark and fire do not. Bring everything (Lv 20).', done: 'landlord', doneHint: 'He locked up at last, and the bell rang once.' },
 ];
 ACT.journal = () => {
   const n = ['wyrm', 'lich', 'titan'].filter((k) => G.flags.bosses[k]).length, hearts = Object.keys(KEY_ITEMS).filter((k) => G.flags.qitems[k]).map((k) => KEY_ITEMS[k]);

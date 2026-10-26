@@ -256,6 +256,14 @@ await ev(() => { window.__game.G.flags.bosses.titan = true; window.__game.goto('
 for (let i = 0; i < 10 && (await ev(() => window.__game.G.map)) === 'port_f'; i++) await key('Enter', 1, 200);
 ok('the Cinder ferry crosses to Cinder Isle', await ev(() => { const g = window.__game; return g.G.map === 'world' && g.G.x <= 28 && g.G.y <= 46; }));
 await closeAll();
+// --- the Obsidian Ruins ferry needs the Margherita
+await ev(() => { window.__game.G.flags.bosses.margherita = false; window.__game.goto('port_o', 5, 3); }); await pg.waitForTimeout(200); await key('ArrowLeft', 1, 300);
+for (let i = 0; i < 6; i++) await key('Enter', 1, 160);
+ok('the Obsidian ferry refuses before the Margherita falls', (await ev(() => window.__game.G.map)) === 'port_o'); await closeAll();
+await ev(() => { window.__game.G.flags.bosses.margherita = true; window.__game.goto('port_o', 5, 3); }); await pg.waitForTimeout(200); await key('ArrowLeft', 1, 300);
+for (let i = 0; i < 10 && (await ev(() => window.__game.G.map)) === 'port_o'; i++) await key('Enter', 1, 200);
+ok('the Obsidian ferry crosses to the black isle', await ev(() => { const g = window.__game; return g.G.map === 'world' && g.G.x >= 138 && g.G.y >= 96; }));
+await closeAll();
 // --- the Night Bus Pass: lists only visited stops, refuses in dungeons, lands you outside the chosen place
 await ev(() => { const g = window.__game; g.G.flags.story.buspass = true; g.goto('world', 50, 70); });
 const busNames = await ev(() => { window.__game.ACT.bus(); return [...document.querySelectorAll('[data-act=busgo]')].map((b) => b.textContent); });
