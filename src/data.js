@@ -515,6 +515,7 @@ Object.assign(ENEMIES, {
 ENEMIES.ice_golem.elite = ['crystal_golem', 0.08];
 // Greenmarch: the first four groups are what a level-1 party meets near Haven (the distance ramp in game.js slices this list)
 ENCOUNTERS.world = [['slime'], ['slime', 'slime'], ['goblin'], ['goblin', 'slime'], ['hornet'], ['wolf'], ['shroom', 'slime'], ['spider'], ['wolf', 'wolf'], ['boar'], ['goblin', 'goblin', 'wolf'], ['bandit', 'goblin'], ['sapling', 'shroom'], ['hornet', 'hornet'], ['boar', 'slime'], ['bandit', 'bandit'], ['sapling', 'spider']];
+ENCOUNTERS.jungle = [...ENCOUNTERS.world, ['spider', 'spider'], ['hornet', 'hornet', 'spider'], ['boar', 'wolf'], ['wolf', 'wolf', 'boar'], ['spider', 'hornet', 'wolf']]; // the Jade Jungle: grassland monsters, thicker and pricklier
 ENCOUNTERS.swamp.push(['bog_toad'], ['leech', 'leech'], ['wisp', 'bog_slime'], ['lizardman'], ['bog_toad', 'leech'], ['lizardman', 'wisp'], ['wisp', 'wisp']);
 ENCOUNTERS.desert = [['scorpion'], ['cactus', 'cactus'], ['desert_bandit', 'desert_bandit'], ['mummy'], ['sandworm'], ['scorpion', 'cactus'], ['mummy', 'desert_bandit'], ['scorpion', 'scorpion'], ['cactus', 'desert_bandit', 'cactus']];
 ENCOUNTERS.dungeon.push(['salamander'], ['batswarm'], ['salamander', 'bat'], ['magma_golem'], ['batswarm', 'imp']);

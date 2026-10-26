@@ -126,7 +126,7 @@ await pg.click('[data-act=bmain]');
 await closeAll();
 
 // --- explore the world: fog of war grows; options persist; save + reload + continue
-await ev(() => window.__game.goto('world', 33, 85)); await key('ArrowRight', 5, 140);
+await ev(() => window.__game.goto('world', 48, 68)); await key('ArrowRight', 5, 140);
 const seenCount = () => ev(() => window.__game.G.flags.seen.world.join('').split('1').length - 1);
 const s1 = await seenCount(); ok('fog of war reveals tiles', s1 > 20, `(${s1} tiles)`);
 await ev(() => { const o = window.__game.OPT; o.speed = 'fast'; });
@@ -142,10 +142,10 @@ ok('fog persisted through save', after.seen === s1);
 ok('options persisted', (await ev(() => window.__game.OPT.minimap)) === false && (await ev(() => window.__game.OPT.speed)) === 'fast');
 
 // --- gate, region music/banners, battle by keyboard only
-await ev(() => { window.__game.MAPS.world.rate = 0; window.__game.goto('world', 87, 54); }); await key('ArrowUp', 3, 150);
-ok('northern pass blocked before the Wyrm falls', (await ev(() => window.__game.G.y)) === 54);
+await ev(() => { window.__game.MAPS.world.rate = 0; window.__game.goto('world', 80, 42); }); await key('ArrowUp', 3, 150);
+ok('northern pass blocked before the Wyrm falls', (await ev(() => window.__game.G.y)) === 42);
 await ev(() => { window.__game.G.flags.bosses.wyrm = true; }); await key('ArrowUp', 16, 170);
-ok('pass opens after the Wyrm', (await ev(() => window.__game.G.y)) <= 42);
+ok('pass opens after the Wyrm', (await ev(() => window.__game.G.y)) <= 36);
 const xpKey = () => ev(() => window.__game.G.party.map((c) => c.level * 1e6 + c.exp).join()), xp0 = await xpKey();
 await ev(() => { const c = window.__game.G.party[0]; c.cp.monk = 5; }); const cp0 = await ev(() => window.__game.G.party.map((c) => c.cp[c.main]));
 let vtext = '';
@@ -220,9 +220,9 @@ await closeAll();
 // --- Sunscar Ruins (optional dungeon), new side quests end-to-end, hidden treasure
 const talkTo = async (map, x, y, dir) => { await closeAll(); await ev(([m, x2, y2]) => window.__game.goto(m, x2, y2), [map, x, y]); await pg.waitForTimeout(150); await key(dir, 1, 250); };
 const clickWhen = async (sel) => { for (let i = 0; i < 14 && !(await pg.$(sel)); i++) await key('Enter', 1, 120); const el = await pg.$(sel); if (el) { await el.click(); await pg.waitForTimeout(150); } return !!el; };
-await talkTo('world', 147, 58, 'ArrowRight');
+await talkTo('world', 133, 23, 'ArrowRight');
 ok('Desert Oracle offers the Sphinx quest', /Oracle/.test(await overlayTitle()) && (await clickWhen('[data-act=qaccept]')) && (await ev(() => window.__game.G.flags.quests.sphinx)) === 'active');
-await closeAll(); await ev(() => window.__game.goto('world', 150, 58)); await key('ArrowUp', 1, 450);
+await closeAll(); await ev(() => window.__game.goto('world', 136, 23)); await key('ArrowUp', 1, 450);
 ok('entered the Sunscar Ruins from the desert', (await ev(() => window.__game.G.map)) === 'ruins' && (await ev(() => window.__game.MAPS[window.__game.G.map].theme)) === 'ruins');
 await talkTo('mirewood', 18, 15, 'ArrowUp');
 ok('Apothecary offers the stinger hunt', (await clickWhen('[data-act=qaccept]')) && (await ev(() => window.__game.G.flags.quests.stingers)) === 'active');
@@ -239,14 +239,14 @@ ok('the apprentice takes the letter and pays', (await clickWhen('[data-act=qdeli
 await closeAll(); await ev(() => window.__game.goto('ruins', 3, 2)); await pg.waitForTimeout(200);
 await quickFight(['sphinx'], 'sphinx');
 ok('Sphinx Pharaoh slain: flag, Khopesh and Sun Disc', (await ev(() => window.__game.G.flags.bosses.sphinx)) === true && (await ev(() => window.__game.G.inv.weapons.includes('khopesh') && window.__game.G.inv.accs.includes('sun_disc'))));
-await talkTo('world', 147, 58, 'ArrowRight');
+await talkTo('world', 133, 23, 'ArrowRight');
 const gSph = await ev(() => window.__game.G.gold);
 ok('Oracle pays out the Sphinx quest', (await clickWhen('[data-act=qclaim]')) && (await ev(() => window.__game.G.gold)) === gSph + 2000);
 
 // --- the ferry to Hopsend Isle: gated by the Wyrm (already slain here), lands on the far island
 await closeAll(); await ev(() => { window.__game.G.flags.bosses.titan = true; window.__game.goto('port_s', 5, 3); }); await pg.waitForTimeout(200); await key('ArrowLeft', 1, 300);
 for (let i = 0; i < 10 && (await ev(() => window.__game.G.map)) === 'port_s'; i++) await key('Enter', 1, 200);
-ok('the ferry crosses to Hopsend Isle', await ev(() => { const g = window.__game; return g.G.map === 'world' && g.G.x >= 123; }));
+ok('the ferry crosses to Hopsend Isle', await ev(() => { const g = window.__game; return g.G.map === 'world' && g.G.x <= 41 && g.G.y >= 64; }));
 await closeAll();
 // --- Cinder Isle: the ferry needs the Titan; the island has its own region and enemy table
 await ev(() => { window.__game.G.flags.bosses.titan = false; window.__game.goto('port_f', 5, 3); }); await pg.waitForTimeout(200); await key('ArrowLeft', 1, 300);
@@ -257,16 +257,16 @@ for (let i = 0; i < 10 && (await ev(() => window.__game.G.map)) === 'port_f'; i+
 ok('the Cinder ferry crosses to Cinder Isle', await ev(() => { const g = window.__game; return g.G.map === 'world' && g.G.x <= 28 && g.G.y <= 46; }));
 await closeAll();
 // --- the Night Bus Pass: lists only visited stops, refuses in dungeons, lands you outside the chosen place
-await ev(() => { const g = window.__game; g.G.flags.story.buspass = true; g.goto('world', 40, 80); });
+await ev(() => { const g = window.__game; g.G.flags.story.buspass = true; g.goto('world', 50, 70); });
 const busNames = await ev(() => { window.__game.ACT.bus(); return [...document.querySelectorAll('[data-act=busgo]')].map((b) => b.textContent); });
 ok('the bus lists visited stops (and not unvisited ones)', busNames.includes('Haven Town') && !busNames.includes('Kilnhaven') || busNames.length > 0, JSON.stringify(busNames));
 await ev(() => { const g = window.__game, i = [...document.querySelectorAll('[data-act=busgo]')].findIndex((b) => b.textContent === 'Haven Town'); g.ACT.busgo(i); }); await pg.waitForTimeout(300);
-for (let i = 0; i < 6 && (await ev(() => window.__game.G.x)) !== 33; i++) await key('Enter', 1, 200);
-ok('the bus drops you outside Haven', await ev(() => { const g = window.__game; return g.G.map === 'world' && Math.abs(g.G.x - 33) <= 1 && Math.abs(g.G.y - 85) <= 1; }));
+for (let i = 0; i < 6 && (await ev(() => window.__game.G.x)) !== 48; i++) await key('Enter', 1, 200);
+ok('the bus drops you outside Haven', await ev(() => { const g = window.__game; return g.G.map === 'world' && Math.abs(g.G.x - 48) <= 1 && Math.abs(g.G.y - 68) <= 1; }));
 await closeAll();
 await ev(() => window.__game.goto('cavern', 2, 1)); await closeAll();
 ok('the bus refuses in dungeons', await ev(() => { window.__game.ACT.bus(); return /does not run in dungeons/.test(document.getElementById('overlay').innerText); }));
-await ev(() => { const o = document.getElementById('overlay'); o.className = ''; o.innerHTML = ''; }); await ev(() => window.__game.goto('world', 59, 91)); await pg.waitForTimeout(150); await key('ArrowRight', 1, 300);
+await ev(() => { const o = document.getElementById('overlay'); o.className = ''; o.innerHTML = ''; }); await ev(() => window.__game.goto('world', 56, 67)); await pg.waitForTimeout(150); await key('ArrowRight', 1, 300);
 ok('hidden treasure under the waterfall is dug up', /Hidden treasure/.test(await overlayTitle()) && (await ev(() => window.__game.G.flags.qitems.doubloon)) === true);
 await closeAll();
 await ev(() => { window.__game.G.flags.bosses.wyrm = true; });

@@ -37,6 +37,7 @@ const GRASS = pal('#0b3210 #124a16 #1b621c #257a22 #32922a #42a832 #56bc3c #72ce
 const AMBER = pal('#3a2406 #5a3a0c #7c5212 #9c6c1a #bc8a26 #d8a634 #ecc044 #f8d864 #fff0a0'); // Hopsend's golden stubble and fallen leaves
 const ASH = pal('#0a0808 #141010 #1e1816 #2a2220 #382e2a #4a3e38 #5e504a #766660'); // Cinder Isle: black basalt
 const LAVA = pal('#5a0a00 #a01c00 #e04800 #ff8a10 #ffd040');
+const JUNGLE = pal('#04180a #082a10 #0e3c16 #14521e #1c6c28 #268a34 #34a640 #4cc454 #78e06c'); // lush jungle floor
 const SNOW = pal('#3a4878 #56689a #7686b8 #96a8d4 #b4c6e8 #d0def4 #e8f0fc #ffffff');
 const SWAMP = pal('#0e160a #172210 #213016 #2c3e1c #384e22 #465e28 #566e30 #6a823a #82964a');
 const POOL = pal('#0c1e1c #12302c #1a423c #26584c #3a7060 #5a8a74');
@@ -50,8 +51,10 @@ const CLIFF = { // rock faces where land drops into water, by the land's region
   3: pal('#3a200c #562e12 #74421a #925824 #ae7032 #c68a44 #daa45a #ecc078'),
 };
 CLIFF[4] = CLIFF[0];
+CLIFF[6] = CLIFF[0];
 CLIFF[5] = pal('#0c0a0a #181212 #241a1a #342626 #483434 #5e4444 #765656 #906e6e');
 const FOREST = {
+  6: pal('#02140a #04200e #063014 #0a421a #115a22 #1a7a2c #269a38 #38b848 #58d060 #84e880 #b8f8a8'), // jungle: deep, saturated green
   5: pal('#0a0606 #140c0a #1e1210 #2a1812 #3a2016 #4c2a1a #6a3a1c #8a4a1e #b05a20 #d87a28 #ffa040'), // charred trees with glowing tips
   4: pal('#2a0c04 #4a1608 #6a220c #8c3412 #b04c18 #cc6a20 #e08a2c #f0aa40 #f8c860 #fce090 #ffffe0'), // autumn woods: rust, orange, gold
   0: pal('#021008 #04180a #07240e #0c3412 #134616 #1c5a1c #267024 #32882c #44a034 #62b844 #8ad060'),
@@ -73,13 +76,13 @@ function* bakeGen() { // generator: yields often so the bake can run in idle sli
   const poiAt = {}; for (const [k, [x, y]] of Object.entries(GEN.pois)) poiAt[`${x + PAD},${y + PAD}`] = k;
   const isCaveTile = (tx, ty) => ['cavern', 'storm', 'spire'].includes(poiAt[`${tx},${ty}`]);
   // region of every tile: 0 grass, 1 snow, 2 swamp, 3 desert; features take the region of their surroundings
-  const AU = GEN.deco?.autumn || [1e9, 1e9, -1, -1]; // the autumn island (Hopsend) is a rectangle of 'grass' that is painted as region 4
-  const EM = GEN.deco?.ember || [1e9, 1e9, -1, -1];
-  const own = (c, tx, ty) => (c === '.' ? (tx - PAD >= EM[0] && tx - PAD <= EM[2] && ty - PAD >= EM[1] && ty - PAD <= EM[3] ? 5 : tx - PAD >= AU[0] && tx - PAD <= AU[2] && ty - PAD >= AU[1] && ty - PAD <= AU[3] ? 4 : 0) : c === ',' || c === 't' ? 1 : c === ':' ? 2 : c === 'd' ? 3 : -1);
+  const RG = GEN.deco?.reg || []; // per-tile region digits on top of the tile characters: 4 autumn, 5 ember, 6 jungle (0 = plain)
+  const rgAt = (tx, ty) => RG[ty - PAD]?.charCodeAt(tx - PAD) - 48 || 0;
+  const own = (c, tx, ty) => (c === '.' ? (rgAt(tx, ty) || 0) : c === ':' ? (rgAt(tx, ty) === 5 ? 5 : 2) : c === ',' || c === 't' ? 1 : c === 'd' ? 3 : -1);
   const reg = new Int8Array(TW * TH);
   for (let ty = 0; ty < TH; ty++) for (let tx = 0; tx < TW; tx++) {
     let r = own(ch(tx, ty), tx, ty);
-    if (r < 0) { const n = [0.5, 0, 0, 0, 0, 0]; for (let dy = -2; dy <= 2; dy++) for (let dx = -2; dx <= 2; dx++) { const o = own(ch(tx + dx, ty + dy), tx + dx, ty + dy); if (o >= 0) n[o] += Math.abs(dx) + Math.abs(dy) <= 1 ? 3 : 1; } r = n.indexOf(Math.max(...n)); }
+    if (r < 0) { const n = [0.5, 0, 0, 0, 0, 0, 0]; for (let dy = -2; dy <= 2; dy++) for (let dx = -2; dx <= 2; dx++) { const o = own(ch(tx + dx, ty + dy), tx + dx, ty + dy); if (o >= 0) n[o] += Math.abs(dx) + Math.abs(dy) <= 1 ? 3 : 1; } r = n.indexOf(Math.max(...n)); }
     reg[ty * TW + tx] = r;
   }
   const isWater = (c) => c === '~' || c === 'r' || c === '=';
@@ -92,14 +95,15 @@ function* bakeGen() { // generator: yields often so the bake can run in idle sli
 
   mark('// ---- 1. c'); yield;
   // ---- 1. classify pixels: 0 ocean, 1 river, 2 land, 3 forest floor, 4 mountain, 5 canyon; plus region per pixel
-  const cls = new Uint8Array(N), rpx = new Uint8Array(N), fmask = new Float32Array(N);
+  const cls = new Uint8Array(N), rpx = new Uint8Array(N), fmask = new Float32Array(N), rdm = new Uint8Array(N); // rdm: how much of each pixel is dirt road (0-255)
+  const RD = new Set((GEN.deco?.roads || []).map(([x, y]) => `${x + PAD},${y + PAD}`));
   for (let ty = 0; ty < TH; ty++) for (let tx = 0; tx < TW; tx++) {
     if (!tx && !(ty & 1)) yield;
     const wb = bits(tx, ty, isWater);
     if (wb === '111111111' && !isRiver(ch(tx, ty))) continue; // open ocean: cls 0 already
     const mW = mask(wb, 6), mR = mask(bits(tx, ty, isRiver), 6), mO = mask(bits(tx, ty, (c) => c === '~'), 6);
-    const mM = mask(bits(tx, ty, isMount), 5), mF = mask(bits(tx, ty, isForest), 6);
-    const mRg = [1, 2, 3, 4, 5].map((k) => mask(bits(tx, ty, (c, x, y, r) => r === k), 8));
+    const mM = mask(bits(tx, ty, isMount), 5), mF = mask(bits(tx, ty, isForest), 6), mRd = RD.size ? mask(bits(tx, ty, (c, x, y) => RD.has(`${x},${y}`)), 5) : ZERO;
+    const mRg = [1, 2, 3, 4, 5, 6].map((k) => mask(bits(tx, ty, (c, x, y, r) => r === k), 8));
     const ownRiver = isRiver(ch(tx, ty));
     const rgOne = mRg.findIndex((m) => m === ONE), rgFlat = mRg.every((m) => m === ZERO || m === ONE);
     for (let p = 0; p < 256; p++) {
@@ -108,8 +112,8 @@ function* bakeGen() { // generator: yields often so the bake can run in idle sli
       const w = mW === ZERO ? 0 : mW[p] + (riverish ? vn(X / 5, Y / 5, 2) * 0.12 : fbm(X / 11, Y / 11, 1) * 0.26);
       // region: argmax with noisy, dithered borders
       let r = rgOne + 1;
-      if (!rgFlat) { let best = 0.5 + fbm(X / 16, Y / 16, 20) * 0.22; r = 0; for (let k = 0; k < 5; k++) { if (mRg[k] === ZERO) continue; const v = mRg[k][p] + fbm(X / 15, Y / 15, 21 + k) * 0.34 + (bay(X, Y) - 0.5) * 0.14; if (v > best) { best = v; r = k + 1; } } }
-      rpx[i] = r; fmask[i] = mF[p];
+      if (!rgFlat) { let best = 0.5 + fbm(X / 16, Y / 16, 20) * 0.22; r = 0; for (let k = 0; k < 6; k++) { if (mRg[k] === ZERO) continue; const v = mRg[k][p] + fbm(X / 15, Y / 15, 21 + k) * 0.34 + (bay(X, Y) - 0.5) * 0.14; if (v > best) { best = v; r = k + 1; } } }
+      rpx[i] = r; fmask[i] = mF[p]; if (mRd !== ZERO) rdm[i] = Math.min(255, mRd[p] * 255);
       if (w > 0.5) { cls[i] = riverish ? 1 : 0; continue; }
       if (mM !== ZERO && mM[p] + vn(X / 6, Y / 6, 3) * 0.22 > 0.5) cls[i] = 4;
       else if (mF !== ZERO && mF[p] + vn(X / 5, Y / 5, 5) * 0.2 > 0.5) cls[i] = 3;
@@ -129,6 +133,10 @@ function* bakeGen() { // generator: yields often so the bake can run in idle sli
   // ---- 2. ground textures
   const groundCol = (X, Y, r, i) => {
     const n1 = fbm(X / 30, Y / 30, 31), n2 = vn(X / 5, Y / 5, 33), d = bay(X, Y) - 0.5, hh = h2(X, Y, 35);
+    if (rdm[i] > 120 + vn(X / 2.5, Y / 2.5, 95) * 46) { // a worn dirt road (a pale packed trail in snow, darker sand in the desert)
+      const q = clamp(Math.round(3 + n2 * 1.1 + (hh < 0.1 ? -1 : hh > 0.9 ? 1 : 0)), 1, 5);
+      return r === 1 ? SNOW[clamp(q, 2, 4)] : r === 3 ? SAND[clamp(q, 2, 4)] : r === 5 ? ASH[clamp(q + 2, 3, 6)] : r === 2 ? DIRT[clamp(q - 1, 0, 3)] : DIRT[q];
+    }
     if (r === 1) { // snow: soft blue drifts and wind lines
       const rl = (fbm((X - 2) / 14, (Y - 2) / 14, 38) - fbm((X + 2) / 14, (Y + 2) / 14, 38)) * 4.5;
       let v = 4.9 + n1 * 0.7 + rl + n2 * 0.3 + d * 0.9; const q = frac((Y + vn(X / 16, Y / 16, 36) * 7 + X * 0.15) / 7);
@@ -149,6 +157,7 @@ function* bakeGen() { // generator: yields often so the bake can run in idle sli
     // grass: bright, textured, darker patches, darker under woods and mountains
     let v = 4.7 + n1 * 1.5 + n2 * 0.7 + d * 1.15 - Math.max(0, fmask[i] - 0.15) * 2.2;
     if (hh < 0.07) v -= 1.7; else if (hh > 0.955) v += 1.3;
+    if (r === 6) return JUNGLE[clamp(Math.round(v - 0.3 + d * 0.4), 0, 8)];
     if (r === 5) { const cr = Math.abs(fbm(X / 10, Y / 10, 61) - 0.5); if (cr < 0.02 + (hh > 0.97 ? 0.01 : 0)) return LAVA[clamp(Math.round(1.5 + (0.02 - cr) * 160 + hh), 0, 4)]; return ASH[clamp(Math.round(v - 0.8 + d * 0.5), 0, 7)]; }
     if (r === 4) return AMBER[clamp(Math.round(v + 0.2), 1, 8)];
     return GRASS[clamp(Math.round(v), 1, 8)];
@@ -157,7 +166,7 @@ function* bakeGen() { // generator: yields often so the bake can run in idle sli
   // grass tufts, reeds, snow sparkle (little multi-pixel marks)
   for (let i = 0; i < N; i++) {
     if (cls[i] !== 2) continue; const X = i % PW, Y = (i / PW) | 0, r = rpx[i], hh = h2(X, Y, 37);
-    if ((r === 0 || r === 4) && hh < 0.022 && X > 1 && X < PW - 2 && Y > 1) { const TF = r === 4 ? AMBER : GRASS; for (const [dx, dy] of [[-1, 0], [1, 0], [0, 1]]) if (cls[i + dx + dy * PW] === 2) put(i + dx + dy * PW, TF[2]); put(i - PW, TF[7]); }
+    if ((r === 0 || r === 4 || r === 6) && hh < 0.022 && X > 1 && X < PW - 2 && Y > 1) { const TF = r === 4 ? AMBER : GRASS; for (const [dx, dy] of [[-1, 0], [1, 0], [0, 1]]) if (cls[i + dx + dy * PW] === 2) put(i + dx + dy * PW, TF[2]); put(i - PW, TF[7]); }
     if (r === 2 && hh < 0.006 && Y > 3) { const c = hh < 0.015 ? SWAMP[7] : SWAMP[6]; put(i, SWAMP[2]); put(i - PW, c); put(i - 2 * PW, c); put(i - 3 * PW, SWAMP[8]); }
   }
 
@@ -240,7 +249,7 @@ function* bakeGen() { // generator: yields often so the bake can run in idle sli
     }
     for (const y of [Math.round(cy) + 1, Math.round(cy) + 2]) { const i = y * PW + Math.round(cx); if (kind[i] && kind[i] !== 3) { put(i, DIRT[y === Math.round(cy) + 1 ? 1 : 2]); kind[i] = 3; crown[i] = 1; } }
   };
-  for (let i = 0; i < N; i++) if (cls[i] === 3) { const r = rpx[i]; put(i, r === 1 ? SNOW[h2(i, 1, 82) < 0.5 ? 2 : 3] : FOREST[r === 2 ? 2 : r === 4 ? 4 : r === 5 ? 5 : 0][2 + (h2(i, 1, 82) < 0.3 ? 1 : 0)]); kind[i] = 4; }
+  for (let i = 0; i < N; i++) if (cls[i] === 3) { const r = rpx[i]; put(i, r === 1 ? SNOW[h2(i, 1, 82) < 0.5 ? 2 : 3] : FOREST[r === 2 ? 2 : r >= 4 ? r : 0][2 + (h2(i, 1, 82) < 0.3 ? 1 : 0)]); kind[i] = 4; }
   for (let j = 0, Y = 1; Y < PH; j++, Y += 6) {
     if (!(j & 3)) yield;
     for (let X = (j & 1) * 4; X < PW; X += 8) {
@@ -248,7 +257,7 @@ function* bakeGen() { // generator: yields often so the bake can run in idle sli
       if (i < 0 || i >= N || cls[i] !== 3) continue;
       const tx = (cx / 16) | 0, ty = (cy / 16) | 0, c = ch(tx, ty), r = rpx[i];
       if (c === 't' || (c !== 'T' && r === 1)) { pineAt(cx, cy + 5, h2(X, Y, 85)); if (h2(X, Y, 89) < 0.5) pineAt(cx + 4, cy + 8, h2(X, Y, 90) * 0.5); }
-      else crownAt(cx, cy, 5 + h2(X, Y, 86) * 1.4, FOREST[r === 2 ? 2 : r === 4 ? 4 : r === 5 ? 5 : 0], 87 + r);
+      else crownAt(cx, cy, 5 + h2(X, Y, 86) * 1.4, FOREST[r === 2 ? 2 : r >= 4 ? r : 0], 87 + r);
     }
   }
   // trunks + shadow below the bottom edge of the woods

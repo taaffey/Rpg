@@ -150,7 +150,7 @@ function migrateCallings(c, inv) {
 }
 const readSlot = (i) => { try { const raw = localStorage.getItem(SLOT_KEY(i)); return raw ? JSON.parse(raw) : null; } catch { return null; } };
 const anySave = () => SLOT_IDS.some((i) => readSlot(i));
-const WORLD_V = 5; // bump when the overworld layout changes: older saves drop their fog and a party standing on the old map is walked back to Haven's gate
+const WORLD_V = 6; // bump when the overworld layout changes: older saves drop their fog and a party standing on the old map is walked back to Haven's gate
 const save = () => { if (!G || !G.slot) return false; G.flags.worldv = WORLD_V; try { localStorage.setItem(SLOT_KEY(G.slot), JSON.stringify({ v: 3, savedAt: Date.now(), G })); return true; } catch { return false; } };
 (function importLegacy() { // a v2 single-slot save becomes slot 1 the first time this version runs
   try { const old = localStorage.getItem(LEGACY_SAVE); if (old && !readSlot(1)) { const g = migrate(JSON.parse(old)); g.slot = 1; localStorage.setItem(SLOT_KEY(1), JSON.stringify({ v: 3, savedAt: Date.now(), G: g })); localStorage.removeItem(LEGACY_SAVE); } } catch {}
@@ -179,10 +179,10 @@ const decorAt = (x, y) => mapDef().decor?.some((d) => d[0] === x && d[1] === y &
 const here = (n) => !(n.local && G.party.some((c) => c.look === n.local)); // locals leave their post once they join
 const npcAt = (x, y) => mapDef().npcs?.find((n) => n.x === x && n.y === y && here(n));
 const inAutumn = (x, y) => { const a = GEN.deco?.autumn; return !!a && x >= a[0] && x <= a[2] && y >= a[1] && y <= a[3]; };
-const inEmber = (x, y) => { const a = GEN.deco?.ember; return !!a && x >= a[0] && x <= a[2] && y >= a[1] && y <= a[3]; };
-const regionAt = (x, y) => { const t = (MAPS.world.rows[y] || '')[x] ?? '.'; return t === ',' || t === 't' ? 'snow' : t === ':' ? 'swamp' : t === 'd' ? 'desert' : inEmber(x, y) ? 'ember' : inAutumn(x, y) ? 'autumn' : y <= (GEN.deco?.plainsY ?? 13) ? 'plains' : 'green'; };
+const regAt = (x, y) => (GEN.deco?.reg?.[y]?.charCodeAt(x) ?? 48) - 48;
+const regionAt = (x, y) => { const t = (MAPS.world.rows[y] || '')[x] ?? '.', g = regAt(x, y); return t === ',' || t === 't' ? 'snow' : t === 'd' ? 'desert' : g === 5 ? 'ember' : g === 4 ? 'autumn' : t === ':' ? 'swamp' : g === 6 ? 'jungle' : 'green'; };
 const regionOf = () => (G.map !== 'world' ? null : regionAt(G.x, G.y));
-const REGION_NAME = { snow: 'Frostfields', swamp: 'Mire Marsh', plains: 'Northern Plains', green: 'Greenmarch', desert: 'Sunscar Sands', autumn: 'Hopsend Isle', ember: 'Cinder Isle' };
+const REGION_NAME = { snow: 'Frostfields', swamp: 'Mire Marsh', plains: 'Northern Plains', green: 'Greenmarch', desert: 'Sunscar Sands', autumn: 'Hopsend Isle', ember: 'Cinder Isle', jungle: 'Jade Jungle' };
 function musicFor() { const m = mapDef(); if (m.kind !== 'outdoor') return m.music; const r = regionOf(); return r === 'snow' ? 'snow' : r === 'desert' || r === 'ember' ? 'desert' : r === 'swamp' ? 'mirewood' : 'world'; }
 function reveal() { // fog of war
   const m = mapDef(); if (!m.fog) return;
@@ -389,13 +389,13 @@ async function step(dx, dy) {
   tip('move', TOUCH ? 'Tap a spot to travel there, or press and slide on the pad. A talks/checks, B opens the menu.' : 'Arrows or WASD to walk. Esc opens your party menu. A yellow ! marks someone with news.');
   if (m.kind === 'outdoor') { const reg = regionOf(); if (reg !== G.region) { G.region = reg; banner(REGION_NAME[reg]); music(musicFor()); } }
   if (m.boss && t === 'X' && !G.flags.bosses[m.boss.id]) { busy = true; mapShake(); sfx('crit'); await sleep(350); busy = false; return battle([m.boss.id], m.boss.id); }
-  const zone = m.zones?.find((z) => nx >= z.rect[0] && nx <= z.rect[2] && ny >= z.rect[1] && ny <= z.rect[3] && t === '.'); // e.g. the autumn island's own monsters
-  const table = zone?.enc || m.enc || m.encByTile?.[t];
+  const zoneEnc = G.map === 'world' ? { 4: 'hops', 5: 'embers', 6: 'jungle' }[regAt(nx, ny)] : null; // the outlying and jungle areas have their own monsters
+  const table = zoneEnc || m.enc || m.encByTile?.[t];
   if (table && !(m.safe || []).some(([sx2, sy2, r]) => Math.hypot(nx - sx2, ny - sy2) <= r) && Math.random() < m.rate) {
     let tb = ENCOUNTERS[table];
     const lure = Object.entries(QUESTS).find(([id, q]) => q.goal.lure?.table === table && qstate(id) === 'active' && !questDone(id))?.[1].goal.lure; // a hunt quest's quarry shows up more often
     if (lure && Math.random() < lure.p) return battle(lure.group);
-    if (table === 'world' && m.ramp) tb = tb.slice(0, Math.min(tb.length, 2 + Math.floor(Math.hypot(nx - m.ramp[0], ny - m.ramp[1]) / 3))); // easy fights first, tougher the farther you roam
+    if ((table === 'world' || table === 'jungle') && m.ramp) tb = tb.slice(0, Math.min(tb.length, 2 + Math.floor(Math.hypot(nx - m.ramp[0], ny - m.ramp[1]) / 3))); // easy fights first, tougher the farther you roam
     await battle(tb[Math.floor(Math.random() * tb.length)]);
   }
 }

@@ -16,7 +16,7 @@ for (const [name, w, h, touch, dpr] of DEVICES) {
   const snap = async (tag) => pg.screenshot({ path: `${OUT}/${name}-${tag}.png` });
   await snap('1-title');
   await pg.click('[data-act=new]'); await pg.click('[data-act=slotpick][data-a="1"]'); await pg.click('[data-act=diff][data-b=normal]'); await pg.waitForTimeout(150); await pg.evaluate(() => { window.__game.ACT.crbegin(); window.__game.ACT.close(); window.__game.testParty(); }); await pg.waitForTimeout(500);
-  await pg.evaluate(() => window.__game.goto('world', 33, 85)); await pg.waitForTimeout(700); await snap('2-world');
+  await pg.evaluate(() => window.__game.goto('world', 48, 68)); await pg.waitForTimeout(700); await snap('2-world');
   const m = await pg.evaluate(() => {
     const r = (s) => { const e = document.querySelector(s); if (!e) return null; const b = e.getBoundingClientRect(); return [Math.round(b.left), Math.round(b.top), Math.round(b.width), Math.round(b.height)]; };
     const cv = document.getElementById('map');

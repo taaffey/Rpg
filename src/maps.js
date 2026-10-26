@@ -454,8 +454,6 @@ MAPS.world = {
 };
 // no random fights close to towns, and grassland fights ramp up with distance from Haven (gentle first steps)
 MAPS.world.safe = [[hx, hy, 6], [fx, fy, 4], [mx, my, 4], [cx, cy, 2], [rx, ry, 2], [sx, sy, 2], [tx, ty, 2], [ux, uy, 2], ...['chippy', 'stones', 'bogshed', 'oasis', 'lodge', 'shed', 'dock_s', 'dock_h', 'hopsend', 'brewery', 'dock_f', 'dock_e', 'kilnhaven', 'pizzaoven', 'windmill', 'wreck', 'pyramid', 'icecave'].map((k) => [...GEN.pois[k], 3])];
-// the far north-east island has its own tougher monsters (see zones in game.js)
-MAPS.world.zones = [{ rect: GEN.deco.autumn, enc: 'hops' }, { rect: GEN.deco.ember, enc: 'embers' }];
 MAPS.world.ramp = [hx, hy];
 // the northern pass is gated until the Ashen Wyrm falls
 MAPS.world.gate = { tile: 'B', flag: 'wyrm' };

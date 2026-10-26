@@ -204,6 +204,200 @@ def make_world(seed):
     for x, y in deco['ship']: assert g[y][x] == '~'
     return [''.join(row) for row in g], pois, spawn_adj, deco
 
+def make_world_ref(seed):
+    """Greenmarch v4: the world follows tools/world_land.txt (a land/sea mask traced from the 'Realm of Valoran' style reference): one big
+    continent with a frozen north, a desert north-east, a dark marsh south-east, a jungle in the south, central mountains and lakes,
+    plus outlying islands (the volcano Cinder Isle in the north-west, Hopsend Isle in the south-west, an obsidian isle in the south-east).
+    168 x 126 tiles. A per-tile region grid (deco.reg) marks the digits 4 autumn, 5 ember, 6 jungle on top of the tile characters."""
+    import heapq
+    rows = [l.rstrip('\n') for l in open('tools/world_land.txt')]
+    H, W = len(rows), len(rows[0])
+    nC, nR, nF, nM = noise2(seed), noise2(seed+1), noise2(seed+2), noise2(seed+3)
+    g = [['.' if c == '#' else '~' for c in r] for r in rows]
+    for y in range(64, 100):  # a winding channel splits the south-west lobe off as Hopsend Isle
+        cx = 41 + int(round(nM(y/6, 3) * 2))
+        for x in (cx, cx + 1): g[y][x] = '~'
+    for y in range(62, 68):  # an isthmus joins the south-east marsh to the north-eastern desert (the desert must be reachable before the northern pass opens)
+        for x in range(134, 148): g[y][x] = '.'
+    reg = [['0']*W for _ in range(H)]
+    cinder = lambda x, y: x <= 42 and y <= 42
+    hops = lambda x, y: x <= 40 and 66 <= y <= 97
+    obsid = lambda x, y: x >= 138 and y >= 96
+    nB = lambda x, y: nR(x/13 + 3, y/13) * 7 + nR(x/5, y/5 + 9) * 2
+    ridge = lambda x: 39 + int(round(nM(x/9, 7) * 3.5))  # the line of the northern mountain range (the frozen north lies above it)
+    xr = lambda y: 107 + int(round(nM(7, y/8) * 3))        # the line of the ridge between the snow and the desert
+    for y in range(H):
+        for x in range(W):
+            if g[y][x] != '.': continue
+            b = nB(x, y)
+            if cinder(x, y): reg[y][x] = '5'
+            elif hops(x, y): reg[y][x] = '4'
+            elif obsid(x, y): g[y][x] = ':'; reg[y][x] = '5'
+            elif 43 <= x + b * 0.4 <= xr(y) - 1 and y <= ridge(x) - 2 + b * 0.25: g[y][x] = ','
+            elif x + b * 1.3 >= xr(y) + 2 and y <= 64 + b * 1.1: g[y][x] = 'd'
+            elif ((x - 126) / 29) ** 2 + ((y - 86) / 27) ** 2 + b * 0.035 < 1 and x + b * 0.9 >= 98 and not (x >= 108 and y <= 60): g[y][x] = ':'
+            elif ((x - 80) / 25) ** 2 + ((y - 102) / 23) ** 2 + b * 0.025 < 1 and y >= 76: reg[y][x] = '6'
+    land = lambda x, y: 0 <= x < W and 0 <= y < H and g[y][x] != '~'
+    GX = 80
+    pois = {}
+    want = {  # name: (x, y, tile char it must stand on, region digit or None)
+        'haven': (48, 67, '.', '0'), 'cavern': (70, 54, '.', '0'), 'storm': (100, 26, ',', None), 'mirewood': (118, 92, ':', None),
+        'crypt': (128, 68, ':', None), 'frost': (60, 22, ',', None), 'spire': (85, 12, ',', None), 'chippy': (53, 102, '.', '0'),
+        'stones': (72, 70, '.', '0'), 'bogshed': (84, 92, '.', '6'), 'oasis': (148, 50, 'd', None), 'lodge': (75, 20, ',', None),
+        'shed': (96, 18, ',', None), 'hopsend': (20, 80, '.', '4'), 'brewery': (30, 88, '.', '4'), 'dock_h': (37, 82, '.', '4'),
+        'dock_s': (45, 82, '.', '0'), 'kilnhaven': (19, 22, '.', '5'), 'pizzaoven': (17, 11, '.', '5'), 'dock_e': (24, 28, '.', '5'),
+        'dock_f': (47, 33, ',', None), 'windmill': (58, 70, '.', '0'), 'wreck': (112, 100, ':', None), 'pyramid': (150, 40, 'd', None),
+        'icecave': (66, 14, ',', None), 'ruins': (136, 22, 'd', None)}
+    gift, hermit = (50, 23), (74, 30)
+    taken = [gift, hermit]
+    def snap(k, x0, y0, bio, rg):
+        dock = k.startswith('dock')
+        for r in range(0, 16):
+            for yy in range(y0-r, y0+r+1):
+                for xx in range(x0-r, x0+r+1):
+                    if max(abs(xx-x0), abs(yy-y0)) != r: continue
+                    if all(land(xx+i, yy+j) and g[yy+j][xx+i] == bio and (rg is None or reg[yy+j][xx+i] == rg) for i in ((-1, 0, 1) if dock else (-2, -1, 0, 1, 2)) for j in ((0, 1) if dock else (-1, 0, 1, 2))) and all(abs(xx-a) + abs(yy-b) > (3 if dock else 7) for a, b in taken):
+                        return (xx, yy)
+        raise AssertionError(('no land for', k))
+    for k, (x0, y0, bio, rg) in want.items():
+        p = snap(k, x0, y0, bio, rg); pois[k] = p; taken.append(p)
+    spawn_adj = {k: (x, y+1) for k, (x, y) in pois.items()}
+    A = spawn_adj
+    # --- roads: winding cheapest paths between the places
+    def path(a, b):
+        dist = {a: 0}; prev = {}; pq = [(0, a)]
+        while pq:
+            dd, (x, y) = heapq.heappop(pq)
+            if (x, y) == b: break
+            if dd > dist[(x, y)]: continue
+            for dx, dy in ((1,0),(-1,0),(0,1),(0,-1)):
+                n = (x+dx, y+dy)
+                if not land(*n): continue
+                c = dd + 1 + abs(nR(n[0]/3.5, n[1]/3.5)) * 2.6
+                if c < dist.get(n, 1e9): dist[n] = c; prev[n] = (x, y); heapq.heappush(pq, (c, n))
+        out = [b]
+        while out[-1] != a: out.append(prev[out[-1]])
+        return out
+    # the wall between the north (snow) and the rest: a mountain band with the gated pass (B) at x = GX, and one between the snow and the desert
+    wall = set()
+    for x in range(40, 108):
+        for y in range(ridge(x) - 2, ridge(x) + 3): wall.add((x, y))
+    for y in range(3, 46):
+        for x in range(xr(y) - 1, xr(y) + 2): wall.add((x, y))
+    gate_cells = [(GX, ridge(GX) + k) for k in (-1, 0, 1)]
+    gate_s, gate_n = (GX, ridge(GX) + 5), (GX, ridge(GX) - 5)
+    for y in range(ridge(GX) - 4, ridge(GX) + 5): wall.discard((GX, y))
+    # nothing but the pass may cross the wall: roads that need to cross it are routed through the gate
+    def land_nowall(x, y): return land(x, y) and (x, y) not in wall
+    links_main = [('haven', 'cavern'), ('haven', 'windmill'), ('haven', 'stones'), ('haven', 'chippy'), ('haven', 'dock_s'), ('cavern', 'mirewood'), ('mirewood', 'crypt'), ('mirewood', 'wreck'),
+                  ('mirewood', 'bogshed'), ('crypt', 'pyramid'), ('pyramid', 'ruins'), ('pyramid', 'oasis'), ('cavern', 'gate_s')]
+    links_north = [('gate_n', 'frost'), ('frost', 'spire'), ('gate_n', 'storm'), ('frost', 'lodge'), ('lodge', 'shed'), ('frost', 'icecave'), ('frost', 'dock_f'), ('gate_n', 'hermit'), ('hermit', 'gift')]
+    links_isle = [('hopsend', 'brewery'), ('hopsend', 'dock_h'), ('kilnhaven', 'pizzaoven'), ('kilnhaven', 'dock_e')]
+    pt = lambda k: {'gate_s': gate_s, 'gate_n': gate_n, 'hermit': hermit, 'gift': gift}.get(k) or A[k]
+    road = set()
+    def carve(a, b, allow):
+        saved = land
+        for t in path_with(a, b, allow): road.add(t)
+    def path_with(a, b, allow):
+        dist = {a: 0}; prev = {}; pq = [(0, a)]
+        while pq:
+            dd, (x, y) = heapq.heappop(pq)
+            if (x, y) == b: break
+            if dd > dist[(x, y)]: continue
+            for dx, dy in ((1,0),(-1,0),(0,1),(0,-1)):
+                n = (x+dx, y+dy)
+                if not allow(*n): continue
+                c = dd + 1 + abs(nR(n[0]/3.5, n[1]/3.5)) * 2.6
+                if c < dist.get(n, 1e9): dist[n] = c; prev[n] = (x, y); heapq.heappush(pq, (c, n))
+        assert b in dist, ('no road', a, b)
+        out = [b]
+        while out[-1] != a: out.append(prev[out[-1]])
+        return out
+    south_ok = lambda x, y: land(x, y) and y > 41 and not (x >= 108 and y <= 44 and False)
+    for a, b in links_main: carve(pt(a), pt(b), lambda x, y: land(x, y) and (x, y) not in wall or (x, y) == gate_s)
+    north_ok = lambda x, y: land(x, y) and y <= ridge(x) - 2 and x < xr(y)
+    for a, b in links_north: carve(pt(a), pt(b), north_ok)
+    for a, b in links_isle: carve(pt(a), pt(b), lambda x, y: land(x, y) and ((x <= 40) if a in ('hopsend',) else (x <= 42)))
+    # the road across the pass
+    for y in range(ridge(GX) - 5, ridge(GX) + 6): road.add((GX, y))
+    # --- apply the wall (walkable only at the gate column), mountains, woods
+    for (x, y) in wall:
+        if land(x, y) and (x, y) not in road: g[y][x] = 'M'
+    for (x, y) in gate_cells: g[y][x] = 'B'
+    reserved = {(gift[0]+dx, gift[1]+dy) for dx in range(-1, 2) for dy in range(-1, 2)} | {(hermit[0]+dx, hermit[1]+dy) for dx in range(-1, 2) for dy in range(-1, 2)}
+    near = lambda x, y, d: any(abs(x-px) <= d and abs(y-py) <= d for px, py in list(pois.values()) + list(spawn_adj.values()))
+    blobs = [(82, 50, 14, 8), (70, 45, 6, 4), (92, 56, 5, 4), (52, 89, 7, 5), (28, 60, 5, 4), (112, 26, 2.5, 9), (62, 18, 8, 6), (85, 24, 10, 5), (95, 12, 6, 4), (72, 9, 6, 3), (55, 10, 5, 4),
+             (125, 25, 6, 4), (140, 38, 6, 4), (130, 52, 5, 4), (152, 26, 5, 4), (125, 80, 6, 5), (112, 70, 4, 4), (140, 90, 5, 4), (68, 100, 5, 4), (17, 8, 6, 4), (28, 26, 4, 5), (24, 72, 4, 3), (45, 100, 5, 4), (100, 110, 4, 3)]
+    for cx, cy, rx_, ry_ in blobs:
+        for y in range(int(cy-ry_-2), int(cy+ry_+3)):
+            for x in range(int(cx-rx_-2), int(cx+rx_+3)):
+                if not land(x, y) or (x, y) in road or (x, y) in reserved or near(x, y, 1) or g[y][x] == 'B': continue
+                if ((x-cx)/rx_)**2 + ((y-cy)/ry_)**2 + nM(x/2.6, y/2.6) * 0.35 < 1: g[y][x] = 'M'
+    for x, y in [(gift[0]-1, gift[1]-3), (gift[0]+1, gift[1]-3), (gift[0]-1, gift[1]-2), (gift[0]+1, gift[1]-2)]:
+        if (x, y) not in road and land(x, y) and g[y][x] != 'B': g[y][x] = 'M'
+    for y in range(H):
+        for x in range(W):
+            c = g[y][x]
+            if c not in '.,:' or (x, y) in road or (x, y) in reserved or near(x, y, 1): continue
+            f = nF(x/4.8, y/4.8) + (-0.02 if c == ',' else 0.05 if c == ':' else 0) + (0.30 if reg[y][x] == '6' else 0)
+            if f > 0.17: g[y][x] = 't' if c == ',' else 'T'
+    # --- rivers (bridged where a road crosses)
+    def river(src, dirv, maxn=200):
+        x, y = src; out = []
+        for k in range(maxn):
+            if not land(x, y) or g[y][x] in 'MBHD' or near(x, y, 1) or (x, y) in wall: break
+            out.append((x, y)); wob = nR(x/5, y/5 + k/9)
+            if abs(dirv[0]) > abs(dirv[1]):
+                x += dirv[0] if (wob > -0.15 or k % 3) else 0; y += (1 if wob > 0.25 else -1 if wob < -0.25 else 0)
+            else:
+                y += dirv[1] if (wob > -0.15 or k % 3) else 0; x += (1 if wob > 0.25 else -1 if wob < -0.25 else 0)
+        return out
+    big = river((58, 66), (0, 1))
+    rivs = [big, river((66, 52), (-1, 0)), river((80, 34), (0, -1)), river((96, 44), (1, 0)), river((118, 75), (0, 1)), river((74, 78), (0, 1)), river((122, 30), (0, 1)), river((90, 12), (0, -1))]
+    for path_ in rivs:
+        for x, y in path_:
+            if g[y][x] in 'MBHD': continue
+            g[y][x] = '=' if (x, y) in road else 'r'
+    # Redwake's waterfall: where the big south-flowing river meets the sea; the dig spot is the land tile beside it
+    wf = max(big, key=lambda t: t[1]); cand = sorted(big, key=lambda t: -t[1])
+    wfs = None
+    for (x, y) in cand:
+        for dx in (-1, 1):
+            if land(x+dx, y) and g[y][x+dx] in '.:T' and (x+dx, y) not in road and reg[y][x+dx] in '06': wfs = (x+dx, y); break
+        if wfs: break
+    assert wfs, 'no waterfall spot'
+    g[wfs[1]][wfs[0]] = '.' if g[wfs[1]][wfs[0]] != ':' else ':'
+    for t in path_with(A['haven'], wfs, lambda x, y: land(x, y) and (x, y) not in wall and y > 41): road.add(t)
+    for x, y in path_with(A['haven'], wfs, lambda x, y: land(x, y) and (x, y) not in wall and y > 41):
+        if g[y][x] == 'r': g[y][x] = '='
+    for x, y in road:
+        if g[y][x] in 'TtM': g[y][x] = ',' if g[y][x] == 't' or (y <= ridge(x) - 2 and 43 <= x < xr(y)) else '.'
+        if g[y][x] == '.' and False: pass
+    for k, (x, y) in spawn_adj.items():
+        if g[y][x] in 'TtMr~': g[y][x] = {'.': '.', ',': ',', ':': ':', 'd': 'd'}.get(g[pois[k][1]][pois[k][0]], '.')
+    for k, (x, y) in pois.items(): g[y][x] = 'H' if k in ('haven', 'frost', 'mirewood', 'hopsend', 'kilnhaven') else 'D'
+    for (x, y) in (gift, hermit):
+        if g[y][x] in 'TtM~r': g[y][x] = ','
+    ru = pois['ruins']; g[ru[1]][ru[0]+1] = 'M'
+    # --- checks
+    walk = lambda c: c in '.,:d=HD'
+    open_ = bfs(g, spawn_adj['haven'], walk)
+    for k in ('haven', 'cavern', 'crypt', 'mirewood', 'ruins', 'chippy', 'stones', 'bogshed', 'oasis', 'dock_s', 'windmill', 'wreck', 'pyramid'): assert pois[k] in open_, ('closed', k)
+    for k in ('frost', 'spire', 'storm', 'lodge', 'shed', 'dock_f', 'icecave'): assert pois[k] not in open_, 'gate leaks ' + k
+    opened = bfs(g, spawn_adj['haven'], lambda c: walk(c) or c == 'B')
+    isle = ('hopsend', 'brewery', 'dock_h', 'kilnhaven', 'pizzaoven', 'dock_e')
+    for k in pois:
+        if k not in isle: assert pois[k] in opened, ('after gate', k)
+    for k in isle[:3]: assert pois[k] in bfs(g, spawn_adj['dock_h'], walk), ('isle h', k)
+    for k in isle[3:]: assert pois[k] in bfs(g, spawn_adj['dock_e'], walk), ('isle e', k)
+    assert wfs in open_ and gift in opened and hermit in opened and gift not in open_, 'secret spots'
+    for (x, y) in gate_cells: assert g[y][x] == 'B'
+    ship = [[8, 100], [10, 112], [20, 118], [8, 106]]
+    deco = {'ruins': list(ru), 'ship': ship, 'gift': list(gift), 'hermit': list(hermit), 'waterfall': list(wfs), 'gate': [GX, ridge(GX)],
+            'reg': [''.join(r) for r in reg], 'roads': sorted([x, y] for x, y in road if g[y][x] in '.,:d')}
+    for x, y in deco['ship']: assert g[y][x] == '~', ('ship', x, y)
+    return [''.join(row) for row in g], pois, spawn_adj, deco
+
 # --------------------------------------------------------------- dungeons
 def make_dungeon(seed, W=26, H=18, rooms_n=7, chests_n=4):
     for attempt in range(500):
@@ -252,7 +446,7 @@ def make_dungeon(seed, W=26, H=18, rooms_n=7, chests_n=4):
         return [''.join(row) for row in g], {'spawn': spawn, 'entrance': entrance, 'boss': boss, 'chests': chests}
     raise SystemExit('no dungeon')
 
-world, pois, adj, deco = make_world(11)
+world, pois, adj, deco = make_world_ref(11)
 crypt, cinfo = make_dungeon(100)
 spire, sinfo = make_dungeon(300, 28, 18, 8, 5)
 storm, stinfo = make_dungeon(500, 26, 18, 7, 4)
