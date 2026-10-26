@@ -622,6 +622,7 @@ const waysideIcon = (kind) => memo('wayside' + kind, () => {
   else if (kind === 'wreck') { p.rect(0, 14, 24, 6, (i, j) => [40 + j * 2, 70 + j * 2, 50]); p.rect(3, 9, 18, 6, (i, j) => WOOD[2 + ((i + j) % 4 === 0 ? 1 : 0)]); for (let j = 0; j < 3; j++) p.rect(3 + j, 9 - j, 1, 1, WOOD[1]); p.rect(12, 1, 1, 9, WOOD[1]); p.rect(13, 2, 5, 4, [190, 190, 180]); p.rect(5, 12, 2, 2, [20, 20, 20]); p.rect(10, 12, 2, 2, [20, 20, 20]); }
   else if (kind === 'pyramid') { for (let j = 0; j < 16; j++) p.rect(12 - j, 3 + j, 2 * j + 2, 1, [220 - (j & 1) * 12, 180 - (j & 1) * 12, 90]); p.rect(11, 15, 3, 4, [30, 20, 10]); p.rect(22, 15, 2, 4, [200, 200, 205]); p.rect(11, 0, 3, 2, [255, 220, 60]); }
   else if (kind === 'icecave') { p.rect(0, 15, 24, 5, [225, 235, 250]); for (let j = 0; j < 14; j++) p.rect(12 - j, 4 + j, 2 * j + 2, 1, [150 + (j & 1) * 12, 190 + (j & 1) * 8, 235]); p.rect(9, 11, 6, 8, [20, 40, 80]); p.rect(10, 12, 4, 6, [10, 20, 50]); for (const x of [8, 12, 15]) p.rect(x, 10, 1, 2, [235, 245, 255]); }
+  else if (kind === 'obsidian') { p.rect(1, 16, 22, 4, [30, 28, 40]); for (const [x0, w, h] of [[2, 5, 9], [8, 6, 13], [15, 5, 10], [19, 3, 6]]) { for (let j = 0; j < h; j++) p.rect(x0 + Math.floor(j * 0.15), 17 - j, Math.max(1, w - Math.floor(j * 0.6)), 1, [24 + j * 3, 22 + j * 3, 40 + j * 5]); p.rect(x0 + 1, 17 - h, 1, h, [160, 170, 255]); } p.rect(10, 11, 2, 3, [255, 190, 70]); p.set(11, 10, [255, 240, 160]); }
   else if (kind === 'brewery') { p.rect(1, 17, 22, 3, [150, 110, 50]); p.rect(3, 8, 18, 10, (i, j) => WOOD[2 + ((i + j) % 5 === 0 ? 1 : 0)]); for (let j = 0; j < 5; j++) p.rect(2 + j, 3 + j, 20 - 2 * j, 1, [176 - j * 6, 96, 40]); p.rect(15, 0, 3, 6, STONE[3]); p.rect(14, 0, 5, 1, STONE[5]); p.rect(9, 11, 6, 7, WOOD[1]); p.rect(4, 12, 3, 5, [200, 140, 40]); p.rect(4, 11, 3, 1, [150, 100, 30]); p.set(16, 0, [250, 250, 250]); p.set(17, 1, [230, 230, 230]); }
   else if (kind === 'dock') { p.rect(0, 12, 24, 8, (i, j) => [30 + j, 80 + j * 2, 170]); p.rect(0, 12, 10, 2, WOOD[4]); for (const x of [1, 4, 7]) p.rect(x, 12, 1, 6, WOOD[1]); p.rect(11, 8, 11, 5, W[2]); p.rect(11, 12, 11, 2, RED[3]); p.rect(15, 2, 1, 7, WOOD[2]); p.rect(16, 2, 4, 4, W[3]); }
   else { p.rect(1, 16, 22, 4, W[1]); p.rect(6, 8, 12, 9, (i, j) => [120 + j * 3, 170 + j * 3, 220]); for (let j = 0; j < 4; j++) p.rect(5 + j, 5 + j, 14 - 2 * j, 1, W[2 + (j & 1)]); p.rect(11, 11, 3, 6, [30, 50, 90]); p.rect(2, 17, 3, 1, G[1]); }
@@ -898,7 +899,7 @@ export function mapObjects(m, t, out) {
     else if (k === 'windmill') at(windmillArt(f8), x, y, 0, 1.3);
     else if (k === 'wreck') at(wreckArt(f8 & 1, true), x, y, 0.15, 1.2);
     else if (k.startsWith('dock')) at(jettyArt(), x, y, 0, 1.1);
-    else if (['chippy', 'stones', 'bogshed', 'oasis', 'lodge', 'shed', 'brewery', 'pizzaoven', 'icecave'].includes(k)) out.push({ img: waysideIcon(k), x: x - 0.25, y: y + 1 - 1.25, z: 1, sy: y + 1 });
+    else if (['chippy', 'stones', 'bogshed', 'oasis', 'lodge', 'shed', 'brewery', 'pizzaoven', 'icecave', 'obsidian'].includes(k)) out.push({ img: waysideIcon(k), x: x - 0.25, y: y + 1 - 1.25, z: 1, sy: y + 1 });
     else if (k === 'crypt') out.push({ img: shrine(), x: x - 0.5, y: y + 1 - 2, z: 1, sy: y + 1 });
     else if (k === 'spire') out.push({ img: spireIcon(f8 & 2 ? 1 : 0), x: x - 0.25, y: y + 1 - 3, z: 1, sy: y + 1 });
   }

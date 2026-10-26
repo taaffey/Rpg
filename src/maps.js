@@ -422,6 +422,13 @@ gen('icecave', 'The Ice Cave', 'spire', GEN.icecaveInfo, 'icecave', 'frozen_angl
   [{ gold: 700, items: { hipotion: 3 } }, { items: { megaether: 2 }, gold: 500 }, { weapons: ['ice_fishing_rod'], gold: 1000 }, { items: { elixir: 1, phoenix: 2 }, gold: 500 }, { gold: 1200, gems: ['frost'] }], GEN.adj.icecave, 'spire');
 MAPS.icecave.minLv = 14;
 
+// ---------------------------------------------------------------- the Obsidian Ruins (the last optional island)
+gen('obsidian', 'The Obsidian Ruins', 'cellar', GEN.obsidianInfo, 'obsidian', 'landlord',
+  [{ items: { elixir: 4, megaether: 4 }, gold: 2000 }, { gold: 2500, gems: ['execute', 'echo'] }, { items: { phoenix: 6, hipotion: 6 }, gold: 1500 }, { gold: 3000 }, { items: { elixir: 5 }, gold: 2500 }, { gems: ['crit', 'execute'], gold: 3500 }], GEN.adj.obsidian, 'dungeon');
+MAPS.obsidian.minLv = 20; // optional: a warning toast below this average level
+interior('port_o', 'Stormreach Jetty', 'house', wb('dock_o'), { theme: 'jetty', npcs: [{ x: 4, y: 3, type: 'fisher', name: 'Ferryman', service: 'ferry', need: 'margherita', to: ['world', ...GEN.adj.dock_p], no: ['The glass island? Not until the volcano oven-lady has been cooled, my insurance says. Also my mother says. Also the ghost, who sends a letter every Tuesday.'], go: ['The Obsidian Ruins. Last stop. Bring everything you own, and a very good excuse.'] }] });
+interior('port_p', 'Obsidian Jetty', 'general', wb('dock_p'), { theme: 'jetty', shop: 'last_orders_kiosk', npcs: [{ x: 2, y: 5, type: 'fisher', name: 'Ferryman', service: 'ferry', to: ['world', ...GEN.adj.dock_o], go: ['Back to the mainland? Wise. Nobody ever leaves the pub, mind. You have been very lucky.'] }] });
+
 // ---------------------------------------------------------------- overworld
 const [ux, uy] = GEN.pois.ruins, [mx, my] = GEN.pois.mirewood, [tx, ty] = GEN.pois.storm, [hx, hy] = GEN.pois.haven, [fx, fy] = GEN.pois.frost, [cx, cy] = GEN.pois.cavern, [rx, ry] = GEN.pois.crypt, [sx, sy] = GEN.pois.spire;
 MAPS.world = {
@@ -436,6 +443,7 @@ MAPS.world = {
     [P(...GEN.pois.hopsend)]: portal('hopsend', 14, 24), [P(...GEN.pois.brewery)]: portal('brewery', GEN.breweryInfo.spawn[0], GEN.breweryInfo.spawn[1]),
     [P(...GEN.pois.dock_s)]: portal('port_s', 5, 6), [P(...GEN.pois.dock_h)]: portal('port_h', 5, 6),
     ...Object.fromEntries(['windmill', 'wreck', 'pyramid', 'icecave'].map((k) => [P(...GEN.pois[k]), portal(k, GEN[k + 'Info'].spawn[0], GEN[k + 'Info'].spawn[1])])),
+    [P(...GEN.pois.obsidian)]: portal('obsidian', GEN.obsidianInfo.spawn[0], GEN.obsidianInfo.spawn[1]), [P(...GEN.pois.dock_o)]: portal('port_o', 5, 6), [P(...GEN.pois.dock_p)]: portal('port_p', 5, 6),
     [P(...GEN.pois.kilnhaven)]: portal('kilnhaven', 14, 24), [P(...GEN.pois.pizzaoven)]: portal('pizzaoven', GEN.pizzaovenInfo.spawn[0], GEN.pizzaovenInfo.spawn[1]),
     [P(...GEN.pois.dock_f)]: portal('port_f', 5, 6), [P(...GEN.pois.dock_e)]: portal('port_e', 5, 6),
   },
@@ -450,10 +458,10 @@ MAPS.world = {
     [P(GEN.deco.waterfall[0], GEN.deco.waterfall[1])]: { gold: 1200, gems: ['crit'], qitem: 'doubloon' }, // Redwake's cache at the foot of the waterfall
     [P(GEN.deco.gift[0], GEN.deco.gift[1])]: { gems: ['echo'], items: { elixir: 2 }, accs: ['life_charm'] }, // the old kings' gift, north-west corner
   },
-  places: [[hx, hy, 'Haven Town'], [fx, fy, 'Frostholm'], [cx, cy, 'Ashen Cavern'], [rx, ry, 'Sunken Crypt'], [sx, sy, 'Frost Spire'], [mx, my, 'Mirewood'], [tx, ty, 'Storm Cavern'], [ux, uy, 'Sunscar Ruins'], [...GEN.pois.chippy, 'Wayside Chippy'], [...GEN.pois.stones, 'Standing Stones'], [...GEN.pois.bogshed, 'Bog Snorkel Shed'], [...GEN.pois.oasis, 'Oasis Kebab Van'], [...GEN.pois.lodge, 'Ski Lodge'], [...GEN.pois.shed, 'Ice Fishing Shed'], [...GEN.pois.dock_s, 'Westshore Jetty'], [...GEN.pois.dock_h, 'Hopsend Jetty'], [...GEN.pois.hopsend, 'Hopsend'], [...GEN.pois.brewery, 'Great Brewery'], [...GEN.pois.dock_f, 'Frost Jetty'], [...GEN.pois.dock_e, 'Cinder Jetty'], [...GEN.pois.windmill, 'Old Windmill'], [...GEN.pois.wreck, 'Salty Sue Wreck'], [...GEN.pois.pyramid, 'Mild Pyramid'], [...GEN.pois.icecave, 'Ice Cave'], [...GEN.pois.kilnhaven, 'Kilnhaven'], [...GEN.pois.pizzaoven, 'The Pizza Oven']],
+  places: [[hx, hy, 'Haven Town'], [fx, fy, 'Frostholm'], [cx, cy, 'Ashen Cavern'], [rx, ry, 'Sunken Crypt'], [sx, sy, 'Frost Spire'], [mx, my, 'Mirewood'], [tx, ty, 'Storm Cavern'], [ux, uy, 'Sunscar Ruins'], [...GEN.pois.chippy, 'Wayside Chippy'], [...GEN.pois.stones, 'Standing Stones'], [...GEN.pois.bogshed, 'Bog Snorkel Shed'], [...GEN.pois.oasis, 'Oasis Kebab Van'], [...GEN.pois.lodge, 'Ski Lodge'], [...GEN.pois.shed, 'Ice Fishing Shed'], [...GEN.pois.dock_s, 'Westshore Jetty'], [...GEN.pois.dock_h, 'Hopsend Jetty'], [...GEN.pois.hopsend, 'Hopsend'], [...GEN.pois.brewery, 'Great Brewery'], [...GEN.pois.dock_f, 'Frost Jetty'], [...GEN.pois.dock_e, 'Cinder Jetty'], [...GEN.pois.windmill, 'Old Windmill'], [...GEN.pois.wreck, 'Salty Sue Wreck'], [...GEN.pois.pyramid, 'Mild Pyramid'], [...GEN.pois.icecave, 'Ice Cave'], [...GEN.pois.dock_o, 'Stormreach Jetty'], [...GEN.pois.dock_p, 'Obsidian Jetty'], [...GEN.pois.obsidian, 'Obsidian Ruins'], [...GEN.pois.kilnhaven, 'Kilnhaven'], [...GEN.pois.pizzaoven, 'The Pizza Oven']],
 };
 // no random fights close to towns, and grassland fights ramp up with distance from Haven (gentle first steps)
-MAPS.world.safe = [[hx, hy, 6], [fx, fy, 4], [mx, my, 4], [cx, cy, 2], [rx, ry, 2], [sx, sy, 2], [tx, ty, 2], [ux, uy, 2], ...['chippy', 'stones', 'bogshed', 'oasis', 'lodge', 'shed', 'dock_s', 'dock_h', 'hopsend', 'brewery', 'dock_f', 'dock_e', 'kilnhaven', 'pizzaoven', 'windmill', 'wreck', 'pyramid', 'icecave'].map((k) => [...GEN.pois[k], 3])];
+MAPS.world.safe = [[hx, hy, 6], [fx, fy, 4], [mx, my, 4], [cx, cy, 2], [rx, ry, 2], [sx, sy, 2], [tx, ty, 2], [ux, uy, 2], ...['chippy', 'stones', 'bogshed', 'oasis', 'lodge', 'shed', 'dock_s', 'dock_h', 'hopsend', 'brewery', 'dock_f', 'dock_e', 'dock_o', 'dock_p', 'obsidian', 'kilnhaven', 'pizzaoven', 'windmill', 'wreck', 'pyramid', 'icecave'].map((k) => [...GEN.pois[k], 3])];
 MAPS.world.ramp = [hx, hy];
 // the northern pass is gated until the Ashen Wyrm falls
 MAPS.world.gate = { tile: 'B', flag: 'wyrm' };

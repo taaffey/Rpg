@@ -246,7 +246,7 @@ def make_world_ref(seed):
         'stones': (72, 70, '.', '0'), 'bogshed': (84, 92, '.', '6'), 'oasis': (148, 50, 'd', None), 'lodge': (75, 20, ',', None),
         'shed': (96, 18, ',', None), 'hopsend': (20, 80, '.', '4'), 'brewery': (30, 88, '.', '4'), 'dock_h': (37, 82, '.', '4'),
         'dock_s': (45, 82, '.', '0'), 'kilnhaven': (19, 22, '.', '5'), 'pizzaoven': (17, 11, '.', '5'), 'dock_e': (24, 28, '.', '5'),
-        'dock_f': (47, 33, ',', None), 'windmill': (58, 70, '.', '0'), 'wreck': (112, 100, ':', None), 'pyramid': (150, 40, 'd', None),
+        'dock_f': (47, 33, ',', None), 'windmill': (58, 70, '.', '0'), 'wreck': (112, 100, ':', None), 'pyramid': (150, 40, 'd', None), 'dock_o': (133, 101, ':', None), 'dock_p': (146, 107, ':', '5'), 'obsidian': (153, 111, ':', '5'),
         'icecave': (66, 14, ',', None), 'ruins': (136, 22, 'd', None)}
     gift, hermit = (50, 23), (74, 30)
     taken = [gift, hermit]
@@ -290,9 +290,9 @@ def make_world_ref(seed):
     # nothing but the pass may cross the wall: roads that need to cross it are routed through the gate
     def land_nowall(x, y): return land(x, y) and (x, y) not in wall
     links_main = [('haven', 'cavern'), ('haven', 'windmill'), ('haven', 'stones'), ('haven', 'chippy'), ('haven', 'dock_s'), ('cavern', 'mirewood'), ('mirewood', 'crypt'), ('mirewood', 'wreck'),
-                  ('mirewood', 'bogshed'), ('crypt', 'pyramid'), ('pyramid', 'ruins'), ('pyramid', 'oasis'), ('cavern', 'gate_s')]
+                  ('mirewood', 'bogshed'), ('crypt', 'pyramid'), ('pyramid', 'ruins'), ('pyramid', 'oasis'), ('cavern', 'gate_s'), ('mirewood', 'dock_o')]
     links_north = [('gate_n', 'frost'), ('frost', 'spire'), ('gate_n', 'storm'), ('frost', 'lodge'), ('lodge', 'shed'), ('frost', 'icecave'), ('frost', 'dock_f'), ('gate_n', 'hermit'), ('hermit', 'gift')]
-    links_isle = [('hopsend', 'brewery'), ('hopsend', 'dock_h'), ('kilnhaven', 'pizzaoven'), ('kilnhaven', 'dock_e')]
+    links_isle = [('hopsend', 'brewery'), ('hopsend', 'dock_h'), ('kilnhaven', 'pizzaoven'), ('kilnhaven', 'dock_e'), ('dock_p', 'obsidian')]
     pt = lambda k: {'gate_s': gate_s, 'gate_n': gate_n, 'hermit': hermit, 'gift': gift}.get(k) or A[k]
     road = set()
     def carve(a, b, allow):
@@ -317,7 +317,7 @@ def make_world_ref(seed):
     for a, b in links_main: carve(pt(a), pt(b), lambda x, y: land(x, y) and (x, y) not in wall or (x, y) == gate_s)
     north_ok = lambda x, y: land(x, y) and y <= ridge(x) - 2 and x < xr(y)
     for a, b in links_north: carve(pt(a), pt(b), north_ok)
-    for a, b in links_isle: carve(pt(a), pt(b), lambda x, y: land(x, y) and ((x <= 40) if a in ('hopsend',) else (x <= 42)))
+    for a, b in links_isle: carve(pt(a), pt(b), lambda x, y: land(x, y) and ((x >= 138) if a == 'dock_p' else (x <= 40) if a in ('hopsend',) else (x <= 42)))
     # the road across the pass
     for y in range(ridge(GX) - 5, ridge(GX) + 6): road.add((GX, y))
     # --- apply the wall (walkable only at the gate column), mountains, woods
@@ -382,14 +382,15 @@ def make_world_ref(seed):
     # --- checks
     walk = lambda c: c in '.,:d=HD'
     open_ = bfs(g, spawn_adj['haven'], walk)
-    for k in ('haven', 'cavern', 'crypt', 'mirewood', 'ruins', 'chippy', 'stones', 'bogshed', 'oasis', 'dock_s', 'windmill', 'wreck', 'pyramid'): assert pois[k] in open_, ('closed', k)
+    for k in ('haven', 'cavern', 'crypt', 'mirewood', 'ruins', 'chippy', 'stones', 'bogshed', 'oasis', 'dock_s', 'windmill', 'wreck', 'pyramid', 'dock_o'): assert pois[k] in open_, ('closed', k)
     for k in ('frost', 'spire', 'storm', 'lodge', 'shed', 'dock_f', 'icecave'): assert pois[k] not in open_, 'gate leaks ' + k
     opened = bfs(g, spawn_adj['haven'], lambda c: walk(c) or c == 'B')
-    isle = ('hopsend', 'brewery', 'dock_h', 'kilnhaven', 'pizzaoven', 'dock_e')
+    isle = ('hopsend', 'brewery', 'dock_h', 'kilnhaven', 'pizzaoven', 'dock_e', 'dock_p', 'obsidian')
     for k in pois:
         if k not in isle: assert pois[k] in opened, ('after gate', k)
     for k in isle[:3]: assert pois[k] in bfs(g, spawn_adj['dock_h'], walk), ('isle h', k)
-    for k in isle[3:]: assert pois[k] in bfs(g, spawn_adj['dock_e'], walk), ('isle e', k)
+    for k in isle[3:6]: assert pois[k] in bfs(g, spawn_adj['dock_e'], walk), ('isle e', k)
+    for k in isle[6:]: assert pois[k] in bfs(g, spawn_adj['dock_p'], walk), ('isle p', k)
     assert wfs in open_ and gift in opened and hermit in opened and gift not in open_, 'secret spots'
     for (x, y) in gate_cells: assert g[y][x] == 'B'
     ship = [[8, 100], [10, 112], [20, 118], [8, 106]]
@@ -601,7 +602,8 @@ windmill, wminfo = make_dungeon(1300, 24, 16, 6, 5)
 wreck, wrinfo = make_dungeon(1500, 28, 18, 7, 5)
 pyramid, pyinfo = make_dungeon(1700, 28, 18, 8, 5)
 icecave, icinfo = make_dungeon(1900, 28, 18, 8, 5)
-out = {'world': world, 'pois': pois, 'adj': adj, 'deco': deco, 'crypt': crypt, 'cryptInfo': cinfo, 'spire': spire, 'spireInfo': sinfo, 'storm': storm, 'stormInfo': stinfo, 'ruins': ruins, 'ruinsInfo': rinfo, 'brewery': brewery, 'breweryInfo': binfo, 'pizzaoven': pizzaoven, 'pizzaovenInfo': pinfo, 'windmill': windmill, 'windmillInfo': wminfo, 'wreck': wreck, 'wreckInfo': wrinfo, 'pyramid': pyramid, 'pyramidInfo': pyinfo, 'icecave': icecave, 'icecaveInfo': icinfo}
+obsidian, obinfo = make_dungeon(2100, 34, 22, 10, 6)
+out = {'world': world, 'pois': pois, 'adj': adj, 'deco': deco, 'crypt': crypt, 'cryptInfo': cinfo, 'spire': spire, 'spireInfo': sinfo, 'storm': storm, 'stormInfo': stinfo, 'ruins': ruins, 'ruinsInfo': rinfo, 'brewery': brewery, 'breweryInfo': binfo, 'pizzaoven': pizzaoven, 'pizzaovenInfo': pinfo, 'windmill': windmill, 'windmillInfo': wminfo, 'wreck': wreck, 'wreckInfo': wrinfo, 'pyramid': pyramid, 'pyramidInfo': pyinfo, 'icecave': icecave, 'icecaveInfo': icinfo, 'obsidian': obsidian, 'obsidianInfo': obinfo}
 js = '// GENERATED by tools/genmaps.py. Do not edit by hand.\nexport const GEN = ' + json.dumps(out, indent=1) + ';\n'
 open('src/mapgen.js', 'w').write(js)
 print('\n'.join(world)); print(); print('\n'.join(crypt)); print(cinfo); print(); print('\n'.join(spire)); print(sinfo); print(pois); print(); print('\n'.join(ruins)); print(rinfo)
