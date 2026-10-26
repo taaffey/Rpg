@@ -552,6 +552,11 @@ const MODELS = {
         a.rect(21, 13, 3, 5, '#ffffff'); a.rect(28, 13, 3, 5, '#ffffff'); a.rect(22, 15, 2, 3, '#18101c'); a.rect(29, 15, 2, 3, '#18101c'); a.px(22, 15, '#ffffff'); a.px(29, 15, '#ffffff');
         for (let x = 22; x <= 30; x++) a.px(x, 21 + (x > 23 && x < 29 ? 1 : 0), P.mouth); a.px(25, 23, P.mouth); a.px(26, 23, P.mouth);
         a.rect(9, 12, 2, 3, '#ffffff'); a.px(11, 10, '#ffffff'); a.px(8, 16, a.ramp('goo', -1));
+        if (V.jar) { // a pickling jar: steel lid, a thin glass wall either side, vinegar line and bubbles
+          a.rect(3, 0, 32, 3, '#9a9ab0'); a.rect(3, 0, 32, 1, '#d8d8e8'); a.rect(3, 2, 32, 1, '#4a4a60');
+          for (let y = 3; y < 28; y++) { a.px(1, y, y % 6 === 0 ? '#ffffff' : '#9ad0e0'); a.px(36, y, '#5a90a8'); }
+          for (let x = 1; x <= 36; x++) a.px(x, 28, '#5a90a8'); a.line(2, 8, 35, 8, '#c8f0e8'); for (const [bx, by] of [[5, 12], [33, 16], [6, 22], [34, 24], [4, 17]]) a.px(bx, by, '#e8fff8');
+        }
       } };
   } },
   goblin: { col: { skin: '#5fae46', cloth: '#8a5a30', metal: '#9aa4b8', eye: '#ffd23a', club: '#7a5030', hair: '#3a2a20' }, build(P, V) {
@@ -670,16 +675,18 @@ const MODELS = {
       if (V.mill) { for (let k = 0; k < 7; k++) { const t = k * 0.9 + 0.3; q.line(27 + Math.cos(t) * 3.4, 33 + Math.sin(t) * 3.4, 27 + Math.cos(t) * 8, 33 + Math.sin(t) * 8, a.ramp('stone', -2)); } q.px(22, 28, a.ramp('stone', 4)); q.px(23, 27, a.ramp('stone', 4)); q.px(31, 38, '#f4f0e0'); q.px(20, 35, '#f4f0e0'); q.px(33, 30, '#f4f0e0'); } // dusted with flour
       if (V.antlers) { q.line(15, 25, 19, 21.5, '#5a4a10'); q.line(18, 27, 22, 24.5, '#5a4a10'); for (const [x, y] of [[17, 21], [21, 25], [24, 28]]) q.px(x, y, '#2a2208'); } } };
   } },
-  zombie: { col: { skin: '#8aa070', cloth: '#5a5a7a', pants: '#5a4030', hair: '#3a3028', eye: '#ffffa0' }, build(P) {
-    const m = { skin: mat(P.skin, 5, { tex: 'rough' }), cloth: mat(P.cloth, 4, { tex: 'cloth' }), pants: mat(P.pants, 4, { tex: 'cloth' }), hair: mat(P.hair, 3), bone: mat('#e8e0c8', 3) };
+  zombie: { col: { skin: '#8aa070', cloth: '#5a5a7a', pants: '#5a4030', hair: '#3a3028', eye: '#ffffa0' }, build(P, V = {}) {
+    const m = { skin: mat(P.skin, 5, { tex: 'rough' }), cloth: mat(P.cloth, 4, { tex: 'cloth' }), pants: mat(P.pants, 4, { tex: 'cloth' }), hair: mat(P.hair, 3), bone: mat('#e8e0c8', 3), wood: mat('#7a4a22', 4, { tex: 'grain' }) };
     return { w: 34, h: 42, mats: m, parts: [
+      ...(V.stool ? [ell(16, 30.5, 10.5, 2.6, 'wood', { z: -9, d: 0.7 }), cap(8, 32, 6, 41, 1.1, 1.3, 'wood', { z: -9 }), cap(25, 32, 27, 41, 1.1, 1.3, 'wood', { z: -9 }), cap(7, 37, 26, 37, 0.8, 0.8, 'wood', { z: -9 })] : []),
       cap(14, 16, 22, 19, 1.8, 1.5, 'cloth', { z: -4 }), cap(22, 19, 28, 20, 1.5, 1.3, 'skin', { z: -4 }),
       cap(14, 27, 12, 33, 2.2, 1.9, 'pants', { z: -2 }), cap(12, 33, 12, 38.5, 1.8, 1.5, 'skin', { z: -2 }), ell(13, 39.5, 2.8, 1.3, 'skin', { z: -2, d: 0.5 }),
       poly([[11, 14], [20, 13], [22, 22], [21, 28], [11, 29], [9, 21]], 'cloth', { z: 0, bev: 2 }), cut(poly([[15, 26], [17, 22], [19, 27]], null)), poly([[10, 27], [22, 27], [21, 31], [11, 31]], 'pants', { z: 1, bev: 1.4 }),
       paint(ell(16.4, 25, 2, 2.2, 'skin')), cap(18, 29, 19.5, 34, 2.2, 1.9, 'pants', { z: 2 }), cap(19.5, 34, 19.5, 38.5, 1.8, 1.5, 'skin', { z: 2 }), ell(21, 39.5, 2.8, 1.3, 'skin', { z: 2, d: 0.5 }),
       ell(17, 8.5, 5.6, 6, 'skin', { z: 4, rot: 0.25 }), ell(20, 12, 3.3, 2.2, 'skin', { z: 5 }), ell(15, 4.5, 5, 2.8, 'hair', { z: 5, d: 0.6 }), cap(13, 5, 10, 12, 1.4, 0.6, 'hair', { z: 5 }),
       cap(16, 16, 24, 17, 2, 1.7, 'cloth', { z: 7 }), cap(24, 17, 30, 18.5, 1.6, 1.3, 'skin', { z: 7 }), ...[[33, 17], [33.5, 19], [32.5, 21]].map(([x, y]) => cap(30, 18.5, x, y, 0.6, 0.4, 'bone', { z: 8 })),
-    ], post(a) { a.rect(18, 7, 2, 2, '#1a1018'); a.px(19, 8, P.eye); a.px(22, 8, P.eye); a.px(22, 9, '#1a1018'); a.line(18, 13, 22, 12, '#2a1010'); fangs(a, [[19, 12], [21, 12]], '#d8d0b0'); a.px(14, 20, a.ramp('cloth', 0)); a.px(20, 18, a.ramp('cloth', 0)); } };
+    ], post(a) { a.rect(18, 7, 2, 2, '#1a1018'); a.px(19, 8, P.eye); a.px(22, 8, P.eye); a.px(22, 9, '#1a1018'); a.line(18, 13, 22, 12, '#2a1010'); fangs(a, [[19, 12], [21, 12]], '#d8d0b0'); a.px(14, 20, a.ramp('cloth', 0)); a.px(20, 18, a.ramp('cloth', 0));
+      if (V.stool) { a.rect(30, 16, 4, 6, '#e8a020'); a.rect(30, 15, 4, 2, '#fff8e0'); a.line(30, 16, 30, 21, '#ffe8a0'); a.px(34, 17, '#c8d8e0'); a.px(34, 18, '#c8d8e0'); a.px(34, 19, '#c8d8e0'); a.rect(30, 22, 4, 1, '#8a5a10'); } } };
   } },
   yeti: { col: { fur: '#e8eef8', chest: '#b8c8e0', face: '#6a9ad0', horn: '#c8b898', eye: '#ffd23a' }, build(P) {
     const m = { fur: mat(P.fur, 5, { tex: 'fur', ramp: { lo: 0.42 } }), chest: mat(P.chest, 4, { tex: 'fur' }), face: mat(P.face, 4), horn: mat(P.horn, 4), claw: mat('#2a3040', 3) };
@@ -815,7 +822,7 @@ Object.assign(MODELS, {
     ], post(a) { a.px(31, 12, '#ffffff'); a.px(32, 13, '#ff6a6a'); a.px(36, 6, a.ramp('stripe', 2)); a.px(33, 4, a.ramp('stripe', 2)); a.line(12, 10, 21, 4, a.ramp('wing', 1)); } };
   } },
   shroom: { col: { cap: '#d23a30', spot: '#f4ecd8', gill: '#c8a888', stem: '#e8d8b8', eye: '#2a1810' }, build(P, V = {}) {
-    const m = { cap: mat(P.cap, 5, { spec: V.knot ? '#fff4c8' : '#ffd8d0', specAt: 0.9 }), spot: mat(P.spot, 4), gill: mat(P.gill, 4, { tex: (x) => (x % 2 ? -0.12 : 0) }), stem: mat(P.stem, 5, { tex: 'rough' }) };
+    const m = { cap: mat(P.cap, 5, { spec: V.knot || V.optic ? '#fff4c8' : '#ffd8d0', specAt: 0.9 }), spot: mat(P.spot, 4), gill: mat(P.gill, 4, { tex: (x) => (x % 2 ? -0.12 : 0) }), stem: mat(P.stem, 5, { tex: 'rough' }) };
     return { w: 38, h: 40, mats: m, parts: [
       ell(19, 13, 16, 10.5, 'cap', { z: 4, d: 0.85 }), cut(poly([[0, 16.2], [38, 16.2], [38, 40], [0, 40]], null)),
       cap(12, 25, 7, 30, 1.8, 1.4, 'stem', { z: -3 }), ell(6.5, 30.5, 1.8, 1.6, 'stem', { z: -3 }),
@@ -826,6 +833,12 @@ Object.assign(MODELS, {
     ], post(a) {
       a.rect(21, 21, 2, 3, P.eye); a.rect(25, 21, 2, 3, P.eye); a.px(21, 21, '#ffffff'); a.px(25, 21, '#ffffff');
       a.line(22, 27, 25, 27, '#6a3020'); a.px(23, 28, '#6a3020'); a.px(19, 24, '#e89a8a'); a.px(28, 24, '#e89a8a');
+      if (V.optic) { // an upside-down spirit optic: amber glass body, a paper label, a steel pourer aimed at the floor, a drip of spirit
+        a.rect(13, 5, 13, 7, '#f0e4c0', '#3a2408'); a.rect(13, 5, 13, 1, '#a88a50'); a.rect(13, 11, 13, 1, '#a88a50');
+        for (const [x, w] of [[15, 5], [15, 3], [21, 3]]) a.rect(x, x === 15 && w === 3 ? 9 : 7, w, 1, '#5a3a14');
+        a.rect(19, 9, 5, 1, '#8a2a18'); a.line(9, 4, 8, 11, '#fff4d0'); a.px(10, 3, '#ffffff'); a.line(30, 7, 31, 11, '#ffe0a0');
+        a.rect(17, 17, 5, 3, '#c8c8d8', '#3a3a50'); a.rect(18, 17, 1, 3, '#ffffff'); a.rect(19, 20, 1, 1, '#6a6a80'); a.px(19, 21, '#ffd860'); a.px(19, 22, '#ffb830');
+      }
       if (V.knot) { // a twisted dough knot with garlic butter and parsley
         const dk = a.ramp('cap', 0), hi = a.ramp('cap', 5);
         for (let k = 0; k < 44; k++) { const x = 5 + k * 0.66, ph = k * 0.5, yA = 9 + Math.sin(ph) * 3.4, yB = 9 - Math.sin(ph) * 3.4; for (const [yy, c] of [[yA, Math.cos(ph) > 0 ? '#8a5420' : '#c88838'], [yB, Math.cos(ph) > 0 ? '#c88838' : '#8a5420']]) for (let d = 0; d < 2; d++) { const X = Math.round(x), Y = Math.round(yy) + d; if (a.mat(X, Y) === 'cap') a.px(X, Y, d ? dk : c); } }
@@ -1443,6 +1456,92 @@ Object.assign(ENEMY_VARIANTS, {
   ic_wisp: ['wisp', { flame: '#ffb040', core: '#fff4c0', eye: '#5a2a08' }],
   frozen_angler: ['bog_toad', { skin: '#3a6a9a', spot: '#1a3a6a', belly: '#c8e8f8', eye: '#ffe860', mouth: '#0a1a2a' }, { lure: true }],
 });
+// ---------- The Obsidian Ruins: black-glass recolours for the Last Orders cellar (see src/obsidian.js) ----------
+Object.assign(ENEMY_VARIANTS, {
+  ob_shard_imp: ['imp', { skin: '#2a2646', wing: '#4a4690', horn: '#ffb830', eye: '#ffd860', fire: '#ffa020' }],
+  ob_glass_hound: ['wolf', { fur: '#2c2850', mane: '#5a56a0', belly: '#8480c8', eye: '#ffb830', nose: '#ffd060' }],
+  ob_spirit_optic: ['shroom', { cap: '#8a5a14', spot: '#ffd890', gill: '#3a2408', stem: '#c8942c', eye: '#fff0b0' }, { optic: true }],
+  ob_ghost_regular: ['zombie', { skin: '#a8c4cc', cloth: '#6a7a90', pants: '#3a4258', hair: '#dce8ec', eye: '#ffd860' }, { stool: true }],
+  ob_bouncer_golem: ['golem', { rock: '#2c2a48', dark: '#12101e', glow: '#ffb030', moss: '#ffd860' }],
+  ob_last_orders_wraith: ['wraith', { cloak: '#3c3862', inner: '#08060e', eye: '#ffc040', hand: '#e8d8a0' }],
+  ob_pickled_egg: ['slime', { goo: '#e8d070', mouth: '#3a2a08', foam: '#fff4c0' }, { jar: true }],
+  ob_karaoke_banshee_x: ['banshee', { gown: '#3a3060', hair: '#ffd070', skin: '#c8c0e0', eye: '#ffb030' }],
+});
+// ---------- The Landlord of the Void (Obsidian Ruins boss): a colossal spectral publican behind a black-glass bar. A hand-pull for one arm, a brass
+// hand bell in the other fist, a bar towel on the shoulder, a glass eye, a clock-face halo stuck at 10:59 ----------
+MODELS.landlord = { big: true, col: { skin: '#a8bcc8', shirt: '#dce4ee', vest: '#2e3052', hair: '#eef0f4', brass: '#e0b038', glass: '#1a1828', amber: '#ffb830', wood: '#8a5a2c', clip: '#c43030', towel: '#ece4d0', eye: '#ffc848' }, build(P) {
+  const m = { skin: mat(P.skin, 5, { tex: 'rough', lift: 0.04 }), shirt: mat(P.shirt, 5, { tex: 'cloth', lift: 0.05 }), vest: mat(P.vest, 5, { tex: 'cloth', spec: '#9a9ac8', specAt: 0.95 }), hair: mat(P.hair, 5, { tex: 'fur', lift: 0.06 }),
+    brass: mat(P.brass, 5, { spec: '#fffbe0', specAt: 0.86, ramp: { hi: 0.8 } }), glass: mat(P.glass, 6, { spec: '#8a88c8', specAt: 0.82, lift: 0.04, ramp: { hi: 0.6, lo: 0.35 } }), amber: mat(P.amber, 5, { glow: true, lift: 0.04, nocrease: true }),
+    wood: mat(P.wood, 5, { tex: 'grain', spec: '#ffe0b0', specAt: 0.94 }), clip: mat(P.clip, 5, { spec: '#ffd0c0', specAt: 0.9 }), towel: mat(P.towel, 4, { tex: 'cloth' }), paper: mat('#f6efd8', 4, { lift: 0.1 }),
+    ghost: mat('#bcd0e0', 4, { lift: 0.24, ramp: { lo: 0.65, hi: 0.5 } }), steel: mat('#9aa0b4', 5, { spec: '#ffffff', ramp: { hi: 0.8 } }), foam: mat('#fff8e8', 3, { lift: 0.1 }) };
+  const rays = []; for (let k = 0; k < 20; k++) { const a = (k / 20) * Math.PI * 2, c = Math.cos(a), s = Math.sin(a), r1 = 15, r2 = k % 2 ? 18.5 : 21; rays.push(cap(64 + c * r1, 21 + s * r1, 64 + c * r2, 21 + s * r2, 1.7, 0.5, 'brass', { z: 8 })); }
+  return { w: 128, h: 116, mats: m, parts: [
+    // the halo: a sunburst of brass rays round a clock face
+    ...rays, ell(64, 21, 15, 15, 'brass', { z: 10, d: 0.5 }), ell(64, 21, 12, 12, 'paper', { z: 20, d: 0.2 }),
+    // the bell arm (viewer's right): sleeve rolled to the elbow, a raised fist and a big brass hand bell
+    cap(92, 66, 110, 76, 8, 7, 'shirt', { z: 14 }), cap(110, 76, 109, 34, 6.4, 5.4, 'shirt', { z: 10 }), cap(109, 34, 109, 28, 3, 3, 'skin', { z: 12 }), ell(109, 28, 6.4, 5.6, 'skin', { z: 22 }),
+    cap(109, 36, 109, 30, 2.2, 2.2, 'wood', { z: 19 }),
+    poly([[98, 58], [100, 49], [102, 40], [107, 33], [111, 33], [116, 40], [118, 49], [120, 58]], 'brass', { z: 19, bev: 2.2 }), ell(109, 58.5, 11.5, 2.8, 'brass', { z: 20, d: 0.6 }), ell(109, 62, 2.8, 2.8, 'brass', { z: 18 }),
+    // torso: waistcoat over a white shirt, a bow tie, brass buttons
+    poly([[34, 66], [46, 56], [82, 56], [94, 66], [100, 98], [28, 98]], 'vest', { z: 10, bev: 3.2 }), poly([[55, 57], [73, 57], [66, 88], [62, 88]], 'shirt', { z: 14, bev: 1.4 }),
+    poly([[56, 58], [64, 63], [72, 58], [72, 66], [64, 63], [56, 66]], 'clip', { z: 20, bev: 0.8 }), ell(64, 63, 2.4, 2.4, 'clip', { z: 22, d: 0.8 }),
+    ...[[64, 71], [64, 77], [64, 83]].map(([x, y]) => ell(x, y, 1.6, 1.6, 'brass', { z: 18 })),
+    // the bar towel over the shoulder, and a tail hanging down the chest
+    cap(88, 56, 94, 82, 5.6, 5.4, 'towel', { z: 24 }), cap(86, 56, 46, 56, 4.6, 4.6, 'towel', { z: 22 }), poly([[88, 60], [95, 60], [95, 90], [91, 87], [88, 90]], 'towel', { z: 26, bev: 1 }),
+    // the pump arm (viewer's left): a sleeve, a fist round the shaft of a tall hand-pull with a pump clip on top
+    cap(40, 66, 26, 84, 8, 7, 'shirt', { z: 14 }), cap(26, 84, 21, 86, 6.5, 6.4, 'shirt', { z: 14 }),
+    cap(20, 93, 17, 30, 3.4, 2.6, 'wood', { z: 22 }), cap(20, 90, 19, 75, 4.6, 4.6, 'brass', { z: 23 }), cap(18, 36, 17, 30, 3.4, 3.4, 'brass', { z: 23 }),
+    ell(20, 86, 6.4, 6, 'skin', { z: 28 }), ell(16, 22, 10.6, 12, 'brass', { z: 24, d: 0.5 }), ell(16, 22, 8.4, 10, 'clip', { z: 28, d: 0.5 }), ell(16, 6, 3, 3, 'brass', { z: 25 }),
+    // head: a bald dome, white mutton chops, bushy brows, a nose like a doorknob, a great handlebar moustache
+    cap(64, 52, 64, 60, 6, 7, 'skin', { z: 20 }), ell(50, 46, 3.2, 4.4, 'skin', { z: 28 }), ell(78, 46, 3.2, 4.4, 'skin', { z: 28 }),
+    ell(64, 44, 14.5, 17, 'skin', { z: 30, d: 0.9 }), ell(52, 38, 4.4, 8, 'hair', { z: 33, d: 0.6 }), ell(76, 38, 4.4, 8, 'hair', { z: 33, d: 0.6 }), ell(51, 51, 3.8, 8, 'hair', { z: 34, d: 0.6 }), ell(77, 51, 3.8, 8, 'hair', { z: 34, d: 0.6 }),
+    ell(64, 49, 4.6, 5.4, 'skin', { z: 36, d: 0.9 }),
+    poly([[49, 38], [58, 34], [63, 40], [58, 41]], 'hair', { z: 38, bev: 1 }), poly([[79, 38], [70, 34], [65, 40], [70, 41]], 'hair', { z: 38, bev: 1 }),
+    cap(64, 55, 54, 56, 3.2, 2.4, 'hair', { z: 40 }), cap(64, 55, 74, 56, 3.2, 2.4, 'hair', { z: 40 }), cap(54, 56, 47, 52, 2.4, 1.2, 'hair', { z: 40 }), cap(74, 56, 81, 52, 2.4, 1.2, 'hair', { z: 40 }),
+    ell(46, 50.5, 2, 2, 'hair', { z: 41 }), ell(82, 50.5, 2, 2, 'hair', { z: 41 }),
+    ell(64, 62, 8, 5, 'skin', { z: 30 }),
+    // the bar: a long counter of black volcanic glass with an amber glow in its cracks, a brass foot rail, pints standing on it
+    poly([[0, 94], [128, 94], [128, 116], [0, 116]], 'glass', { z: 50, bev: 2.6 }), poly([[0, 88], [128, 88], [124, 95], [4, 95]], 'glass', { z: 56, bev: 1.8, tilt: [0, -0.3] }),
+    cap(6, 109, 122, 109, 1.8, 1.8, 'brass', { z: 58 }),
+    poly([[38, 74], [52, 74], [50, 90], [40, 90]], 'steel', { z: 54, bev: 1 }), poly([[39, 77], [51, 77], [49, 90], [41, 90]], 'amber', { z: 55, bev: 0.6 }), poly([[38, 71], [52, 71], [52, 77], [38, 77]], 'foam', { z: 56, bev: 1 }),
+    poly([[84, 76], [96, 76], [94, 90], [86, 90]], 'steel', { z: 54, bev: 1 }), poly([[85, 79], [95, 79], [93, 90], [87, 90]], 'amber', { z: 55, bev: 0.6 }), poly([[84, 73], [96, 73], [96, 79], [84, 79]], 'foam', { z: 56, bev: 1 }),
+    ell(26, 96, 11, 2.2, 'amber', { z: 60, d: 0.3 }), ell(106, 98, 9, 2, 'amber', { z: 60, d: 0.3 }),
+  ], post(a) {
+    const br = (i) => a.ramp('brass', i), sk = (i) => a.ramp('skin', i), gl = (i) => a.ramp('glass', i);
+    // CLOCK: twelve ticks, cracked glass, the hands at 10:59
+    const cx = 64, cy = 21;
+    for (let h = 0; h < 12; h++) { const an = (h / 12) * Math.PI * 2, r = h % 3 ? 10 : 9.4, X = Math.round(cx + Math.sin(an) * r), Y = Math.round(cy - Math.cos(an) * r); a.px(X, Y, '#2a1830'); if (h % 3 === 0) { a.px(X + Math.round(Math.sin(an) * 0.0), Y, '#2a1830'); a.px(X + (h % 6 === 0 ? 1 : 0), Y + (h % 6 ? 1 : 0), '#2a1830'); } }
+    const hand = (deg, len, col) => { const an = (deg * Math.PI) / 180; a.line(cx, cy, Math.round(cx + Math.sin(an) * len), Math.round(cy - Math.cos(an) * len), col); };
+    hand(329.5, 6, '#2a1830'); hand(354, 9.5, '#2a1830'); a.px(cx, cy, '#c43030'); a.px(cx + 1, cy, '#c43030'); a.px(cx, cy + 1, '#7a1818');
+    a.line(72, 11, 75, 16, '#3a2a40'); a.line(75, 16, 72, 20, '#3a2a40'); a.line(72, 20, 74, 26, '#3a2a40'); a.line(75, 16, 69, 27, '#3a2a40'); a.px(71, 11, '#ffffff'); a.px(76, 16, '#ffffff');
+    for (const [x, y] of [[50, 13], [78, 12], [50, 27], [78, 28]]) a.px(x, y, br(5));
+    // FACE: a bright amber eye, a big glass eye under the heavy brow
+    for (const [ex, ey] of [[57, 42], [72, 42]]) for (let y = ey - 3; y <= ey + 3; y++) for (let x = ex - 4; x <= ex + 4; x++) if (((x - ex) / 4.4) ** 2 + ((y - ey) / 3.2) ** 2 <= 1) a.px(x, y, '#241830');
+    for (let y = 40; y <= 43; y++) for (let x = 54; x <= 60; x++) a.px(x, y, y === 40 ? '#3a2840' : '#ffc848'); a.rect(56, 41, 3, 2, '#ffe898'); a.rect(57, 41, 1, 2, '#2a1420'); a.px(54, 40, '#241830'); a.px(60, 40, '#241830'); // a squint
+    for (let y = 37; y <= 47; y++) for (let x = 67; x <= 77; x++) { const d = Math.hypot(x - 72, y - 42), c = d < 1.6 ? '#1a0e18' : d < 3.2 ? '#ffe8a0' : d < 4.6 ? '#ffb830' : d < 5.4 ? '#a06a14' : null; if (c) a.px(x, y, c); } // the glass eye
+    a.px(70, 40, '#ffffff'); a.px(71, 40, '#ffffff'); a.px(70, 41, '#ffffff'); a.px(74, 44, '#fff4c0');
+    a.line(52, 36, 62, 38, '#e8eaf0'); a.line(53, 37, 62, 39, '#c8ccd8'); a.line(76, 34, 66, 38, '#e8eaf0'); a.line(75, 35, 66, 39, '#c8ccd8'); // furrowed brows
+    a.line(62, 52, 62, 54, sk(1)); a.line(66, 52, 66, 54, sk(1)); a.px(63, 53, sk(5));
+    // the shouting mouth under the moustache: TIME, GENTLEMEN
+    for (let y = 58; y <= 66; y++) for (let x = 55; x <= 73; x++) { const q = ((x - 64) / 9) ** 2 + ((y - 62) / 4.4) ** 2; if (q > 1) continue; a.px(x, y, y > 63 ? '#c05a4a' : '#2a0a10'); }
+    for (let x = 57; x <= 71; x += 2) { a.px(x, 58 + (Math.abs(x - 64) > 5 ? 1 : 0), '#f4f0e0'); a.px(x + 1, 58 + (Math.abs(x - 64) > 5 ? 1 : 0), '#f4f0e0'); }
+    for (const [x, y] of [[48, 55], [80, 55]]) a.px(x, y, '#ffffff'); a.px(61, 57, '#ffffff'); a.px(67, 57, '#d8dce8');
+    // waistcoat details: pocket watch chain, check lines
+    a.line(46, 70, 52, 76, br(5)); a.line(52, 76, 58, 72, br(4)); a.px(58, 72, br(6)); a.px(59, 73, br(2));
+    for (let y = 62; y < 94; y += 4) for (let x = 32; x < 54; x++) if (a.mat(x, y) === 'vest' && (x % 3)) a.px(x, y, a.ramp('vest', 1));
+    // the towel's stripes
+    for (const y of [60, 66, 72, 78, 84]) for (let x = 88; x <= 96; x++) if (a.mat(x, y) === 'towel') a.px(x, y, '#3a6aa8'); for (let x = 50; x < 84; x += 6) for (let y = 52; y <= 59; y++) if (a.mat(x, y) === 'towel') a.px(x, y, '#3a6aa8');
+    // the pump clip: ALE badge, rim lights; a wooden grip with turned rings
+    for (let x = 12; x <= 20; x++) a.px(x, 21, '#fff0e0'); a.px(13, 17, '#fff0e0'); a.px(16, 17, '#fff0e0'); a.px(19, 17, '#fff0e0'); a.rect(13, 24, 7, 1, '#fff0e0'); a.px(10, 14, '#ffffff'); a.px(11, 13, '#ffffff');
+    for (const y of [38, 52, 66]) a.rect(15, y, 5, 1, a.ramp('wood', 0)); for (const y of [44, 58]) a.rect(15, y, 4, 1, a.ramp('wood', 5));
+    // the bell: a lip, engraved band, glints
+    a.line(100, 52, 118, 52, br(1)); a.line(101, 46, 117, 46, br(4)); a.px(104, 40, '#ffffff'); a.px(105, 41, '#fff4c0'); a.px(103, 48, '#ffffff'); a.px(112, 36, br(6));
+    // glowing amber cracks in the black-glass bar and a spilt pint
+    for (const [x0, y0, x1, y1] of [[8, 98, 18, 104], [18, 104, 15, 112], [44, 97, 52, 106], [52, 106, 60, 104], [78, 98, 86, 108], [100, 100, 110, 106], [110, 106, 118, 102], [30, 112, 38, 108]]) { a.line(x0, y0, x1, y1, '#ffb830'); a.px(x0, y0, '#fff0a0'); }
+    for (const [x, y] of [[14, 91], [60, 90], [72, 91], [96, 92], [118, 91]]) a.px(x, y, '#ffd880');
+    a.px(42, 76, '#ffffff'); a.px(42, 80, '#ffe8a0'); a.px(87, 78, '#ffffff'); a.px(88, 82, '#ffe8a0');
+      } };
+} };
 const ECACHE = new Map();
 export function enemyArt(id) {
   if (ECACHE.has(id)) return ECACHE.get(id);
@@ -1459,7 +1558,7 @@ export const enemyIds = () => [...Object.keys(MODELS), ...Object.keys(ENEMY_VARI
 // ===== Painted backdrops =====
 // =====================================================================
 export const BW = 256, BH = 176;
-export const BACKDROPS = ['world', 'desert', 'forest', 'snow', 'swamp', 'dungeon', 'crypt', 'spire', 'storm', 'ruins', 'boss', 'crypt:boss', 'spire:boss', 'storm:boss', 'ruins:boss', 'cellar', 'cellar:boss', 'brewery', 'brewery:boss', 'wreck', 'wreck:boss', 'windmill', 'windmill:boss', 'embers', 'pizzaoven', 'pizzaoven:boss'];
+export const BACKDROPS = ['world', 'desert', 'forest', 'snow', 'swamp', 'dungeon', 'crypt', 'spire', 'storm', 'ruins', 'boss', 'crypt:boss', 'spire:boss', 'storm:boss', 'ruins:boss', 'cellar', 'cellar:boss', 'brewery', 'brewery:boss', 'wreck', 'wreck:boss', 'windmill', 'windmill:boss', 'embers', 'pizzaoven', 'pizzaoven:boss', 'obsidian', 'obsidian:boss'];
 function painter(w, h, seed) {
   const img = new Uint8ClampedArray(w * h * 4), r = rng(seed);
   const P = {
@@ -2013,4 +2112,80 @@ BD_FNS.pizzaoven = function (P, hy, L, boss, info) {
   for (let y = 0; y < 28; y++) for (let x = 218; x < 256; x++) { const q = ((x - 242) / 19) ** 2 + ((y - 14) / 15) ** 2; if (q > 1 || x > 255) continue; P.set(x, y + 6, P.pick(peel, clamp(0.64 - q * 0.3 - (x - 242) / 90 + (hash(x >> 2, y, 7) - 0.5) * 0.12 + (q > 0.7 ? -0.2 : 0), 0, 1), x, y)); }
   scatter(P, floor, 24, 93, (x, y, s, k) => { if (k < 0.5) rock(P, x, y, s * 0.55, ['#140a08', '#322018', '#54382a', '#78523c'], x); else if (s > 0.3) { const E2 = RG(['#6a1008', '#e85a10', '#ffd25a']); P.set(x, y, E2[1]); P.set(x + 1, y, E2[2]); } }); // ash chunks and live coals
   shadowBand(P, floor, floor + 12, 0.3); vignette(P, 0.42);
+};
+
+// 'obsidian': the cellar-bar of The Last Orders, the pub that stood here before the world was made, smashed into black volcanic glass.
+// Faceted glass walls laced with amber cracks, a rail of upside-down spirit optics, glass-fused casks, a cracked clock stuck at 10:59,
+// toppled bar stools and lamplight skating across a polished black floor. The boss arena adds a huge shattered bar-back and sign bracket.
+BD_FNS.obsidian = function (P, hy, L, boss, info) {
+  const GL = RG(['#05040a', '#0c0a18', '#161230', '#221c46', '#32296a', '#4c408e', '#7468b8']), AM = RG(['#4a1c04', '#a8480a', '#ee8a1c', '#ffc84a', '#fff0a8']), floor = hy + 12;
+  // the wall: big conchoidal facets of black glass, a few edges glowing amber
+  const cs = 26, vor = (x, y, sd) => { const gx = Math.floor(x / cs), gy = Math.floor(y / cs); let d1 = 99, d2 = 99, id = 0; for (let i = -1; i <= 1; i++) for (let j = -1; j <= 1; j++) { const cx = gx + i, cy = gy + j, fx = (cx + hash(cx, cy, sd)) * cs, fy = (cy + hash(cx, cy, sd + 1)) * cs * 0.8, d = Math.hypot(x - fx, (y - fy) * 1.25); if (d < d1) { d2 = d1; d1 = d; id = hash(cx, cy, sd + 2); } else if (d < d2) d2 = d; } return [d2 - d1, id]; };
+  for (let y = 0; y < floor; y++) for (let x = 0; x < P.w; x++) {
+    const [e, id] = vor(x, y, 301), streak = ((x * 0.6 - y * 0.9 + id * 80) % 34 + 34) % 34 < 2.2 ? 0.2 : 0, k = (y / floor) * 0.14 + (Math.abs(x - 128) / 200) * -0.08;
+    let t = 0.2 + id * 0.3 + k + streak + (fbm(x / 9, y / 9, 311) - 0.5) * 0.14 - (e < 1.4 ? 0.14 : e < 2.6 ? -0.06 : 0);
+    if (e < 0.9 && hash(Math.floor(x / 14), Math.floor(y / 14), 313) < 0.2) { P.set(x, y, P.pick(AM, 0.5 + hash(x, y, 5) * 0.3, x, y)); continue; }
+    P.set(x, y, P.pick(GL, clamp(t, 0, 1), x, y));
+  }
+  // timber lintel across the top: black, split, grain showing through
+  for (let y = 0; y < 9; y++) for (let x = 0; x < P.w; x++) P.set(x, y, P.pick(RG(WOODC), clamp(0.18 + y * 0.025 + (hash(x >> 2, y, 3) - 0.5) * 0.16 - (y > 6 ? 0.1 : 0), 0, 1), x, y));
+  for (let x = 0; x < P.w; x++) { P.set(x, 9, hex2rgb('#0a0604')); if (x % 31 < 2) for (let y = 0; y < 9; y++) P.set(x, y, hex2rgb('#0e0804')); }
+  // the optic rail: spirit bottles hang neck-down on steel-capped measures, some smashed
+  const rail = (x0, x1, y0, sd) => {
+    glow(P, (x0 + x1) / 2, y0 + 12, (x1 - x0) / 2 + 10, '#ffa43a', 0.45);
+    for (let x = x0; x <= x1; x++) { P.set(x, y0, hex2rgb('#b8944a')); P.set(x, y0 + 1, hex2rgb('#6a4e1a')); P.set(x, y0 - 1, hex2rgb('#e8cc78')); }
+    const BC = [['#3a1c06', '#8a4a10', '#d88a24', '#ffd070'], ['#06240e', '#16602a', '#3aa050', '#a0f0a0'], ['#0a1c34', '#1c4a80', '#4a88c8', '#b8e0ff'], ['#2a0a0a', '#7a1a14', '#c8402c', '#ffa890'], ['#2a2a20', '#6a6a58', '#b8b8a0', '#f0f0e0']];
+    let i = 0; for (let x = x0 + 5; x < x1 - 2; x += 10, i++) {
+      const c = RG(BC[Math.floor(hash(i, sd, 11) * BC.length)]), broken = hash(i, sd, 12) < 0.3, bh = 13 + Math.floor(hash(i, sd, 13) * 4);
+      for (let y = y0 + 2; y < y0 + 2 + bh; y++) { const t = (y - y0 - 2) / bh, hw = t < 0.72 ? 3.4 : 3.4 - (t - 0.72) * 9; for (let xx = Math.floor(x - hw); xx <= x + hw; xx++) { const u = (xx - x) / Math.max(1, hw); if (broken && ((xx - x) * 0.6 + (y - y0) * 0.4 + 3 > 4.4 + hash(xx, y, 14) * 2 && t > 0.3)) continue; P.set(xx, y, P.pick(c, clamp(0.55 - u * 0.4 + (u > 0.55 ? 0.3 : 0) + (hash(xx, y, 15) - 0.5) * 0.1, 0, 1), xx, y)); } }
+      P.set(x - 2, y0 + 5, c[3]); P.set(x - 2, y0 + 6, c[3]); P.set(x - 2, y0 + 7, c[2]);
+      const ny = y0 + 2 + bh; for (let y = ny; y < ny + 3; y++) for (let xx = x - 1; xx <= x + 1; xx++) P.set(xx, y, hex2rgb(y === ny ? '#e8e8f4' : xx < x ? '#9a9ab0' : '#5a5a70')); // steel optic cap
+      for (let y = ny + 3; y < ny + 10; y++) { P.set(x - 2, y, hex2rgb('#a8c8d8')); P.set(x + 2, y, hex2rgb('#4a6a80')); if (y > ny + 5 && !broken) { P.set(x - 1, y, c[2]); P.set(x, y, c[1]); P.set(x + 1, y, c[2]); } else if (broken && y > ny + 7) P.set(x, y, hex2rgb('#c8e8f4')); } // measure
+      if (broken) { for (const [dx, dy] of [[-4, 2], [3, 4], [-1, 11], [4, 12]]) P.set(x + dx, ny + dy, hex2rgb('#c8e8ff')); }
+    }
+  };
+  if (boss) { rail(12, 100, 20, 21); }
+  else { rail(10, 104, 22, 21); rail(10, 104, 51, 22); }
+  // the cracked clock, stuck at 10:59: a brass ring and a pale face fused into the glass, a spider crack across it
+  const clock = (cx, cy, r) => {
+    glow(P, cx, cy, r + 14, '#ffb040', 0.3);
+    for (let y = Math.floor(cy - r - 2); y <= cy + r + 2; y++) for (let x = Math.floor(cx - r - 2); x <= cx + r + 2; x++) { const d = Math.hypot(x + 0.5 - cx, y + 0.5 - cy) / r; if (d > 1.12) continue;
+      if (d > 0.9) P.set(x, y, P.pick(RG(['#4a3208', '#9a7418', '#e0b83c', '#fff0a8']), clamp(0.6 - (x - cx + y - cy) / (r * 3), 0.1, 1), x, y));
+      else P.set(x, y, P.pick(RG(['#6a6048', '#a89c78', '#d8cca0', '#f4ecc8']), clamp(0.72 - d * 0.25 - (x - cx) / (r * 5) + (hash(x, y, 4) - 0.5) * 0.1, 0, 1), x, y)); }
+    for (let h = 0; h < 12; h++) { const an = (h / 12) * Math.PI * 2, rr = r * 0.78; P.set(Math.round(cx + Math.sin(an) * rr), Math.round(cy - Math.cos(an) * rr), hex2rgb('#2a1c10')); if (h % 3 === 0) P.set(Math.round(cx + Math.sin(an) * rr * 0.9), Math.round(cy - Math.cos(an) * rr * 0.9), hex2rgb('#2a1c10')); }
+    const hd = (deg, len, w) => { const an = deg * Math.PI / 180; for (let k = 0; k <= len; k++) for (let j = 0; j < w; j++) P.set(Math.round(cx + Math.sin(an) * k) + j, Math.round(cy - Math.cos(an) * k), hex2rgb('#1c120a')); };
+    hd(329.5, r * 0.5, 2); hd(354, r * 0.75, 1);
+    for (const [dx, dy] of [[-0.2, -0.9], [0.8, -0.3], [0.1, 0.9], [-0.9, 0.2], [0.6, 0.8]]) { const n = Math.ceil(r * 1.1); for (let k = 0; k < n; k++) { const x = Math.round(cx + dx * k + Math.sin(k * 1.3) * 1.2), y = Math.round(cy + dy * k + Math.cos(k * 1.7) * 1); if (Math.hypot(x - cx, y - cy) < r * 0.92) P.set(x, y, hex2rgb(k % 3 ? '#3a2a14' : '#fff8d8')); } }
+  };
+  clock(boss ? 196 : 128, boss ? 36 : 34, boss ? 19 : 14);
+  // glass-fused casks stacked against the right wall
+  for (const [cx, cy, r] of boss ? [[236, hy + 6, 10], [218, hy + 6, 9]] : [[200, hy + 4, 10], [222, hy + 4, 10], [211, hy - 15, 9], [240, hy + 4, 9]]) {
+    barrelEnd(P, cx, cy, r, cx + cy);
+    for (let y = Math.floor(cy - r); y <= cy + r; y++) for (let x = Math.floor(cx - r); x <= cx + r; x++) if (Math.hypot(x - cx, y - cy) < r && (x - cx) + (y - cy) * 0.5 + (fbm(x / 3, y / 3, 35) - 0.5) * r * 0.9 > r * 0.1) P.set(x, y, P.pick(GL, clamp(0.3 + (y - cy) / (r * 3) - (x - cx) / (r * 5) + (hash(x, y, 34) - 0.5) * 0.08, 0, 1), x, y)); // black glass slumped over the staves
+  }
+  if (boss) { // the shattered bar-back: a tall frame with a mirror in shards, and a pub-sign bracket with a bell on a chain
+    const fx0 = 112, fx1 = 168, fy0 = 14, fy1 = hy + 8;
+    for (let y = fy0; y <= fy1; y++) for (let x = fx0; x <= fx1; x++) { const edge = x < fx0 + 4 || x > fx1 - 4 || y < fy0 + 4 || y > fy1 - 4; if (edge) { P.set(x, y, P.pick(RG(WOODC), clamp(0.5 - (x - fx0) / 150 + (hash(x, y, 51) - 0.5) * 0.2, 0, 1), x, y)); continue; }
+      const sh = vor(x * 1.6, y * 1.6, 321), t = clamp(0.3 + sh[1] * 0.45 + (sh[0] < 1.8 ? 0.25 : 0), 0, 1), gone = hash(Math.floor(sh[1] * 1000), 1, 7) < 0.4; P.set(x, y, gone ? P.pick(GL, 0.08 + hash(x, y, 2) * 0.1, x, y) : P.pick(RG(['#0a0e18', '#1a2838', '#3a5a74', '#78a0c0', '#c8e8f8']), t * 0.8, x, y, 3)); }
+    glow(P, 140, 40, 40, '#ffb040', 0.2);
+    for (let y = 0; y < 30; y++) P.set(236, y, hex2rgb(y % 3 ? '#8a8aa0' : '#4a4a60')); // chain
+    for (let y = 30; y < 50; y++) { const hw = 2 + (y - 30) * 0.35; for (let x = Math.floor(236 - hw); x <= 236 + hw; x++) P.set(x, y, P.pick(RG(['#4a3208', '#9a7418', '#e0b83c', '#fff0a8']), clamp(0.6 - (x - 236) / (hw * 3), 0, 1), x, y)); }
+    for (let x = 226; x <= 246; x++) P.set(x, 50, hex2rgb('#6a4e1a')); P.set(236, 52, hex2rgb('#ffd860'));
+  }
+  for (const [lx, ly] of boss ? [[104, 52], [174, 52]] : [[116, 62], [180, 36]]) { torch(P, lx, ly, '#ffb04a', L); glow(P, lx, ly + 6, 34, '#ff9a3a', 0.4); }
+  // the floor: polished black glass flags, amber cracks, lamplight skating across it
+  const vf = (X, Z) => { const gx = Math.floor(X / 2.4), gz = Math.floor(Z / 2.4); let d1 = 9, d2 = 9; for (let i = -1; i <= 1; i++) for (let j = -1; j <= 1; j++) { const cx = gx + i, cz = gz + j, fx = (cx + hash(cx, cz, 85)) * 2.4, fz = (cz + hash(cx, cz, 86)) * 2.4, d = Math.hypot(X - fx, (Z - fz) * 1.1); if (d < d1) { d2 = d1; d1 = d; } else if (d < d2) d2 = d; } return d2 - d1; };
+  ground(P, floor, ['#05040a', '#0c0a16', '#161230', '#221c46', '#32296a', '#ee8a1c', '#ffd060'], (X, Z) => { const e = vf(X, Z), w = 0.05 + Z * 0.012, row = Math.floor(Z * 0.5), seam = (((Z * 0.5) % 1) + 1) % 1 < 0.05 || (((X * 0.3 + row * 0.5) % 1) + 1) % 1 < 0.04;
+    if (Z < 7 && e < w * 0.5 && hash(Math.floor(X * 1.3), Math.floor(Z * 1.3), 9) < 0.4) return 0.84;
+    return 0.16 + fbm(X * 0.8, Z * 1.1, 91, 3) * 0.22 + (seam ? 0.1 : 0) + (Z < 9 && e < w * 2 ? 0.05 : 0); }, { haze: '#241a3a', hazeMax: 0.4 });
+  for (let y = floor; y < P.h; y++) for (let x = 0; x < P.w; x++) { const d = Math.hypot((x - 128) / 150, (y - floor) / 70); if (bayer(x, y) < (1 - d) * 0.24) P.blend(x, y, [255, 160, 70], 0.2); } // warm light pooling
+  for (const lx of boss ? [104, 174] : [116, 180]) for (let y = floor; y < P.h; y += 1) { const k = (y - floor) / (P.h - floor); for (let x = lx - 3 - Math.floor(k * 6); x <= lx + 3 + Math.floor(k * 6); x++) if (bayer(x, y) < 0.34 - k * 0.22) P.blend(x, y, [255, 190, 90], 0.3); } // lamp reflections stretching down the glass
+  for (const [cx, cy, rw, rh] of boss ? [[128, 128, 60, 10], [46, 154, 30, 6], [214, 162, 26, 5]] : [[150, 140, 30, 6], [60, 152, 20, 4]]) pool(P, cx, cy, rw, rh, ['#14080a', '#4a2406', '#b8701c', '#ffc050'], '#ffe8a0'); // spilt spirits that never dried
+  // an upright cask in the foreground, black glass spikes at the corners
+  barrelUp(P, 244, hy + 70, 24, 36, 5);
+  const spike = (x, y, h, w, lean) => { for (let j = 0; j < h; j++) { const t = j / h, hw = w * (1 - t) + 0.4, cx = x + lean * t * h * 0.2; for (let xx = Math.floor(cx - hw); xx <= cx + hw; xx++) P.set(xx, y - j, P.pick(GL, clamp(0.42 + (xx - cx) / (hw * 2.2) * 0.55 + 0.3 * (1 - t) - 0.12 + (hash(xx, j, 61) - 0.5) * 0.1, 0, 1), xx, y - j)); P.set(Math.floor(cx - hw), y - j, GL[6]); } };
+  for (const [x, h, w, l] of [[6, 36, 7, 1], [18, 22, 5, -1], [30, 14, 4, 1], [250, 26, 6, -1], [238, 16, 4, 1]]) spike(x, hy + 92 + (h > 20 ? 4 : 0), h, w, l);
+  scatter(P, floor, 38, 97, (x, y, s, k) => { if (k < 0.3) rock(P, x, y, s * 0.5, ['#05040a', '#161230', '#32296a', '#4c408e'], x); else if (k < 0.7) { P.set(x, y, hex2rgb('#c8e8ff')); P.set(x + 1, y - 1, hex2rgb('#ffffff')); if (s > 0.4) P.set(x - 1, y, hex2rgb('#7aa0c8')); } else { P.set(x, y, AM[2]); P.set(x + 1, y, AM[3]); } }); // shards of glass, embers of lamplight
+  cobweb(P, 0, 10, 1, 22); cobweb(P, P.w - 1, 10, -1, 18);
+  shadowBand(P, floor, floor + 12, 0.3); vignette(P, 0.45);
 };
