@@ -880,17 +880,56 @@ ACT.mapscreen = () => {
   const places = (m.places || []).filter(([x, y]) => G.flags.seen[G.map]?.[y]?.[x] === '1');
   show(`<h2>🗺 ${esc(m.name)}</h2><canvas id="bigmap" width="${W * sc}" height="${H * sc}" class="px framed" style="max-width:${W * sc + 8}px;margin:0 auto"></canvas>
   <div class="dim">${G.map === 'world' ? 'The blinking frame is your party. Dark areas are still unexplored.' : 'White blinking square = you · gold = exits · red = the boss · tan = unopened chests (once seen).'} Press <b>N</b> on the map to toggle the minimap.</div>
-  ${places.length ? `<h3>Discovered</h3><div>${places.map((p) => `<span class="chip tag">${ic('pin')}${esc(p[2])}</span>`).join('')}</div>` : ''}<div class="foot">${btn('menu', 'Back', '', '', 'primary')}</div>`);
+  ${places.length && innerHeight > innerWidth ? `<h3>Discovered</h3><div>${places.map((p) => `<span class="chip tag">${ic('pin')}${esc(p[2])}</span>`).join('')}</div>` : ''}<div class="foot" style="position:sticky;bottom:0;padding-top:6px">${btn('menu', 'Back', '', '', 'primary')}</div>`);
   const c2 = $('#bigmap').getContext('2d'); c2.imageSmoothingEnabled = false;
   const art = G.map === 'world' && TR.mapImage ? TR.mapImage(m) : null, seen = G.flags.seen[G.map] || [];
+  let layer = null, layerK = 0; // parchment furniture (compass, cartouche, name plaques) on its own canvas, rebuilt when the on-screen scale changes so text stays about 8 css px
+  const furniture = () => {
+    const cvs = $('#bigmap'), k = Math.max(0.2, (cvs.clientWidth || W * sc) / (W * sc)); if (layer && Math.abs(k - layerK) < 0.01) return layer;
+    layerK = k; const u = 1 / k, cw = W * sc, ch = H * sc; layer = document.createElement('canvas'); layer.width = cw; layer.height = ch;
+    const x = layer.getContext('2d'); x.imageSmoothingEnabled = false; x.textBaseline = 'middle'; x.textAlign = 'center';
+    const FONT = '"Press Start 2P", ui-monospace, Menlo, monospace', ink = '#3a2410', R = Math.round(26 * u);
+    const px = (v) => Math.round(v);
+    // compass rose, top right
+    const ccx = cw - R - Math.round(8 * u), ccy = R + Math.round(8 * u);
+    x.fillStyle = 'rgba(236,216,168,.9)'; x.strokeStyle = ink; x.lineWidth = Math.max(1, u); x.beginPath(); x.arc(ccx, ccy, R, 0, 7); x.fill(); x.stroke();
+    x.beginPath(); x.arc(ccx, ccy, R * 0.8, 0, 7); x.stroke();
+    const star = (len, w, col, ang) => { x.fillStyle = col; x.beginPath(); x.moveTo(ccx + Math.sin(ang) * len, ccy - Math.cos(ang) * len); x.lineTo(ccx + Math.cos(ang) * w, ccy + Math.sin(ang) * w); x.lineTo(ccx - Math.sin(ang) * len * 0.3, ccy + Math.cos(ang) * len * 0.3); x.lineTo(ccx - Math.cos(ang) * w, ccy - Math.sin(ang) * w); x.closePath(); x.fill(); x.stroke(); };
+    for (let q = 0; q < 4; q++) star(R * 0.62, R * 0.12, q === 0 ? '#c43a22' : '#f4ead0', q * Math.PI / 2 + (q ? 0 : 0));
+    for (let q = 0; q < 4; q++) star(R * 0.38, R * 0.08, '#8a6a3a', Math.PI / 4 + q * Math.PI / 2);
+    x.fillStyle = ink; x.font = `${px(7 * u)}px ${FONT}`; x.fillText('N', ccx, ccy - R - 4 * u + 0); 
+    // cartouche, bottom left
+    const f = px(6.5 * u), cx0 = Math.round(6 * u), pw = Math.round(112 * u), ph = Math.round(26 * u), cy0 = ch - ph - Math.round(6 * u);
+    x.fillStyle = 'rgba(236,216,168,.94)'; x.fillRect(cx0, cy0, pw, ph); x.strokeStyle = ink; x.lineWidth = Math.max(1, u); x.strokeRect(cx0 + 0.5, cy0 + 0.5, pw - 1, ph - 1); x.strokeRect(cx0 + 3 * u, cy0 + 3 * u, pw - 6 * u, ph - 6 * u);
+    x.fillStyle = ink; x.font = `${f}px ${FONT}`; x.fillText('THE REALM OF', cx0 + pw / 2, cy0 + ph * 0.36); x.fillText('GREENMARCH', cx0 + pw / 2, cy0 + ph * 0.68);
+    // name plaques for every discovered place, nudged apart
+    if (!art) return layer;
+    const fs = px(7 * u), padx = Math.round(3 * u), hgt = fs + Math.round(5 * u); x.font = `${fs}px ${FONT}`;
+    const taken = [[ccx - R, ccy - R, R * 2, R * 2 + 8 * u], [cx0, cy0, pw, ph]], hit = (r) => taken.filter((t) => r[0] < t[0] + t[2] && r[0] + r[2] > t[0] && r[1] < t[1] + t[3] && r[1] + r[3] > t[1]).length;
+    const MAJOR = /^(Haven Town|Frostholm|Mirewood|Hopsend|Kilnhaven|Ashen Cavern|Sunken Crypt|Frost Spire|Storm Cavern|Sunscar Ruins|Mild Pyramid|Great Brewery|The Pizza Oven|Salty Sue Wreck)$/;
+    const list = places.filter((q) => k >= 0.6 || MAJOR.test(q[2])).map(([gx, gy, name]) => ({ name, x: (gx + 0.5) * sc, y: (gy + 0.5) * sc, w: Math.ceil(x.measureText(name.toUpperCase()).width) + padx * 2 })).sort((a, b) => a.y - b.y);
+    const marks = [];
+    for (const pl of list) {
+      const off = [[0, -1], [0, 1], [1, 0], [-1, 0], [0, -2], [0, 2], [1, -1], [-1, -1], [1, 1], [-1, 1], [0, -3], [0, 3], [2, 0], [-2, 0], [0, -4], [0, 4]];
+      let best = null, bh = 1e9;
+      for (const [ox, oy] of off) {
+        const gap = Math.round(5 * u), rx = pl.x - pl.w / 2 + ox * (pl.w / 2 + gap) , ry = pl.y - hgt / 2 + oy * (hgt + gap * 0.6);
+        const r = [Math.max(2, Math.min(cw - pl.w - 2, rx)), Math.max(2, Math.min(ch - hgt - 2, ry)), pl.w, hgt], h = hit(r) * 10 + Math.abs(ox) + Math.abs(oy) * 0.5; if (h < bh) { bh = h; best = r; } if (h < 1.6) break;
+      }
+      taken.push(best); marks.push([pl, best]);
+    }
+    for (const [pl, r] of marks) { x.fillStyle = '#ffd24a'; x.strokeStyle = '#160e0a'; x.lineWidth = Math.max(1, u); x.beginPath(); x.arc(pl.x, pl.y, Math.max(2, 2.5 * u), 0, 7); x.fill(); x.stroke(); }
+    for (const [pl, r] of marks) { x.fillStyle = 'rgba(8,6,10,.9)'; x.fillRect(px(r[0]), px(r[1]), r[2], r[3]); x.strokeStyle = '#e8d6a0'; x.lineWidth = Math.max(1, u * 0.7); x.strokeRect(px(r[0]) + 0.5, px(r[1]) + 0.5, r[2] - 1, r[3] - 1); x.fillStyle = '#ffffff'; x.fillText(pl.name.toUpperCase(), r[0] + r[2] / 2, r[1] + r[3] / 2 + u * 0.5); }
+    return layer;
+  };
   const paint = () => {
     if (!$('#bigmap')) return; const t2 = performance.now() / 1000; c2.clearRect(0, 0, W * sc, H * sc);
     if (!art) drawMini(c2, G.map, sc, 0, 0, t2);
     else { // the painted world, with unexplored tiles left in shadow
       c2.drawImage(art, 0, 0, W * sc, H * sc); c2.fillStyle = 'rgba(4,6,20,.93)';
       for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) if (seen[y]?.[x] !== '1') c2.fillRect(x * sc, y * sc, sc, sc);
-      if (Math.floor(t2 * 3) % 2 === 0) { c2.strokeStyle = '#ffffff'; c2.lineWidth = 2; c2.strokeRect(G.x * sc - 2, G.y * sc - 2, sc + 4, sc + 4); }
     }
+    if (art) { c2.drawImage(furniture(), 0, 0); if (Math.floor(t2 * 3) % 2 === 0) { c2.strokeStyle = '#ffffff'; c2.lineWidth = 2; c2.strokeRect(G.x * sc - 2, G.y * sc - 2, sc + 4, sc + 4); } }
     requestAnimationFrame(paint);
   }; paint();
 };
