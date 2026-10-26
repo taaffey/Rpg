@@ -266,7 +266,7 @@ ok('the bus drops you outside Haven', await ev(() => { const g = window.__game; 
 await closeAll();
 await ev(() => window.__game.goto('cavern', 2, 1)); await closeAll();
 ok('the bus refuses in dungeons', await ev(() => { window.__game.ACT.bus(); return /does not run in dungeons/.test(document.getElementById('overlay').innerText); }));
-await ev(() => { const o = document.getElementById('overlay'); o.className = ''; o.innerHTML = ''; }); await ev(() => window.__game.goto('world', 56, 67)); await pg.waitForTimeout(150); await key('ArrowRight', 1, 300);
+await ev(() => { const o = document.getElementById('overlay'); o.className = ''; o.innerHTML = ''; }); await ev(() => window.__game.goto('world', 67, 84)); await pg.waitForTimeout(150); await key('ArrowRight', 1, 300);
 ok('hidden treasure under the waterfall is dug up', /Hidden treasure/.test(await overlayTitle()) && (await ev(() => window.__game.G.flags.qitems.doubloon)) === true);
 await closeAll();
 await ev(() => { window.__game.G.flags.bosses.wyrm = true; });

@@ -190,7 +190,7 @@ MAPS.haven = {
   portals: { [P(22, 34)]: portal('world', ...GEN.adj.haven), [P(23, 34)]: portal('world', ...GEN.adj.haven), [P(24, 34)]: portal('world', ...GEN.adj.haven), ...doorPortals('haven') },
   decor: [],
   npcs: [
-    { x: 26, y: 32, type: 'guard', name: 'Guard', text: ['Oi, you two. Nice face-curtains. Don\'t walk out that gate empty-handed. The hardware shop and forge is up the main street.', 'The Wyrm sleeps in the Ashen Cavern, north-east, up in the hills. Old songs say it hates the cold. Bring ice, lads. And do a few fights on the grass first: it eats level ones for breakfast.'],
+    { x: 26, y: 32, type: 'guard', name: 'Guard', text: ['Oi, you two. Nice face-curtains. Don\'t walk out that gate empty-handed. The hardware shop and forge is up the main street.', 'The Wyrm sleeps in the Ashen Cavern, north-east, up in the foothills. Old songs say it hates the cold. Bring ice, lads. And do a few fights on the grass first: it eats level ones for breakfast.'],
       textBy: [['titan', ['Did you hear the old bell this morning? Nobody pulled the rope. Nobody. I\'ve had to have a little sit down.']],
         ['wyrm lich', ['The Wyrm AND the drowned king? I\'m standing up straighter. I\'ve also started a beard. Solidarity.']],
         ['wyrm', ['Whole watch heard the mountain roar, then go quiet. Was that you? Course it was. Look at the eyebrows on you.', 'Traders are already loading carts for the north road. The pass to Frostholm is open again.']],
@@ -211,7 +211,7 @@ MAPS.haven = {
   secrets: { [P(18, 4)]: { gold: 300, items: { phoenix: 2 }, accs: ['mana_charm'] } }, // in front of the hollow oak on Bell Hill, behind the bell tower
 };
 interior('haven_inn', 'The Gilded Goose', 'inn', back('haven', 'haven_inn'), { cost: 25, inn: { text: ['Welcome to the Gilded Goose. Rest your feet. That bell kept the whole street up. So did whoever shouted "SICK!"', 'Cellar\'s still sticky from Big Gary, mind. Brenna says that one\'s on you.'], textBy: [['titan', ['Your beds are aired and waiting, lads. Haven won\'t forget you. Neither will my cellar.']], ['wyrm|lich', ['Folk drink to you every night now. Good for business. Bad for my head, Brenna says.']]] },
-  npcs: [{ x: 8, y: 5, type: 'villager', name: 'Patron', text: ['*hic* Is it quiz night? You two look like quiz night.', '*hic* The marsh out east, past Mirewood, hides a Sunken Crypt. Dead men walking. Bring holy light!'], textBy: [['lich', ['*hic* To the heroes of the Crypt! ...What? Someone has to toast you. Your round, beardy.']]] }] });
+  npcs: [{ x: 8, y: 5, type: 'villager', name: 'Patron', text: ['*hic* Is it quiz night? You two look like quiz night.', '*hic* The dark marsh out east hides a Sunken Crypt. Dead men walking. Bring holy light!'], textBy: [['lich', ['*hic* To the heroes of the Crypt! ...What? Someone has to toast you. Your round, beardy.']]] }] });
 interior('haven_shop', 'Haven Corner Store & Offy', 'general', back('haven', 'haven_shop'), { shop: 'haven_general' });
 interior('haven_smith', 'Haven Hardware & Forge', 'smith', back('haven', 'haven_smith'), { shop: 'haven_smith' });
 interior('haven_guild', 'Adventurer\'s Guild', 'guild', back('haven', 'haven_guild'));
@@ -228,7 +228,7 @@ MAPS.frostholm = {
   portals: { [P(14, 27)]: portal('world', ...GEN.adj.frost), [P(15, 27)]: portal('world', ...GEN.adj.frost), ...doorPortals('frostholm') },
   decor: [],
   npcs: [
-    { x: 16, y: 25, type: 'guard', name: 'Guard', text: ['Frostholm owes you for that pass. Mind the cold; it bites harder than the wolves. ...Shorts, lad? SHORTS?', 'The Spire is east, across the snow. The grey man went up a month ago. Nobody has seen him since.'],
+    { x: 16, y: 25, type: 'guard', name: 'Guard', text: ['Frostholm owes you for that pass. Mind the cold; it bites harder than the wolves. ...Shorts, lad? SHORTS?', 'The Spire is north-east. The grey man went up a month ago. Nobody has seen him since.'],
       textBy: [['titan', ['The Spire\'s quiet. First quiet night in a year. Drink with us, heroes. Not you in the shorts; you\'ll freeze to the bench.']], ['s:met', ['So the grey man has a name. Sereth. I\'ll remember it, and spit after. "Gandalf\'s accountant", you say? I\'ll spit twice.']]] },
     { x: 21, y: 9, type: 'villager', name: 'Hunter', quest: 'yetis', text: ['Yetis and ice wolves roam the snow. Their hides are thick, but fire burns them well.', 'Fur from the forge keeps the frost out. Trust me. Your ginger friend\'s beard is doing a lot of heavy lifting.'], textBy: [['titan', ['Even the yetis seem calmer since the Titan fell. Fewer of them, too. Your doing?']]] },
     { x: 11, y: 17, type: 'kid', name: 'Child', text: ['I tried an Awkward Silence Gem on my snowball throw. Worked great! ...Mum says not to tell.', 'Is it true your hat is called a "beanie"? I\'m calling my goat Beanie.'] },

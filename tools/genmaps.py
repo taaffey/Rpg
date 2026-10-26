@@ -352,7 +352,7 @@ def make_world_ref(seed):
             else:
                 y += dirv[1] if (wob > -0.15 or k % 3) else 0; x += (1 if wob > 0.25 else -1 if wob < -0.25 else 0)
         return out
-    big = river((58, 66), (0, 1))
+    big = river((64, 78), (0, 1))
     rivs = [big, river((66, 52), (-1, 0)), river((80, 34), (0, -1)), river((96, 44), (1, 0)), river((118, 75), (0, 1)), river((74, 78), (0, 1)), river((122, 30), (0, 1)), river((90, 12), (0, -1))]
     for path_ in rivs:
         for x, y in path_:
