@@ -393,8 +393,152 @@ def make_world_ref(seed):
     assert wfs in open_ and gift in opened and hermit in opened and gift not in open_, 'secret spots'
     for (x, y) in gate_cells: assert g[y][x] == 'B'
     ship = [[8, 100], [10, 112], [20, 118], [8, 106]]
+    # --- landmarks: decorative only (no POI moves, no change to reachability; islets are unreachable single tiles of sea)
+    rl = random.Random(seed + 77)
+    D = lambda a, b: max(abs(a[0]-b[0]), abs(a[1]-b[1]))
+    def sea_maps():
+        ld = [[-1]*W for _ in range(H)]; q = []
+        for y in range(H):
+            for x in range(W):
+                if g[y][x] != '~': ld[y][x] = 0; q.append((x, y))
+        for (x, y) in q:
+            for dx in (-1, 0, 1):
+                for dy in (-1, 0, 1):
+                    nx, ny = x+dx, y+dy
+                    if 0 <= nx < W and 0 <= ny < H and ld[ny][nx] < 0: ld[ny][nx] = ld[y][x] + 1; q.append((nx, ny))
+        op = {(0, 0)}; st = [(0, 0)]
+        while st:
+            x, y = st.pop()
+            for dx, dy in ((1,0),(-1,0),(0,1),(0,-1)):
+                nx, ny = x+dx, y+dy
+                if 0 <= nx < W and 0 <= ny < H and g[ny][nx] == '~' and (nx, ny) not in op: op.add((nx, ny)); st.append((nx, ny))
+        return ld, op
+    ld, opensea = sea_maps()
+    keep = list(pois.values()) + list(spawn_adj.values())
+    swan_pts = [tuple(p) for p in ship]
+    def far_pois(t, d): return all(D(t, k) >= d for k in keep)
+    # tiny decorative islets in open sea near coasts
+    islets = []
+    cand = [(x, y) for y in range(4, H-4) for x in range(4, W-4) if (x, y) in opensea and 3 <= ld[y][x] <= 6 and far_pois((x, y), 8) and all(D((x, y), a) >= 5 for a in swan_pts)]
+    rl.shuffle(cand)
+    for (x, y) in cand:
+        if len(islets) >= 12: break
+        if any(D((x, y), i[0]) < 14 for i in islets): continue
+        tiles = [(x, y)]
+        for _ in range(rl.randint(0, 2)):
+            dx, dy = rl.choice(((1,0),(-1,0),(0,1),(0,-1))); t = (tiles[-1][0]+dx, tiles[-1][1]+dy)
+            if t not in tiles and t in opensea and ld[t[1]][t[0]] >= 3: tiles.append(t)
+        islets.append(tiles)
+    for tl in islets:
+        for (x, y) in tl: g[y][x] = '.'
+    ld, opensea = sea_maps()
+    sd = [[99]*W for _ in range(H)]; q = []
+    for y in range(H):
+        for x in range(W):
+            if g[y][x] == '~': sd[y][x] = 0; q.append((x, y))
+    for (x, y) in q:
+        for dx in (-1, 0, 1):
+            for dy in (-1, 0, 1):
+                nx, ny = x+dx, y+dy
+                if 0 <= nx < W and 0 <= ny < H and sd[ny][nx] == 99: sd[ny][nx] = sd[y][x] + 1; q.append((nx, ny))
+    lm = []
+    used = []
+    def put(kind, x, y, gap=3):
+        lm.append({'kind': kind, 'x': x, 'y': y}); used.append((x, y))
+    okc = lambda x, y, gap=3, kind=None: all(D((x, y), (l['x'], l['y'])) >= (gap if l['kind'] == kind else 4) for l in lm)
+    for i, tl in enumerate(islets):
+        if i % 2 == 0 or len(islets) < 8: put('lighthouse', *tl[0], gap=0)
+    coastal = lambda x, y: any((x+dx, y+dy) in opensea for dx, dy in ((1,0),(-1,0),(0,1),(0,-1)))
+    islet_t = {t for tl in islets for t in tl}
+    plain = lambda x, y: 0 <= x < W and 0 <= y < H and g[y][x] in '.,:d' and (x, y) not in road and (x, y) not in islet_t
+    free3 = lambda x, y: all(0 <= x+i < W and 0 <= y+j < H and g[y+j][x+i] in '.,:d' and (x+i, y+j) not in road for i in (-1, 0, 1) for j in (-1, 0, 1))
+    land_t = [(x, y) for y in range(H) for x in range(W) if plain(x, y) and far_pois((x, y), 4)]
+    rl.shuffle(land_t)
+    def place(kind, n, cond, gap, mind=0, cx=None):
+        c = 0
+        for (x, y) in land_t:
+            if c >= n: break
+            if cond(x, y) and okc(x, y, gap, kind) and (cx is None or all(D((x, y), a) >= mind for a in cx)): put(kind, x, y, gap); c += 1
+        return c
+    mainland_c = lambda x, y: coastal(x, y)
+    n1 = place('lighthouse', 5, lambda x, y: mainland_c(x, y) and g[y][x] in '.,:', 22)
+    place('fishhut', 6, lambda x, y: mainland_c(x, y) and far_pois((x, y), 6), 10)
+    place('watchtower', 5, lambda x, y: any(0 <= x+dx < W and 0 <= y+dy < H and g[y+dy][x+dx] == 'M' for dx in (-1, 0, 1) for dy in (-1, 0, 1)) and sd[y][x] >= 2 and far_pois((x, y), 6), 18)
+    place('windmill', 2, lambda x, y: reg[y][x] == '0' and g[y][x] == '.' and free3(x, y) and sd[y][x] >= 4 and far_pois((x, y), 12), 30)
+    place('stoneRing', 3, lambda x, y: g[y][x] in '.,' and free3(x, y) and sd[y][x] >= 3 and far_pois((x, y), 8), 25)
+    near_road = lambda x, y: any((x+dx, y+dy) in road for dx in (-2, -1, 0, 1, 2) for dy in (-2, -1, 0, 1, 2)) and not any((x+dx, y+dy) in road for dx in (-1, 0, 1) for dy in (-1, 0, 1))
+    place('camp', 4, lambda x, y: near_road(x, y) and free3(x, y) and far_pois((x, y), 6), 22)
+    # the castle on the lake island
+    comp = {(92, 68)}
+    st = [(92, 68)]
+    while st:
+        x, y = st.pop()
+        for dx, dy in ((1,0),(-1,0),(0,1),(0,-1)):
+            n = (x+dx, y+dy)
+            if 0 <= n[0] < W and 0 <= n[1] < H and g[n[1]][n[0]] != '~' and n not in comp and len(comp) < 3000: comp.add(n); st.append(n)
+    isl = [t for t in comp if 80 <= t[0] <= 104 and 60 <= t[1] <= 78]
+    assert comp and len(comp) < 300 and g[68][92] != '~' or True
+    if len(comp) < 300 and isl:
+        cxm = sum(t[0] for t in isl) / len(isl); cym = sum(t[1] for t in isl) / len(isl)
+        mx, my = min(isl, key=lambda t: (t[0]-cxm)**2 + (t[1]-cym)**2); put('moonlake', mx, my, 0)
+    else:
+        mx = my = None
+    # shipwrecks in the shallows (open sea, one or two tiles off a shore)
+    shallow = [(x, y) for y in range(H) for x in range(W) if (x, y) in opensea and ld[y][x] == 2 and far_pois((x, y), 8) and all(D((x, y), a) >= 4 for a in swan_pts)]
+    rl.shuffle(shallow); nw = 0
+    for (x, y) in shallow:
+        if nw >= 2: break
+        if okc(x, y, 30, 'wreck'): put('wreck', x, y, 30); nw += 1
+    # sailing ships: closed loops in open sea
+    import math
+    docks = [spawn_adj[k] for k in spawn_adj if k.startswith('dock')]
+    def clear(a, b, need):
+        n = int(max(abs(a[0]-b[0]), abs(a[1]-b[1])) * 3) + 1
+        for i in range(n + 1):
+            x = a[0] + (b[0]-a[0]) * i / n; y = a[1] + (b[1]-a[1]) * i / n
+            xi, yi = int(round(x)), int(round(y))
+            if not (0 <= xi < W and 0 <= yi < H) or (xi, yi) not in opensea or ld[yi][xi] < need: return False
+        return True
+    def make_routes(n, rmin, rmax, need, npts, centres):
+        out = []; tries = 0
+        while len(out) < n and tries < 20000:
+            tries += 1
+            c = (rl.randint(6, W-7), rl.randint(6, H-7))
+            if c not in opensea or any(D(c, o) < rmax + 3 for o in centres) or not all(D(c, d) >= 9 for d in docks): continue
+            r = rl.uniform(rmin, rmax); k = rl.randint(*npts); a0 = rl.uniform(0, 6.28); pts = []
+            for i in range(k):
+                a = a0 + 6.2832 * i / k; rr = r * rl.uniform(0.75, 1.1)
+                pts.append([int(round(c[0] + math.cos(a) * rr * 1.3)), int(round(c[1] + math.sin(a) * rr * 0.9))])
+            if len({tuple(p) for p in pts}) < k: continue
+            if not all(clear(pts[i], pts[(i+1) % k], need) for i in range(k)): continue
+            if any(D(tuple(p), a) < 4 for p in pts for a in swan_pts) or any(D(tuple(p), d) < 7 for p in pts for d in docks): continue
+            out.append(pts); centres.append(c)
+        return out
+    centres = list(swan_pts)
+    ships = make_routes(7, 4, 9, 3, (5, 8), centres)
+    boats = make_routes(3, 2.5, 4, 3, (4, 4), centres)
+    assert len(ships) >= 6, ('ship routes', len(ships))
+    # monsters and the whirlpool in open sea, away from routes, docks and each other
+    def spot(minld, avoid, mind):
+        c = [(x, y) for y in range(8, H-8) for x in range(8, W-8) if (x, y) in opensea and ld[y][x] >= minld and all(D((x, y), d) >= 10 for d in docks) and all(D((x, y), a) >= mind for a in avoid)]
+        return c
+    routepts = [tuple(p) for r in ships + boats for p in r] + swan_pts
+    wc = spot(5, routepts, 6)
+    sw = [t for t in wc if t[0] < 40 and t[1] > 95] or wc
+    whirl = rl.choice(sw); wc2 = spot(4, routepts + [whirl], 8)
+    monsters = []
+    for _ in range(2):
+        far = [t for t in wc2 if all(D(t, m) >= 40 for m in monsters + [whirl])] or wc2
+        m = rl.choice(far); monsters.append(m)
+    for t in [whirl] + monsters: assert t in opensea
+    for r in ships + boats:
+        for p in r: assert g[p[1]][p[0]] == '~' and tuple(p) in opensea
+    open2 = bfs(g, spawn_adj['haven'], walk)
+    assert open2 == open_ and bfs(g, spawn_adj['haven'], lambda c: walk(c) or c == 'B') == opened, 'islets must not change reachability'
+    landmarks = lm
     deco = {'ruins': list(ru), 'ship': ship, 'gift': list(gift), 'hermit': list(hermit), 'waterfall': list(wfs), 'gate': [GX, ridge(GX)],
-            'reg': [''.join(r) for r in reg], 'roads': sorted([x, y] for x, y in road if g[y][x] in '.,:d')}
+            'reg': [''.join(r) for r in reg], 'roads': sorted([x, y] for x, y in road if g[y][x] in '.,:d'),
+            'landmarks': landmarks, 'ships': ships, 'boats': boats, 'monsters': [list(m) for m in monsters], 'whirlpools': [list(whirl)]}
     for x, y in deco['ship']: assert g[y][x] == '~', ('ship', x, y)
     return [''.join(row) for row in g], pois, spawn_adj, deco
 
