@@ -105,10 +105,13 @@ foot of the Frost Spire the party meets the one who wants them. The Titan is the
 - **Journal**: the main thread as short narrative goals that reveal and update as the plot advances.
 
 ## The world
-- **Overworld** (168x126): an archipelago of single-biome islands joined by causeways: Haven Isle (grassland, the start), Mire Isle
-  (swamp), Sunscar Isle (desert) and Frost Isle (snow), plus far-off Hopsend Isle (autumn orchards, reached by ferry from the Sunscar jetty
-  once the Wyrm falls). Six small wayside stops (a chippy, standing stones, an oasis kebab van, a ski lodge...) are dotted about. Fog of war, a
-  minimap and a full map screen. A rockslide gates the pass to Frost Isle until the Ashen Wyrm falls. `tools/genmaps.py` generates it all.
+- **Overworld** (168x126), laid out after a classic fantasy realm map: one big varied continent (a frozen north with Frostholm and the Spire, a
+  desert in the north-east, a dark marsh in the south-east with Mirewood and the Crypt, a jungle in the south, central mountains, rivers, a lake
+  with a castle island, dirt roads between the places) plus outlying islands: the volcanic Cinder Isle (north-west, ferry from the Frost Jetty
+  once the Titan falls), Hopsend Isle (south-west, ferry from the Westshore Jetty) and an obsidian isle. Six small wayside stops, four small
+  dungeons, lighthouses, windmills, camps, sailing ships, a whirlpool and sea monsters dot the map. Fog of war, a local minimap and a full map
+  screen with place labels. A rockslide gates the northern pass until the Ashen Wyrm falls. `tools/genmaps.py` generates it all from
+  `tools/world_land.txt` (a land/sea mask).
 - **Night Bus Pass** (fast travel): the Elder gives it once the Ashen Wyrm falls. Menu > Items > Ride the N9 to any town, jetty or dungeon door you have already visited (never inside dungeons).
 - **Towns**: Haven Town, the swamp stilt-village Mirewood, and Frostholm. Buildings are enterable interiors (inn, general store, smithy, guild, houses) with
   NPCs, dialogue, shops and chests. A `!` over an NPC marks news.

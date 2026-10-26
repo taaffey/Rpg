@@ -3206,23 +3206,18 @@ export const GEN = {
    },
    {
     "kind": "lighthouse",
+    "x": 49,
+    "y": 17
+   },
+   {
+    "kind": "lighthouse",
     "x": 40,
-    "y": 13
+    "y": 64
    },
    {
     "kind": "lighthouse",
-    "x": 3,
-    "y": 23
-   },
-   {
-    "kind": "lighthouse",
-    "x": 18,
-    "y": 99
-   },
-   {
-    "kind": "lighthouse",
-    "x": 6,
-    "y": 69
+    "x": 19,
+    "y": 100
    },
    {
     "kind": "lighthouse",
@@ -3230,24 +3225,14 @@ export const GEN = {
     "y": 109
    },
    {
-    "kind": "fishhut",
-    "x": 111,
-    "y": 15
+    "kind": "lighthouse",
+    "x": 11,
+    "y": 73
    },
    {
     "kind": "fishhut",
-    "x": 161,
-    "y": 59
-   },
-   {
-    "kind": "fishhut",
-    "x": 51,
-    "y": 27
-   },
-   {
-    "kind": "fishhut",
-    "x": 129,
-    "y": 100
+    "x": 45,
+    "y": 108
    },
    {
     "kind": "fishhut",
@@ -3256,78 +3241,93 @@ export const GEN = {
    },
    {
     "kind": "fishhut",
-    "x": 147,
-    "y": 19
+    "x": 4,
+    "y": 24
+   },
+   {
+    "kind": "fishhut",
+    "x": 146,
+    "y": 87
+   },
+   {
+    "kind": "fishhut",
+    "x": 124,
+    "y": 101
+   },
+   {
+    "kind": "fishhut",
+    "x": 153,
+    "y": 117
    },
    {
     "kind": "watchtower",
-    "x": 59,
-    "y": 85
-   },
-   {
-    "kind": "watchtower",
-    "x": 129,
-    "y": 47
-   },
-   {
-    "kind": "watchtower",
-    "x": 103,
-    "y": 41
-   },
-   {
-    "kind": "watchtower",
-    "x": 155,
-    "y": 29
-   },
-   {
-    "kind": "watchtower",
-    "x": 141,
-    "y": 85
-   },
-   {
-    "kind": "windmill",
-    "x": 31,
-    "y": 53
-   },
-   {
-    "kind": "windmill",
-    "x": 90,
-    "y": 41
-   },
-   {
-    "kind": "stoneRing",
-    "x": 68,
-    "y": 33
-   },
-   {
-    "kind": "stoneRing",
-    "x": 27,
-    "y": 9
-   },
-   {
-    "kind": "stoneRing",
-    "x": 22,
+    "x": 23,
     "y": 57
    },
    {
+    "kind": "watchtower",
+    "x": 109,
+    "y": 66
+   },
+   {
+    "kind": "watchtower",
+    "x": 88,
+    "y": 42
+   },
+   {
+    "kind": "watchtower",
+    "x": 115,
+    "y": 25
+   },
+   {
+    "kind": "watchtower",
+    "x": 134,
+    "y": 35
+   },
+   {
+    "kind": "windmill",
+    "x": 34,
+    "y": 54
+   },
+   {
+    "kind": "windmill",
+    "x": 101,
+    "y": 57
+   },
+   {
+    "kind": "stoneRing",
+    "x": 25,
+    "y": 12
+   },
+   {
+    "kind": "stoneRing",
+    "x": 60,
+    "y": 44
+   },
+   {
+    "kind": "stoneRing",
+    "x": 74,
+    "y": 86
+   },
+   {
     "kind": "camp",
-    "x": 52,
+    "x": 141,
     "y": 54
    },
    {
     "kind": "camp",
-    "x": 111,
-    "y": 87
+    "x": 70,
+    "y": 64
    },
    {
     "kind": "camp",
-    "x": 31,
-    "y": 80
-   },
-   {
-    "kind": "camp",
-    "x": 66,
+    "x": 69,
     "y": 26
+   },
+   {
+    "kind": "camp",
+    "x": 99,
+    "y": 33
    },
    {
     "kind": "moonlake",
@@ -3336,13 +3336,13 @@ export const GEN = {
    },
    {
     "kind": "wreck",
-    "x": 137,
-    "y": 91
+    "x": 122,
+    "y": 8
    },
    {
     "kind": "wreck",
-    "x": 122,
-    "y": 8
+    "x": 15,
+    "y": 48
    }
   ],
   "ships": [
