@@ -6,6 +6,7 @@ import { MAPS } from '../src/maps.js';
 import * as BR from '../src/bros.js';
 import '../src/hopsend.js';
 import '../src/embers.js';
+import '../src/obsidian.js';
 import '../src/sidequests.js';
 import * as DATA from '../src/data.js';
 const DB = { weapons: WEAPONS, armors: ARMORS, accs: ACCS, gems: GEMS, items: ITEMS };
