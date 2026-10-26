@@ -666,34 +666,227 @@ const rockslide = () => memo('slide', () => {
   }
   return p.outline(K, 220).canvas();
 });
-// a swan pedalo, paddling round the Handle Lake
-const ship = (f, left) => memo('ship' + f + left, () => {
-  const p = new Pix(24, 22), W = pal('#9aa6b8 #c8d0dc #eef2f8 #ffffff');
-  for (let x = 3; x < 21; x++) { const bot = 16 + (x > 6 && x < 18 ? 1 : 0); for (let y = 13; y <= bot; y++) p.set(x, y, y === 13 ? W[3] : y === bot ? W[0] : W[2]); }
-  p.rect(3, 15, 18, 1, RED[3]); // red stripe
-  for (let y = 4; y < 13; y++) { p.set(18, y, W[3]); p.set(19, y, W[2]); } // the neck
-  p.rect(17, 2, 4, 3, W[3]); p.rect(21, 3, 2, 1, [236, 150, 40]); p.set(19, 3, [10, 10, 20]); // head, beak, eye
-  p.rect(8, 9, 3, 4, RED[2]); p.rect(7, 12, 5, 1, W[1]); p.set(13 + (f & 1), 18, W[1]); // a pedalling lad + a splash
-  p.rect(3, 12, 3, 2, W[2]); // tail
-  if (left) { const q = new Pix(24, 22); for (let y = 0; y < 22; y++) for (let x = 0; x < 24; x++) { const i = (y * 24 + x) * 4; if (p.d[i + 3]) q.set(23 - x, y, [p.d[i], p.d[i + 1], p.d[i + 2]]); } return q.outline(K).canvas(); }
+// ---------- landmarks: lighthouses, towers, windmills, stones, camps, wrecks, huts, the moonlake castle ----------
+const sh = (P, v) => P[clamp(Math.round(v), 0, P.length - 1)];
+const mirror = (p) => { const q = new Pix(p.w, p.h); for (let y = 0; y < p.h; y++) for (let x = 0; x < p.w; x++) { const i = (y * p.w + x) * 4; if (p.d[i + 3]) q.set(p.w - 1 - x, y, [p.d[i], p.d[i + 1], p.d[i + 2], p.d[i + 3]]); } return q; };
+function line(p, x0, y0, x1, y1, c) { const n = Math.max(Math.abs(x1 - x0), Math.abs(y1 - y0), 1) * 2; for (let i = 0; i <= n; i++) p.set(x0 + (x1 - x0) * i / n, y0 + (y1 - y0) * i / n, c); }
+const MOON = pal('#2a3050 #444e78 #6674a0 #8a9ac4 #aebcdc #cedaf0 #eef4ff');
+const lighthouse = (on) => memo('lh' + on, () => {
+  const p = new Pix(24, 32);
+  for (let y = 26; y < 32; y++) { const half = 6.5 + (y - 26) * 0.5; for (let x = 0; x < 24; x++) { const dx = x - 11.5; if (Math.abs(dx) > half) continue; p.set(x, y, sh(ROCK, 4.5 - dx / half * 1.6 + ((x * 3 + y) % 4 === 0 ? -1 : 0) - (y === 31 ? 1 : 0))); } }
+  for (let y = 9; y < 27; y++) { const half = 3 + (y - 9) / 17 * 1.7, red = Math.floor((y - 9) / 4) % 2 === 1; for (let x = 0; x < 24; x++) { const dx = x - 11.5; if (Math.abs(dx) > half) continue; const s = (dx + half) / (2 * half); p.set(x, y, red ? sh(RED, 4 - s * 2.8) : sh(CREAM, 6.2 - s * 3.4)); } }
+  p.rect(11, 24, 2, 3, K); p.set(11, 16, K); p.set(12, 12, K);
+  for (let x = 7; x < 17; x++) { p.set(x, 8, STONE[x === 16 ? 3 : 6]); p.set(x, 7, x % 2 ? STONE[5] : null); }
+  p.rect(9, 3, 6, 4, (i, j) => (on ? (i > 1 && i < 4 ? [255, 255, 210] : [255, 232, 120]) : [150, 140, 90]));
+  for (const x of [9, 11, 14]) for (let y = 3; y < 7; y++) p.set(x, y, STONE[2]);
+  p.rect(9, 2, 6, 1, RED[3]); p.rect(10, 1, 4, 1, RED[4]); p.rect(11, 0, 2, 1, STONE[6]);
+  p.outline(K);
+  if (on) { // the flashing beam
+    for (let y = 0; y < 10; y++) for (let x = 3; x < 21; x++) { const d = Math.hypot(x - 11.5, (y - 4.5) * 1.2); if (!p.on(x, y) && d < 6.5 && d > 2) p.set(x, y, [255, 240, 130, Math.round(150 * (1 - d / 6.5))]); }
+    for (let x = 0; x < 24; x++) { const d = Math.abs(x - 11.5); if (d > 4.5) for (const y of [4, 5]) if (p.d[(y * 24 + x) * 4 + 3] < 200) p.set(x, y, [255, 246, 170, Math.round(210 * (1 - (d - 4.5) / 8))]); }
+  }
+  return p.canvas();
+});
+const watchtower = () => memo('wtower', () => {
+  const p = new Pix(20, 26), M = pal('#1a2a14 #2a4220 #3c5c2c #50783a');
+  for (let k = 0; k < 14; k++) p.rect(1 + (k * 5) % 16, 22 + (k % 3), 3, 2, (i, j) => STONE[3 + ((i + j) % 2)]);
+  wallBlock(p, 4, 7, 12, 17, STONE, false);
+  const top = [3, 1, 2, 0, 4, 1, 0, 2, 5, 3, 1, 4]; for (let i = 0; i < 12; i++) for (let j = 0; j < top[i]; j++) p.d[((7 + j) * 20 + 4 + i) * 4 + 3] = 0;
+  p.rect(8, 17, 4, 7, K); p.rect(9, 16, 2, 1, K); p.set(7, 12, K); p.set(7, 13, K); p.set(13, 11, K);
+  for (const [x, y, w, h] of [[4, 14, 3, 9], [13, 8, 3, 7], [6, 7, 4, 3]]) for (let j = 0; j < h; j++) for (let i = 0; i < w; i++) if (h2(x + i, y + j, 41) < 0.55 && p.on(x + i, y + j)) p.set(x + i, y + j, M[1 + Math.floor(h2(x + i, y + j, 42) * 3)]);
   return p.outline(K).canvas();
 });
+const windmillArt = (f) => memo('wmill' + f, () => {
+  const p = new Pix(30, 36), hx = 15, hy = 12;
+  for (let y = 12; y < 34; y++) { const half = 4.2 + (y - 12) / 22 * 2.4; for (let x = 0; x < 30; x++) { const dx = x - hx; if (Math.abs(dx) > half) continue; const s = (dx + half) / (2 * half); p.set(x, y, sh(CREAM, 5.6 - s * 3.6 - (y % 4 === 3 ? 0.7 : 0))); } }
+  for (let y = 5; y < 13; y++) { const half = (y - 4) * 0.75 + 0.5; for (let x = 0; x < 30; x++) { const dx = x - hx; if (Math.abs(dx) > half) continue; p.set(x, y, sh(RED, 3.6 - (dx + half) / (2 * half) * 2.2)); } }
+  p.rect(hx - 2, 28, 4, 6, WOOD[1]); p.set(hx, 28, WOOD[3]); p.rect(hx - 4, 19, 2, 3, [250, 220, 120]); p.rect(hx + 2, 22, 2, 3, K);
+  for (let x = 6; x < 24; x++) p.set(x, 34, STONE[3 + (x % 2)]);
+  const a0 = f * (Math.PI / 2) / 8 + 0.3;
+  for (let k = 0; k < 4; k++) { const a = a0 + k * Math.PI / 2, dx = Math.cos(a), dy = Math.sin(a), px = -dy, py = dx;
+    for (let r = 4; r <= 12; r += 0.5) for (let w = 1; w <= 3; w++) p.set(hx + dx * r + px * w, hy + dy * r + py * w, (Math.floor(r * 2) + w) % 4 === 0 ? [200, 190, 165] : [238, 230, 205]);
+    for (let r = 2; r <= 12; r += 0.5) p.set(hx + dx * r, hy + dy * r, WOOD[2]);
+  }
+  p.rect(hx - 1, hy - 1, 3, 3, WOOD[1]); p.set(hx, hy, BRONZE[4]);
+  return p.outline(K).canvas();
+});
+const stoneRing = (f) => memo('sring' + f, () => {
+  const p = new Pix(28, 20), pts = [];
+  for (let k = 0; k < 8; k++) { const a = k / 8 * 6.2832 + 0.3; pts.push([14 + Math.cos(a) * 10, 12 + Math.sin(a) * 4.2, k]); } pts.sort((a, b) => a[1] - b[1]);
+  p.rect(10, 11, 8, 3, (i, j) => STONE[j === 0 ? 6 : 3 + (i % 3 === 0 ? 1 : 0)]);
+  for (const [x, y, k] of pts) { const h = 6 + (k % 3), w = 3 + (k % 2); for (let j = 0; j < h; j++) for (let i = 0; i < w; i++) { if (j === 0 && (i === 0 || i === w - 1)) continue; p.set(Math.round(x - w / 2) + i, Math.round(y) - h + 2 + j, sh(STONE, 6 - i / w * 3.2 - (j > h - 2 ? 1 : 0) + (j === 0 ? 0.6 : 0))); } if (k % 3 === 0) p.set(Math.round(x), Math.round(y) - h + 4, [70, 130, 70]); }
+  p.outline(K);
+  for (const [x, y, k] of pts) if ((k + f) % 4 === 0) p.set(Math.round(x), Math.round(y) - 6 - (k % 3), [140, 240, 255]);
+  return p.canvas();
+});
+const campArt = (f) => memo('camp' + f, () => {
+  const p = new Pix(30, 30);
+  const tent = (cx, base, w, h, C, stripe) => {
+    for (let j = 0; j < h; j++) { const half = (j + 1) / h * w / 2; for (let x = Math.ceil(cx - half); x <= Math.floor(cx + half); x++) { const s = (x - (cx - half)) / (2 * half + 0.01); p.set(x, base - h + 1 + j, x === cx ? sh(C, 1.5) : sh(C, 4 - s * 2.4 - (j === h - 1 ? 0.8 : 0))); } }
+    for (let j = 3; j < h; j++) { const half = (j + 1) / h * w / 2 * 0.28; for (let x = Math.round(cx - half); x <= Math.round(cx + half); x++) p.set(x, base - h + 1 + j, K); }
+    if (stripe) for (let j = 1; j < h - 1; j += 4) { const half = (j + 1) / h * w / 2; for (let x = Math.ceil(cx - half); x <= cx + half; x++) if (x !== cx) p.set(x, base - h + 1 + j, sh(CREAM, 5)); }
+    line(p, cx, base - h - 2, cx, base - h + 1, WOOD[3]); p.set(cx + 1, base - h - 2, RED[4]);
+  };
+  tent(8, 25, 14, 11, RED, true); tent(21, 22, 10, 8, THATCH, false);
+  p.rect(12, 24, 6, 1, WOOD[1]); p.rect(11, 25, 2, 1, WOOD[3]); p.rect(17, 25, 2, 1, WOOD[3]); p.set(13, 26, STONE[4]); p.set(17, 26, STONE[3]);
+  p.outline(K);
+  const FL = [[255, 120, 20], [255, 190, 40], [255, 240, 120]], hg = 2 + (f % 3 === 1 ? 1 : 0);
+  for (let j = 0; j < hg; j++) for (let i = -1; i <= (j > 0 ? 0 : 1); i++) p.set(15 + i, 24 - j, FL[Math.min(2, j + (i === 0 ? 1 : 0))]);
+  for (let k = 0; k < 5; k++) { const age = (f * 3 + k * 5) % 24, y = 21 - age * 0.9, x = 15 + Math.sin(age / 3 + k) * (1 + age * 0.08); if (y >= 0) p.set(x, y, [205, 205, 212, Math.round(190 * (1 - age / 24))]); }
+  return p.canvas();
+});
+const wreckArt = (f, beach) => memo('wreck' + f + beach, () => {
+  const p = new Pix(34, 26);
+  for (let x = 4; x < 31; x++) { const top = 12 + Math.round(Math.abs(x - 17) / 4.2) - (x > 22 ? 3 : 0), bot = 19 + (x > 8 && x < 26 ? 1 : 0); for (let y = top; y <= bot; y++) p.set(x, y, WOOD[y === top ? 4 : (y + Math.floor(x / 7)) % 3 === 0 ? 1 : 2 + (x < 10 ? 1 : 0)]); }
+  for (let x = 8; x < 26; x += 3) for (let y = 9 + Math.abs(x - 17) % 3; y < 13; y++) p.set(x, y, WOOD[1 + (x % 2)]);
+  p.rect(5, 15, 5, 1, K); p.rect(15, 16, 2, 2, K); p.rect(20, 16, 2, 2, K);
+  line(p, 17, 12, 21, 1, WOOD[2]); line(p, 18, 12, 22, 1, WOOD[1]);
+  for (let y = 3; y < 8; y++) for (let x = 0; x < 3 + (y > 5 ? 1 : 0); x++) if ((x + y) % 4 !== 0) p.set(19 + x - (y - 3) * 0.3, y, [188, 186, 170]);
+  p.outline(K);
+  if (!beach) { for (let x = 0; x < 34; x++) for (const [y, a] of [[20, 150], [21, 90]]) if (((x + f * 3 + y) % 6) < 3) p.set(x, y + (x < 4 || x > 29 ? 1 : 0), [235, 246, 255, a]); }
+  else for (let x = 2; x < 32; x++) if (!p.on(x, 22) && x % 3) p.set(x, 22, [60, 48, 30, 120]);
+  return p.canvas();
+});
+const fishHut = (f) => memo('fhut' + f, () => {
+  const p = new Pix(24, 20);
+  p.rect(1, 14, 22, 2, (i) => WOOD[i % 3 === 0 ? 3 : 4]); for (const x of [2, 8, 15, 21]) p.rect(x, 16, 1, 3, WOOD[1]);
+  p.rect(5, 7, 10, 7, (i, j) => WOOD[2 + (i % 3 === 0 ? 1 : 0) + (j === 6 ? -1 : 0)]);
+  for (let j = 0; j < 5; j++) p.rect(3 + j, 3 + j, 14 - 2 * j, 1, THATCH[5 - (j > 2 ? 1 : 0) - (j % 2)]);
+  p.rect(8, 9, 3, 5, K); p.rect(12, 9, 2, 2, [250, 220, 120]);
+  p.rect(16, 11, 4, 3, WOOD[3]); p.rect(16, 11, 4, 1, WOOD[5]); p.rect(19, 5, 1, 7, WOOD[1]); p.rect(20, 5, 1, 1, WOOD[1]);
+  for (let k = 0; k < 3; k++) { p.set(20 + (k & 1), 7 + k * 2, [190, 200, 215]); p.set(21, 8 + k * 2, [120, 140, 170]); }
+  p.set(3, 12 + (f & 1), [120, 140, 170]);
+  return p.outline(K).canvas();
+});
+const castleArt = () => memo('moonlake', () => { // the Moonlake castle (3.5 x 3.25 tiles), everything shifted down 4px so the pennant fits
+  const p = new Pix(56, 52), o = 4;
+  p.rect(3, 41 + o, 50, 3, (i, j) => [40, 70, 40, j === 0 ? 150 : 90]);
+  wallBlock(p, 9, 27 + o, 38, 15, MOON, true);
+  for (const x of [2, 42]) tower(p, x, 15 + o, 12, 27, MOON, BLUE, 8);
+  p.rect(22, 33 + o, 12, 9, K); for (let x = 23; x < 33; x += 2) p.rect(x, 34 + o, 1, 8, WOOD[2]);
+  wallBlock(p, 19, 15 + o, 18, 18, MOON, true);
+  tower(p, 24, 4 + o, 8, 14, MOON, BLUE, 7);
+  p.rect(26, 22 + o, 4, 5, K); p.rect(27, 23 + o, 2, 3, [250, 220, 120]); p.rect(21, 18 + o, 2, 3, K); p.rect(33, 18 + o, 2, 3, K); p.set(7, 24 + o, K); p.set(7, 25 + o, K); p.set(48, 24 + o, K); p.set(48, 25 + o, K);
+  line(p, 28, 0, 28, 4 + o - 7 + 0, WOOD[3]); p.rect(29, 0, 4, 3, [240, 240, 255]); p.set(30, 1, BLUE[2]); p.set(31, 1, BLUE[2]);
+  return p.outline(K).canvas();
+});
+// ---------- bigger roadside icons ----------
+const pyramidArt = () => memo('pyramidBig', () => {
+  const p = new Pix(44, 34);
+  p.rect(1, 28, 42, 5, (i, j) => SAND[j === 0 ? 7 : 5 - ((i + j) % 5 === 0 ? 1 : 0)]);
+  for (let y = 2; y < 30; y++) { const half = (y - 1) * 0.74; for (let x = 0; x < 44; x++) { const dx = x - 20; if (dx < -half || dx > half * 0.86) continue; const lit = dx < 0 ? 0 : 1; let v = lit ? 3.2 : 6.4; if ((y + 1) % 5 === 0) v -= 1.1; if (dx === 0) v = 4.6; if (Math.abs(dx - half * 0.86) < 1 || Math.abs(dx + half) < 1) v -= 0.8; p.set(x, y, sh(MESA, v + 0.5 - (lit ? 0 : 0))); } }
+  for (let y = 2; y < 6; y++) for (let x = 19; x <= 21; x++) if (Math.abs(x - 20) <= (y - 1) * 0.74) p.set(x, y, BRONZE[y === 2 ? 6 : 5]);
+  p.rect(17, 24, 6, 6, K); p.rect(18, 23, 4, 1, K); p.rect(16, 23, 1, 7, MESA[2]);
+  p.rect(35, 15, 3, 15, (i, j) => [200 - i * 14, 196 - i * 14, 190 - i * 14]); p.set(36, 14, [220, 220, 210]);
+  for (const [x, y] of [[4, 29], [9, 31], [30, 30], [40, 31]]) { p.set(x, y, SAND[3]); p.set(x + 1, y, SAND[2]); }
+  return p.outline(K).canvas();
+});
+const jettyArt = () => memo('jettyBig', () => {
+  const p = new Pix(44, 28);
+  p.rect(0, 12, 44, 16, (i, j) => [24 + j, 70 + j * 2 + ((i + j * 3) % 7 === 0 ? 14 : 0), 160 + j * 2]);
+  p.rect(0, 12, 14, 2, WOOD[5]); for (let x = 0; x < 28; x++) { p.set(x, 13, WOOD[x % 4 === 0 ? 2 : 4]); p.set(x, 14, WOOD[x % 4 === 0 ? 1 : 3]); p.set(x, 15, x % 4 === 0 ? null : WOOD[3]); }
+  for (const x of [2, 8, 14, 20, 26]) p.rect(x, 13, 2, 6, WOOD[1]);
+  p.rect(29, 7, 13, 7, (i, j) => WOOD[2 + (i % 3 === 0 ? 1 : 0) - (j > 5 ? 1 : 0)]);
+  for (let j = 0; j < 5; j++) p.rect(27 + j, 3 + j, 17 - 2 * j, 1, RED[4 - (j > 2 ? 1 : 0) - (j % 2)]);
+  p.rect(33, 9, 3, 5, K); p.rect(38, 9, 2, 2, [250, 220, 120]);
+  p.rect(24, 10, 4, 3, WOOD[3]); p.rect(24, 10, 4, 1, WOOD[5]);
+  p.rect(5, 2, 1, 9, WOOD[2]); p.rect(3, 2, 5, 2, [255, 235, 140]); p.set(5, 3, [255, 250, 210]);
+  p.rect(10, 18, 14, 5, (i, j) => WOOD[2 + (j === 0 ? 2 : 0) - (j > 3 ? 1 : 0)]); p.rect(11, 17, 12, 1, WOOD[5]); p.rect(16, 11, 1, 6, WOOD[1]); p.rect(17, 12, 4, 4, [225, 225, 215]);
+  return p.outline(K).canvas();
+});
+// ---------- ships ----------
+const PENNANT = [[220, 50, 40], [250, 200, 60]];
+const sailShip = (style, f, left) => memo(`sail${style}${f}${left}`, () => {
+  const p = new Pix(34, 32), b = f & 1;
+  for (let x = 3; x < 31; x++) { const u = (x - 3) / 27, top = 20 - (u > 0.8 ? Math.round((u - 0.8) * 10) : 0) + (u < 0.12 ? -1 : 0), bot = 24 + Math.round(Math.sin(u * Math.PI) * 2.4) - (u > 0.88 ? 2 : 0); for (let y = top; y <= bot; y++) p.set(x, y, y === top ? WOOD[5] : y === top + 1 ? BRONZE[4 + (style & 1)] : y >= bot - 1 ? WOOD[0] : WOOD[(x + y * 3) % 7 === 0 ? 2 : 3]); }
+  p.rect(3, 16, 7, 4, WOOD[3]); p.rect(3, 16, 7, 1, WOOD[5]); p.rect(5, 18, 2, 1, [250, 220, 120]);
+  line(p, 29, 20, 33, 18, WOOD[2]);
+  const mast = (mx, top, c) => { for (let y = top; y < 21; y++) p.set(mx, y, WOOD[2]); p.set(mx, top - 1, WOOD[5]); for (let k = 0; k < 3; k++) p.set(mx + 1 + k + b * (k > 0 ? 0 : 0), top - 2 + (k + b) % 2, PENNANT[style & 1]); };
+  if (style === 0) { // square-rigged: billowing cream sails with a red crest
+    for (const [mx, top, w, h] of [[13, 4, 6, 12], [23, 8, 5, 9]]) { for (let y = top + 1; y < top + h; y++) { const bil = Math.round(Math.sin((y - top) / h * Math.PI) * (1 + b)); for (let i = -w + 1; i <= w - 1 + bil; i++) { const s = (i + w) / (2 * w); p.set(mx + i, y, sh(CREAM, 6.2 - s * 2.6 - (y > top + h - 3 ? 1 : 0) + ((i + y) % 7 === 0 ? -0.5 : 0))); } }
+      for (let i = -w; i <= w; i++) p.set(mx + i, top, WOOD[3]); for (let j = 3; j < h - 4; j++) { p.set(mx - 1, top + j, RED[3]); p.set(mx, top + j, RED[3]); p.set(mx + 1, top + j, RED[2]); } mast(mx, top, 0); }
+  } else { // lateen: triangular teal and cream sails
+    for (const [mx, top, c1, c2, L] of [[14, 3, TEAL, CREAM, 11], [24, 8, CREAM, TEAL, 7]]) { for (let y = top + 1; y < 19; y++) { const w = Math.round((y - top) / (19 - top) * L), bil = Math.round(Math.sin((y - top) / (19 - top) * Math.PI) * (1 + b)); for (let i = -w - bil; i <= (y > top + 2 ? 0 : 0) + 0; i++) { const s = (i + w + bil) / (w + bil + 0.01); p.set(mx + i, y, i === 0 ? WOOD[2] : sh(c1 === CREAM ? CREAM : TEAL, (c1 === CREAM ? 6 : 5.4) - s * 2.8 - (y > 15 ? 0.9 : 0))); } } mast(mx, top, 1); }
+  }
+  p.outline(K);
+  return left ? mirror(p).canvas() : p.canvas();
+});
+const boatArt = (f, left) => memo(`boat${f}${left}`, () => {
+  const p = new Pix(22, 18), b = f & 1;
+  for (let x = 2; x < 20; x++) { const u = (x - 2) / 17, top = 12 - (u > 0.85 ? 1 : 0), bot = 15 - (u < 0.1 || u > 0.9 ? 1 : 0); for (let y = top; y <= bot; y++) p.set(x, y, y === top ? WOOD[5] : y === bot ? WOOD[0] : WOOD[3 - (x % 4 === 0 ? 1 : 0)]); }
+  for (let y = 3; y < 12; y++) p.set(10, y, WOOD[2]);
+  for (let y = 4; y < 12; y++) { const w = Math.round((y - 3) / 8 * 6), bil = Math.round(Math.sin((y - 3) / 8 * 3.14) * (1 + b)); for (let i = -bil; i <= w; i++) p.set(11 + i, y, sh(CREAM, 6 - (i + bil) / (w + bil + 0.01) * 2.4)); }
+  p.set(10, 2, PENNANT[0]); p.set(11 + b, 2, PENNANT[0]); p.rect(6, 10, 2, 2, [210, 160, 110]);
+  p.outline(K);
+  return left ? mirror(p).canvas() : p.canvas();
+});
+const swan = (f, left) => memo('ship' + f + left, () => { // the swan pedalo (rare joke boat)
+  const p = new Pix(24, 22), W = pal('#9aa6b8 #c8d0dc #eef2f8 #ffffff');
+  for (let x = 3; x < 21; x++) { const bot = 16 + (x > 6 && x < 18 ? 1 : 0); for (let y = 13; y <= bot; y++) p.set(x, y, y === 13 ? W[3] : y === bot ? W[0] : W[2]); }
+  p.rect(3, 15, 18, 1, RED[3]);
+  for (let y = 4; y < 13; y++) { p.set(18, y, W[3]); p.set(19, y, W[2]); }
+  p.rect(17, 2, 4, 3, W[3]); p.rect(21, 3, 2, 1, [236, 150, 40]); p.set(19, 3, [10, 10, 20]);
+  p.rect(8, 9, 3, 4, RED[2]); p.rect(7, 12, 5, 1, W[1]); p.set(13 + (f & 1), 18, W[1]);
+  p.rect(3, 12, 3, 2, W[2]);
+  return left ? mirror(p).outline(K).canvas() : p.outline(K).canvas();
+});
+// ---------- whirlpool, sea monster ----------
+const whirl = (f) => memo('whirl' + f, () => {
+  const p = new Pix(52, 44);
+  for (let y = 0; y < 44; y++) for (let x = 0; x < 52; x++) {
+    const dx = (x - 25.5) / 1.15, dy = y - 21.5, r = Math.hypot(dx, dy); if (r > 21) continue;
+    const th = Math.atan2(dy, dx), v = Math.sin(th * 2 + r * 0.42 - f * Math.PI / 4) * 0.5 + 0.5, a = clamp((21 - r) / 7, 0, 1);
+    if (r < 2.6) { p.set(x, y, [3, 8, 34, 255]); continue; }
+    const ring = v > 0.8 ? [244, 250, 255, 235 * a] : v > 0.55 ? [150, 200, 250, 210 * a] : v > 0.3 ? [28, 70, 170, 190 * a] : [6, 20, 80, 170 * a];
+    if (bay(x, y) < a) p.set(x, y, ring);
+  }
+  return p.canvas();
+});
+const FINC = [[26, 50, 70], [44, 80, 104], [90, 140, 160]];
+const finArt = (stage) => memo('fin' + stage, () => {
+  const p = new Pix(36, 24), h = [1, 3, 5, 8, 8, 8, 6, 3][stage], r = 4 + stage * 1.5;
+  for (let x = 0; x < 36; x++) for (let y = 0; y < 24; y++) { const d = Math.hypot((x - 17.5) / r, (y - 18) / (r * 0.42)); if (Math.abs(d - 1) < 0.1 && (x + y) % 3) p.set(x, y, [235, 246, 255, Math.round(190 * (1 - stage / 9))]); }
+  for (let j = 0; j < h; j++) { const w = Math.max(1, Math.round(5 * (1 - j / (h + 1)))), x0 = 14 + Math.floor(j * 0.35); for (let i = 0; i < w; i++) p.set(x0 + i - (j > 3 && i === w - 1 ? 0 : 0), 18 - j, i === 0 ? FINC[2] : i === w - 1 ? FINC[0] : FINC[1]); }
+  if (h > 1) p.outline([10, 20, 30]);
+  p.rect(12, 19, 12, 1, [235, 246, 255, 200]);
+  return p.canvas();
+});
+const tailArt = (stage) => memo('tail' + stage, () => {
+  const p = new Pix(36, 30), h = [3, 8, 13, 13, 8, 3][stage], r = 5 + stage;
+  for (let x = 0; x < 36; x++) for (let y = 0; y < 30; y++) { const d = Math.hypot((x - 17.5) / r, (y - 25) / (r * 0.42)); if (Math.abs(d - 1) < 0.1 && (x + y) % 3) p.set(x, y, [235, 246, 255, 170]); }
+  for (let j = 0; j < h; j++) { const bend = Math.round(Math.sin(j / 13 * 1.6) * 5); for (let i = 0; i < Math.max(2, 4 - (j > 8 ? 1 : 0)); i++) p.set(18 - bend + i, 25 - j, i === 0 ? FINC[2] : i > 2 ? FINC[0] : FINC[1]); }
+  if (h > 9) { const bx = 18 - Math.round(Math.sin(h / 13 * 1.6) * 5), ty = 25 - h; for (let k = 0; k < 4; k++) { p.set(bx - 1 - k, ty - (k >> 1), k > 1 ? FINC[2] : FINC[1]); p.set(bx + 3 + k, ty - (k >> 1), k > 1 ? FINC[2] : FINC[1]); } }
+  p.outline([10, 20, 30]);
+  p.rect(13, 26, 10, 1, [235, 246, 255, 200]);
+  return p.canvas();
+});
+
+// ---------- routes ----------
+const routeCache = new Map();
+function pathOf(pts) {
+  let r = routeCache.get(pts); if (r) return r;
+  r = []; let L = 0; for (let k = 0; k < pts.length; k++) { const a = pts[k], b = pts[(k + 1) % pts.length], l = Math.hypot(b[0] - a[0], b[1] - a[1]); r.push([a, b, L, l]); L += l; } r.total = L; routeCache.set(pts, r); return r;
+}
+function alongRoute(pts, dist) {
+  const r = pathOf(pts); if (!r.total) return null; const s = ((dist % r.total) + r.total) % r.total;
+  for (const [a, b, L, l] of r) if (s <= L + l) { const u = l ? (s - L) / l : 0; return { x: a[0] + (b[0] - a[0]) * u, y: a[1] + (b[1] - a[1]) * u, left: b[0] < a[0] }; }
+  return null;
+}
+const SHIP_SPEED = 0.5; // tiles per second
+function pushBoat(out, s, img, wakeW, bob, w, h, ox, by = 0.5) { // wake foam first, then the hull
+  out.push({ draw: (cx, X, Y, TS) => { const u = TS / 16; cx.fillStyle = 'rgba(228,242,255,.55)';
+      for (let k = 1; k < 5; k++) { const off = (s.left ? 1 : -1) * k * 3 * u * wakeW, ww = (5 - k) * u * wakeW; cx.fillRect(Math.round(X + (w * 8) * u + off - ww), Math.round(Y + (h * 16 - 4 + (k & 1)) * u), Math.round(ww * 2), Math.round(u)); }
+      cx.drawImage(img, X, Y, w * TS, h * TS); }, x: s.x - w / 2 + ox, y: s.y - h + by + bob, w, h, z: 1, sy: s.y + 0.4 });
+}
 
 // ---------- draw items ----------
 export function objects(theme, get, x, y, t, out, m) {
   if (get(x, y) === 'B' && !m.gateOpen) out.push({ img: rockslide(), x, y, z: 0 });
 }
-const SHIP_SPEED = 0.55; // tiles per second
-let route = null;
-function shipAt(t) {
-  const P = GEN.deco?.ship; if (!P) return null;
-  if (!route) { route = []; let L = 0; for (let k = 0; k < P.length; k++) { const a = P[k], b = P[(k + 1) % P.length], l = Math.hypot(b[0] - a[0], b[1] - a[1]); route.push([a, b, L, l]); L += l; } route.total = L; }
-  let s = (t * SHIP_SPEED) % route.total; for (const [a, b, L, l] of route) if (s <= L + l) { const u = (s - L) / l; return { x: a[0] + (b[0] - a[0]) * u, y: a[1] + (b[1] - a[1]) * u, left: b[0] < a[0] }; }
-  return null;
-}
 export function mapObjects(m, t, out) {
   if (m.theme !== 'world') return;
   const f8 = Math.floor(t * FPS) % FRAMES;
+  const at = (img, x, y, oy = 0, k = 1) => out.push({ img, x: x + 0.5 - img.width * k / 32, y: y + 1 - img.height * k / 16 + oy, w: img.width * k / 16, h: img.height * k / 16, z: 1, sy: y + 1 });
   for (const [k, [x, y]] of Object.entries(GEN.pois)) {
     if (k === 'haven') out.push({ img: havenIcon(), x: x - 1, y: y + 1 - 42 / 16, z: 1, sy: y + 1 });
     else if (k === 'frost') out.push({ img: frostTown(), x: x - 1, y: y + 1 - 40 / 16, z: 1, sy: y + 1 });
@@ -701,20 +894,46 @@ export function mapObjects(m, t, out) {
     else if (k === 'cavern' || k === 'storm') out.push({ img: caveMouth(k === 'storm', k === 'storm' && (f8 === 3 || f8 === 5) ? 1 : 0), x: x - 0.5, y: y + 1 - 28 / 16, z: 1, sy: y + 1 });
     else if (k === 'hopsend') out.push({ img: hopsendIcon(), x: x - 1, y: y + 1 - 40 / 16, z: 1, sy: y + 1 });
     else if (k === 'kilnhaven') out.push({ img: kilnIcon(), x: x - 1, y: y + 1 - 40 / 16, z: 1, sy: y + 1 });
-    else if (['chippy', 'stones', 'bogshed', 'oasis', 'lodge', 'shed', 'brewery', 'pizzaoven', 'windmill', 'wreck', 'pyramid', 'icecave'].includes(k) || k.startsWith('dock')) out.push({ img: waysideIcon(k.startsWith('dock') ? 'dock' : k), x: x - 0.25, y: y + 1 - 1.25, z: 1, sy: y + 1 });
+    else if (k === 'pyramid') at(pyramidArt(), x, y, 0, 1.15);
+    else if (k === 'windmill') at(windmillArt(f8), x, y, 0, 1.3);
+    else if (k === 'wreck') at(wreckArt(f8 & 1, true), x, y, 0.15, 1.2);
+    else if (k.startsWith('dock')) at(jettyArt(), x, y, 0, 1.1);
+    else if (['chippy', 'stones', 'bogshed', 'oasis', 'lodge', 'shed', 'brewery', 'pizzaoven', 'icecave'].includes(k)) out.push({ img: waysideIcon(k), x: x - 0.25, y: y + 1 - 1.25, z: 1, sy: y + 1 });
     else if (k === 'crypt') out.push({ img: shrine(), x: x - 0.5, y: y + 1 - 2, z: 1, sy: y + 1 });
     else if (k === 'spire') out.push({ img: spireIcon(f8 & 2 ? 1 : 0), x: x - 0.25, y: y + 1 - 3, z: 1, sy: y + 1 });
   }
   const R = GEN.deco?.ruins; if (R) out.push({ img: ruins(), x: R[0], y: R[1] + 1 - 1.5, z: 1, sy: R[1] + 1 });
-  const s = shipAt(t);
-  if (s) {
-    const bob = Math.sin(t * 2.2) * 0.03, img = ship(Math.floor(t * 1.5) % 2, s.left);
-    out.push({ draw: (cx, X, Y, TS) => { // wake foam, then the hull
-      const u = TS / 16; cx.fillStyle = 'rgba(228,242,255,.55)';
-      for (let k = 1; k < 5; k++) { const off = (s.left ? 1 : -1) * k * 3 * u, w = (5 - k) * u; cx.fillRect(Math.round(X + 12 * u + off - w), Math.round(Y + (18 + (k & 1)) * u), Math.round(w * 2), Math.round(u)); }
-      cx.drawImage(img, X, Y, 24 * u, 22 * u);
-    }, x: s.x - 0.75, y: s.y - 1.1 + bob, w: 1.5, h: 22 / 16, z: 1, sy: s.y + 0.4 });
-  }
+  // decorative landmarks from the generator
+  (GEN.deco?.landmarks || []).forEach((l, i) => {
+    switch (l.kind) {
+      case 'lighthouse': at(lighthouse(((Math.floor(t * 2) + i * 3) & 7) < 2 ? 1 : 0), l.x, l.y, 0, 1.4); break;
+      case 'watchtower': at(watchtower(), l.x, l.y, 0, 1.3); break;
+      case 'moonlake': at(castleArt(), l.x, l.y); break;
+      case 'windmill': at(windmillArt((f8 + i) & 7), l.x, l.y, 0, 1.3); break;
+      case 'stoneRing': at(stoneRing(Math.floor(t * 1.5 + i) & 3), l.x, l.y, 0, 1.4); break;
+      case 'camp': at(campArt((f8 + i * 3) & 7), l.x, l.y, 0, 1.4); break;
+      case 'wreck': at(wreckArt(f8 & 1, false), l.x, l.y, 0.35, 1.25); break;
+      case 'fishhut': at(fishHut(f8 & 1), l.x, l.y, 0, 1.25); break;
+    }
+  });
+  // water life: the whirlpool, the sea monsters
+  (GEN.deco?.whirlpools || []).forEach(([x, y]) => out.push({ img: whirl(f8), x: x + 0.5 - 52 / 32, y: y + 0.5 - 44 / 32, z: 0 }));
+  (GEN.deco?.monsters || []).forEach(([x, y], i) => {
+    const ph = (((t + i * 5.3) / 11) % 1 + 1) % 1;
+    if (ph < 0.4) at(finArt(Math.floor(ph / 0.4 * 8)), x, y, 0.25, 1.3);
+    else if (ph > 0.55 && ph < 0.8) at(tailArt(Math.floor((ph - 0.55) / 0.25 * 6)), x + 2, y + 1, 0.25, 1.3);
+  });
+  // sailing ships and boats (all routes are closed loops in open sea), plus the rare swan pedalo
+  (GEN.deco?.ships || []).forEach((pts, i) => {
+    const s = alongRoute(pts, t * SHIP_SPEED * (0.85 + 0.06 * (i % 4)) + i * 9.7); if (!s) return;
+    pushBoat(out, s, sailShip(i & 1, Math.floor(t * 1.5 + i) & 1, s.left), 1, Math.sin(t * 2.2 + i) * 0.04, 34 / 16, 2, 0);
+  });
+  (GEN.deco?.boats || []).forEach((pts, i) => {
+    const s = alongRoute(pts, t * 0.38 + i * 5.1); if (!s) return;
+    pushBoat(out, s, boatArt(Math.floor(t * 1.5 + i) & 1, s.left), 0.7, Math.sin(t * 2.6 + i * 2) * 0.035, 22 / 16, 18 / 16, 0);
+  });
+  const sw = GEN.deco?.ship && alongRoute(GEN.deco.ship, t * 0.55);
+  if (sw) pushBoat(out, sw, swan(Math.floor(t * 1.5) % 2, sw.left), 1, Math.sin(t * 2.2) * 0.03, 1.5, 22 / 16, 0, 0.275);
 }
 
 // ---------- whole-world picture for the map screen: the baked terrain (calm water) plus towns, caves and ruins ----------
@@ -727,7 +946,7 @@ export function mapImage(m) {
     if (!B.wT[i]) { const s = i * 4; o[j] = B.S[s]; o[j + 1] = B.S[s + 1]; o[j + 2] = B.S[s + 2]; o[j + 3] = 255; } else waterPx(o, j, gX, gY, B.wT[i], B.wD[i], B.wF[i], 0);
   }
   x.putImageData(id, 0, 0);
-  const items = []; mapObjects(m, 0, items);
+  const items = []; mapObjects(m, 0, items); items.sort((a, b) => (a.z || 0) - (b.z || 0) || (a.sy ?? a.y) - (b.sy ?? b.y));
   for (const it of items) if (it.img) x.drawImage(it.img, Math.round(it.x * 16), Math.round(it.y * 16));
   MAPIMG = c; return c;
 }
