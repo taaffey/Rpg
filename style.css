@@ -476,3 +476,13 @@ body:has(#overlay.title) #padL, body:has(#overlay.title) #padR{visibility:hidden
   #overlay .win .credits,#overlay .win.ending{max-height:none}
 }
 #charting{position:fixed;inset:0;z-index:30;display:flex;align-items:center;justify-content:center;background:#070a24;color:#fff6c0;font-size:12px;letter-spacing:1px;text-transform:uppercase}
+
+/* audit polish: roomier options and sub-menus on small screens */
+.opts button b{white-space:normal;text-align:right}
+.opts button{min-height:40px;height:auto}
+.opt input[type=range]{height:40px}
+@media (orientation:landscape) and (max-height:520px){
+  .cmdlist button,.battle .cmdlist .tgt{min-height:40px}
+  .battle .subcmd,.battle .cmdlist.subcmd{min-width:150px}
+}
+@media (prefers-reduced-motion:reduce){*{animation-duration:.01ms!important;transition-duration:.01ms!important}}

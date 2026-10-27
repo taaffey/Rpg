@@ -17,14 +17,14 @@ const font64 = readFileSync(root + 'assets/pressstart2p-latin.woff2').toString('
 const css = readFileSync(root + 'style.css', 'utf8').replace(/url\(['"]?(?:\.\/)?assets\/pressstart2p-latin\.woff2['"]?\)/g, `url(data:font/woff2;base64,${font64})`);
 const html = readFileSync(root + 'index.html', 'utf8');
 const body = html.match(/<body>([\s\S]*)<\/body>/)[1].replace(/<script[^>]*src=[^>]*><\/script>/g, '').trim();
-const fonts = '<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap">';
+const fonts = ''; // the pixel font is embedded in style.css, no third-party request
 const icon = html.match(/<link rel="icon"[^>]*>/)[0];
 const style = `<style>:root{color-scheme:dark}body{background-color:#0b0e1c}\n${css}</style>`;
-const fragment = `<title>Gemforge Chronicles</title>\n${icon}\n${fonts}\n${style}\n${body}\n<script>${js}</script>\n`;
+const fragment = `<title>Bearded Bros</title>\n${icon}\n${fonts}\n${style}\n${body}\n<script>${js}</script>\n`;
 writeFileSync(root + 'dist/artifact.html', fragment);
 // standalone document keeps every <meta>/<link> from the dev page's head (viewport-fit, apple-web-app, manifest, touch icon)
 const head = html.match(/<head>([\s\S]*?)<\/head>/)[1].replace(/<link rel="stylesheet" href="style.css">/, '').replace(/<title>[\s\S]*?<\/title>/, '').trim();
-const standalone = `<!doctype html>\n<html lang="en"><head>\n${head}\n<meta name="gemforge-bundled" content="1">\n<title>Gemforge Chronicles</title>\n${style}</head><body>\n${body}\n<script>${js}</script>\n</body></html>\n`;
+const standalone = `<!doctype html>\n<html lang="en"><head>\n${head}\n<meta name="gemforge-bundled" content="1">\n<title>Bearded Bros</title>\n${style}</head><body>\n${body}\n<script>${js}</script>\n</body></html>\n`;
 writeFileSync(root + 'dist/index.html', standalone);
 cpSync(root + 'assets', root + 'dist/assets', { recursive: true });
 const build = createHash('sha1').update(standalone).digest('hex').slice(0, 8);

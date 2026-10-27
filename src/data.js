@@ -617,7 +617,7 @@ Object.assign(QUESTS, {
 export const KEY_ITEMS = { ember_heart: 'Ember Heart', grave_heart: 'Grave Heart', rime_heart: 'Rime Heart' };
 export const STORY = {
   cast: { sereth: ['Sereth', 'sereth'], guard: ['Guard', 'guard'], elder: ['Elder', 'elder'], landlord: ['Landlord', 'barkeep'] },
-  greet: ['{all}... So the bell chose you. I asked it for heroes of legend. The bell, it seems, has a sense of humour.', '{0} the {job0}. Gemforge was a smith, not a soldier, and still he bound three evils. So there is hope. Some.', 'The Wyrm\'s seal is the weakest. Arm yourselves, then go east, to the Ashen Cavern.'],
+  greet: ['{all}... So the bell chose you. I asked it for heroes of legend. The bell, it seems, has a sense of humour.', '{0} the {job0}. Gemforge was a smith, not a soldier, and still he bound three evils. So there is hope. Some.', 'The Wyrm\'s seal is the weakest. Arm yourselves, then go north-east, to the Ashen Cavern. Level up on the grass first.'],
   // first time a place is entered (set: story flag raised by the scene)
   area: {
     cavern: [

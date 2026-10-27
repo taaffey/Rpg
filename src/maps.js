@@ -353,7 +353,7 @@ gen('brewery', 'The Great Brewery', 'cellar', GEN.breweryInfo, 'brewery', 'mash_
 MAPS.brewery.minLv = 15; // optional: a warning toast below this average level
 // the docks: a ferryman in a hut at each end of the sea crossing (service 'ferry' in game.js)
 interior('port_s', 'Westshore Jetty', 'house', wb('dock_s'), { theme: 'jetty', npcs: [{ x: 4, y: 3, type: 'fisher', name: 'Ferryman', service: 'ferry', need: 'titan', to: ['world', ...GEN.adj.dock_h], no: ['Hopsend? Over the water? Not till the big frozen fellow in the Spire is dealt with, my insurance says. Also my mother says. Mostly my mother.'], go: ['Hop on. The crossing takes a minute. I will tell you about my cousin. He has a boat too. His is bigger.', 'Mind the gulls.'] }] });
-interior('port_h', 'Hopsend Jetty', 'house', wb('dock_h'), { theme: 'jetty', npcs: [{ x: 4, y: 3, type: 'fisher', name: 'Ferryman', service: 'ferry', to: ['world', ...GEN.adj.dock_s], go: ['Back to Sunscar? Sure. Hold the rail, the sea is feeling dramatic today.'] }] });
+interior('port_h', 'Hopsend Jetty', 'house', wb('dock_h'), { theme: 'jetty', npcs: [{ x: 4, y: 3, type: 'fisher', name: 'Ferryman', service: 'ferry', to: ['world', ...GEN.adj.dock_s], go: ['Back to Westshore? Sure. Hold the rail, the sea is feeling dramatic today.'] }] });
 
 // ---------------------------------------------------------------- Cinder Isle: the far north-west volcano holiday island (post-ending)
 TOWNS.kilnhaven = town([

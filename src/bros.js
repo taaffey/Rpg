@@ -64,7 +64,7 @@ MAPS.cellar = {
   for (const n of inn.npcs) if (n.service === 'inn') Object.assign(n, { type: 'barnaby', name: 'Barnaby' });
   inn.npcs.push({ x: 3, y: 3, type: 'brenna', name: 'Brenna', local: 'brenna',
     text: ['If you\'re going to stand there, at least stand there holding a mop.'],
-    textBy: [['!s:cellar', ['Cellar\'s through the trapdoor in the corner. Mind the slimes. And Gary.', 'No, I don\'t know why it\'s called Gary. It introduced itself.']]] });
+    textBy: [['!s:cellar', ['Cellar\'s through the trapdoor in the corner. Mind the slimes. And Gary.', 'No, I don\'t know why it\'s called Gary. It introduced itself. Tip: the Skill menu has Headbutt, and a Pint of Lager fixes a wobble.']]] });
 }
 // the Haven gate stays shut to two blokes in hoodies until the cellar is cleared
 for (const pt of Object.values(MAPS.haven.portals)) if (pt.to === 'world') Object.assign(pt, { need: 's:called', deny: [

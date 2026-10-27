@@ -1,7 +1,7 @@
 // iPhone-style touch regression: node tools/regress-mobile.mjs [url]
 import { createRequire } from 'module';
 const pw = createRequire('/node-tools/node_modules/')('playwright');
-const URL_ = process.argv[2] || 'http://localhost:8123/index.html';
+const URL_ = process.argv[2] || `http://localhost:${process.env.PORT || 8123}/index.html`;
 const b = await pw.chromium.launch({ executablePath: process.env.CHROME || '/opt/pw-browsers/chromium-1194/chrome-linux/chrome' });
 let fails = 0; const ok = (n, c, x = '') => { console.log(c ? 'PASS' : 'FAIL', n, x); if (!c) fails++; };
 for (const [name, w, h] of [['iPhone 14 portrait', 390, 844], ['iPhone 14 landscape', 844, 390]]) {

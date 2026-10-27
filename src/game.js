@@ -41,7 +41,7 @@ const lootName = (k, id) => (k === 'gems' && !gemsOn() ? 'Dull Stone' : DB[k][id
 const veteran = () => (G?.stats?.wins || 0) >= 10; // Repeat / Auto join the battle menu once the party has some fights behind it
 
 // ---------- options (persisted separately from saves) ----------
-const OPT = { music: 0.8, sfx: 0.9, speed: 'normal', minimap: true, shake: true };
+const OPT = { music: 0.8, sfx: 0.9, speed: 'normal', minimap: true, shake: !matchMedia('(prefers-reduced-motion: reduce)').matches };
 try { Object.assign(OPT, JSON.parse(localStorage.getItem(SETTINGS) || '{}')); } catch {}
 const SPEEDS = { slow: 820, normal: 560, fast: 300, instant: 110 };
 function applyOptions() { setVolumes(OPT.music, OPT.sfx); FX.shake = OPT.shake; try { localStorage.setItem(SETTINGS, JSON.stringify(OPT)); } catch {} }
@@ -161,7 +161,7 @@ function toast(msg, ms = 2200) { const t = $('#toast'); if (!t) return; t.innerH
 const tipOnce = () => false; // no tutorial pop-ups: players work things out (the journal keeps a few notes)
 function tip(id, text, ms = 5200) { if (!tipOnce(id)) return; if (BT) BT.log.push('💡 ' + text); else toast('💡 ' + text, ms); } // in battle the hint goes to the log so it never covers the stage
 const TOUCH = matchMedia('(pointer:coarse)').matches;
-function autosave() { if (!G || !G.slot || BT) return; if (save()) toast('💾 Autosaved', 1400); }
+function autosave() { if (!G || !G.slot || BT) return; if (save()) toast('💾 Autosaved', 1400); else toast('⚠ Could not autosave: storage is full or blocked', 3200); }
 const mapDef = () => MAPS[G.map];
 const inTown = () => ['town', 'interior'].includes(mapDef().kind);
 const maxOf = (c) => stats(c);
@@ -181,9 +181,9 @@ const here = (n) => !(n.local && G.party.some((c) => c.look === n.local)); // lo
 const npcAt = (x, y) => mapDef().npcs?.find((n) => n.x === x && n.y === y && here(n));
 const inAutumn = (x, y) => { const a = GEN.deco?.autumn; return !!a && x >= a[0] && x <= a[2] && y >= a[1] && y <= a[3]; };
 const regAt = (x, y) => (GEN.deco?.reg?.[y]?.charCodeAt(x) ?? 48) - 48;
-const regionAt = (x, y) => { const t = (MAPS.world.rows[y] || '')[x] ?? '.', g = regAt(x, y); return t === ',' || t === 't' ? 'snow' : t === 'd' ? 'desert' : g === 5 ? 'ember' : g === 4 ? 'autumn' : t === ':' ? 'swamp' : g === 6 ? 'jungle' : 'green'; };
+const regionAt = (x, y) => { const t = (MAPS.world.rows[y] || '')[x] ?? '.', g = regAt(x, y); return t === ',' || t === 't' ? 'snow' : t === 'd' ? 'desert' : (x >= 138 && y >= 96) ? 'obsidian' : g === 5 ? 'ember' : g === 4 ? 'autumn' : t === ':' ? 'swamp' : g === 6 ? 'jungle' : 'green'; };
 const regionOf = () => (G.map !== 'world' ? null : regionAt(G.x, G.y));
-const REGION_NAME = { snow: 'Frostfields', swamp: 'Mire Marsh', plains: 'Northern Plains', green: 'Greenmarch', desert: 'Sunscar Sands', autumn: 'Hopsend Isle', ember: 'Cinder Isle', jungle: 'Jade Jungle' };
+const REGION_NAME = { snow: 'Frostfields', swamp: 'Mire Marsh', green: 'Greenmarch', desert: 'Sunscar Sands', autumn: 'Hopsend Isle', ember: 'Cinder Isle', jungle: 'Jade Jungle', obsidian: 'Obsidian Isle' };
 function musicFor() { const m = mapDef(); if (m.kind !== 'outdoor') return m.music; const r = regionOf(); return r === 'snow' ? 'snow' : r === 'desert' || r === 'ember' ? 'desert' : r === 'swamp' ? 'mirewood' : 'world'; }
 function reveal() { // fog of war
   const m = mapDef(); if (!m.fog) return;
@@ -436,7 +436,8 @@ function overlayKey(e) {
 addEventListener('keydown', (e) => {
   if (inOverlay()) { if (overlayKey(e)) e.preventDefault(); return; } // never move the map while a window is open
   if (!G) return;
-  if (KEYS[e.key]) { e.preventDefault(); route = []; if (!keysDown.includes(e.key)) keysDown.push(e.key); if (!e.repeat) step(...KEYS[e.key]); }
+  const kk = e.key.length === 1 ? e.key.toLowerCase() : e.key; // Shift / Caps Lock must not break walking
+  if (KEYS[kk]) { e.preventDefault(); route = []; if (!keysDown.includes(kk)) keysDown.push(kk); if (!e.repeat) step(...KEYS[kk]); }
   else if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); interact(); }
   else if ((e.key === 'Escape' || e.key === 'm') && !inOverlay() && !busy) mainMenu();
   else if (e.key === 'n' && !inOverlay()) { OPT.minimap = !OPT.minimap; applyOptions(); }
@@ -544,7 +545,7 @@ function moveTick(dt) { // glide at constant speed; when a step lands and input 
 // keyboard: track held arrow/WASD keys so holding walks smoothly (no OS key-repeat delay); the newest key wins
 const keysDown = [];
 const heldKeyDir = () => (keysDown.length ? KEYS[keysDown[keysDown.length - 1]] : null);
-addEventListener('keyup', (e) => { const i = keysDown.indexOf(e.key); if (i >= 0) keysDown.splice(i, 1); });
+addEventListener('keyup', (e) => { const i = keysDown.indexOf(e.key.length === 1 ? e.key.toLowerCase() : e.key); if (i >= 0) keysDown.splice(i, 1); });
 addEventListener('blur', () => { keysDown.length = 0; held = null; });
 ACT.close = hide;
 
@@ -939,12 +940,12 @@ const OBJECTIVES = [ // the main thread, in the story's voice. show / after / do
   { title: 'Get a Proper Job', show: 's:cellar !s:called', hint: 'The Adventurer\'s Guild in Haven hands out callings. Apparently "content creator" isn\'t one.', done: 's:called', doneHint: 'Employed at last.' },
   { title: 'Get Home', show: 's:called', hint: 'Elder Mott reckons the bell will only ring for you again once Gemforge\'s three evils are slain. Devon\'s phone is on a few percent.', done: 'titan', doneHint: 'The bell is ringing.' },
   { title: 'The Ashen Wyrm', show: 's:called', hint: 'The Elder says its seal is the weakest. The Ashen Cavern lies north-east of Haven, in the foothills of the great mountains (thirty steps or so; get a few levels on the grass first).', done: 'wyrm', doneHint: 'Slain. Its heart is yours, and the northern pass is open.' },
-  { title: 'The Drowned King', show: 's:called', hint: 'Morvath stirs in the Sunken Crypt, in the dark marsh, a long way east, past Mirewood.', done: 'lich', doneHint: 'Slain. Mirewood keeps its lamps lit again.' },
+  { title: 'The Drowned King', show: 's:called', hint: 'Morvath stirs in the Sunken Crypt, in the dark marsh to the east, beyond the lake (Mirewood is further south).', done: 'lich', doneHint: 'Slain. Mirewood keeps its lamps lit again.' },
   { title: 'The Grey Hand', show: 'wyrm|lich', hint: 'The seals were not broken. They were cut. Who would free such things?', done: 's:met', doneHint: 'Sereth, last apprentice of Gemforge. He wants the hearts.' },
   { title: 'North', after: 'wyrm', hint: 'The pass is open. Frostholm lies beyond it.', done: 'v:frostholm', doneHint: 'Frostholm stands in the shadow of the Frost Spire.' },
-  { title: 'The Walking Mountain', after: 'wyrm lich', lockHint: 'The Frost Spire\'s door is sealed with the drowned king\'s mark. Morvath first.', hint: 'The Frost Spire rises north-east of Frostholm. The Titan waits at its summit.', metHint: 'Sereth waits atop the Frost Spire. So does the Titan.', done: 'titan', doneHint: 'The mountain sleeps. Sereth is dust.' },
+  { title: 'The Walking Mountain', after: 'wyrm lich', lockHint: 'The Frost Spire\'s door is sealed with the drowned king\'s mark. Morvath first.', hint: 'The Frost Spire rises east of Frostholm. The Titan waits at its summit.', metHint: 'Sereth waits atop the Frost Spire. So does the Titan.', done: 'titan', doneHint: 'The mountain sleeps. Sereth is dust.' },
   { show: 'wyrm', title: 'Thunder on the Plains', after: 'wyrm', optional: true, hint: 'A drake nests in the Storm Cavern in the Frostfields. Not for the faint (Lv 11+).', done: 'storm_drake', doneHint: 'Stars over the plains again.' },
-  { show: 'wyrm', title: 'The Sun Pharaoh', optional: true, hint: 'Something asks riddles beneath the Sunscar Ruins, far away in the north-east desert, past the marsh (Lv 11+).', done: 'sphinx', doneHint: 'The riddle is answered.' },
+  { show: 'wyrm', title: 'The Sun Pharaoh', optional: true, hint: 'Something asks riddles beneath the Sunscar Ruins, far away in the north-east desert, up the long eastern road (Lv 11+).', done: 'sphinx', doneHint: 'The riddle is answered.' },
   { title: 'The Old Windmill', show: 's:called', optional: true, hint: 'The Old Windmill, Haven Isle. Ghostly flour and a very angry goose. The Miller does not like visitors. Bring holy or fire, never dark (Lv 8).', done: 'miller', doneHint: 'The mill stands still, and the bread has never been better.' },
   { title: 'The Salty Sue', show: 's:called', optional: true, hint: 'A pirate ship stuck in the Mire Isle bog. Fire or holy for the crew, bolts for the crabs and the barnacle things (Lv 14).', done: 'captain_barnacle', doneHint: 'The Salty Sue has settled into the mud for good.' },
   { title: 'Mild Inconvenience', show: 's:called', optional: true, hint: 'A pyramid built by a pharaoh who loved forms. Fire or holy, take a number, and do not read the small print (Lv 16).', done: 'clerk_pharaoh', doneHint: 'The queue is moving. Somebody approved something.' },

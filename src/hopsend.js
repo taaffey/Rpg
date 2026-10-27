@@ -146,9 +146,9 @@ STORY.chat.push(
 
 // ---------------------------------------------------------------- pub quiz
 QUIZ.push(
-  { q: 'Which flower gives beer its bitterness, grown up tall poles in Hopsend?', a: ['Hops', 'Barley', 'Rhubarb', 'Dandelion'] },
-  { q: 'What is the climbing stem of a hop plant called?', a: ['A bine', 'A vine', 'A stalk', 'A rope'] },
-  { q: 'What is the sweet liquid before it ferments into beer?', a: ['Wort', 'Port', 'Sort', 'Gravy'] },
+  { q: 'Which flower gives beer its bitterness, grown up tall poles in Hopsend?', a: ['Hops', 'Barley', 'Rhubarb', 'Dandelion'], if: 'v:hopsend' },
+  { q: 'What is the climbing stem of a hop plant called?', a: ['A bine', 'A vine', 'A stalk', 'A rope'], if: 'v:hopsend' },
+  { q: 'What is the sweet liquid before it ferments into beer?', a: ['Wort', 'Port', 'Sort', 'Gravy'], if: 'v:hopsend' },
   { q: 'What is scrumpy, as served on Hopsend Isle?', a: ['Rough farmhouse cider', 'A kind of slime', 'A small hat', 'A pub quiz round'], if: 'v:hopsend' },
   { q: 'On which island does the Great Brewery stand?', a: ['Hopsend Isle', 'The Frostfields', 'Sunscar Sands', 'Mirewood'], if: 'v:hopsend' },
   { q: 'Which vessel went rogue in the Great Brewery?', a: ['The Mash Tun', 'The Kettle', 'The Teapot', 'Big Gary\'s dad'], if: 'v:brewery' },

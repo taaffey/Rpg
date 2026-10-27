@@ -15,7 +15,7 @@ same bell to summon the heroes of legend. He got two blokes in hoodies. To get h
 - Until all four have joined, random fights scale to the party's size (`PARTY_SCALE` in `src/bros.js`).
 - The intro lives in `src/bros.js`; the pub illustrations in `src/pubart.js`. Characters keep their faces (beards!) whatever their
   calling: art is keyed `job@look` (e.g. `knight@adam`). Balance: `node tools/introsim.mjs` (cellar) and `node tools/progress.mjs`.
-Plain HTML/JS modules, no build step, no asset files: all art and audio are generated in code.
+Plain HTML/JS modules (a small esbuild step bundles them for release). Nearly all art and audio are generated in code; `assets/` only holds the embedded pixel font, app icons, the PWA manifest and a service worker.
 
 ## Run
     python3 -m http.server 8123     # then open http://localhost:8123
@@ -25,7 +25,7 @@ arrows move the focus, Enter/Space selects, Esc/Backspace goes back, L expands t
 keyboard alone, or with the mouse. Options (volumes, battle speed, shake, minimap) are in the menu and on the title screen.
 
 ## Built for iPhone (and every other screen)
-- **Adaptive view**: the map shows 12 tiles across in portrait (as many rows as fit), 21x12 in landscape and 16x12 on desktop,
+- **Adaptive view**: the map shows 12 tiles across in portrait (as many rows as fit), about 18x12 in landscape, 22x17 on desktop and 22x20 on iPad,
   so tiles stay chunky on an iPhone SE or a Pro Max. Pixel-perfect nearest-neighbour scaling, 60 fps even with the CPU throttled 4x.
 - **Virtual controller**: a thumb-sized D-pad (hold to keep walking) plus Map and Menu buttons; or tap/hold anywhere on the map to
   walk toward it. In landscape the pads flank the map and the battle screen becomes two columns, so commands never fall below the fold.
@@ -36,7 +36,7 @@ keyboard alone, or with the mouse. Options (volumes, battle speed, shake, minima
 ## Finished-game features
 - **3 save slots** with details, autosave (towns, battles, quests, app backgrounding), delete/overwrite confirmation, and
   migration from older saves.
-- **Difficulty** (Easy / Normal / Hard, changeable in Options). **Tutorial hints** appear once, when relevant.
+- **Difficulty** (Easy / Normal / Hard, changeable in Options). There are no tutorial pop-ups: NPCs and the journal drop hints in the story's voice.
 - **Battle QoL**: Repeat your last move, Auto-battle (tap to stop), turn-order bar, expandable log, 3 speed settings.
 - **Menus**: equipment stat comparison (green/red arrows), Bestiary with weaknesses, Journal with quests, full map screen.
 - Crash safety: a battle error returns you to the map instead of freezing; progress is autosaved.
@@ -130,14 +130,14 @@ foot of the Frost Spire the party meets the one who wants them. The Titan is the
 - **Ending**: the finale scene, then a cinematic dawn with an epilogue for each hero, scrolling credits and your stats.
 
 ## Visuals and sound (all generated in code)
-- `src/sprites.js`, `src/art2.js`: ASCII-grid pixel sprites (10 jobs, townsfolk, 25 enemies, three 32x32 bosses, furniture,
+- `src/sprites.js`, `src/art2.js`: ASCII-grid pixel sprites (12 callings, townsfolk, 100+ enemies, three 32x32 bosses, furniture,
   tile themes), recolor variants, gem icons.
 - `src/stage.js`: animated battle stage: painted backdrops per region, per-enemy attack animations (squash, swoop, pounce,
   float, stomp), hit flashes, spell projectiles and per-element particles, floating damage numbers, an arena slide-in, boss title cards,
   camera zoom on big hits and a victory pose.
 - `src/terrain.js`: autotiled outdoor/town terrain and whole-building images (see above).
 - Map: smooth walking, party trail with walk cycle, torch lighting, weather per region, battle wipe, animated title screen.
-- `src/audio.js`: Web Audio chiptune: 11 looping tracks (town, Frostholm, overworld, snow, cavern, crypt, spire, battle, boss)
+- `src/audio.js`: Web Audio chiptune: 18 looping tracks (title, town, Frostholm, Mirewood, overworld, snow, desert, dungeon, crypt, spire, storm, ruins, pub, battle, boss, victory, game over, ending)
   plus jingles and ~20 effects. Notation is a tiny string format (`"E5:2 G5 -:2"` = note:length-in-steps, `-` = rest).
 
 ## Layout
@@ -148,7 +148,7 @@ foot of the Frost Spire the party meets the one who wants them. The Titan is the
 
 ## Single-file build
     ESBUILD=/path/to/esbuild node tools/build.mjs     # or just: node tools/build.mjs (uses npx esbuild)
-Produces `dist/index.html` (the whole game, about 150 KB, no other files, works from any static host or `file://`) and
+Produces `dist/index.html` (the whole game in one file, about 1.2 MB (410 KB gzipped), works from any static host or `file://`; `dist/` also has the PWA assets) and
 `dist/artifact.html` (the same page as a fragment for hosts that supply the document shell). `dist/` is git-ignored.
 
 ## Tests and tools

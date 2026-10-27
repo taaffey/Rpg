@@ -60,7 +60,7 @@ console.log('\n== offline render (Chromium) ==');
 const pw = createRequire('/node-tools/node_modules/')('playwright');
 const br = await pw.chromium.launch({ executablePath: '/opt/pw-browsers/chromium-1194/chrome-linux/chrome' });
 const pg = await br.newPage(); pg.on('pageerror', (e) => console.log('PAGEERR', e.message)); pg.on('console', (m) => m.type() === 'error' && console.log('CONSOLE', m.text()));
-await pg.goto('http://localhost:8123/tools/');
+await pg.goto(`http://localhost:${process.env.PORT || 8123}/tools/`);
 if (WAV) fs.mkdirSync('/tmp/music', { recursive: true });
 const WAVS = new Set(['title', 'town', 'world', 'battle', 'boss', 'desert', 'mirewood', 'victory', 'spire', 'ending']);
 const rows = [];

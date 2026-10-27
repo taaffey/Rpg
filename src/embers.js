@@ -165,10 +165,10 @@ STORY.chat.push(
 
 // ---------------------------------------------------------------- pub quiz
 QUIZ.push(
-  { q: 'What do you call the long flat shovel used to slide pizzas in and out of a wood-fired oven?', a: ['A peel', 'A paddle', 'A spade', 'A flipper'] },
-  { q: 'Which Italian city is the traditional birthplace of pizza?', a: ['Naples', 'Venice', 'Milan', 'Pisa'] },
-  { q: 'Which cheese is traditionally melted on a pizza Margherita?', a: ['Mozzarella', 'Cheddar', 'Brie', 'Stilton'] },
-  { q: 'What herb sits on top of a proper Margherita pizza?', a: ['Basil', 'Mint', 'Parsley', 'Coriander'] },
+  { q: 'What do you call the long flat shovel used to slide pizzas in and out of a wood-fired oven?', a: ['A peel', 'A paddle', 'A spade', 'A flipper'], if: 'v:kilnhaven' },
+  { q: 'Which Italian city is the traditional birthplace of pizza?', a: ['Naples', 'Venice', 'Milan', 'Pisa'], if: 'v:kilnhaven' },
+  { q: 'Which cheese is traditionally melted on a pizza Margherita?', a: ['Mozzarella', 'Cheddar', 'Brie', 'Stilton'], if: 'v:kilnhaven' },
+  { q: 'What herb sits on top of a proper Margherita pizza?', a: ['Basil', 'Mint', 'Parsley', 'Coriander'], if: 'v:kilnhaven' },
   { q: 'What is the name of the holiday village on Cinder Isle?', a: ['Kilnhaven', 'Hopsend', 'Frostholm', 'Mirewood'], if: 'v:kilnhaven' },
   { q: 'What is the secret inside the volcano on Cinder Isle?', a: ['A pizza oven', 'A sleeping dragon', 'A brewery', 'A launderette'], if: 'v:kilnhaven' },
   { q: 'Which giant pizza lives in the Pizza Oven?', a: ['The Margherita', 'The Hawaiian', 'The Pepperoni Pete', 'The Four Seasons'], if: 'v:pizzaoven' },
