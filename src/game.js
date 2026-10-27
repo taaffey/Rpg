@@ -881,7 +881,7 @@ ACT.mapscreen = () => {
   const W = m.rows[0].length, H = m.rows.length, sc = Math.max(4, Math.min(Math.floor(560 / W), Math.floor(380 / H)));
   const places = (m.places || []).filter(([x, y]) => G.flags.seen[G.map]?.[y]?.[x] === '1');
   show(`<h2>🗺 ${esc(m.name)}</h2><canvas id="bigmap" width="${W * sc}" height="${H * sc}" class="px framed" style="max-width:${W * sc + 8}px;margin:0 auto"></canvas>
-  <div class="dim">${G.map === 'world' ? 'The blinking frame is your party. Dark areas are still unexplored.' : 'White blinking square = you · gold = exits · red = the boss · tan = unopened chests (once seen).'} Press <b>N</b> on the map to toggle the minimap.</div>
+  <div class="dim">${G.map === 'world' ? 'The blinking frame is your party. Dark areas are still unexplored.' : 'White blinking square = you · gold = exits · red = the boss · tan = unopened chests (once seen).'}${TOUCH ? '' : ' Press <b>N</b> on the map to toggle the minimap.'}</div>
   ${places.length && innerHeight > innerWidth ? `<h3>Discovered</h3><div>${places.map((p) => `<span class="chip tag">${ic('pin')}${esc(p[2])}</span>`).join('')}</div>` : ''}<div class="foot" style="position:sticky;bottom:0;padding-top:6px">${btn('menu', 'Back', '', '', 'primary')}</div>`);
   const c2 = $('#bigmap').getContext('2d'); c2.imageSmoothingEnabled = false;
   const art = G.map === 'world' && TR.mapImage ? TR.mapImage(m) : null, seen = G.flags.seen[G.map] || [];
@@ -1366,7 +1366,7 @@ async function victory(b, bossId) {
   if (bossId && STORY.after[bossId]) { await scene(STORY.after[bossId]); autosave(); } // aftermath: what the evil left behind, and who was watching
   if (bossId === 'wyrm' && !G.flags.story.buspass) { // the Elder's thank-you: a fast-travel pass
     G.flags.story.buspass = true;
-    await scene([{ s: 'elder', t: 'Take this, heroes. A Night Bus pass: the N9, which runs to every place you have set foot in. Do not ask who drives. Nobody has ever asked who drives.' }, { s: 'devon', t: 'Bro. A bus pass. In a fantasy world.' }, { s: 'adam', t: 'Use it from the menu, Items. It only stops where we have already been. And not in dungeons.' }, { s: 'n', t: 'Got the Night Bus Pass! (Menu, Items.)' }]); autosave();
+    await scene([{ s: 'elder', t: 'Take this, heroes. A Night Bus pass: the N9, which runs to every place you have set foot in. Do not ask who drives. Nobody has ever asked who drives.' }, { s: 'devon', t: 'Bro. A bus pass. In a fantasy world.' }, { s: 'adam', t: 'Use it from the menu, Items. It only stops where we have already been. And not in dungeons, so we ride it from outside.' }, { s: 'n', t: 'Got the Night Bus Pass! (Menu, Items.)' }]); autosave();
   }
   if (awake) await awakening(awake);
   if (def?.final) await ending();
@@ -1406,11 +1406,28 @@ async function ending() {
     ACT.edone = () => { hide(); music(musicFor()); res(); };
   });
 }
+function wipeHome() { // where a wipe wakes you: the nearest town you have visited on the same landmass as where you fell (a dungeon counts as its door on the overworld)
+  let wx = null, wy = null;
+  if (G.map === 'world') { wx = G.x; wy = G.y; }
+  else if (MAPS[G.map]?.kind === 'town') return { map: G.map, x: MAPS[G.map].spawn.x, y: MAPS[G.map].spawn.y, name: MAPS[G.map].name };
+  else { const hit = Object.entries(MAPS.world.portals).find(([, p]) => p.to === G.map); if (hit) [wx, wy] = hit[0].split(',').map(Number); }
+  const towns = { haven: 'haven', frostholm: 'frost', mirewood: 'mirewood', hopsend: 'hopsend', kilnhaven: 'kilnhaven' };
+  const zone = (x, y) => (x <= 41 && y >= 64 ? 'h' : x <= 42 && y <= 42 ? 'k' : 'm'); // Hopsend Isle, Cinder Isle, the mainland
+  let best = null;
+  for (const [id, poi] of Object.entries(towns)) {
+    if (id !== 'haven' && !G.flags.visited[id]) continue; const [px, py] = GEN.pois[poi];
+    if (wx != null && zone(px, py) !== zone(wx, wy)) continue;
+    const d = wx == null ? 0 : Math.hypot(px - wx, py - wy); if (!best || d < best.d) best = { d, id };
+  }
+  if (!best || best.id === 'haven') return { map: 'haven', x: MAPS.haven.spots.respawn[0], y: MAPS.haven.spots.respawn[1], name: 'the Goose' };
+  return { map: best.id, x: MAPS[best.id].spawn.x, y: MAPS[best.id].spawn.y, name: MAPS[best.id].name };
+}
 async function defeat() {
+  let HOME = null;
   music('gameover');
   await new Promise((res) => {
-    ov.innerHTML = `<div class="win red anim"><div class="vhead">${ic('ko')}<h2 class="bad">${DEFEAT[Math.floor(Math.random() * DEFEAT.length)]}</h2>${ic('ko')}</div><div class="vparty">${G.party.map((c) => `<div class="vp">${portrait(ak(c), 'sm ko')}<div class="vi">${esc(c.name)}</div></div>`).join('')}</div><p>You wake up outside ${G.home && G.home.map !== 'haven' && MAPS[G.home.map] ? `the ${esc(MAPS[G.home.map].name)} inn` : 'the Goose'} with a banging headache. Half your gold is gone. Nobody will say where.</p><div class="foot">${btn('ddone', 'Wake up', '', '', 'primary')}</div></div>`;
-    ACT.ddone = () => { G.gold = Math.floor(G.gold / 2); for (const c of G.party) { const s = maxOf(c); c.hp = s.hp; c.mp = s.mp; } const home = G.home && MAPS[G.home.map] ? G.home : null; if (home) goto(home.map, home.x, home.y); else goto('haven', ...MAPS.haven.spots.respawn); hide(); res(); };
+    ov.innerHTML = `<div class="win red anim"><div class="vhead">${ic('ko')}<h2 class="bad">${DEFEAT[Math.floor(Math.random() * DEFEAT.length)]}</h2>${ic('ko')}</div><div class="vparty">${G.party.map((c) => `<div class="vp">${portrait(ak(c), 'sm ko')}<div class="vi">${esc(c.name)}</div></div>`).join('')}</div><p>You wake up outside ${(HOME = wipeHome()).map === 'haven' ? 'the Goose' : esc(HOME.name)} with a banging headache. Half your gold is gone. Nobody will say where.</p><div class="foot">${btn('ddone', 'Wake up', '', '', 'primary')}</div></div>`;
+    ACT.ddone = () => { G.gold = Math.floor(G.gold / 2); for (const c of G.party) { const s = maxOf(c); c.hp = s.hp; c.mp = s.mp; } const home = HOME || wipeHome(); goto(home.map, home.x, home.y); hide(); res(); };
   });
 }
 
@@ -1434,5 +1451,5 @@ function testParty(jobs = { adam: 'monk', devon: 'mage', brenna: 'cleric', wende
   for (const c of G.party) { if (jobs[c.look] && c.main !== jobs[c.look]) { L.setCalling(c, jobs[c.look]); delete c.cp.bloke; c.cp[c.main] = 0; c.weapon = null; c.armor = LIGHT_ARMOR.has(c.main) ? 'cloth' : 'leather'; c.slots = [null, null, null, null]; sanitize(c, G.inv); autofill(c); } const st = maxOf(c); c.hp = st.hp; c.mp = st.mp; }
   for (const c of G.party) { if (c.look === 'brenna' || c.look === 'wendell') { c.cp[c.main] = 0; c.weapon = LOCALS[c.look].weapon || null; c.slots = [null, null, null, null]; sanitize(c, G.inv); autofill(c); } }
 }
-window.__game = { testParty, get G() { return G; }, get BT() { return BT; }, get v() { return [vx, vy]; }, camState, TS, get route() { return route; }, battle, step, goto, MAPS, snap, OPT, ACT, ui: { shop, inn, guild, socketer, title, slotScreen, diffScreen, talk, itemsMenu, mainMenu, awakening } };
+window.__game = { testParty, wipeHome, get G() { return G; }, get BT() { return BT; }, get v() { return [vx, vy]; }, camState, TS, get route() { return route; }, battle, step, goto, MAPS, snap, OPT, ACT, ui: { shop, inn, guild, socketer, title, slotScreen, diffScreen, talk, itemsMenu, mainMenu, awakening } };
 title();
