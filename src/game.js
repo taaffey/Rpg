@@ -392,7 +392,7 @@ async function step(dx, dy) {
   if (m.boss && t === 'X' && !G.flags.bosses[m.boss.id]) { busy = true; mapShake(); sfx('crit'); await sleep(350); busy = false; return battle([m.boss.id], m.boss.id); }
   const zoneEnc = G.map === 'world' ? { 4: 'hops', 5: 'embers', 6: 'jungle' }[regAt(nx, ny)] : null; // the outlying and jungle areas have their own monsters
   const table = zoneEnc || m.enc || m.encByTile?.[t];
-  if (table && !(m.safe || []).some(([sx2, sy2, r]) => Math.hypot(nx - sx2, ny - sy2) <= r) && Math.random() < m.rate) {
+  if (table && !(m.safe || []).some(([sx2, sy2, r]) => Math.hypot(nx - sx2, ny - sy2) <= r) && Math.random() < m.rate * (G.map === 'world' && roadAt(nx, ny) ? 0.35 : 1)) { // the roads are well-trodden: far fewer ambushes on them, so the long legs between towns are a stroll
     let tb = ENCOUNTERS[table];
     const lure = Object.entries(QUESTS).find(([id, q]) => q.goal.lure?.table === table && qstate(id) === 'active' && !questDone(id))?.[1].goal.lure; // a hunt quest's quarry shows up more often
     if (lure && Math.random() < lure.p) return battle(lure.group);
@@ -862,6 +862,16 @@ function mainMenu() {
   ${menuTip ? `<div id="msg" class="pane">${ic('tip')} ${menuTip}</div>` : '<div id="msg"></div>'}`, '', 'multi');
 }
 const fmtTime = (sec = 0) => { sec = Math.floor(sec); const h = Math.floor(sec / 3600), m = Math.floor((sec % 3600) / 60), s2 = sec % 60; return `${h}:${String(m).padStart(2, '0')}:${String(s2).padStart(2, '0')}`; };
+// the Goose pays out for a well-filled bestiary: 25/50/75/100% of foes slain at least once
+const BEAST_TIERS = [[0.25, 500, 'a bag of loose change'], [0.5, 1500, 'a framed photo of you and a goblin'], [0.75, 3000, 'a certificate in Monster Studies'], [1, 6000, 'the Goose Seal of Approval, and five elixirs']];
+const beastDone = () => Object.keys(ENEMIES).filter((id) => G.flags.bestiary[id]?.kills > 0).length;
+function beastClaim() {
+  const n = beastDone(), tot = Object.keys(ENEMIES).length, got = G.flags.story.beastTier || 0, next = BEAST_TIERS[got];
+  if (!next) return '<div class="card gold" style="text-align:center">🪿 Bestiary complete. The Goose is proud. It honks.</div>';
+  const ready = n / tot >= next[0];
+  return `<div class="card" style="text-align:center">🪿 Goose reward ${got + 1}/4: ${next[1]} G and ${next[2]} <small class="dim">(${n}/${tot} slain, needs ${Math.ceil(next[0] * tot)})</small>${ready ? `<div>${btn('beastclaim', 'Claim', '', '', 'primary')}</div>` : ''}</div>`;
+}
+ACT.beastclaim = () => { const got = G.flags.story.beastTier || 0, t = BEAST_TIERS[got]; if (!t || beastDone() / Object.keys(ENEMIES).length < t[0]) return; G.flags.story.beastTier = got + 1; G.gold += t[1]; if (got === 3) G.inv.items.elixir = (G.inv.items.elixir || 0) + 5; sfx('levelup'); banner(`+${t[1]} G`); autosave(); ACT.bestiary(); };
 ACT.bestiary = () => {
   const ids = Object.keys(ENEMIES), seen = ids.filter((id) => G.flags.bestiary[id]);
   const els = (l) => l.map((w) => UI.elemIcon(w)).join('') || '<span class="dim">—</span>';
@@ -869,7 +879,7 @@ ACT.bestiary = () => {
     const r = G.flags.bestiary[id], d = ENEMIES[id];
     if (!r) return '';
     return `<div class="card beast"><div class="bh"><span class="bimg"><img src="${SP.enemyURL(id)}" alt=""></span><div><div class="bn">${d.name}</div>${d.boss ? `<span class="chip tag">${ic('trophy')} Boss</span>` : ''}<div class="dim">Defeated ${r.kills}</div></div></div><div>HP <b>${foeStat(d, 'hp')}</b> · ATK <b>${foeStat(d, 'atk')}</b> · MAG <b>${foeStat(d, 'mag')}</b></div>${r.kills ? `<div>WEAK ${els(d.weak)}&nbsp; RES ${els(d.res)}</div>` : '<div class="dim">Weaknesses unknown</div>'}${r.kills && DROPS[id]?.common ? `<div>${[DROPS[id].common, DROPS[id].rare].filter(Boolean).map(([k, did], j) => (j ? (r.got?.[did] ? `<span class="gold">${ic('star')}${itemIc(k, did)} ${DB[k][did].name}</span>` : `<span class="dim">${ic('star')} ???</span>`) : `${itemIc(k, did)} ${DB[k][did].name}`)).join('<br>')}</div>` : ''}${(() => { const n = fieldNote(id); return n ? `<div class="dim note">${esc(n.name)}: “${esc(n.text)}”</div>` : ''; })()}</div>`;
-  }).join('')}</div>${ids.length - seen.length ? `<div class="card dim" style="text-align:center">❔ ${ids.length - seen.length} more creatures are still undiscovered</div>` : ''}<div class="foot">${btn('menu', 'Back', '', '', 'primary')}</div>`);
+  }).join('')}</div>${beastClaim()}${ids.length - seen.length ? `<div class="card dim" style="text-align:center">❔ ${ids.length - seen.length} more creatures are still undiscovered</div>` : ''}<div class="foot">${btn('menu', 'Back', '', '', 'primary')}</div>`);
 };
 ACT.title = title;
 ACT.save = () => { const m = $('#msg'); m.className = 'pane'; m.textContent = save() ? `GAME SAVED TO SLOT ${G.slot}.` : 'COULD NOT SAVE (STORAGE FULL OR BLOCKED).'; };
@@ -1139,6 +1149,7 @@ ACT.ungem = (i, k) => { const c = G.party[B.i]; G.inv.gems.push(...c.gems[+i].sp
 // ---------- battle ----------
 let BT = null;
 // a foe's stat as you'd meet it now: difficulty, and (outside boss fights) the small-party scaling
+let ROAD = null; const roadAt = (x, y) => (ROAD ||= new Set((GEN.deco?.roads || []).map(([a, b]) => a + ',' + b))).has(x + ',' + y);
 const ngMul = (k) => { const n = Math.min(5, G.ngp || 0); return n ? (k === 'hp' ? 1 + 0.4 * n : k === 'reward' ? 1 + 0.5 * n : k === 'def' ? 1 + 0.08 * n : 1 + 0.2 * n) : 1; }; // New Game+: each loop of the bell toughens the world
 const foeStat = (d, k) => { const m = DIFFICULTY[G.difficulty || 'normal'].mod, ps = !d.boss && PARTY_SCALE[G.party.length]; return Math.round(d[k] * (m[k] ?? 1) * ngMul(k) * (ps ? (k === 'hp' ? ps.hp : ps.atk) : 1)); };
 // the party's one-line field note on an enemy (BESTIARY_NOTES in data.js); whoever isn't in the party is replaced by Devon
