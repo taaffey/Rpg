@@ -124,7 +124,7 @@ function migrate(g) {
   g.v = 3; g.flags ||= {};
   for (const k of ['chests', 'bosses', 'seen', 'talked', 'visited', 'quests', 'qprog', 'qitems', 'tips', 'bestiary', 'story', 'chat']) g.flags[k] ||= {};
   if (g.flags.worldv !== WORLD_V) { delete g.flags.seen.world; for (const k of Object.keys(g.flags.chests)) if (k.startsWith('world:')) delete g.flags.chests[k]; g.flags.worldMoved = true; if (g.map === 'world') { [g.x, g.y] = GEN.adj.haven; g.dir = 'down'; } }
-  g.playtime ||= 0; g.stats ||= { wins: 0 }; g.difficulty = DIFFICULTY[g.difficulty] ? g.difficulty : 'normal';
+  g.playtime ||= 0; g.ngp = Math.max(0, Math.min(5, g.ngp | 0)); g.stats ||= { wins: 0 }; g.difficulty = DIFFICULTY[g.difficulty] ? g.difficulty : 'normal';
   for (const c of g.party) { c.extra ||= 0; c.gems ||= []; while (c.gems.length < 5) c.gems.push([]); }
   // old saves keep their gear; only ids that no longer exist are dropped (never a crash on load)
   g.inv ||= {}; for (const k of ['weapons', 'armors', 'accs', 'gems']) g.inv[k] = (g.inv[k] || []).filter((id) => DB[k][id]); g.inv.items ||= {};
@@ -751,7 +751,7 @@ function slotScreen(mode) {
     const d = readSlot(i), g = d?.G;
     if (!g) return `<div class="slot"><span class="lead">${ic('save')}</span><div class="t"><b>Slot ${i}</b><small>Empty</small></div>${mode === 'new' ? btn('slotpick', 'Start here', i, '', 'primary') : '<span class="dim">—</span>'}</div>`;
     const where = g.map === 'world' ? (REGION_NAME[regionAt(g.x, g.y)] || 'Overworld') : MAPS[g.map]?.name || '?', bosses = ['wyrm', 'lich', 'titan'].filter((k) => g.flags?.bosses?.[k]).length;
-    return `<div class="slot"><div class="t"><b>Slot ${i} <span class="chip tag">${DIFFICULTY[g.difficulty]?.name || 'Normal'}</span></b><div class="who">${(g.party || []).map((c) => `<span class="face" title="${esc(c.name)}"><img src="${UI.faceURL(ak(c))}" alt=""></span><small>${c.level}</small>`).join(' ')}</div><small>${ic('pin')} ${esc(where)}<br>${ic('trophy')} ${bosses}/3 evils slain · ${fmtTime(g.playtime)}<br>${fmt(d.savedAt)}</small></div>
+    return `<div class="slot"><div class="t"><b>Slot ${i} <span class="chip tag">${DIFFICULTY[g.difficulty]?.name || 'Normal'}</span>${g.ngp ? ` <span class="chip tag">NG+${g.ngp}</span>` : ''}</b><div class="who">${(g.party || []).map((c) => `<span class="face" title="${esc(c.name)}"><img src="${UI.faceURL(ak(c))}" alt=""></span><small>${c.level}</small>`).join(' ')}</div><small>${ic('pin')} ${esc(where)}<br>${ic('trophy')} ${bosses}/3 evils slain · ${fmtTime(g.playtime)}<br>${fmt(d.savedAt)}</small></div>
       <div class="col">${btn('slotpick', mode === 'new' ? (pendingSlot === i ? 'Tap to overwrite' : 'Overwrite') : 'Load', i, '', mode === 'new' && pendingSlot !== i ? '' : 'primary')}${btn('slotdel', pendingDel === i ? 'Tap to delete' : 'Delete', i, '', pendingDel === i ? 'danger' : '')}</div></div>`;
   }).join('')}<div class="foot">${btn('title', 'Back')}</div>`);
 }
@@ -1139,7 +1139,8 @@ ACT.ungem = (i, k) => { const c = G.party[B.i]; G.inv.gems.push(...c.gems[+i].sp
 // ---------- battle ----------
 let BT = null;
 // a foe's stat as you'd meet it now: difficulty, and (outside boss fights) the small-party scaling
-const foeStat = (d, k) => { const m = DIFFICULTY[G.difficulty || 'normal'].mod, ps = !d.boss && PARTY_SCALE[G.party.length]; return Math.round(d[k] * (m[k] ?? 1) * (ps ? (k === 'hp' ? ps.hp : ps.atk) : 1)); };
+const ngMul = (k) => { const n = Math.min(5, G.ngp || 0); return n ? (k === 'hp' ? 1 + 0.4 * n : k === 'reward' ? 1 + 0.5 * n : k === 'def' ? 1 + 0.08 * n : 1 + 0.2 * n) : 1; }; // New Game+: each loop of the bell toughens the world
+const foeStat = (d, k) => { const m = DIFFICULTY[G.difficulty || 'normal'].mod, ps = !d.boss && PARTY_SCALE[G.party.length]; return Math.round(d[k] * (m[k] ?? 1) * ngMul(k) * (ps ? (k === 'hp' ? ps.hp : ps.atk) : 1)); };
 // the party's one-line field note on an enemy (BESTIARY_NOTES in data.js); whoever isn't in the party is replaced by Devon
 const fieldNote = (id) => {
   const n = DATA.BESTIARY_NOTES?.[id]; if (!n) return null;
@@ -1163,6 +1164,7 @@ async function battleInner(groupIds, bossId = null) {
   busy = true;
   const mod = { ...DIFFICULTY[G.difficulty || 'normal'].mod }, ps = !bossId && PARTY_SCALE[G.party.length];
   if (ps) { mod.hp *= ps.hp; mod.atk *= ps.atk; mod.mag *= ps.atk; }
+  for (const k of ['hp', 'atk', 'mag', 'def', 'reward']) mod[k] = (mod[k] ?? 1) * ngMul(k);
   const b = new Battle(G.party, groupIds, Math.random, !!bossId, mod);
   await transition(); music(bossId ? 'boss' : 'battle');
   const firstId = !bossId && b.e.map((e) => e.id).find((id) => !G.flags.bestiary[id] && fieldNote(id)), note = firstId && fieldNote(firstId); // first sight of a new foe: the party says something
@@ -1386,6 +1388,17 @@ function awakening({ heart, jobs, gems }) {
   });
 }
 const epilogueOf = (c) => { const e = STORY.epilogue[c.look] ?? STORY.epilogue[c.main]; return (typeof e === 'string' ? e : e?.[c.main] || e?.default) || '{n} went home.'; };
+let ngPending = false;
+// New Game+: the bell rings again. Party, gear and gold carry over; the world, its bosses and quests reset and hit back harder (each loop: foes +40% HP, +20% damage).
+function newGamePlus() {
+  const keep = G.flags.qitems || {}, hearts = Object.fromEntries(Object.keys(KEY_ITEMS).filter((k) => keep[k]).map((k) => [k, true]));
+  const prev = G; newGame(); const n = Math.min(5, (prev.ngp || 0) + 1);
+  Object.assign(G, { party: prev.party, inv: prev.inv, gold: prev.gold, difficulty: prev.difficulty, slot: prev.slot, playtime: prev.playtime, stats: prev.stats, ngp: n });
+  for (const c of G.party) { const st = maxOf(c); c.hp = st.hp; c.mp = st.mp; c.ko = false; }
+  Object.assign(G.flags.story, { woke: true, cellar: true, called: true, wendell: true, brenna: true }); G.flags.qitems = hearts; G.flags.visited.haven = true; G.flags.worldv = WORLD_V;
+  goto('haven', ...MAPS.haven.spots.bell); autosave(); music(musicFor());
+  scene([{ s: 'elder', t: 'You again. The bell is ringing. Properly, this time. Everything you beat has come back, and it is cross about it.' }, { s: 'devon', t: 'Bro. New Game Plus. We keep the beards.' }, { s: 'adam', t: 'We keep the gear too. Everything else is angrier.' }]);
+}
 async function ending() {
   if (STORY.finale) { goto('haven', ...MAPS.haven.spots.bell); await sleep(600); await scene(STORY.finale); } // the bell rings for them in Haven: back to The Bell & Anvil, two minutes after they left
   music('ending');
@@ -1402,8 +1415,9 @@ async function ending() {
   await new Promise((res) => {
     show(`<h2>🍻 Last orders</h2>${pubImg('return')}
     <div class="credits"><div class="roll">${roll.map(([t, k]) => `<div class="${k}">${t || '&nbsp;'}</div>`).join('')}</div></div>
-    ${left.length ? `<p class="dim">Still sleeping: ${left.join(', ')}. The bell is waiting.</p>` : `<p class="gold">The bell of Haven rings for ${esc(partyNames())}.</p>`}<div class="foot">${btn('edone', 'Keep exploring', '', '', 'primary')}</div>`, '', 'gold');
-    ACT.edone = () => { hide(); music(musicFor()); res(); };
+    ${left.length ? `<p class="dim">Still sleeping: ${left.join(', ')}. The bell is waiting.</p>` : `<p class="gold">The bell of Haven rings for ${esc(partyNames())}.</p>`}<div class="foot">${btn('edone', 'Keep exploring', '', '', 'primary')}${(G.ngp || 0) < 5 ? btn('ngplus', ngPending ? 'Tap again: New Game+' : 'New Game+') : ''}</div>`, '', 'gold');
+    ACT.edone = () => { ngPending = false; hide(); music(musicFor()); res(); };
+    ACT.ngplus = () => { if (!ngPending) { ngPending = true; banner('New Game+: keep your party and gear, the world hits back harder. Tap again.'); return; } ngPending = false; hide(); res(); newGamePlus(); };
   });
 }
 function wipeHome() { // where a wipe wakes you: the nearest town you have visited on the same landmass as where you fell (a dungeon counts as its door on the overworld)
@@ -1451,5 +1465,5 @@ function testParty(jobs = { adam: 'monk', devon: 'mage', brenna: 'cleric', wende
   for (const c of G.party) { if (jobs[c.look] && c.main !== jobs[c.look]) { L.setCalling(c, jobs[c.look]); delete c.cp.bloke; c.cp[c.main] = 0; c.weapon = null; c.armor = LIGHT_ARMOR.has(c.main) ? 'cloth' : 'leather'; c.slots = [null, null, null, null]; sanitize(c, G.inv); autofill(c); } const st = maxOf(c); c.hp = st.hp; c.mp = st.mp; }
   for (const c of G.party) { if (c.look === 'brenna' || c.look === 'wendell') { c.cp[c.main] = 0; c.weapon = LOCALS[c.look].weapon || null; c.slots = [null, null, null, null]; sanitize(c, G.inv); autofill(c); } }
 }
-window.__game = { testParty, wipeHome, get G() { return G; }, get BT() { return BT; }, get v() { return [vx, vy]; }, camState, TS, get route() { return route; }, battle, step, goto, MAPS, snap, OPT, ACT, ui: { shop, inn, guild, socketer, title, slotScreen, diffScreen, talk, itemsMenu, mainMenu, awakening } };
+window.__game = { newGamePlus, testParty, wipeHome, get G() { return G; }, get BT() { return BT; }, get v() { return [vx, vy]; }, camState, TS, get route() { return route; }, battle, step, goto, MAPS, snap, OPT, ACT, ui: { shop, inn, guild, socketer, title, slotScreen, diffScreen, talk, itemsMenu, mainMenu, awakening } };
 title();
