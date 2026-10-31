@@ -19,7 +19,7 @@ const loot = (o, where) => {
 for (const [sid, s] of Object.entries(SHOPS)) for (const [k, ids] of Object.entries(s.stock)) for (const id of ids) { has(k, id, `shop ${sid}`); if (DB[k]?.[id] && !(DB[k][id].price > 0)) errs.push(`shop ${sid}: ${id} has no price`); }
 for (const [mid, m] of Object.entries(MAPS)) for (const [pos, c] of Object.entries({ ...(m.chests || {}), ...(m.secrets || {}) })) loot(c, `chest ${mid}@${pos}`);
 // quest items: every find/deliver item has a display name in game.js; every find item sits in some chest; every deliver quest has a recipient
-{ const gsrc = readFileSync(new URL('../src/game.js', import.meta.url), 'utf8'), qi = gsrc.match(/const QITEM = (\{.*\});/), QITEM = qi ? Function('KEY_ITEMS', `return (${qi[1]})`)(KEY_ITEMS) : {};
+{ const gsrc = readFileSync(new URL('../src/gamedata.js', import.meta.url), 'utf8'), qi = gsrc.match(/const QITEM = (\{.*\});/), QITEM = qi ? Function('KEY_ITEMS', `return (${qi[1]})`)(KEY_ITEMS) : {};
   const inChests = new Set(Object.values(MAPS).flatMap((m) => Object.values({ ...(m.chests || {}), ...(m.secrets || {}) }).map((c) => c.qitem).filter(Boolean)));
   const recv = new Set(Object.values(MAPS).flatMap((m) => (m.npcs || []).map((n) => n.deliver).filter(Boolean)));
   for (const [qid, q] of Object.entries(QUESTS)) { const g = q.goal;

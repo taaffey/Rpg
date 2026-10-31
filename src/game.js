@@ -2,6 +2,7 @@
 import { SOCKET_COST, DIFFICULTY, DROPS, STORY, KEY_ITEMS, TRAITS, CALLING_BATCHES } from './data.js';
 import { JOBS, SKILLS, GEMS, WEAPONS, ARMORS, ACCS, ITEMS, WEAPON_TYPES, ENEMIES, ENCOUNTERS, ELEM_ICON, BOSSES, SHOPS, QUESTS } from './data.js';
 import { MAPS, WALK, START } from './maps.js';
+import { SPEEDS, CP_AT_LEVEL, REGION_NAME, MINI, MINI_FLOOR, MINI_WALL, LIGHT, KEYS, DIRV, QITEM, STAT_KEYS, BRO_PICKS, BEAST_TIERS, OBJECTIVES, VICTORY, DEFEAT, HEART_GEM } from './gamedata.js';
 import { GEN } from './mapgen.js';
 import * as L from './logic.js';
 import { BROS, COMBOS, LOCALS, PARTY_SCALE, PHONE, PHONE_CHARGED, PUB, WAKE, CELLAR_IN, GARY_DOWN, CALLED, CALLED_AFTER, WENDELL } from './bros.js';
@@ -43,7 +44,6 @@ const veteran = () => (G?.stats?.wins || 0) >= 10; // Repeat / Auto join the bat
 // ---------- options (persisted separately from saves) ----------
 const OPT = { music: 0.8, sfx: 0.9, speed: 'normal', minimap: true, shake: !matchMedia('(prefers-reduced-motion: reduce)').matches };
 try { Object.assign(OPT, JSON.parse(localStorage.getItem(SETTINGS) || '{}')); } catch {}
-const SPEEDS = { slow: 820, normal: 560, fast: 300, instant: 110 };
 function applyOptions() { setVolumes(OPT.music, OPT.sfx); FX.shake = OPT.shake; try { localStorage.setItem(SETTINGS, JSON.stringify(OPT)); } catch {} }
 applyOptions();
 
@@ -140,7 +140,6 @@ function migrate(g) {
 // Saves from before Calling Points: skills came from the hero's level (main calling) and a sub calling two levels behind.
 // Grant each calling the rank that keeps every skill the hero had (and anything slotted), and at least what its level would
 // have earned; the sub calling becomes the second calling. Weapons the new calling cannot hold go back to the pack.
-const CP_AT_LEVEL = [0, 0, 3, 8, 14, 22, 32, 40, 50, 60, 75, 95, 115, 130, 150, 170, 190, 210, 230, 250, 270];
 function migrateCallings(c, inv) {
   if (c.cp) return; if (!JOBS[c.main]) c.main = 'knight'; if (c.sub && !JOBS[c.sub]) c.sub = null;
   const lv = Math.min(L.MAX_LEVEL, c.level || 1), had = (l) => (l >= 9 ? 5 : l >= 7 ? 4 : l >= 5 ? 3 : l >= 3 ? 2 : l >= 1 ? 1 : 0); // skills the old level tables gave by then
@@ -183,7 +182,6 @@ const inAutumn = (x, y) => { const a = GEN.deco?.autumn; return !!a && x >= a[0]
 const regAt = (x, y) => (GEN.deco?.reg?.[y]?.charCodeAt(x) ?? 48) - 48;
 const regionAt = (x, y) => { const t = (MAPS.world.rows[y] || '')[x] ?? '.', g = regAt(x, y); return t === ',' || t === 't' ? 'snow' : t === 'd' ? 'desert' : (x >= 138 && y >= 96) ? 'obsidian' : g === 5 ? 'ember' : g === 4 ? 'autumn' : t === ':' ? 'swamp' : g === 6 ? 'jungle' : 'green'; };
 const regionOf = () => (G.map !== 'world' ? null : regionAt(G.x, G.y));
-const REGION_NAME = { snow: 'Frostfields', swamp: 'Mire Marsh', green: 'Greenmarch', desert: 'Sunscar Sands', autumn: 'Hopsend Isle', ember: 'Cinder Isle', jungle: 'Jade Jungle', obsidian: 'Obsidian Isle' };
 function musicFor() { const m = mapDef(); if (m.kind !== 'outdoor') return m.music; const r = regionOf(); return r === 'snow' ? 'snow' : r === 'desert' || r === 'ember' ? 'desert' : r === 'swamp' ? 'mirewood' : 'world'; }
 function reveal() { // fog of war
   const m = mapDef(); if (!m.fog) return;
@@ -209,8 +207,6 @@ addEventListener('orientationchange', () => setTimeout(layoutView, 250));
 
 // ---------- minimap / map screen ----------
 let miniDirty = true; const miniCache = { id: null, canvas: document.createElement('canvas'), sc: 2 };
-const MINI = { d: '#e0c070', r: '#3c94f0', '.': '#2aa83a', ',': '#eef4fc', ':': '#4a6a38', _: '#e0c070', '=': '#9a9a9a', '~': '#3c94f0', T: '#0c6a18', t: '#9ab0c8', M: '#a07848', B: '#c0a060', H: '#ffffff', D: '#c04040', E: '#f4d35e', L: '#e0501c', F: '#4ab0b0' };
-const MINI_FLOOR = { cellar: '#6a4a34', cavern: '#5a566a', crypt: '#4a5a50', spire: '#8aa8d0', storm: '#5a5c8a' }, MINI_WALL = { cellar: '#2a1610', cavern: '#22202a', crypt: '#16221c', spire: '#2a4a78', storm: '#1c1e40' };
 function drawMini(c2, id, scale, ox, oy, t, noPlayer = false) {
   const m = MAPS[id], seen = G.flags.seen[id]; if (!seen) return;
   for (let y = 0; y < m.rows.length; y++) for (let x = 0; x < m.rows[0].length; x++) {
@@ -248,7 +244,6 @@ const snap = () => { // place the leader, with the followers lined up behind whe
   for (let k = 1; k <= 3; k++) { const x = G.x + bx * k, y = G.y + by * k; if (!WALK.has(tileAt(x, y) ?? '#') || (spots.length && spots.length < k - 1)) break; spots.push({ x, y }); }
   trail = [...spots.slice().reverse(), { x: G.x, y: G.y }]; fv = [0, 1, 2].map((i) => ({ x: (spots[i] || { x: G.x }).x, y: (spots[i] || { y: G.y }).y, d: face, mv: false })); reveal(); };
 const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
-const LIGHT = { cellar: { glow: '255,180,90', dark: 0.8, r: 185 }, ruins: { glow: '255,190,100', dark: 0.74, r: 205 }, storm: { glow: '255,230,90', dark: 0.8, r: 180 }, cavern: { glow: '255,150,50', dark: 0.88, r: 175 }, crypt: { glow: '90,255,140', dark: 0.9, r: 165 }, spire: { glow: '130,210,255', dark: 0.5, r: 250 } };
 function draw(t = performance.now() / 1000) {
   if (!G) return;
   const m = mapDef(), W = m.rows[0].length, H = m.rows.length, frame = Math.floor(t / 0.6) % 2;
@@ -400,7 +395,6 @@ async function step(dx, dy) {
     await battle(tb[Math.floor(Math.random() * tb.length)]);
   }
 }
-const KEYS = { ArrowUp: [0, -1], w: [0, -1], ArrowDown: [0, 1], s: [0, 1], ArrowLeft: [-1, 0], a: [-1, 0], ArrowRight: [1, 0], d: [1, 0] };
 let lastSig = '';
 const sig = (el) => (el.dataset.act ? `${el.dataset.act}|${el.dataset.a}|${el.dataset.b}` : `in|${el.dataset.in}`);
 const navs = () => [...ov.querySelectorAll('[data-act],[data-in]')].filter((e) => !e.disabled);
@@ -447,7 +441,6 @@ addEventListener('keydown', (e) => {
 // A = talk/check the tile you face, B = menu. Tap (or drag) on the map: walk the whole way there along a real path;
 // tapping a townsperson or chest walks up to it and talks/opens it.
 let held = null, route = [], routeMap = null, routeGoal = null;
-const DIRV = { up: [0, -1], down: [0, 1], left: [-1, 0], right: [1, 0] };
 const cross = $('.cross');
 if (cross) {
   const arms = { up: cross.querySelector('[data-d=up]'), down: cross.querySelector('[data-d=down]'), left: cross.querySelector('[data-d=left]'), right: cross.querySelector('[data-d=right]') };
@@ -561,7 +554,6 @@ function openChest(x, y, secret = null) { // secret: loot of a hidden treasure s
 }
 
 // ---------- NPCs, dialogue, services ----------
-const QITEM = { heirloom: 'Grandmother\'s Ring', lantern: 'Boatwright\'s Lantern', doubloon: 'Redwake\'s Doubloon', letter: 'Sealed Letter', storm_shard: 'Storm Shard', ...KEY_ITEMS };
 const qstate = (id) => G.flags.quests[id];
 function questDone(id) { const g = QUESTS[id].goal; return g.type === 'kill' ? (G.flags.qprog[id] || 0) >= g.n : g.type === 'find' ? !!G.flags.qitems[g.item] : g.type === 'deliver' ? (G.flags.qprog[id] || 0) >= 1 : !!G.flags.bosses[g.id]; }
 function questProgress(id) { const g = QUESTS[id].goal; if (g.type === 'deliver') return G.flags.qprog[id] ? 'delivered' : `bring it to ${g.to}`; return g.type === 'kill' ? `${Math.min(G.flags.qprog[id] || 0, g.n)}/${g.n}` : g.type === 'find' ? (G.flags.qitems[g.item] ? 'found' : `find it in the ${g.where}`) : (G.flags.bosses[g.id] ? 'slain' : 'not yet slain'); }
@@ -784,9 +776,7 @@ ACT.crbegin = () => { // into the past: Haven, a hay cart, a disappointed Elder
   scene(WAKE);
 };
 // ---------- choosing callings (after the cellar, at the Guild) ----------
-const STAT_KEYS = [['hp', 'HP'], ['mp', 'MP'], ['atk', 'ATK'], ['def', 'DEF'], ['mag', 'MAG'], ['spd', 'SPD']];
 let CR = [];
-const BRO_PICKS = { adam: 'knight', devon: 'monk' };
 function creation(i) {
   const c = G.party[CR[i].at], job = CR[i].job, j = JOBS[job];
   const skills = j.skills.slice(0, 3).map(([sid, r]) => `${SKILLS[sid].name} <span class="dim">★${r}</span>`).join(' · ');
@@ -863,7 +853,6 @@ function mainMenu() {
 }
 const fmtTime = (sec = 0) => { sec = Math.floor(sec); const h = Math.floor(sec / 3600), m = Math.floor((sec % 3600) / 60), s2 = sec % 60; return `${h}:${String(m).padStart(2, '0')}:${String(s2).padStart(2, '0')}`; };
 // the Goose pays out for a well-filled bestiary: 25/50/75/100% of foes slain at least once
-const BEAST_TIERS = [[0.25, 500, 'a bag of loose change'], [0.5, 1500, 'a framed photo of you and a goblin'], [0.75, 3000, 'a certificate in Monster Studies'], [1, 6000, 'the Goose Seal of Approval, and five elixirs']];
 const beastDone = () => Object.keys(ENEMIES).filter((id) => G.flags.bestiary[id]?.kills > 0).length;
 function beastClaim() {
   const n = beastDone(), tot = Object.keys(ENEMIES).length, got = G.flags.story.beastTier || 0, next = BEAST_TIERS[got];
@@ -945,28 +934,6 @@ ACT.mapscreen = () => {
     requestAnimationFrame(paint);
   }; paint();
 };
-const OBJECTIVES = [ // the main thread, in the story's voice. show / after / done are conditions (see cond()); hints switch once done
-  { title: 'The Goose Cellar', show: '!s:called', hint: 'Elder Mott wants proof you can throw a punch. Clear the slimes out of the Gilded Goose\'s cellar: the trapdoor is in the tavern\'s corner.', done: 's:cellar', doneHint: 'Big Gary is foam. Brenna has joined, mostly out of pity.' },
-  { title: 'Get a Proper Job', show: 's:cellar !s:called', hint: 'The Adventurer\'s Guild in Haven hands out callings. Apparently "content creator" isn\'t one.', done: 's:called', doneHint: 'Employed at last.' },
-  { title: 'Get Home', show: 's:called', hint: 'Elder Mott reckons the bell will only ring for you again once Gemforge\'s three evils are slain. Devon\'s phone is on a few percent.', done: 'titan', doneHint: 'The bell is ringing.' },
-  { title: 'The Ashen Wyrm', show: 's:called', hint: 'The Elder says its seal is the weakest. The Ashen Cavern lies north-east of Haven, in the foothills of the great mountains (thirty steps or so; get a few levels on the grass first).', done: 'wyrm', doneHint: 'Slain. Its heart is yours, and the northern pass is open.' },
-  { title: 'The Drowned King', show: 's:called', hint: 'Morvath stirs in the Sunken Crypt, in the dark marsh to the east, beyond the lake (Mirewood is further south).', done: 'lich', doneHint: 'Slain. Mirewood keeps its lamps lit again.' },
-  { title: 'The Grey Hand', show: 'wyrm|lich', hint: 'The seals were not broken. They were cut. Who would free such things?', done: 's:met', doneHint: 'Sereth, last apprentice of Gemforge. He wants the hearts.' },
-  { title: 'North', after: 'wyrm', hint: 'The pass is open. Frostholm lies beyond it.', done: 'v:frostholm', doneHint: 'Frostholm stands in the shadow of the Frost Spire.' },
-  { title: 'The Walking Mountain', after: 'wyrm lich', lockHint: 'The Frost Spire\'s door is sealed with the drowned king\'s mark. Morvath first.', hint: 'The Frost Spire rises east of Frostholm. The Titan waits at its summit.', metHint: 'Sereth waits atop the Frost Spire. So does the Titan.', done: 'titan', doneHint: 'The mountain sleeps. Sereth is dust.' },
-  { show: 'wyrm', title: 'Thunder on the Plains', after: 'wyrm', optional: true, hint: 'A drake nests in the Storm Cavern in the Frostfields. Not for the faint (Lv 11+).', done: 'storm_drake', doneHint: 'Stars over the plains again.' },
-  { show: 'wyrm', title: 'The Sun Pharaoh', optional: true, hint: 'Something asks riddles beneath the Sunscar Ruins, far away in the north-east desert, up the long eastern road (Lv 11+).', done: 'sphinx', doneHint: 'The riddle is answered.' },
-  { title: 'The Old Windmill', show: 's:called', optional: true, hint: 'The Old Windmill, Haven Isle. Ghostly flour and a very angry goose. The Miller does not like visitors. Bring holy or fire, never dark (Lv 8).', done: 'miller', doneHint: 'The mill stands still, and the bread has never been better.' },
-  { title: 'The Salty Sue', show: 's:called', optional: true, hint: 'A pirate ship stuck in the Mire Isle bog. Fire or holy for the crew, bolts for the crabs and the barnacle things (Lv 14).', done: 'captain_barnacle', doneHint: 'The Salty Sue has settled into the mud for good.' },
-  { title: 'Mild Inconvenience', show: 's:called', optional: true, hint: 'A pyramid built by a pharaoh who loved forms. Fire or holy, take a number, and do not read the small print (Lv 16).', done: 'clerk_pharaoh', doneHint: 'The queue is moving. Somebody approved something.' },
-  { show: 'wyrm', title: 'The Ice Cave', after: 'wyrm', lockHint: 'A rockslide buries the northern pass.', optional: true, hint: 'Behind the Frost Isle pass, a frozen fishing lake. Fire or bolts for the Frozen Angler. Avoid the coffee-break yeti (Lv 18).', done: 'frozen_angler', doneHint: 'The anglers have gone home.' },
-  { show: 'wyrm', title: 'Hopsend Isle', after: 'titan', lockHint: 'The ferryman will not sail to Hopsend until the Titan has fallen.', optional: true, hint: 'A ferry now runs to Hopsend Isle, all orchards and hop fields. The harvest has gone wrong (Lv 17+).', done: 'v:hopsend', doneHint: 'Hopsend smells of apples and mild regret.' },
-  { title: 'The Great Mash Tun', show: 'v:hopsend', optional: true, hint: 'The Great Brewery, at the far end of Hopsend, has been bubbling since harvest. Bring ice and bolts, never fire (Lv 18+).', done: 'mash_tun', doneHint: 'Flat, calm and drinkable.' },
-  { show: 'wyrm', title: 'Cinder Isle', after: 'titan', lockHint: 'The Frost Jetty ferryman will not sail until the Titan has fallen.', optional: true, hint: 'A ferry now sails to Cinder Isle, a holiday volcano in the far north-west, packed with stag dos and fire-eaters (Lv 20).', done: 'v:kilnhaven', doneHint: 'Kilnhaven is warm, loud and smells of garlic.' },
-  { title: 'The Margherita', show: 'v:pizzaoven', optional: true, hint: 'The volcano is a pizza oven that has been on since 1987, and something has grown in the coals. Bring ice, never fire (Lv 20).', done: 'margherita', doneHint: 'The oven is cool, and the isle is free to eat.' },
-  { title: 'The Obsidian Ruins', show: 'v:pizzaoven', after: 'margherita', optional: true, lockHint: 'The ferryman will not sail to the black isle until the Margherita is out.', hint: 'A ferry now runs to a tiny black-glass island far to the south-east: all that is left of a pub older than the world (Lv 20).', done: 'v:obsidian', doneHint: 'The jetty is glass and the sea is very quiet.' },
-  { title: 'The Last Landlord', show: 'v:obsidian', optional: true, hint: 'Beneath the Ruins, the cellar-bar of the Last Orders. A ghost has called time for ten thousand years. Holy and bolts hurt him; dark and fire do not. Bring everything (Lv 20).', done: 'landlord', doneHint: 'He locked up at last, and the bell rang once.' },
-];
 ACT.journal = () => {
   const n = ['wyrm', 'lich', 'titan'].filter((k) => G.flags.bosses[k]).length, hearts = Object.keys(KEY_ITEMS).filter((k) => G.flags.qitems[k]).map((k) => KEY_ITEMS[k]);
   const secrets = Object.entries(MAPS).flatMap(([mid, m]) => Object.keys(m.secrets || {}).map((k) => `${mid}:${k}`)), found = secrets.filter((k) => G.flags.chests[k]).length;
@@ -1253,7 +1220,6 @@ function playFx(list) {
 const comboPartner = (p) => { const b = BT.b, bro = (x) => BROS.some(([, l]) => l === x.ch.look); if (!bro(p)) return null; const q = b.p.find((x) => x !== p && bro(x)); return q && q.hp > 0 && !q.st.stun && b.p.indexOf(q) > b.p.indexOf(p) ? q : null; };
 const combosKnown = () => COMBOS.filter((c) => cond(c.if));
 // a line of banter after a fight (QUIPS in data.js), from someone actually in the party
-const VICTORY = ['Victory!', 'Get in!', 'Sorted!', 'Result!', 'Easy, lads!', 'Proper job!'], DEFEAT = ['Defeated…', 'Absolutely Battered…', 'Spark Out…', 'Well and Truly Hammered…'];
 const recentQuips = [];
 function quip(kind, chance) {
   const pool = (DATA.QUIPS?.[kind] || []).filter(([who]) => G.party.some((c) => c.look === who)); if (!pool.length || Math.random() > chance) return '';
@@ -1385,7 +1351,6 @@ async function victory(b, bossId) {
   if (def?.final) await ending();
 }
 // The heart-gem wakes a new batch of callings (FF5's crystal shards): echoes of past heroes, then their callings are yours.
-const HEART_GEM = { ember_heart: 'fire', grave_heart: 'shadow', rime_heart: 'frost' };
 function awakening({ heart, jobs, gems }) {
   music('victory'); setTimeout(() => sfx('holy'), 350);
   const echo = jobs.map((j, k) => `<div class="echo" style="animation-delay:${0.5 + k * 0.45}s"><img src="${SP.heroURL(j)}" alt=""><b>${JOBS[j].name}</b><small>${JOBS[j].weapons.map((w) => ic(UI.gearIconName('weapons', { type: w }))).join('')}</small></div>`).join('');
