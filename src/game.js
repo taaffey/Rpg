@@ -733,9 +733,9 @@ ACT.sell = (k, id) => {
 
 // ---------- title / main menu ----------
 function title() {
-  G = null; optBack = 'title';
+  G = null; optBack = 'title'; const saved = anySave();
   show(`<div class="tagline">Two brothers. Two beards. One bell they really shouldn't have rung.</div>
-  <div class="titlecmd">${btn('new', `${ic('star')}New Game`, '', '', 'primary')}${btn('cont', `${ic('save')}Continue`, '', '', '', !anySave())}${btn('opts', `${ic('options')}Options`)}</div>`, 'title');
+  <div class="titlecmd">${btn('new', `${ic('star')}New Game`, '', '', saved ? '' : 'primary')}${btn('cont', `${ic('save')}Continue`, '', '', saved ? 'primary' : '', !saved, saved ? 'autofocus' : '')}${btn('opts', `${ic('options')}Options`)}</div>`, 'title'); // a returning player lands on Continue
   ov.insertAdjacentHTML('beforeend', `<div class="ver">v${VERSION} · made in code</div>`);
   $('#loc').textContent = ''; $('#gold').textContent = ''; music('title');
 }
