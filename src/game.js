@@ -2,7 +2,7 @@
 import { SOCKET_COST, DIFFICULTY, DROPS, STORY, KEY_ITEMS, TRAITS, CALLING_BATCHES } from './data.js';
 import { JOBS, SKILLS, GEMS, WEAPONS, ARMORS, ACCS, ITEMS, WEAPON_TYPES, ENEMIES, ENCOUNTERS, ELEM_ICON, BOSSES, SHOPS, QUESTS } from './data.js';
 import { MAPS, WALK, START } from './maps.js';
-import { SPEEDS, CP_AT_LEVEL, REGION_NAME, MINI, MINI_FLOOR, MINI_WALL, LIGHT, KEYS, DIRV, QITEM, STAT_KEYS, BRO_PICKS, BEAST_TIERS, OBJECTIVES, VICTORY, DEFEAT, HEART_GEM } from './gamedata.js';
+import { TEXT_MS, SPEEDS, CP_AT_LEVEL, REGION_NAME, MINI, MINI_FLOOR, MINI_WALL, LIGHT, KEYS, DIRV, QITEM, STAT_KEYS, BRO_PICKS, BEAST_TIERS, OBJECTIVES, VICTORY, DEFEAT, HEART_GEM } from './gamedata.js';
 import { GEN } from './mapgen.js';
 import * as L from './logic.js';
 import { BROS, COMBOS, LOCALS, PARTY_SCALE, PHONE, PHONE_CHARGED, PUB, WAKE, CELLAR_IN, GARY_DOWN, CALLED, CALLED_AFTER, WENDELL } from './bros.js';
@@ -42,7 +42,7 @@ const lootName = (k, id) => (k === 'gems' && !gemsOn() ? 'Dull Stone' : DB[k][id
 const veteran = () => (G?.stats?.wins || 0) >= 10; // Repeat / Auto join the battle menu once the party has some fights behind it
 
 // ---------- options (persisted separately from saves) ----------
-const OPT = { music: 0.8, sfx: 0.9, speed: 'normal', minimap: true, shake: !matchMedia('(prefers-reduced-motion: reduce)').matches };
+const OPT = { music: 0.8, sfx: 0.9, speed: 'normal', text: 'normal', minimap: true, shake: !matchMedia('(prefers-reduced-motion: reduce)').matches };
 try { Object.assign(OPT, JSON.parse(localStorage.getItem(SETTINGS) || '{}')); } catch {}
 function applyOptions() { setVolumes(OPT.music, OPT.sfx); FX.shake = OPT.shake; try { localStorage.setItem(SETTINGS, JSON.stringify(OPT)); } catch {} }
 applyOptions();
@@ -119,7 +119,7 @@ function newGame(party = DEFAULT_PARTY) {
   };
 }
 // ---------- saves: 3 slots, autosave, migration ----------
-const VERSION = '2.0.0', LEGACY_SAVE = 'gemforge-save-v2', SLOT_KEY = (i) => `gemforge-save-v3-${i}`, SLOT_IDS = [1, 2, 3];
+const VERSION = '2.1.0', LEGACY_SAVE = 'gemforge-save-v2', SLOT_KEY = (i) => `gemforge-save-v3-${i}`, SLOT_IDS = [1, 2, 3];
 function migrate(g) {
   g.v = 3; g.flags ||= {};
   for (const k of ['chests', 'bosses', 'seen', 'talked', 'visited', 'quests', 'qprog', 'qitems', 'tips', 'bestiary', 'story', 'chat']) g.flags[k] ||= {};
@@ -250,7 +250,7 @@ function draw(t = performance.now() / 1000) {
   cx.imageSmoothingEnabled = false;
   cx.fillStyle = '#000'; cx.fillRect(0, 0, cv.width, cv.height);
   const camX = W <= VW ? -(VW - W) / 2 : clamp(vx - VW / 2 + 0.5, 0, W - VW);
-  const camY = H <= VH ? -(VH - H) / 2 : clamp(vy - VH / 2 + 0.5, 0, H - VH);
+  const camY = H <= VH ? -(VH - H) / 2 - (m.kind === 'interior' ? 0.7 : 0) : clamp(vy - VH / 2 + 0.5, 0, H - VH); // the walls of a themed room rise above its first row, so nudge small rooms down to sit centred
   const sx = (x) => Math.round((x - camX) * TS), sy = (y) => Math.round((y - camY) * TS); camState.x = camX; camState.y = camY;
   const x0 = Math.max(0, Math.floor(camX)), x1 = Math.min(W, Math.ceil(camX + VW) + 1), y0 = Math.max(0, Math.floor(camY)), y1 = Math.min(H, Math.ceil(camY + VH) + 1);
   const defeated = (id) => !!G.flags.bosses[id];
@@ -351,8 +351,9 @@ function tick(now) {
   if (!G) return drawTitle(now / 1000);
   G.playtime = (G.playtime || 0) + dt;
   moveTick(dt);
-  if (!inOverlay()) draw(now / 1000);
+  if (!inOverlay()) { const still = vx === G.x && vy === G.y && !trans && !busy && !route.length && !fv.some((f) => f.mv); if (!still || (++idleFrame & 1)) draw(now / 1000); } // standing still redraws at ~30fps: nothing on the map animates faster, and phones run cooler
 }
+let idleFrame = 0;
 requestAnimationFrame(tick);
 const frame = () => new Promise((r) => requestAnimationFrame(r));
 async function transition() { sfx('encounter'); for (trans = 0.02; trans < 1.2; trans += 0.065) await frame(); trans = 1; await sleep(60); }
@@ -630,7 +631,9 @@ function say(i) {
   const art = typeof l === 'object' && l.art; if (l?.music) music(l.music); // a scene line can bring a picture (the pub, in the finale) and its music
   show(`${art ? pubImg(art) : ''}<div class="saybox${n.narr ? ' narr' : ''}" data-tap="sayadv">${face}<div class="saybody">${n.narr ? '' : `<div class="sayname">${esc(n.name)}</div>`}<div class="saytext"${n.narr ? ' style="color:#c8d4ff"' : ''}><span id="tt"></span><span class="more">▼</span></div></div></div><div class="sayrow hidden">${last ? curFinal : btn('say', 'NEXT', i + 1, '', 'primary')}</div>`, art ? 'say art' : 'say');
   let k = 0; clearInterval(typing);
-  typing = setInterval(() => { k++; const el = $('#tt'); if (!el) return finishTyping(); el.textContent = typingText.slice(0, k); if (k % 3 === 0) sfx('blip'); if (k >= typingText.length) finishTyping(); }, 28);
+  const ms = TEXT_MS[OPT.text] ?? 28; // Options > Text speed: fast for a second playthrough, instant for New Game+
+  if (!ms) { typing = setInterval(() => {}, 1e6); return finishTyping(); }
+  typing = setInterval(() => { k++; const el = $('#tt'); if (!el) return finishTyping(); el.textContent = typingText.slice(0, k); if (k % 3 === 0) sfx('blip'); if (k >= typingText.length) finishTyping(); }, ms);
 }
 ACT.skiptype = finishTyping;
 ACT.sayadv = () => { // tap anywhere on the dialogue box: finish the line, then go on (only when there is a single way on, never a choice)
@@ -757,7 +760,7 @@ ACT.slotpick = (i) => {
 };
 ACT.slotdel = (i) => { i = +i; pendingSlot = null; if (pendingDel !== i) { pendingDel = i; return slotScreen(slotMode); } pendingDel = null; try { localStorage.removeItem(SLOT_KEY(i)); } catch {} if (!anySave() && slotMode === 'load') return title(); slotScreen(slotMode); };
 function diffScreen(slot) {
-  const icn = { easy: 'heart', normal: 'sword', hard: 'ko' };
+  const icn = { easy: 'heal', normal: 'sword', hard: 'ko' };
   show(`<h2>⚔️ Choose difficulty</h2>${['normal', 'easy', 'hard'].map((k) => `<div class="slot"><span class="lead">${ic(icn[k])}</span><div class="t"><b>${DIFFICULTY[k].name}</b><small>${DIFFICULTY[k].desc}</small></div>${btn('diff', 'Select', slot, k, k === 'normal' ? 'primary' : '')}</div>`).join('')}<p class="dim">${ic('tip')} You can change this later in Options.</p><div class="foot">${btn('new', 'Back')}</div>`);
 }
 ACT.diff = (slot, d) => { newGame(); G.slot = +slot; G.difficulty = d; G.flags.visited.haven = true; snap(); prologue(0); };
@@ -847,7 +850,7 @@ function mainMenu() {
   const menuTip = tipOnce('menu') ? 'TIP: pick a hero, then Edit a skill slot to socket gems. Gems rewrite how a skill works.' : '';
   const cmds = [['items', 'ITEM', 'bag'], ['chat', 'CHAT', 'hero'], ['mapscreen', 'MAP', 'map'], ['journal', 'JOURNAL', 'journal'], ['bestiary', 'BESTIARY', 'bestiary'], ['opts', 'OPTIONS', 'options'], ['save', 'SAVE', 'save'], ['title', 'TITLE', 'title'], ['close', 'CLOSE', 'close']];
   show(`<div class="menugrid"><div class="menuside"><div class="pane menucmd"><div class="cmdlist">${cmds.map(([a, l, n]) => btn(a, ic(n) + l, '', '', a === 'close' ? 'primary' : '')).join('')}</div></div>
-  <div class="pane menuinfo"><span class="dim">TIME</span><span>${fmtTime(G.playtime)}</span><span class="dim">WINS</span><span>${G.stats?.wins || 0}</span><span class="g">${ic('coin')}GOLD</span><span class="gold">${G.gold}</span></div></div>
+  <div class="pane menuinfo"><span class="dim">TIME</span><span>${fmtTime(G.playtime)}</span><span class="dim">WINS</span><span>${G.stats?.wins || 0}</span>${G.ngp ? `<span class="dim">LOOP</span><span>NG+${G.ngp}</span>` : ''}<span class="g">${ic('coin')}GOLD</span><span class="gold">${G.gold}</span></div></div>
   <div class="pane menuparty">${G.party.map((c, i) => heroBtn(c, 'build', i)).join('')}</div></div>
   ${menuTip ? `<div id="msg" class="pane">${ic('tip')} ${menuTip}</div>` : '<div id="msg"></div>'}`, '', 'multi');
 }
@@ -948,7 +951,7 @@ function optionsScreen() {
   show(`<h2>⚙ Options</h2>
   <div class="opt"><label>${ic('sound')} Music volume <b>${Math.round(OPT.music * 100)}%</b></label><input type="range" min="0" max="100" value="${Math.round(OPT.music * 100)}" data-in="music"></div>
   <div class="opt"><label>${ic('sound')} Sound effects <b>${Math.round(OPT.sfx * 100)}%</b></label><input type="range" min="0" max="100" value="${Math.round(OPT.sfx * 100)}" data-in="sfx"></div>
-  <div class="opts">${G ? btn('optdiff', `<span>Difficulty</span><b>${DIFFICULTY[G.difficulty].name}</b>`) : ''}${btn('optspeed', `<span>Battle speed</span><b>${OPT.speed}</b>`)}${btn('optmini', `<span>Minimap</span><b>${onOff(OPT.minimap)}</b>`)}${btn('optshake', `<span>Screen shake</span><b>${onOff(OPT.shake)}</b>`)}${btn('optmute', `<span>${ic(isMuted() ? 'mute' : 'sound')}Sound</span><b>${isMuted() ? 'Muted' : 'On'}</b>`)}</div>
+  <div class="opts">${G ? btn('optdiff', `<span>Difficulty</span><b>${DIFFICULTY[G.difficulty].name}</b>`) : ''}${btn('optspeed', `<span>Battle speed</span><b>${OPT.speed}</b>`)}${btn('opttext', `<span>Text speed</span><b>${OPT.text}</b>`)}${btn('optmini', `<span>Minimap</span><b>${onOff(OPT.minimap)}</b>`)}${btn('optshake', `<span>Screen shake</span><b>${onOff(OPT.shake)}</b>`)}${btn('optmute', `<span>${ic(isMuted() ? 'mute' : 'sound')}Sound</span><b>${isMuted() ? 'Muted' : 'On'}</b>`)}</div>
   <h3>Controls</h3><div class="dim controls"><div><b>Arrows / WASD</b> move</div><div><b>Esc / M</b> menu</div><div><b>N</b> toggle minimap</div><div><b>Arrows</b> move menu focus</div><div><b>Enter / Space</b> select</div><div><b>Esc / Backspace</b> back</div></div>
   ${IS_IOS && !root.classList.contains('standalone') && !root.classList.contains('framed') ? '<div class="card"><b>📱 Install on iPhone</b><div class="dim">In Safari tap Share, then <b>Add to Home Screen</b>. Bearded Bros then runs full-screen, works offline, and remembers your saves.</div></div>' : ''}
   <div class="foot"><span class="dim grow" style="font-size:8px;align-self:center">Bearded Bros v${VERSION}</span>${btn('optback', 'Back', '', '', 'primary')}</div>`);
@@ -959,6 +962,7 @@ ACTIN.music = (v) => { OPT.music = v / 100; applyOptions(); ov.querySelector('[d
 ACTIN.sfx = (v) => { OPT.sfx = v / 100; applyOptions(); ov.querySelector('[data-in=sfx]').previousElementSibling.querySelector('b').textContent = `${v}%`; sfx('click'); };
 ACT.optdiff = () => { const k = Object.keys(DIFFICULTY); G.difficulty = k[(k.indexOf(G.difficulty) + 1) % k.length]; optionsScreen(); };
 ACT.optspeed = () => { const k = Object.keys(SPEEDS); OPT.speed = k[(k.indexOf(OPT.speed) + 1) % k.length]; applyOptions(); optionsScreen(); };
+ACT.opttext = () => { const k = Object.keys(TEXT_MS); OPT.text = k[(k.indexOf(OPT.text) + 1) % k.length]; applyOptions(); optionsScreen(); };
 ACT.optmini = () => { OPT.minimap = !OPT.minimap; applyOptions(); optionsScreen(); };
 ACT.optshake = () => { OPT.shake = !OPT.shake; applyOptions(); optionsScreen(); };
 ACT.optmute = () => { setMuted(!isMuted()); syncMute(); optionsScreen(); };
@@ -984,7 +988,7 @@ function busStops() { // every visited town, jetty and dungeon door on the overw
 ACT.bus = () => {
   const m = mapDef(); if (m.kind === 'dungeon') return show(`<h2>🚌 Night Bus</h2><p>The N9 does not run in dungeons. The driver has been very clear about this.</p><div class="foot">${btn('items', 'Back', '', '', 'primary')}</div>`);
   const stops = busStops();
-  show(`<h2>🚌 Night Bus</h2><p class="dim">Where to, lads? Every stop is a request stop.</p><div class="cmdlist">${stops.map((s2, i) => `<button data-act="busgo" data-a="${i}">${esc(s2.name)}</button>`).join('') || '<p class="dim">Nowhere yet. Go and visit somewhere.</p>'}</div><div class="foot">${btn('items', 'Back', '', '', 'primary')}</div>`);
+  show(`<h2>🚌 Night Bus</h2><p class="dim">Where to, lads? Every stop is a request stop.</p><div class="cmdlist">${stops.map((s2, i) => `<button data-act="busgo" data-a="${i}">${ic('pin')}${esc(s2.name)}</button>`).join('') || '<p class="dim">Nowhere yet. Go and visit somewhere.</p>'}</div><div class="foot">${btn('items', 'Back', '', '', 'primary')}</div>`);
 };
 ACT.busgo = async (i) => {
   const s2 = busStops()[+i]; if (!s2) return;
@@ -1441,5 +1445,5 @@ function testParty(jobs = { adam: 'monk', devon: 'mage', brenna: 'cleric', wende
   for (const c of G.party) { if (jobs[c.look] && c.main !== jobs[c.look]) { L.setCalling(c, jobs[c.look]); delete c.cp.bloke; c.cp[c.main] = 0; c.weapon = null; c.armor = LIGHT_ARMOR.has(c.main) ? 'cloth' : 'leather'; c.slots = [null, null, null, null]; sanitize(c, G.inv); autofill(c); } const st = maxOf(c); c.hp = st.hp; c.mp = st.mp; }
   for (const c of G.party) { if (c.look === 'brenna' || c.look === 'wendell') { c.cp[c.main] = 0; c.weapon = LOCALS[c.look].weapon || null; c.slots = [null, null, null, null]; sanitize(c, G.inv); autofill(c); } }
 }
-window.__game = { newGamePlus, testParty, wipeHome, get G() { return G; }, get BT() { return BT; }, get v() { return [vx, vy]; }, camState, TS, get route() { return route; }, battle, step, goto, MAPS, snap, OPT, ACT, ui: { shop, inn, guild, socketer, title, slotScreen, diffScreen, talk, itemsMenu, mainMenu, awakening } };
+window.__game = { defeat, ending, newGamePlus, testParty, wipeHome, get G() { return G; }, get BT() { return BT; }, get v() { return [vx, vy]; }, camState, TS, get route() { return route; }, battle, step, goto, MAPS, snap, OPT, ACT, ui: { shop, inn, guild, socketer, title, slotScreen, diffScreen, talk, itemsMenu, mainMenu, awakening } };
 title();

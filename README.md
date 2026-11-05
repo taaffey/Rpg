@@ -37,7 +37,7 @@ keyboard alone, or with the mouse. Options (volumes, battle speed, shake, minima
 - **3 save slots** with details, autosave (towns, battles, quests, app backgrounding), delete/overwrite confirmation, and
   migration from older saves.
 - **Difficulty** (Easy / Normal / Hard, changeable in Options). There are no tutorial pop-ups: NPCs and the journal drop hints in the story's voice.
-- **Battle QoL**: Repeat your last move, Auto-battle (tap to stop), turn-order bar, expandable log, 3 speed settings.
+- **Battle QoL**: Repeat your last move, Auto-battle (tap to stop), turn-order bar, expandable log, battle speed and dialogue text speed (normal / fast / instant) in Options.
 - **Menus**: equipment stat comparison (green/red arrows), Bestiary with weaknesses, Journal with quests, full map screen.
 - **New Game+** (offered after the credits, up to NG+5): keep your party, gear and gold; the world, bosses and quests reset and foes hit harder each loop (+40% HP, +20% damage, more rewards). Save slots show an NG+ badge.
 - **Bestiary rewards**: the Goose pays gold at 25/50/75/100% of foes slain. Roads cut random ambushes to about a third, so the long legs between towns are a stroll.
@@ -164,6 +164,9 @@ Produces `dist/index.html` (the whole game in one file, about 1.2 MB (410 KB gzi
     node tools/fuzz.mjs 4 1500       # randomized playtest: a bot plays the real UI, checks invariants, soft-locks, page errors
     node tools/regress-mobile.mjs    # iPhone touch regression (portrait + landscape)
     node tools/devices.mjs <outdir>  # device matrix: layout metrics + screenshots (SE, 14, Pro Max, landscape, iPad, desktop)
+    node tools/ngplus.mjs            # New Game+ carries the party and gear over and resets the world
+    OUT=dir node tools/screens.mjs   # screenshot every main screen at phone, landscape and desktop sizes (seeded mid-game save)
+    OUT=dir node tools/allmaps.mjs   # screenshot the spawn point of every map (phone size)
     node tools/regress.mjs           # browser regression (needs the dev server + Playwright); URL=... tests the dist build
     python3 tools/genmaps.py         # regenerate the big world and dungeons (deterministic; Sunscar Ruins uses seed 700)
     # tools/sheet.html: sprite contact sheet, open via the dev server

@@ -54,8 +54,10 @@ button{font:inherit;font-size:11px;line-height:1.5;background:none;border:0;bord
   position:relative;text-align:left;cursor:pointer;touch-action:manipulation;text-transform:uppercase}
 button::before{content:"";position:absolute;left:4px;top:50%;width:21px;height:21px;margin-top:-11px;background:var(--hand) center/contain no-repeat;image-rendering:pixelated;visibility:hidden;animation:glove .5s steps(2) infinite}
 @keyframes glove{50%{transform:translateX(-2px)}}
-button:hover:not(:disabled),button:focus{background:linear-gradient(90deg,rgba(255,255,255,.13),rgba(255,255,255,.04) 80%,transparent);outline:none;box-shadow:none}
-button:hover:not(:disabled)::before,button:focus::before,button.sel::before{visibility:visible}
+button:focus{background:linear-gradient(90deg,rgba(255,255,255,.13),rgba(255,255,255,.04) 80%,transparent);outline:none;box-shadow:none}
+button:focus::before,button.sel::before{visibility:visible}
+/* hover highlights only where a real pointer exists: on touch a tapped button would stay lit (a second hand cursor) */
+@media (hover:hover){button:hover:not(:disabled){background:linear-gradient(90deg,rgba(255,255,255,.13),rgba(255,255,255,.04) 80%,transparent);outline:none;box-shadow:none}button:hover:not(:disabled)::before{visibility:visible}}
 button.sel:not(:focus):not(:hover)::before{visibility:hidden}
 button:disabled{color:#7884cc;cursor:default}
 button:disabled .ic,button:disabled img{opacity:.45}
@@ -67,8 +69,9 @@ button .ic{margin-right:8px}
 .chipbtn,.slot>button,.slot .col>button,.shoptabs>button,.opts button,.navbtn{min-height:40px;padding:6px 10px;text-align:center;border:4px solid transparent;border-image:var(--chip) 4 stretch;
   background:linear-gradient(180deg,#5a78f8,#2c44c8 55%,#2238a8);background-clip:padding-box;border-radius:3px;font-size:9px;white-space:nowrap;flex:none}
 .chipbtn::before,.slot>button::before,.slot .col>button::before,.shoptabs>button::before,.opts button::before,.navbtn::before{display:none}
-.chipbtn:hover:not(:disabled),.chipbtn:focus,.slot>button:hover:not(:disabled),.slot>button:focus,.slot .col>button:hover:not(:disabled),.slot .col>button:focus,.shoptabs>button:hover:not(:disabled),.shoptabs>button:focus,.opts button:focus,.opts button:hover,.navbtn:focus,.navbtn:hover{
+.chipbtn:focus,.slot>button:focus,.slot .col>button:focus,.shoptabs>button:focus,.opts button:focus,.navbtn:focus{
   border-image-source:var(--chip-on);background:linear-gradient(180deg,#7a94ff,#3a54dc 55%,#2a40b8);background-clip:padding-box;color:var(--yel)}
+@media (hover:hover){.chipbtn:hover:not(:disabled),.slot>button:hover:not(:disabled),.slot .col>button:hover:not(:disabled),.shoptabs>button:hover:not(:disabled),.opts button:hover,.navbtn:hover{border-image-source:var(--chip-on);background:linear-gradient(180deg,#7a94ff,#3a54dc 55%,#2a40b8);background-clip:padding-box;color:var(--yel)}}
 .slot>button:disabled,.slot .col>button:disabled,.chipbtn:disabled{background:linear-gradient(180deg,#4a5490,#2a3068);background-clip:padding-box;color:#8a92c8}
 .slot>button.primary,.slot .col>button.primary,.shoptabs>button.sel{color:var(--yel);border-image-source:var(--chip-on)}
 .slot .col>button.danger{color:#fff;background:linear-gradient(180deg,#e05060,#901830);background-clip:padding-box}
@@ -208,7 +211,8 @@ button .ic{margin-right:8px}
 .menuparty button.hero{display:flex;gap:10px;align-items:center;width:100%;padding:6px 4px 6px 28px;min-height:58px;text-transform:uppercase;
   background:linear-gradient(90deg,rgba(255,255,255,.3) 50%,transparent 0) left bottom/4px 2px repeat-x}
 .menuparty button.hero:last-child{background-image:none}
-.menuparty button.hero:hover,.menuparty button.hero:focus{background:linear-gradient(90deg,rgba(255,255,255,.13),rgba(255,255,255,.03) 80%,transparent)}
+.menuparty button.hero:focus{background:linear-gradient(90deg,rgba(255,255,255,.13),rgba(255,255,255,.03) 80%,transparent)}
+@media (hover:hover){.menuparty button.hero:hover{background:linear-gradient(90deg,rgba(255,255,255,.13),rgba(255,255,255,.03) 80%,transparent)}}
 .hinfo{display:grid;grid-template-columns:1fr 1fr;gap:0 12px;flex:1;min-width:0;font-size:10px;line-height:1.55}
 .hinfo .hn{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .hinfo .hl{color:var(--gold);font-size:9px;text-align:right}
@@ -277,7 +281,7 @@ button .ic{margin-right:8px}
 .opt{margin:8px 0}.opt label{display:flex;justify-content:space-between;font-size:9px}
 .opt input[type=range]{width:100%;height:28px;accent-color:#f8d878;margin:4px 0}
 .opts{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:6px}
-.opts button{display:flex;justify-content:space-between;align-items:center;gap:8px;text-align:left}
+.opts button{display:flex;flex-direction:column;justify-content:center;align-items:flex-start;gap:3px;text-align:left}
 .opts button b{color:var(--yel)}
 .controls{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:2px 12px;font-size:8px}
 .credits{height:150px;overflow:hidden;margin:8px 0;text-align:center;mask-image:linear-gradient(transparent,#000 15%,#000 85%,transparent);-webkit-mask-image:linear-gradient(transparent,#000 15%,#000 85%,transparent)}
@@ -300,7 +304,7 @@ canvas.framed{display:block;width:100%;border:4px solid transparent;border-image
 .vlines .ic{vertical-align:-3px}
 
 /* ---------- toast & banner ---------- */
-#toast{border-width:4px;border-image:var(--chip) 4 stretch;position:absolute;left:50%;top:calc(env(safe-area-inset-top,0px) + 92px);transform:translate(-50%,-10px);padding:6px 10px;font-size:9px;line-height:1.6;opacity:0;pointer-events:none;
+#toast{border-width:4px;border-image:var(--chip) 4 stretch;position:absolute;left:50%;top:calc(env(safe-area-inset-top,0px) + 124px);transform:translate(-50%,-10px);padding:6px 10px;font-size:9px;line-height:1.6;opacity:0;pointer-events:none;
   transition:opacity .2s steps(3),transform .2s steps(3);z-index:30;width:max-content;max-width:min(92%,380px);text-align:center}
 #toast.on{opacity:1;transform:translate(-50%,0)}
 #toast .ic{margin-right:6px}
@@ -478,7 +482,7 @@ body:has(#overlay.title) #padL, body:has(#overlay.title) #padR{visibility:hidden
 #charting{position:fixed;inset:0;z-index:30;display:flex;align-items:center;justify-content:center;background:#070a24;color:#fff6c0;font-size:12px;letter-spacing:1px;text-transform:uppercase}
 
 /* audit polish: roomier options and sub-menus on small screens */
-.opts button b{white-space:normal;text-align:right}
+.opts button b{white-space:normal;text-align:left}
 .opts button{min-height:40px;height:auto}
 .opt input[type=range]{height:40px}
 @media (orientation:landscape) and (max-height:520px){
@@ -486,3 +490,5 @@ body:has(#overlay.title) #padL, body:has(#overlay.title) #padR{visibility:hidden
   .battle .subcmd,.battle .cmdlist.subcmd{min-width:150px}
 }
 @media (prefers-reduced-motion:reduce){*{animation-duration:.01ms!important;transition-duration:.01ms!important}}
+/* landscape: the party column is first, so the sub-command lists (skills, items, targets) take the wide column second */
+@media (orientation:landscape){.battle .br.subcmd{grid-template-columns:minmax(0,1fr) minmax(0,1.25fr)}.battle .br.subcmd .cmdlist{grid-template-columns:1fr}}
