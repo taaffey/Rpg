@@ -492,3 +492,7 @@ body:has(#overlay.title) #padL, body:has(#overlay.title) #padR{visibility:hidden
 @media (prefers-reduced-motion:reduce){*{animation-duration:.01ms!important;transition-duration:.01ms!important}}
 /* landscape: the party column is first, so the sub-command lists (skills, items, targets) take the wide column second */
 @media (orientation:landscape){.battle .br.subcmd{grid-template-columns:minmax(0,1fr) minmax(0,1.25fr)}.battle .br.subcmd .cmdlist{grid-template-columns:1fr}}
+/* backup / restore code box */
+textarea.code{width:100%;box-sizing:border-box;min-height:132px;margin:6px 0;padding:8px;font:10px/1.45 ui-monospace,Menlo,Consolas,monospace;letter-spacing:0;text-transform:none;color:#cfe0ff;background:rgba(4,8,48,.6);border:4px solid transparent;border-image:var(--inset) 4 stretch;resize:none;word-break:break-all;user-select:text;-webkit-user-select:text;touch-action:manipulation}
+textarea.code:focus{outline:2px solid var(--yel);outline-offset:1px}
+#bkmsg{min-height:1.6em;font-size:9px;line-height:1.6;margin:2px 0 4px}#bkmsg.bad{color:var(--red)}

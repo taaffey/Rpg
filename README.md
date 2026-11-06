@@ -40,6 +40,9 @@ keyboard alone, or with the mouse. Options (volumes, battle speed, shake, minima
 - **Battle QoL**: Repeat your last move, Auto-battle (tap to stop), turn-order bar, expandable log, battle speed and dialogue text speed (normal / fast / instant) in Options.
 - **Menus**: equipment stat comparison (green/red arrows), Bestiary with weaknesses, Journal with quests, full map screen.
 - **New Game+** (offered after the credits, up to NG+5): keep your party, gear and gold; the world, bosses and quests reset and foes hit harder each loop (+40% HP, +20% damage, more rewards). Save slots show an NG+ badge.
+- **Feats** (Menu > Feats): 29 silly achievements (Regular, Honk, Round for the House, Groundhog Pub...) with counters on the slow ones; they unlock on autosave and carry into New Game+.
+- **Save backup codes** (Options > Saves): one pasteable code for all three slots, to restore after Safari clears the site's storage or to move a save between phone and iPad.
+- **Gear lists** sort usable items first with the biggest gain on top and a ★ Best chip.
 - **Bestiary rewards**: the Goose pays gold at 25/50/75/100% of foes slain. Roads cut random ambushes to about a third, so the long legs between towns are a stroll.
 - Crash safety: a battle error returns you to the map instead of freezing; progress is autosaved.
 
@@ -164,7 +167,11 @@ Produces `dist/index.html` (the whole game in one file, about 1.2 MB (410 KB gzi
     node tools/fuzz.mjs 4 1500       # randomized playtest: a bot plays the real UI, checks invariants, soft-locks, page errors
     node tools/regress-mobile.mjs    # iPhone touch regression (portrait + landscape)
     node tools/devices.mjs <outdir>  # device matrix: layout metrics + screenshots (SE, 14, Pro Max, landscape, iPad, desktop)
+    node tools/all.mjs [quick]       # the whole suite in one go (quick skips fuzz, music analysis and the progression sim)
     node tools/ngplus.mjs            # New Game+ carries the party and gear over and resets the world
+    node tools/featstest.mjs         # feats unlock, count, show and survive New Game+
+    node tools/backuptest.mjs        # save backup codes: back up, restore, refuse junk, confirm before replacing
+    node tools/backupcheck.mjs       # backup code round trip (pure, no browser)
     OUT=dir node tools/screens.mjs   # screenshot every main screen at phone, landscape and desktop sizes (seeded mid-game save)
     OUT=dir node tools/allmaps.mjs   # screenshot the spawn point of every map (phone size)
     node tools/regress.mjs           # browser regression (needs the dev server + Playwright); URL=... tests the dist build

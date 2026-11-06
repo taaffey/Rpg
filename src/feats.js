@@ -1,0 +1,37 @@
+// Feats: silly achievements, shown in the menu. Pure data: each test reads a snapshot `e` of the game that game.js builds (featEnv).
+// e = { wins, wipes, rides, phone, used{itemId: n}, kills(enemyId), bestiary, bestiaryTotal, quests, questsTotal, secrets, secretsTotal,
+//       gold, visited{mapId}, bosses{bossId}, ended, ngp, maxLevel(any hero at the cap), mastered(any hero), callings(most learned by one hero), gems(socketed in total) }
+// prog (optional) returns [now, goal] so the list can show a counter on feats that take a while.
+const n = (v, goal) => [Math.min(v, goal), goal];
+
+export const FEATS = [
+  { id: 'first_win', name: "Beginner's Luck", text: 'Win your first battle.', test: (e) => e.wins >= 1 },
+  { id: 'wins_50', name: 'Regular', text: 'Win 50 battles. Your stool gets a plaque.', test: (e) => e.wins >= 50, prog: (e) => n(e.wins, 50) },
+  { id: 'wins_200', name: 'Fixture', text: 'Win 200 battles. There is a pie named after you.', test: (e) => e.wins >= 200, prog: (e) => n(e.wins, 200) },
+  { id: 'wipe', name: 'Learning Experience', text: 'Get knocked out and wake up outside the Goose.', test: (e) => e.wipes >= 1 },
+  { id: 'pints', name: 'Round for the House', text: 'Drink 20 Pints of Lager.', test: (e) => (e.used.potion || 0) >= 20, prog: (e) => n(e.used.potion || 0, 20) },
+  { id: 'tea', name: 'Tea Fixes It', text: 'Use 10 cups of tea. Biscuits count.', test: (e) => (e.used.antidote || 0) + (e.used.remedy || 0) >= 10, prog: (e) => n((e.used.antidote || 0) + (e.used.remedy || 0), 10) },
+  { id: 'kebab', name: 'Questionable Decisions', text: 'Bring a friend back with a Late-Night Kebab.', test: (e) => (e.used.phoenix || 0) >= 1 },
+  { id: 'goose', name: 'Honk', text: 'Beat an Angry Goose.', test: (e) => e.kills('wm_goose') >= 1 },
+  { id: 'agents', name: 'Location, Location', text: 'Defeat 10 Estate Agent Goblins.', test: (e) => e.kills('goblin') >= 10, prog: (e) => n(e.kills('goblin'), 10) },
+  { id: 'phone', name: 'Battery Saver', text: "Check Devon's phone 5 times. Still 3%.", test: (e) => e.phone >= 5, prog: (e) => n(e.phone, 5) },
+  { id: 'tourist', name: 'Tourist', text: 'Visit Haven, Frostholm, Mirewood, Hopsend and Kilnhaven.', test: (e) => ['haven', 'frostholm', 'mirewood', 'hopsend', 'kilnhaven'].every((k) => e.visited[k]) },
+  { id: 'bus', name: 'Night Bus Regular', text: 'Ride the N9 five times. Nobody asks who drives.', test: (e) => e.rides >= 5, prog: (e) => n(e.rides, 5) },
+  { id: 'evils', name: 'Last Orders', text: 'Slay the Ashen Wyrm, the Drowned King and the Titan.', test: (e) => !!(e.bosses.wyrm && e.bosses.lich && e.bosses.titan) },
+  { id: 'ended', name: 'Time, Gentlemen, Please', text: 'Ring the bell and see the credits.', test: (e) => !!e.ended },
+  { id: 'sphinx', name: 'Riddle Me This', text: 'Beat the Sphinx beneath Sunscar.', test: (e) => !!e.bosses.sphinx },
+  { id: 'pizza', name: 'Delivery Driver', text: 'Defeat the Margherita.', test: (e) => !!e.bosses.margherita },
+  { id: 'landlord', name: 'Regular at the Void', text: 'Defeat the Landlord of the Void.', test: (e) => !!e.bosses.landlord },
+  { id: 'nat50', name: 'Zoologist', text: 'Defeat half of every creature in the bestiary.', test: (e) => e.bestiary * 2 >= e.bestiaryTotal, prog: (e) => n(e.bestiary, Math.ceil(e.bestiaryTotal / 2)) },
+  { id: 'nat100', name: 'Natural History Museum', text: 'Defeat every creature in the bestiary.', test: (e) => e.bestiary >= e.bestiaryTotal, prog: (e) => n(e.bestiary, e.bestiaryTotal) },
+  { id: 'rich', name: 'Loadsamoney', text: 'Hold 10,000 gold at once.', test: (e) => e.gold >= 10000 },
+  { id: 'peaked', name: 'Peaked', text: 'Take a hero to the top level.', test: (e) => !!e.maxLevel },
+  { id: 'master', name: 'Master of One', text: 'Master a calling.', test: (e) => !!e.mastered },
+  { id: 'versatile', name: 'Jack of All Trades', text: 'Learn 6 callings with one hero.', test: (e) => e.callings >= 6, prog: (e) => n(e.callings, 6) },
+  { id: 'gems', name: 'Gem Geek', text: 'Have 10 gems socketed at once.', test: (e) => e.gems >= 10, prog: (e) => n(e.gems, 10) },
+  { id: 'quests10', name: 'Dogsbody', text: 'Finish 10 side quests.', test: (e) => e.quests >= 10, prog: (e) => n(e.quests, 10) },
+  { id: 'quests_all', name: 'Pillar of the Community', text: 'Finish every side quest.', test: (e) => e.quests >= e.questsTotal, prog: (e) => n(e.quests, e.questsTotal) },
+  { id: 'treasure', name: 'Magpie', text: 'Find every hidden treasure.', test: (e) => e.secretsTotal > 0 && e.secrets >= e.secretsTotal, prog: (e) => n(e.secrets, e.secretsTotal) },
+  { id: 'ng1', name: 'Round Two', text: 'Start New Game+.', test: (e) => e.ngp >= 1 },
+  { id: 'ng3', name: 'Groundhog Pub', text: 'Reach New Game+3.', test: (e) => e.ngp >= 3 },
+];
