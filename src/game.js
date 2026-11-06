@@ -12,6 +12,7 @@ import './sidequests.js'; // four small optional dungeons on the main islands
 import './obsidian.js'; // the Obsidian Ruins: the last optional island and its superboss
 import './embers.js'; // Cinder Isle content (post-ending volcano island)
 import './hopsend.js'; // Hopsend Isle content (enemies, gear, shops, quests, scenes)
+import { ROADSIDE } from './roadside.js'; // little scenes while walking the overworld
 import * as SP from './sprites.js';
 import * as TR from './terrain.js';
 import * as TA from './townart.js';
@@ -169,7 +170,7 @@ function featEnv() {
   return {
     wins: st.wins || 0, wipes: st.wipes || 0, rides: st.rides || 0, phone: G.flags.story.phone || 0, used: st.used || {}, kills: (id) => G.flags.bestiary[id]?.kills || 0,
     bestiary: beastDone(), bestiaryTotal: Object.keys(ENEMIES).length, quests: Object.keys(QUESTS).filter((id) => qstate(id) === 'done').length, questsTotal: Object.keys(QUESTS).length,
-    secrets: secrets.filter((k) => G.flags.chests[k]).length, secretsTotal: secrets.length, gold: G.gold, visited: G.flags.visited, bosses: G.flags.bosses, ended: !!G.flags.story.ended, ngp: G.ngp || 0,
+    secrets: secrets.filter((k) => G.flags.chests[k]).length, secretsTotal: secrets.length, steps: st.steps || 0, roadside: Object.keys(G.flags.chat).filter((k) => k.startsWith('rs:')).length, gold: G.gold, visited: G.flags.visited, bosses: G.flags.bosses, ended: !!G.flags.story.ended, ngp: G.ngp || 0,
     maxLevel: G.party.some((c) => c.level >= L.MAX_LEVEL), mastered: G.party.some((c) => L.mastered(c).length > 0), callings: Math.max(0, ...G.party.map((c) => Object.keys(c.cp || {}).length)), gems: G.party.reduce((x, c) => x + gemsUsed(c), 0),
   };
 }
@@ -420,8 +421,21 @@ async function step(dx, dy) {
     const lure = Object.entries(QUESTS).find(([id, q]) => q.goal.lure?.table === table && qstate(id) === 'active' && !questDone(id))?.[1].goal.lure; // a hunt quest's quarry shows up more often
     if (lure && Math.random() < lure.p) return battle(lure.group);
     if ((table === 'world' || table === 'jungle') && m.ramp) tb = tb.slice(0, Math.min(tb.length, 2 + Math.floor(Math.hypot(nx - m.ramp[0], ny - m.ramp[1]) / 3))); // easy fights first, tougher the farther you roam
-    await battle(tb[Math.floor(Math.random() * tb.length)]);
+    await battle(tb[Math.floor(Math.random() * tb.length)]); return;
   }
+  if (G.map === 'world') await roadside();
+}
+// A roadside moment (src/roadside.js): once the party has walked a while, a small scene may happen. Unseen ones first; once all are seen they come back rarely.
+let sinceRoad = 0;
+async function roadside() {
+  (G.stats ||= { wins: 0 }).steps = (G.stats.steps || 0) + 1;
+  if (++sinceRoad < 45 || busy || inOverlay() || mapDef().rate === 0) return; // rate 0 is the tests' "nothing random happens" switch
+  const reg = regionOf(), seen = G.flags.chat, pool = ROADSIDE.filter((e) => (!e.regions || e.regions.includes(reg)) && cond(e.if)), fresh = pool.filter((e) => !seen[`rs:${e.id}`]);
+  if (!pool.length || Math.random() > (fresh.length ? 0.016 : 0.004)) return;
+  const list = fresh.length ? fresh : pool, e = list[Math.floor(Math.random() * list.length)];
+  sinceRoad = 0; seen[`rs:${e.id}`] = true; route = [];
+  await scene(e.lines);
+  if (e.reward) { const got = giveReward(e.reward); sfx('coin'); toast(`Got ${got.join(', ')}`, 2400); }
 }
 let lastSig = '';
 const sig = (el) => (el.dataset.act ? `${el.dataset.act}|${el.dataset.a}|${el.dataset.b}` : `in|${el.dataset.in}`);
@@ -1507,5 +1521,5 @@ function testParty(jobs = { adam: 'monk', devon: 'mage', brenna: 'cleric', wende
   for (const c of G.party) { if (jobs[c.look] && c.main !== jobs[c.look]) { L.setCalling(c, jobs[c.look]); delete c.cp.bloke; c.cp[c.main] = 0; c.weapon = null; c.armor = LIGHT_ARMOR.has(c.main) ? 'cloth' : 'leather'; c.slots = [null, null, null, null]; sanitize(c, G.inv); autofill(c); } const st = maxOf(c); c.hp = st.hp; c.mp = st.mp; }
   for (const c of G.party) { if (c.look === 'brenna' || c.look === 'wendell') { c.cp[c.main] = 0; c.weapon = LOCALS[c.look].weapon || null; c.slots = [null, null, null, null]; sanitize(c, G.inv); autofill(c); } }
 }
-window.__game = { autosave, defeat, ending, newGamePlus, testParty, wipeHome, get G() { return G; }, get BT() { return BT; }, get v() { return [vx, vy]; }, camState, TS, get route() { return route; }, battle, step, goto, MAPS, snap, OPT, ACT, ui: { shop, inn, guild, socketer, title, slotScreen, diffScreen, talk, itemsMenu, mainMenu, awakening } };
+window.__game = { scene, roadside, ROADSIDE, autosave, defeat, ending, newGamePlus, testParty, wipeHome, get G() { return G; }, get BT() { return BT; }, get v() { return [vx, vy]; }, camState, TS, get route() { return route; }, battle, step, goto, MAPS, snap, OPT, ACT, ui: { shop, inn, guild, socketer, title, slotScreen, diffScreen, talk, itemsMenu, mainMenu, awakening } };
 title();

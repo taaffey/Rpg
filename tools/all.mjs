@@ -3,7 +3,7 @@
 import { spawn } from 'child_process';
 const quick = process.argv.includes('quick');
 const TOOLS = [
-  ['checkids', 60], ['checkmaps', 60], ['checksprites', 60], ['backupcheck', 60],
+  ['checkids', 60], ['checkmaps', 60], ['checksprites', 60], ['backupcheck', 60], ['roadsidecheck', 120],
   ['regress', 600], ['regress-mobile', 600], ['touch', 600], ['devices', 300], ['ngplus', 120], ['backuptest', 120], ['featstest', 120],
   ...(quick ? [] : [['musiccheck', 600], ['progress', 600], ['fuzz', 900, ['4', '1500']]]),
 ];

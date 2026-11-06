@@ -42,6 +42,7 @@ keyboard alone, or with the mouse. Options (volumes, battle speed, shake, minima
 - **New Game+** (offered after the credits, up to NG+5): keep your party, gear and gold; the world, bosses and quests reset and foes hit harder each loop (+40% HP, +20% damage, more rewards). Save slots show an NG+ badge.
 - **Feats** (Menu > Feats): 29 silly achievements (Regular, Honk, Round for the House, Groundhog Pub...) with counters on the slow ones; they unlock on autosave and carry into New Game+.
 - **Save backup codes** (Options > Saves): one pasteable code for all three slots, to restore after Safari clears the site's storage or to move a save between phone and iPad.
+- **Roadside moments**: 36 small scenes that can happen while walking the overworld (a goose in the road, a peddler, a snowman with a bus pass), region by region. They are rare, never repeat until all that fit have been seen, and a few give a small gift or hint at an optional place you have not visited.
 - **Gear lists** sort usable items first with the biggest gain on top and a ★ Best chip.
 - **Bestiary rewards**: the Goose pays gold at 25/50/75/100% of foes slain. Roads cut random ambushes to about a third, so the long legs between towns are a stroll.
 - Crash safety: a battle error returns you to the map instead of freezing; progress is autosaved.
@@ -169,6 +170,7 @@ Produces `dist/index.html` (the whole game in one file, about 1.2 MB (410 KB gzi
     node tools/devices.mjs <outdir>  # device matrix: layout metrics + screenshots (SE, 14, Pro Max, landscape, iPad, desktop)
     node tools/all.mjs [quick]       # the whole suite in one go (quick skips fuzz, music analysis and the progression sim)
     node tools/ngplus.mjs            # New Game+ carries the party and gear over and resets the world
+    node tools/roadsidecheck.mjs     # roadside moments: data sanity, rarity, no repeats, rewards
     node tools/featstest.mjs         # feats unlock, count, show and survive New Game+
     node tools/backuptest.mjs        # save backup codes: back up, restore, refuse junk, confirm before replacing
     node tools/backupcheck.mjs       # backup code round trip (pure, no browser)
