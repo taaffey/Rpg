@@ -60,6 +60,7 @@ console.log('\n== offline render (Chromium) ==');
 const pw = createRequire('/node-tools/node_modules/')('playwright');
 const br = await pw.chromium.launch({ executablePath: '/opt/pw-browsers/chromium-1194/chrome-linux/chrome' });
 const pg = await br.newPage(); pg.on('pageerror', (e) => console.log('PAGEERR', e.message)); pg.on('console', (m) => m.type() === 'error' && console.log('CONSOLE', m.text()));
+await pg.addInitScript(() => { let s = 0x2545f491; Math.random = () => ((s = (s * 1664525 + 1013904223) >>> 0) / 4294967296); }); // the synth's noise and reverb use Math.random: seed it so the analysis is repeatable
 await pg.goto(`http://localhost:${process.env.PORT || 8123}/tools/`);
 if (WAV) fs.mkdirSync('/tmp/music', { recursive: true });
 const WAVS = new Set(['title', 'town', 'world', 'battle', 'boss', 'desert', 'mirewood', 'victory', 'spire', 'ending']);

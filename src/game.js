@@ -1,13 +1,13 @@
 // ===== Bearded Bros (and the Bell of Gemforge): UI, map, menus, battle flow =====
 import { SOCKET_COST, DIFFICULTY, DROPS, STORY, KEY_ITEMS, TRAITS, CALLING_BATCHES } from './data.js';
-import { JOBS, SKILLS, GEMS, WEAPONS, ARMORS, ACCS, ITEMS, WEAPON_TYPES, ENEMIES, ENCOUNTERS, ELEM_ICON, BOSSES, SHOPS, QUESTS } from './data.js';
+import { JOBS, SKILLS, GEMS, WEAPONS, ARMORS, ACCS, ITEMS, WEAPON_TYPES, ENEMIES, ENCOUNTERS, BOSSES, SHOPS, QUESTS } from './data.js';
 import { MAPS, WALK, START } from './maps.js';
 import { TEXT_MS, SPEEDS, CP_AT_LEVEL, REGION_NAME, MINI, MINI_FLOOR, MINI_WALL, LIGHT, KEYS, DIRV, QITEM, STAT_KEYS, BRO_PICKS, BEAST_TIERS, OBJECTIVES, VICTORY, DEFEAT, HEART_GEM } from './gamedata.js';
 import { packSlots, unpackSlots } from './backup.js';
 import { FEATS } from './feats.js';
 import { GEN } from './mapgen.js';
 import * as L from './logic.js';
-import { BROS, COMBOS, LOCALS, PARTY_SCALE, PHONE, PHONE_CHARGED, PUB, WAKE, CELLAR_IN, GARY_DOWN, CALLED, CALLED_AFTER, WENDELL } from './bros.js';
+import { BROS, COMBOS, LOCALS, PARTY_SCALE, PHONE, PHONE_CHARGED, PUB, WAKE, CALLED, CALLED_AFTER, WENDELL } from './bros.js';
 import './sidequests.js'; // four small optional dungeons on the main islands
 import './obsidian.js'; // the Obsidian Ruins: the last optional island and its superboss
 import './embers.js'; // Cinder Isle content (post-ending volcano island)
@@ -206,7 +206,6 @@ const FLAT_DECOR = new Set(['trapdoor']); // drawn on the floor: walk right over
 const decorAt = (x, y) => mapDef().decor?.some((d) => d[0] === x && d[1] === y && !FLAT_DECOR.has(d[2]));
 const here = (n) => !(n.local && G.party.some((c) => c.look === n.local)); // locals leave their post once they join
 const npcAt = (x, y) => mapDef().npcs?.find((n) => n.x === x && n.y === y && here(n));
-const inAutumn = (x, y) => { const a = GEN.deco?.autumn; return !!a && x >= a[0] && x <= a[2] && y >= a[1] && y <= a[3]; };
 const regAt = (x, y) => (GEN.deco?.reg?.[y]?.charCodeAt(x) ?? 48) - 48;
 const regionAt = (x, y) => { const t = (MAPS.world.rows[y] || '')[x] ?? '.', g = regAt(x, y); return t === ',' || t === 't' ? 'snow' : t === 'd' ? 'desert' : (x >= 138 && y >= 96) ? 'obsidian' : g === 5 ? 'ember' : g === 4 ? 'autumn' : t === ':' ? 'swamp' : g === 6 ? 'jungle' : 'green'; };
 const regionOf = () => (G.map !== 'world' ? null : regionAt(G.x, G.y));
@@ -338,6 +337,12 @@ function draw(t = performance.now() / 1000) {
   if (m.kind === 'outdoor') {
     const reg = regionOf();
     if (reg === 'snow') { cx.fillStyle = 'rgba(210,225,255,.07)'; cx.fillRect(0, 0, cv.width, cv.height); cx.fillStyle = 'rgba(255,255,255,.9)'; for (let i = 0; i < 46; i++) cx.fillRect(Math.round((i * 47 + Math.sin(t * 0.9 + i) * 14 + t * 10) % cv.width), Math.round((t * (30 + (i % 5) * 9) + i * 53) % cv.height), 2, 2); }
+    if (rain > 0 && reg !== 'snow') { // a passing shower: a cool tint and slanting streaks, fading in and out
+      const k = Math.min(1, rain / 3, (45 - Math.min(45, rain)) / 2 + 0.15); cx.fillStyle = `rgba(30,50,90,${0.16 * k})`; cx.fillRect(0, 0, cv.width, cv.height);
+      cx.strokeStyle = `rgba(190,215,255,${0.6 * k})`; cx.lineWidth = Math.max(1, Math.round(TS / 16)); cx.beginPath();
+      for (let i = 0; i < 70; i++) { const x = ((i * 83 + t * 110) % (cv.width + 60)) - 30, y = ((i * 47 + t * 460) % (cv.height + 40)) - 20; cx.moveTo(x, y); cx.lineTo(x - TS / 8, y + TS / 2.4); }
+      cx.stroke();
+    }
   } else if (m.kind === 'dungeon') { // torch-lit darkness around the party
     const lt = LIGHT[theme], fl = Math.sin(t * 9) * 4 + Math.sin(t * 23) * 2, gx = px + TS / 2, gy = py + TS / 2;
     const g = cx.createRadialGradient(gx, gy, 30, gx, gy, lt.r + fl);
@@ -377,16 +382,16 @@ function tick(now) {
   requestAnimationFrame(tick);
   const dt = Math.min(0.05, (now - lastT) / 1000 || 0.016); lastT = now;
   if (!G) return drawTitle(now / 1000);
-  G.playtime = (G.playtime || 0) + dt;
+  G.playtime = (G.playtime || 0) + dt; if (rain > 0) rain = Math.max(0, rain - dt);
   moveTick(dt);
   if (!inOverlay()) { const still = vx === G.x && vy === G.y && !trans && !busy && !route.length && !fv.some((f) => f.mv); if (!still || (++idleFrame & 1)) draw(now / 1000); } // standing still redraws at ~30fps: nothing on the map animates faster, and phones run cooler
 }
-let idleFrame = 0;
+let idleFrame = 0, rain = 0; // rain: seconds of a passing shower left (the roadside 'rain' moment)
 requestAnimationFrame(tick);
 const frame = () => new Promise((r) => requestAnimationFrame(r));
 async function transition() { sfx('encounter'); for (trans = 0.02; trans < 1.2; trans += 0.065) await frame(); trans = 1; await sleep(60); }
 function banner(text) { const b = $('#banner'); b.textContent = text; b.classList.remove('show'); void b.offsetWidth; b.classList.add('show'); }
-function goto(id, x, y) { // (a wipe wakes you in the last town you were in: G.home)
+function goto(id, x, y) { rain = 0; // (a wipe wakes you in the last town you were in: G.home)
   const first = !G.flags.visited[id]; G.map = id; G.x = x; G.y = y; G.flags.visited[id] = true; if (MAPS[id].kind === 'town') G.home = id === 'haven' ? null : { map: id, x: MAPS[id].spawn.x, y: MAPS[id].spawn.y }; snap(); music(musicFor()); sfx('door');
   banner(id === 'world' ? REGION_NAME[regionOf()] : MAPS[id].name); G.region = regionOf(); layoutView(); draw(); autosave();
   arrive(id, first);
@@ -434,7 +439,7 @@ async function roadside() {
   if (!pool.length || Math.random() > (fresh.length ? 0.016 : 0.004)) return;
   const list = fresh.length ? fresh : pool, e = list[Math.floor(Math.random() * list.length)];
   sinceRoad = 0; seen[`rs:${e.id}`] = true; route = [];
-  await scene(e.lines);
+  await scene(e.lines); if (e.rain) rain = e.rain;
   if (e.reward) { const got = giveReward(e.reward); sfx('coin'); toast(`Got ${got.join(', ')}`, 2400); }
 }
 let lastSig = '';
@@ -600,11 +605,6 @@ function openChest(x, y, secret = null) { // secret: loot of a hidden treasure s
 const qstate = (id) => G.flags.quests[id];
 function questDone(id) { const g = QUESTS[id].goal; return g.type === 'kill' ? (G.flags.qprog[id] || 0) >= g.n : g.type === 'find' ? !!G.flags.qitems[g.item] : g.type === 'deliver' ? (G.flags.qprog[id] || 0) >= 1 : !!G.flags.bosses[g.id]; }
 function questProgress(id) { const g = QUESTS[id].goal; if (g.type === 'deliver') return G.flags.qprog[id] ? 'delivered' : `bring it to ${g.to}`; return g.type === 'kill' ? `${Math.min(G.flags.qprog[id] || 0, g.n)}/${g.n}` : g.type === 'find' ? (G.flags.qitems[g.item] ? 'found' : `find it in the ${g.where}`) : (G.flags.bosses[g.id] ? 'slain' : 'not yet slain'); }
-function questMarker(n) { // '!' = offers a quest or news, '?' = ready to turn in
-  if (n.deliver && qstate(n.deliver) === 'active' && !questDone(n.deliver)) return '?'; // a delivery recipient
-  if (n.quest) { const st = qstate(n.quest); return !st ? '!' : st === 'active' && questDone(n.quest) ? '?' : null; }
-  return n.text && !G.flags.talked[`${G.map}:${n.x},${n.y}`] ? '!' : null;
-}
 // ---------- story: conditions, text fill-ins, reactive NPC lines, scenes (content in STORY / npc.textBy) ----------
 function cond(c) { // 'wyrm !lich', 'v:frostholm', 's:met', 'q:slimes', 'wyrm|lich': see STORY in data.js
   return !c || c.split(' ').every((tok) => {

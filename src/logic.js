@@ -1,5 +1,5 @@
 // ===== Pure game logic (no DOM): stats, build rules, gem rewriting, battle engine =====
-import { JOBS, SKILLS, GEMS, WEAPONS, ARMORS, ACCS, WEAPON_TYPES, ENEMIES, ITEMS, DROPS, ELEMENTS, TRAITS } from './data.js';
+import { JOBS, SKILLS, GEMS, WEAPONS, ARMORS, ACCS, WEAPON_TYPES, ENEMIES, ITEMS, DROPS } from './data.js';
 
 export const STAT_KEYS = ['hp', 'mp', 'atk', 'def', 'mag', 'spd'];
 export const MAX_LEVEL = 20;

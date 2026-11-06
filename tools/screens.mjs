@@ -43,7 +43,7 @@ for (const v of only) {
   await ev(() => window.__game.ui.mainMenu()); await shot('06-menu');
   for (const [n, f] of [
     ['07-items', () => window.__game.ACT.items()], ['08-bestiary', () => window.__game.ACT.bestiary()], ['09-journal', () => window.__game.ACT.journal()],
-    ['10-options', () => window.__game.ACT.opts()], ['11-chat', () => { window.__game.ACT.chat(); }],
+    ['10-options', () => window.__game.ACT.opts()], ['10b-backup', () => { window.__game.ACT.backup(); }], ['10c-restore', () => window.__game.ACT.restore()], ['10d-feats', () => window.__game.ACT.feats()], ['11-chat', () => { window.__game.ACT.chat(); }],
   ]) { await ev(f); await shot(n); if (n === '08-bestiary') { await ev(() => { const o = document.getElementById('overlay'); o.scrollTop = o.scrollHeight; for (const e of o.querySelectorAll('*')) if (e.scrollHeight > e.clientHeight + 20) e.scrollTop = e.scrollHeight; }); await shot('08b-bestiary-bottom'); } await pg.keyboard.press('Escape'); await pg.waitForTimeout(120); await ev(() => { const el = document.getElementById('overlay'); el.className = ''; el.innerHTML = ''; }); }
   await ev(() => window.__game.ACT.build(0)); await shot('12-hero');
   for (const [n, view] of [['13-hero-weapon', 'weapon'], ['14-hero-trait', 'trait'], ['15-hero-callings', 'callings'], ['16-hero-skill-slot', 'slot'], ['17-hero-job', 'jobMain']]) { await ev((vw) => window.__game.ACT.bview(vw), view); await shot(n); }

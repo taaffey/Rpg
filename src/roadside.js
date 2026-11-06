@@ -50,7 +50,7 @@ export const ROADSIDE = [
   // ---- Obsidian
   { id: 'black_glass', regions: ['obsidian'], lines: [N(`The ground here is black glass. It reflects your faces. You look tired.`), D(`I look incredible.`), A(`You look like you've been in a pub since 2026.`)] },
   // ---- anywhere
-  { id: 'rain', lines: [N(`It starts to rain. Not heavy. Just committed.`), D(`Bro, my phone says two percent.`), A(`It said three yesterday.`), D(`I think it's grieving.`)] },
+  { id: 'rain', rain: 45, lines: [N(`It starts to rain. Not heavy. Just committed.`), D(`Bro, my phone says two percent.`), A(`It said three yesterday.`), D(`I think it's grieving.`)] },
   { id: 'shrine', lines: [N(`A roadside shrine with an offering bowl. In the bowl: one coin and a note that says "back in 5 mins".`)] },
   { id: 'rivals', lines: [T(`Heroes, eh? We're Level 30 and sponsored.`), D(`By who?`), T(`A sandwich company.`), A(`...Fair.`)] },
   { id: 'beards', lines: [T(`Lovely beards. Both of you.`), A(`Thanks.`), D(`I've had mine since 2026.`), T(`...What?`), A(`Ignore him.`)] },
