@@ -124,7 +124,7 @@ function playFx(list) {
     } else if (e.t === 'poison') setTimeout(() => sfx('poison'), delay);
     else if (e.t === 'guard') { setTimeout(() => sfx('buff'), delay); delay += 90; if (e.wind) (G.stats ||= { wins: 0 }).braces = (G.stats.braces || 0) + 1; } // shields go up in a quick run; a Guard while a boss winds up counts for the feats
     else if (e.t === 'charge') { setTimeout(() => sfx('debuff'), delay); delay += 250; }
-    else if (e.t === 'stagger') { setTimeout(() => { sfx('crit'); setTimeout(() => sfx('hit'), 120); }, delay); delay += 300; (G.stats ||= { wins: 0 }).staggers = (G.stats.staggers || 0) + 1; }
+    else if (e.t === 'stagger') { setTimeout(() => { sfx('crit'); setTimeout(() => sfx('hit'), 120); }, delay); delay += 300; (G.stats ||= { wins: 0 }).staggers = (G.stats.staggers || 0) + 1; if (BT) BT.stag = (BT.stag || 0) + 1; }
     else if (e.t === 'phase') { setTimeout(() => sfx('dark'), delay); delay += 300; }
   }
 }
@@ -209,6 +209,7 @@ async function victory(b, bossId) {
   music('victory');
   const r = rewards(b); G.gold += r.gold; (G.stats ||= { wins: 0 }).wins++;
   const lines = [];
+  if (BT?.stag) lines.push(`<b class="gold">★ Staggered ${BT.stag} wind-up${BT.stag > 1 ? 's' : ''}</b>`); // the fight's skill, told once
   let lvSfx = false;
   for (const { c, exp, ups, learned } of L.awardExp(G.party, r.exp)) { // KO'd heroes get a half share (L.KO_EXP_SHARE)
     if (c.hp <= 0 && exp) lines.push(`<span class="dim">${esc(c.name)} (KO) gains half EXP: +${exp}</span>`);

@@ -46,4 +46,5 @@ ok('the stagger happened and is counted once', /is staggered/.test(log) && stats
 await waitAsk(); await ev(() => { const g = window.__game; g.BT.b.e[0].hp = 1; g.ACT.c('auto'); });
 await pg.waitForFunction(() => window.__done === true || document.querySelector('[data-act=vdone]'), null, { timeout: 30000 });
 ok('the battle ends cleanly', true);
+ok('the victory window credits the stagger', /Staggered 1 wind-up/.test(await ev(() => document.getElementById('overlay').innerText)), (await ev(() => document.getElementById('overlay').innerText)).replace(/\s+/g, ' ').slice(0, 120));
 ok('no page errors', !errs.length, errs.join('|')); await b.close(); process.exit(fails ? 1 : 0);
