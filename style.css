@@ -370,6 +370,7 @@ body:has(#overlay.on) #toast{top:auto;bottom:calc(env(safe-area-inset-bottom,0px
 .partywin .ph{grid-area:h;text-align:right;white-space:nowrap}.partywin .ph small{font-size:8px}
 .partywin .ph.mid{color:var(--yel)}.partywin .ph.low{color:var(--red)}
 .partywin .pg{grid-area:g;min-width:0}.partywin .pg .bar{margin:3px 3px 2px}
+.slot .t b .own{color:var(--gold);font-size:8px;margin-left:4px;white-space:nowrap}
 .partywin .pmp{grid-area:m;color:var(--mpc);font-size:8px;text-align:right;white-space:nowrap}
 /* a narrow party panel (choosing a skill or target on a small phone): drop the faces so the names fit */
 .partywin{container-type:inline-size}

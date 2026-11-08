@@ -97,6 +97,7 @@ ok('after the cellar: unarmed bros, Wendell brings his own sword, 400 G + Big Ga
 const potBefore = await ev(() => window.__game.G.inv.items.potion || 0), goldBefore0 = await ev(() => window.__game.G.gold);
 await ev(() => document.querySelector('[data-act=buy][data-b=potion]').click()); await pg.waitForTimeout(100);
 ok('bought a potion', (await ev(() => window.__game.G.inv.items.potion)) === potBefore + 1 && (await ev(() => window.__game.G.gold)) === goldBefore0 - 30);
+ok('the shop shows how many you carry', new RegExp(`Pint of Lager\\s*×${potBefore + 1}`).test(await ev(() => document.querySelector('#overlay')?.innerText || '')), String(await ev(() => (document.querySelector('#overlay')?.innerText || '').match(/Pint of Lager[^\n]*/)?.[0])));
 await ev(() => { window.__game.ui.shop('haven_smith'); }); await pg.waitForTimeout(100);
 const g0 = await ev(() => window.__game.G.gold);
 await ev(() => document.querySelector('[data-act=buy][data-b=oak_staff]').click()); await pg.waitForTimeout(80);
