@@ -370,6 +370,9 @@ body:has(#overlay.on) #toast{top:auto;bottom:calc(env(safe-area-inset-bottom,0px
 .partywin .ph.mid{color:var(--yel)}.partywin .ph.low{color:var(--red)}
 .partywin .pg{grid-area:g;min-width:0}.partywin .pg .bar{margin:3px 3px 2px}
 .partywin .pmp{grid-area:m;color:var(--mpc);font-size:8px;text-align:right;white-space:nowrap}
+/* a narrow party panel (choosing a skill or target on a small phone): drop the faces so the names fit */
+.partywin{container-type:inline-size}
+@container (max-width:150px){.partywin .pm{grid-template-columns:minmax(0,1fr) auto;grid-template-areas:"n h" "g m"}.partywin .pm .face{display:none}.partywin .pn,.partywin .ph{font-size:9px}}
 .partywin .pm.active{background-color:rgba(255,255,255,.1)}.partywin .pm.active .pn{color:var(--yel)}
 .partywin .pm.dead{opacity:.5}.partywin .pm.dead .ph{color:var(--red)}
 .foe.flash,.pm.flash,.er.flash{animation:hit .35s}
@@ -471,7 +474,8 @@ body:has(#overlay.title) #padL, body:has(#overlay.title) #padR{visibility:hidden
 .battle .cmdlist button .sk b{font-size:10px;overflow-wrap:anywhere}
 .battle .cmdlist button .sk b em{font-style:normal;color:var(--yel)}
 /* picking a skill / item / target: give the list more room than the party panel (names got longer and sillier) */
-.battle .br.subcmd{grid-template-columns:minmax(0,1.55fr) minmax(0,1fr)}
+.battle .br.subcmd{grid-template-columns:minmax(0,1.45fr) minmax(0,1fr)}
+.battle .br.subcmd .partywin .ph small{display:none} /* the party panel is narrow while choosing: current HP only, so names are not clipped */
 .greet{font-style:italic;margin:4px 2px 6px;font-size:9px;line-height:1.6}
 .beast .note{font-style:italic;margin-top:4px;font-size:8px;line-height:1.6}
 /* short landscape screens: keep pub illustrations from eating the whole window so credits and buttons stay in view */
@@ -505,7 +509,7 @@ textarea.code:focus{outline:2px solid var(--yel);outline-offset:1px}
 .battle .chg b{color:#ffd25a;white-space:nowrap}
 .battle .chg .cbar{flex:1;height:7px;background:#2a0808;border:1px solid #000;min-width:30px}
 .battle .chg .cbar i{display:block;height:100%;background:linear-gradient(90deg,#ff8a3a,#ffd25a)}
-.battle .chg small{font-size:7px;color:#ffb0a0;white-space:nowrap}
+.battle .chg small{font-size:7px;color:#ffb0a0;white-space:nowrap;min-width:0;overflow:hidden;text-overflow:ellipsis}
 .battle .chg.ready{border-color:#ffd25a;animation:none}.battle .chg.ready small{color:#ffd25a}
 @keyframes chgpulse{50%{border-color:#ffd25a}}
 .beast .tell{margin-top:3px;font-size:8px;line-height:1.5;color:#ffd25a}.beast .tell b{color:#fff6c0}

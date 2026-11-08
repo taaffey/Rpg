@@ -6,7 +6,7 @@ const pw = createRequire('/node-tools/node_modules/')('playwright');
 const RATE = +process.env.RATE || 4, URL_ = process.env.URL || `http://localhost:${process.env.PORT || 8123}/index.html`;
 const b = await pw.chromium.launch({ executablePath: process.env.CHROME || '/opt/pw-browsers/chromium-1194/chrome-linux/chrome' });
 const ctx = await b.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 3, hasTouch: true, isMobile: true });
-const pg = await ctx.newPage(); const errs = []; pg.on('pageerror', (e) => errs.push(e.message));
+const pg = await ctx.newPage(); const errs = []; pg.on('pageerror', (e) => errs.push(e.message)); pg.on('console', (m) => m.type() === 'error' && !/fonts|ERR_|Failed to load/.test(m.text()) && errs.push(m.text().slice(0, 160)));
 const cdp = await ctx.newCDPSession(pg);
 await pg.goto(URL_); await pg.waitForTimeout(600);
 await pg.click('[data-act=new]'); await pg.click('[data-act=slotpick][data-a="1"]'); await pg.click('[data-act=diff][data-b=normal]'); await pg.waitForTimeout(200);
@@ -30,7 +30,7 @@ await pg.keyboard.down('ArrowLeft'); await scene('town, walking', 2500); await p
 await pg.evaluate(() => { window.__game.battle(['goblin', 'goblin', 'bat']); }); await pg.waitForTimeout(2500);
 await pg.evaluate(() => window.__game.ACT.c('auto')); await scene('battle, auto', 5000);
 await pg.waitForFunction(() => !!document.querySelector('[data-act=vdone]') || !window.__game.BT, null, { timeout: 30000 }).catch(() => {}); await clear();
-await pg.evaluate(() => { window.__game.battle(['wyrm'], true); }); await pg.waitForTimeout(4000);
+await pg.evaluate(() => { window.__game.battle(['wyrm'], 'wyrm'); }); await pg.waitForTimeout(4000);
 await pg.evaluate(() => window.__game.ACT.c('auto')); await scene('boss battle, auto', 6000);
 // first visit to each kind of place: how long the main thread is blocked behind the wipe
 const first = await pg.evaluate(async () => {
