@@ -2,9 +2,10 @@
 import { SOCKET_COST, DIFFICULTY, DROPS, STORY, KEY_ITEMS, TRAITS, CALLING_BATCHES } from './data.js';
 import { JOBS, SKILLS, GEMS, WEAPONS, ARMORS, ACCS, ITEMS, WEAPON_TYPES, ENEMIES, ENCOUNTERS, BOSSES, SHOPS, QUESTS } from './data.js';
 import { MAPS, WALK, START } from './maps.js';
-import { TEXT_MS, SPEEDS, CP_AT_LEVEL, REGION_NAME, MINI, MINI_FLOOR, MINI_WALL, LIGHT, KEYS, DIRV, QITEM, STAT_KEYS, BRO_PICKS, BEAST_TIERS, OBJECTIVES, VICTORY, DEFEAT, HEART_GEM } from './gamedata.js';
+import { TEXT_MS, ENC_MUL, UI_ZOOM, SPEEDS, CP_AT_LEVEL, REGION_NAME, MINI, MINI_FLOOR, MINI_WALL, LIGHT, KEYS, DIRV, QITEM, STAT_KEYS, BRO_PICKS, BEAST_TIERS, OBJECTIVES, VICTORY, DEFEAT, HEART_GEM } from './gamedata.js';
 import { packSlots, unpackSlots } from './backup.js';
 import { FEATS } from './feats.js';
+import { MECH } from './bossmech.js';
 import { GEN } from './mapgen.js';
 import * as L from './logic.js';
 import { BROS, COMBOS, LOCALS, PARTY_SCALE, PHONE, PHONE_CHARGED, PUB, WAKE, CALLED, CALLED_AFTER, WENDELL } from './bros.js';
@@ -45,9 +46,9 @@ const lootName = (k, id) => (k === 'gems' && !gemsOn() ? 'Dull Stone' : DB[k][id
 const veteran = () => (G?.stats?.wins || 0) >= 10; // Repeat / Auto join the battle menu once the party has some fights behind it
 
 // ---------- options (persisted separately from saves) ----------
-const OPT = { music: 0.8, sfx: 0.9, speed: 'normal', text: 'normal', minimap: true, shake: !matchMedia('(prefers-reduced-motion: reduce)').matches };
+const OPT = { music: 0.8, sfx: 0.9, speed: 'normal', text: 'normal', ui: 'normal', enc: 'normal', minimap: true, shake: !matchMedia('(prefers-reduced-motion: reduce)').matches };
 try { Object.assign(OPT, JSON.parse(localStorage.getItem(SETTINGS) || '{}')); } catch {}
-function applyOptions() { setVolumes(OPT.music, OPT.sfx); FX.shake = OPT.shake; try { localStorage.setItem(SETTINGS, JSON.stringify(OPT)); } catch {} }
+function applyOptions() { setVolumes(OPT.music, OPT.sfx); FX.shake = OPT.shake; document.documentElement.style.setProperty('--ui-zoom', UI_ZOOM[OPT.ui] || 1); try { localStorage.setItem(SETTINGS, JSON.stringify(OPT)); } catch {} }
 applyOptions();
 
 // ---------- overlay plumbing ----------
@@ -312,6 +313,13 @@ function draw(t = performance.now() / 1000) {
   const torches = [], theme = m.theme;
   if (m.kind === 'dungeon') for (let y = Math.max(0, y0 - 1); y < y1 - 1; y++) for (let x = x0; x < x1; x++) if (tileAt(x, y) === '#' && tileAt(x, y + 1) === '.' && (x * 5 + y * 3) % 7 === 0) { cx.drawImage(SP.torch(Math.floor(t * 7 + x) % 2, theme), sx(x), sy(y), TS, TS); torches.push([sx(x) + TS / 2, sy(y) + TS * 0.4]); }
   if (!R?.drawsDecor?.(m)) for (const [dx, dy, k] of m.decor || []) cx.drawImage(SP.decor(k), sx(dx), sy(dy), TS, TS);
+  if (m.glints) for (const [gx, gy] of m.glints) { // an undug hidden cache twinkles now and then (see GEN.deco.caches)
+    if (gx < x0 - 1 || gx > x1 || gy < y0 - 1 || gy > y1 || G.flags.chests[chestKey(gx, gy)]) continue;
+    const ph = (t * 0.7 + gx * 0.37 + gy * 0.53) % 1; if (ph > 0.5) continue;
+    const k = Math.sin(ph / 0.5 * Math.PI), u = TS / 16, s = Math.max(1, Math.round((2 + 4.5 * k) * u)), X = sx(gx) + 8 * u, Y = sy(gy) + 9 * u;
+    cx.fillStyle = `rgba(255,244,170,${0.3 + 0.7 * k})`; cx.fillRect(Math.round(X - u / 2), Math.round(Y - s), Math.round(u), 2 * s); cx.fillRect(Math.round(X - s), Math.round(Y - u / 2), 2 * s, Math.round(u));
+    cx.fillStyle = `rgba(255,255,255,${k})`; cx.fillRect(Math.round(X - u), Math.round(Y - u), Math.round(2 * u), Math.round(2 * u));
+  }
   if (routeGoal && route.length) { // where a tap is taking the party: a pulsing ring
     const gx = sx(routeGoal[0]) + TS / 2, gy = sy(routeGoal[1]) + TS - 6, pr = 7 + Math.sin(t * 8) * 2;
     cx.strokeStyle = 'rgba(255,240,150,.9)'; cx.lineWidth = 2; cx.beginPath(); cx.ellipse(gx, gy, pr * 1.6, pr * 0.7, 0, 0, 7); cx.stroke();
@@ -398,6 +406,11 @@ function goto(id, x, y) { rain = 0; // (a wipe wakes you in the last town you we
 }
 let busy = false;
 function mapShake() { if (!OPT.shake) return; cv.classList.remove('shake'); void cv.offsetWidth; cv.classList.add('shake'); }
+async function chartTheLand() { // the overworld bakes in the background from the moment the page loads; if the party gets there first (a save that loads onto the map, a quick ferry), show a short loader instead of freezing
+  if (!TR.bakeReady || TR.bakeReady()) return;
+  const was = busy; busy = true; let dots = 0; const el = document.createElement('div'); el.id = 'charting'; el.textContent = 'Charting the land'; document.body.appendChild(el);
+  await TR.finishBake(() => { el.textContent = 'Charting the land' + '.'.repeat(1 + (++dots >> 2) % 4); }); el.remove(); busy = was;
+}
 async function step(dx, dy) {
   if (inOverlay() || busy || Math.abs(vx - G.x) + Math.abs(vy - G.y) > 0.45) return;
   const m = mapDef(), nx = G.x + dx, ny = G.y + dy, t = tileAt(nx, ny);
@@ -409,10 +422,7 @@ async function step(dx, dy) {
   G.x = nx; G.y = ny; trail.push({ x: nx, y: ny }); if (trail.length > 8) trail.shift();
   const pt = m.portals?.[`${nx},${ny}`];
   if (pt?.need && !cond(pt.need)) { G.x -= dx; G.y -= dy; trail.pop(); snap(); draw(); const seenKey = `deny:${G.map}:${G.x + dx},${G.y + dy}`; if (G.flags.talked[seenKey]) { toast('Still sealed. ' + ((pt.deny || []).slice(-1)[0]?.t || ''), 4200); return; } G.flags.talked[seenKey] = true; return scene(pt.deny || []); } // not yet: a word at the gate, and back a step
-  if (pt && pt.to === 'world' && TR.bakeReady && !TR.bakeReady()) { // first trip to the overworld: chart the land behind a short loader instead of freezing
-    busy = true; let dots = 0; const el = document.createElement('div'); el.id = 'charting'; el.textContent = 'Charting the land'; document.body.appendChild(el);
-    await TR.finishBake(() => { el.textContent = 'Charting the land' + '.'.repeat(1 + (++dots >> 2) % 4); }); el.remove(); busy = false;
-  }
+  if (pt && pt.to === 'world') await chartTheLand();
   if (pt) return goto(pt.to, pt.x, pt.y);
   reveal(); draw();
   const sec = m.secrets?.[`${nx},${ny}`]; if (sec && !G.flags.chests[chestKey(nx, ny)]) return openChest(nx, ny, sec);
@@ -421,7 +431,7 @@ async function step(dx, dy) {
   if (m.boss && t === 'X' && !G.flags.bosses[m.boss.id]) { busy = true; mapShake(); sfx('crit'); await sleep(350); busy = false; return battle([m.boss.id], m.boss.id); }
   const zoneEnc = G.map === 'world' ? { 4: 'hops', 5: 'embers', 6: 'jungle' }[regAt(nx, ny)] : null; // the outlying and jungle areas have their own monsters
   const table = zoneEnc || m.enc || m.encByTile?.[t];
-  if (table && !(m.safe || []).some(([sx2, sy2, r]) => Math.hypot(nx - sx2, ny - sy2) <= r) && Math.random() < m.rate * (G.map === 'world' && roadAt(nx, ny) ? 0.35 : 1)) { // the roads are well-trodden: far fewer ambushes on them, so the long legs between towns are a stroll
+  if (table && !(m.safe || []).some(([sx2, sy2, r]) => Math.hypot(nx - sx2, ny - sy2) <= r) && Math.random() < m.rate * (G.map === 'world' && roadAt(nx, ny) ? 0.35 : 1) * (ENC_MUL[OPT.enc] ?? 1)) { // the roads are well-trodden: far fewer ambushes on them, so the long legs between towns are a stroll
     let tb = ENCOUNTERS[table];
     const lure = Object.entries(QUESTS).find(([id, q]) => q.goal.lure?.table === table && qstate(id) === 'active' && !questDone(id))?.[1].goal.lure; // a hunt quest's quarry shows up more often
     if (lure && Math.random() < lure.p) return battle(lure.group);
@@ -639,6 +649,7 @@ function speaker(l) { // a scene line's speaker: narration, a hero (by party slo
 async function ferry(npc) { // a ferryman: free passage once the `need` boss is slain, with a short crossing scene
   if (npc.need && !G.flags.bosses[npc.need]) return talk({ ...npc, service: null, quest: null, textBy: null, text: npc.no });
   await scene((npc.go || []).map((t) => ({ s: 'n', t })).concat([{ s: 'n', t: 'The ferry chugs across the water...' }]));
+  if (npc.to[0] === 'world') await chartTheLand();
   goto(...npc.to);
 }
 function talk(npc) {
@@ -867,10 +878,12 @@ async function arrive(id, first) { // story beats tied to entering a place
   if (id === 'cavern' && !G.flags.story.wendell && G.party.length < 4) { joinLocal('wendell'); await scene(WENDELL); }
   if (first && STORY.area[id]) await scene(STORY.area[id]); // a few lines the first time the party sets foot somewhere
 }
-function loadSlot(i) {
-  const d = readSlot(i); if (!d?.G) return;
-  try { G = migrate(d.G); } catch (err) { console.error(err); G = null; sfx('error'); return toast('⚠ That save looks damaged. Try Restore with a backup code (Options).', 4600); }
-  G.slot = i; snap(); music(musicFor()); hide(); banner(mapDef().name); toast(`Loaded slot ${i}`);
+let loadingSlot = false;
+async function loadSlot(i) {
+  const d = readSlot(i); if (!d?.G || loadingSlot) return;
+  let g; try { g = migrate(d.G); } catch (err) { console.error(err); sfx('error'); return toast('⚠ That save looks damaged. Try Restore with a backup code (Options).', 4600); }
+  if (g.map === 'world') { loadingSlot = true; try { await chartTheLand(); } finally { loadingSlot = false; } } // a save that loads onto the overworld: bake it behind a loader, not a frozen frame
+  G = g; G.slot = i; snap(); music(musicFor()); hide(); banner(mapDef().name); toast(`Loaded slot ${i}`);
   if (G.flags.worldMoved) { delete G.flags.worldMoved; toast('The world has been redrawn since this save. Fog reset' + (G.map === 'world' ? ' and you are back at Haven\'s gate' : '') + '.', 5200); }
 }
 // ---------- party chat (menu > CHAT): skits about where you are and what just happened (STORY.chat) ----------
@@ -913,7 +926,7 @@ ACT.bestiary = () => {
   show(`<h2>📖 Bestiary</h2><p class="dim">Foes discovered: <b class="gold">${seen.length}/${ids.length}</b>. Defeat a creature to learn its weaknesses.</p><div class="grid">${ids.map((id) => {
     const r = G.flags.bestiary[id], d = ENEMIES[id];
     if (!r) return '';
-    return `<div class="card beast"><div class="bh"><span class="bimg"><img src="${SP.enemyURL(id)}" alt=""></span><div><div class="bn">${d.name}</div>${d.boss ? `<span class="chip tag">${ic('trophy')} Boss</span>` : ''}<div class="dim">Defeated ${r.kills}</div></div></div><div>HP <b>${foeStat(d, 'hp')}</b> · ATK <b>${foeStat(d, 'atk')}</b> · MAG <b>${foeStat(d, 'mag')}</b></div>${r.kills ? `<div>WEAK ${els(d.weak)}&nbsp; RES ${els(d.res)}</div>` : '<div class="dim">Weaknesses unknown</div>'}${r.kills && DROPS[id]?.common ? `<div>${[DROPS[id].common, DROPS[id].rare].filter(Boolean).map(([k, did], j) => (j ? (r.got?.[did] ? `<span class="gold">${ic('star')}${itemIc(k, did)} ${DB[k][did].name}</span>` : `<span class="dim">${ic('star')} ???</span>`) : `${itemIc(k, did)} ${DB[k][did].name}`)).join('<br>')}</div>` : ''}${(() => { const n = fieldNote(id); return n ? `<div class="dim note">${esc(n.name)}: “${esc(n.text)}”</div>` : ''; })()}</div>`;
+    return `<div class="card beast"><div class="bh"><span class="bimg"><img src="${SP.enemyURL(id)}" alt=""></span><div><div class="bn">${d.name}</div>${d.boss ? `<span class="chip tag">${ic('trophy')} Boss</span>` : ''}<div class="dim">Defeated ${r.kills}</div></div></div><div>HP <b>${foeStat(d, 'hp')}</b> · ATK <b>${foeStat(d, 'atk')}</b> · MAG <b>${foeStat(d, 'mag')}</b></div>${r.kills ? `<div>WEAK ${els(d.weak)}&nbsp; RES ${els(d.res)}</div>` : '<div class="dim">Weaknesses unknown</div>'}${r.kills && MECH[id]?.charge ? `<div class="tell">TELL: winds up <b>${esc(SKILLS[MECH[id].charge.move].name)}</b> every ${MECH[id].charge.every}${['th', 'st', 'nd', 'rd'][MECH[id].charge.every] || 'th'} move. Hit it hard to stagger it, or Guard.</div>` : ''}${r.kills && DROPS[id]?.common ? `<div>${[DROPS[id].common, DROPS[id].rare].filter(Boolean).map(([k, did], j) => (j ? (r.got?.[did] ? `<span class="gold">${ic('star')}${itemIc(k, did)} ${DB[k][did].name}</span>` : `<span class="dim">${ic('star')} ???</span>`) : `${itemIc(k, did)} ${DB[k][did].name}`)).join('<br>')}</div>` : ''}${(() => { const n = fieldNote(id); return n ? `<div class="dim note">${esc(n.name)}: “${esc(n.text)}”</div>` : ''; })()}</div>`;
   }).join('')}</div>${beastClaim()}${ids.length - seen.length ? `<div class="card dim" style="text-align:center">❔ ${ids.length - seen.length} more creatures are still undiscovered</div>` : ''}<div class="foot">${btn('menu', 'Back', '', '', 'primary')}</div>`);
 };
 ACT.title = () => { if (G?.slot && !BT) save(); title(); }; // leaving for the title never loses a step
@@ -994,9 +1007,9 @@ function optionsScreen() {
   show(`<h2>⚙ Options</h2>
   <div class="opt"><label>${ic('sound')} Music volume <b>${Math.round(OPT.music * 100)}%</b></label><input type="range" min="0" max="100" value="${Math.round(OPT.music * 100)}" data-in="music"></div>
   <div class="opt"><label>${ic('sound')} Sound effects <b>${Math.round(OPT.sfx * 100)}%</b></label><input type="range" min="0" max="100" value="${Math.round(OPT.sfx * 100)}" data-in="sfx"></div>
-  <div class="opts">${G ? btn('optdiff', `<span>Difficulty</span><b>${DIFFICULTY[G.difficulty].name}</b>`) : ''}${btn('optspeed', `<span>Battle speed</span><b>${OPT.speed}</b>`)}${btn('opttext', `<span>Text speed</span><b>${OPT.text}</b>`)}${btn('optmini', `<span>Minimap</span><b>${onOff(OPT.minimap)}</b>`)}${btn('optshake', `<span>Screen shake</span><b>${onOff(OPT.shake)}</b>`)}${btn('optmute', `<span>${ic(isMuted() ? 'mute' : 'sound')}Sound</span><b>${isMuted() ? 'Muted' : 'On'}</b>`)}</div>
+  <div class="opts">${G ? btn('optdiff', `<span>Difficulty</span><b>${DIFFICULTY[G.difficulty].name}</b>`) : ''}${btn('optspeed', `<span>Battle speed</span><b>${OPT.speed}</b>`)}${btn('opttext', `<span>Text speed</span><b>${OPT.text}</b>`)}${btn('optui', `<span>Menu size</span><b>${OPT.ui}</b>`)}${btn('optenc', `<span>Random fights</span><b>${OPT.enc}</b>`)}${btn('optmini', `<span>Minimap</span><b>${onOff(OPT.minimap)}</b>`)}${btn('optshake', `<span>Screen shake</span><b>${onOff(OPT.shake)}</b>`)}${btn('optmute', `<span>${ic(isMuted() ? 'mute' : 'sound')}Sound</span><b>${isMuted() ? 'Muted' : 'On'}</b>`)}</div>
   <h3>Saves</h3><div class="opts">${btn('backup', '<span>Back up saves</span><b>Copy a code</b>', '', '', '', !anySave())}${btn('restore', '<span>Restore saves</span><b>Paste a code</b>')}</div>
-  <h3>Controls</h3><div class="dim controls"><div><b>Arrows / WASD</b> move</div><div><b>Esc / M</b> menu</div><div><b>N</b> toggle minimap</div><div><b>Arrows</b> move menu focus</div><div><b>Enter / Space</b> select</div><div><b>Esc / Backspace</b> back</div></div>
+  <h3>Controls</h3>${TOUCH ? '<div class="dim controls"><div><b>Tap the map</b> walk there</div><div><b>Pad</b> press and slide to walk</div><div><b>A</b> talk, check, confirm</div><div><b>B</b> menu, back</div><div><b>MAP</b> the full map</div><div><b>Tap text</b> skip ahead</div></div><div class="dim" style="margin-top:4px">A keyboard works too: arrows or WASD, Enter, Esc.</div>' : '<div class="dim controls"><div><b>Arrows / WASD</b> move</div><div><b>Esc / M</b> menu</div><div><b>N</b> toggle minimap</div><div><b>Arrows</b> move menu focus</div><div><b>Enter / Space</b> select</div><div><b>Esc / Backspace</b> back</div></div>'}
   ${IS_IOS && !root.classList.contains('standalone') && !root.classList.contains('framed') ? '<div class="card"><b>📱 Install on iPhone</b><div class="dim">In Safari tap Share, then <b>Add to Home Screen</b>. Bearded Bros then runs full-screen, works offline, and remembers your saves.</div></div>' : ''}
   <div class="foot"><span class="dim grow" style="font-size:8px;align-self:center">Bearded Bros v${VERSION}</span>${btn('optback', 'Back', '', '', 'primary')}</div>`);
 }
@@ -1034,6 +1047,8 @@ ACTIN.music = (v) => { OPT.music = v / 100; applyOptions(); ov.querySelector('[d
 ACTIN.sfx = (v) => { OPT.sfx = v / 100; applyOptions(); ov.querySelector('[data-in=sfx]').previousElementSibling.querySelector('b').textContent = `${v}%`; sfx('click'); };
 ACT.optdiff = () => { const k = Object.keys(DIFFICULTY); G.difficulty = k[(k.indexOf(G.difficulty) + 1) % k.length]; optionsScreen(); };
 ACT.optspeed = () => { const k = Object.keys(SPEEDS); OPT.speed = k[(k.indexOf(OPT.speed) + 1) % k.length]; applyOptions(); optionsScreen(); };
+ACT.optenc = () => { const k = Object.keys(ENC_MUL); OPT.enc = k[(k.indexOf(OPT.enc) + 1) % k.length]; applyOptions(); optionsScreen(); };
+ACT.optui = () => { const k = Object.keys(UI_ZOOM); OPT.ui = k[(k.indexOf(OPT.ui) + 1) % k.length]; applyOptions(); optionsScreen(); };
 ACT.opttext = () => { const k = Object.keys(TEXT_MS); OPT.text = k[(k.indexOf(OPT.text) + 1) % k.length]; applyOptions(); optionsScreen(); };
 ACT.optmini = () => { OPT.minimap = !OPT.minimap; applyOptions(); optionsScreen(); };
 ACT.optshake = () => { OPT.shake = !OPT.shake; applyOptions(); optionsScreen(); };
@@ -1065,7 +1080,7 @@ ACT.bus = () => {
 ACT.busgo = async (i) => {
   const s2 = busStops()[+i]; if (!s2) return;
   hide(); await scene([{ s: 'n', t: 'The N9 rattles up, windows steamed. "Mind the gap," says a voice from nowhere.' }]);
-  (G.stats ||= { wins: 0 }).rides = (G.stats.rides || 0) + 1; goto('world', ...s2.to); autosave();
+  (G.stats ||= { wins: 0 }).rides = (G.stats.rides || 0) + 1; await chartTheLand(); goto('world', ...s2.to); autosave();
 };
 ACT.phone = async () => { // Devon's phone: still 3%, still no signal, a different joke each time
   const jokes = G.flags.story.charged ? [...PHONE_CHARGED, ...PHONE.slice(1)] : PHONE, n = (G.flags.story.phone || 0) % jokes.length; G.flags.story.phone = n + 1; sfx('blip');
@@ -1267,8 +1282,9 @@ function renderBattle() {
   const groups = []; for (const e of b.e) { if (e.hp <= 0) continue; const g = groups.find((x) => x.name === e.name); if (g) g.n++; else groups.push({ name: e.name, n: 1, e }); }
   const enemyWin = `<div class="elist">${groups.map(({ name, n, e }) => `<div class="er" data-n="${esc(name)}"><span class="en">${esc(name)}</span><span class="ec">${n > 1 ? '×' + n : ''}</span>${e.weak.length || e.res.length ? `<span class="ew">${e.weak.length ? '<span class="lab">WEAK</span>' + icons(e.weak) : ''}${e.res.length ? '<span class="lab">RES</span>' + icons(e.res) : ''}</span>` : ''}</div>`).join('')}</div>`;
   const msg = BT.log.slice(-2).map(line).join('');
+  const winding = b.e.filter((x) => x.hp > 0 && x.charge).map((x) => { const pct = Math.min(100, Math.round(100 * x.charge.dmg / x.charge.need)); return `<div class="chg${pct >= 100 ? ' ready' : ''}"><b>${UI.deco('⚠')} WIND-UP</b><span class="cbar"><i style="width:${pct}%"></i></span><small>${pct >= 100 ? 'STAGGER READY' : 'Hit it hard, or Guard'}</small></div>`; }).join('');
   ov.innerHTML = `<div class="win battle"><div class="bl"><div class="order"><span class="olab">ORDER</span>${order}${BT.auto ? '<button class="autobtn on" data-tap="autotoggle" tabindex="-1">AUTO ON</button>' : ''}</div>
-  <div class="stagewrap"><div id="stagehost"></div>${msg && !BT.logBig ? `<div class="bmsg">${msg}</div>` : ''}<button class="logtoggle" data-tap="logsize" tabindex="-1" title="Battle log (L)">${BT.logBig ? 'CLOSE' : 'LOG'}</button></div>
+  <div class="stagewrap"><div id="stagehost"></div>${msg && !BT.logBig ? `<div class="bmsg">${msg}</div>` : ''}${winding ? `<div class="chgwrap">${winding}</div>` : ''}<button class="logtoggle" data-tap="logsize" tabindex="-1" title="Battle log (L)">${BT.logBig ? 'CLOSE' : 'LOG'}</button></div>
   ${BT.logBig ? `<div class="logwrap"><div class="log big" id="log">${BT.log.map(line).join('')}</div></div>` : ''}</div>
   <div class="br${ask && ask.stage !== 'root' ? ' subcmd' : ''}"><div class="pane cmdwin"><div id="cmd">${ask ? cmdHtml(ask) : enemyWin}</div></div>
   <div class="pane partywin">${b.p.map((p) => { const r = p.hp / p.maxhp; return `<div data-n="${p.name}" class="pm ${p.hp <= 0 ? 'dead' : ''} ${ask?.p === p ? 'active' : ''}">${portrait(ak(p.ch), 'sm' + (p.hp <= 0 ? ' ko' : ''))}<span class="pn">${esc(p.name)}${UI.statusIcons(p.st)}</span><span class="ph ${r < 0.25 ? 'low' : r < 0.5 ? 'mid' : ''}">${p.hp}<small>/${p.maxhp}</small></span><span class="pg">${bar(p.hp, p.maxhp, 'hp')}</span><span class="pmp">MP ${p.mp}</span></div>`; }).join('')}</div></div></div>`;
@@ -1293,6 +1309,9 @@ function playFx(list) {
       const el = ov.querySelector(`[data-n="${e.name}"]`); if (el) { el.classList.remove('flash'); void el.offsetWidth; el.classList.add('flash'); }
       setTimeout(() => { sfx(e.weak ? 'crit' : 'hit'); if (e.ko) setTimeout(() => sfx('ko'), 140); }, delay); delay += 110;
     } else if (e.t === 'poison') setTimeout(() => sfx('poison'), delay);
+    else if (e.t === 'charge') { setTimeout(() => sfx('debuff'), delay); delay += 250; }
+    else if (e.t === 'stagger') { setTimeout(() => { sfx('crit'); setTimeout(() => sfx('hit'), 120); }, delay); delay += 300; }
+    else if (e.t === 'phase') { setTimeout(() => sfx('dark'), delay); delay += 300; }
   }
 }
 // Bro Combos: the first brother asked can team up with the other while he still stands and has not been asked yet
@@ -1331,6 +1350,7 @@ function cmdHtml(a) {
 }
 function autoCommand(p) { // reuse the hero's last move with sensible targets; fall back to a basic attack
   const b = BT.b, last = BT.last.get(p.name), foes = b.e.filter((x) => x.hp > 0), friends = b.p.filter((x) => x.hp > 0);
+  if (foes.some((x) => x.charge && x.charge.dmg < x.charge.need) && p.hp < p.maxhp * 0.7) return { kind: 'defend' }; // a boss is winding up a big one: the hurt ones brace
   let cmd = last && last.kind === 'skill' && L.mpCost(p, skillWithGems(last.skillId, last.gems)) <= p.mp ? { ...last } : { kind: 'skill', skillId: 'attack', gems: [] };
   const s = skillWithGems(cmd.skillId, cmd.gems);
   if (s.tgt === 'one') cmd.target = foes.sort((x, y) => x.hp - y.hp)[0];

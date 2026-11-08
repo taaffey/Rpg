@@ -88,7 +88,7 @@ export class Stage {
   event(e) {
     const v = this.v.get(e.actor || e.name);
     if (e.t === 'cast') {
-      if (!v) return; this.lastElem = e.kind === 'heal' || e.kind === 'buff' ? (e.kind === 'heal' ? 'heal' : null) : (e.elem && e.elem !== 'random' ? e.elem : e.elem === 'random' ? 'fire' : 'slash');
+      if (!v) return; v.charging = false; this.lastElem = e.kind === 'heal' || e.kind === 'buff' ? (e.kind === 'heal' ? 'heal' : null) : (e.elem && e.elem !== 'random' ? e.elem : e.elem === 'random' ? 'fire' : 'slash');
       const [cx, cy] = this.centre(v);
       if (e.kind === 'phys') { if (v.side === 'p') v.atk = ATK; else { v.lunge = 0.36; v.slammed = false; v.blink = 0.18; } }
       else {
@@ -110,6 +110,13 @@ export class Stage {
       if (e.weak && FX.shake) this.shake = 0.25;
       if (e.weak || (e.ko && v.side === 'e' && v.big)) this.zoom = Math.max(this.zoom, v.big ? 0.06 : 0.04);
       if (e.ko) { v.dead = true; v.deadT = 0; if (v.side === 'e' && v.big) { this.flashA = 0.6; this.flashC = '#ffffff'; } }
+    } else if (e.t === 'charge' && v) { // a boss winds up: it pulses red with a warning mark until it unleashes or is staggered
+      v.charging = true; v.blink = 0.4; if (FX.shake) this.shake = Math.max(this.shake, 0.12);
+    } else if (e.t === 'stagger' && v) {
+      v.charging = false; v.flash = 0.5; const [cx, cy] = this.centre(v); this.effect('slash', cx, cy, v); this.burst(cx, cy, 'bolt', 16, 20); this.card('STAGGERED!', 1.1);
+      if (FX.shake) this.shake = Math.max(this.shake, 0.4);
+    } else if (e.t === 'phase' && v) {
+      this.flashA = Math.max(this.flashA, 0.45); this.flashC = '#ff5a40'; if (FX.shake) this.shake = Math.max(this.shake, 0.35); if (e.text) this.card(e.text, 1.3);
     } else if (e.t === 'heal' && v) {
       if (e.revived) { v.dead = false; v.deadT = 0; }
       const [cx, cy] = this.centre(v); this.effect('heal', cx, cy, v);
@@ -283,6 +290,11 @@ export class Stage {
     else x.drawImage(v.spr, px, py);
     const fl = v.flash > 0.1 ? 1 : v.blink > 0 && Math.floor(v.blink * 20) % 2 === 0 ? 0.6 : 0;
     if (fl) { x.globalAlpha = fl; x.drawImage(silhouette(v.spr, '#ffffff'), px, py); x.globalAlpha = 1; }
+    if (v.charging) { // red pulse over the sprite and a bobbing "!" above it
+      x.globalAlpha = 0.18 + 0.2 * (0.5 + 0.5 * Math.sin(v.t * 9)); x.drawImage(silhouette(v.spr, '#ff3a20'), px, py); x.globalAlpha = 1;
+      const mx = px + Math.round((v.bb[0] + v.bb[2]) / 2), my = py + v.bb[1] - 12 + Math.round(Math.sin(v.t * 8) * 1.5);
+      x.fillStyle = '#000'; x.fillRect(mx - 3, my - 1, 6, 12); x.fillStyle = '#ffd25a'; x.fillRect(mx - 2, my, 4, 7); x.fillRect(mx - 2, my + 9, 4, 2);
+    }
     this.statusIcons(x, v, px + (v.bb[0] + v.bb[2]) / 2, py + v.bb[1] - 4, t);
   }
   // FF-style death: the enemy flushes purple/red and dissolves top-down in a dithered wipe (bosses take longer and burst)

@@ -460,6 +460,25 @@ MAPS.world = {
   },
   places: [[hx, hy, 'Haven Town'], [fx, fy, 'Frostholm'], [cx, cy, 'Ashen Cavern'], [rx, ry, 'Sunken Crypt'], [sx, sy, 'Frost Spire'], [mx, my, 'Mirewood'], [tx, ty, 'Storm Cavern'], [ux, uy, 'Sunscar Ruins'], [...GEN.pois.chippy, 'Wayside Chippy'], [...GEN.pois.stones, 'Standing Stones'], [...GEN.pois.bogshed, 'Bog Snorkel Shed'], [...GEN.pois.oasis, 'Oasis Kebab Van'], [...GEN.pois.lodge, 'Ski Lodge'], [...GEN.pois.shed, 'Ice Fishing Shed'], [...GEN.pois.dock_s, 'Westshore Jetty'], [...GEN.pois.dock_h, 'Hopsend Jetty'], [...GEN.pois.hopsend, 'Hopsend'], [...GEN.pois.brewery, 'Great Brewery'], [...GEN.pois.dock_f, 'Frost Jetty'], [...GEN.pois.dock_e, 'Cinder Jetty'], [...GEN.pois.windmill, 'Old Windmill'], [...GEN.pois.wreck, 'Salty Sue Wreck'], [...GEN.pois.pyramid, 'Mild Pyramid'], [...GEN.pois.icecave, 'Ice Cave'], [...GEN.pois.dock_o, 'Stormreach Jetty'], [...GEN.pois.dock_p, 'Obsidian Jetty'], [...GEN.pois.obsidian, 'Obsidian Ruins'], [...GEN.pois.kilnhaven, 'Kilnhaven'], [...GEN.pois.pizzaoven, 'The Pizza Oven']],
 };
+// hidden caches in the open world: nooks and dead ends picked by tools/genmaps.py (GEN.deco.caches), found by walking over them (a glint shows until each is dug up).
+// Loot by distance from Haven: close to home it is a few coins and a pint, far out (and on the islands) elixirs, charms and gems.
+{
+  const used = new Set(), uniq = (arr, h) => { const a = arr.filter((v) => !used.has(v)), v = (a.length ? a : arr)[h % (a.length || arr.length)]; used.add(v); return v; };
+  const ACC2 = ['power_ring', 'ward_amulet', 'mana_charm', 'swift_boots', 'fire_pendant', 'frost_pendant'], ACC3 = ['sage_ring', 'berserk_ring', 'life_charm', 'lich_ring', 'socket_jewel'];
+  const GEM2 = ['fire', 'frost', 'bolt', 'holy', 'shadow', 'wide', 'venom', 'swift', 'thrifty', 'pierce'], GEM3 = ['echo', 'vamp', 'overcharge', 'stun', 'execute', 'berserk', 'siphon', 'guard', 'crit', 'chain'];
+  const ITEM2 = [{ ether: 1 }, { hipotion: 1 }, { remedy: 1 }, { antidote: 2, potion: 1 }], ITEM3 = [{ elixir: 1 }, { megaether: 1, hipotion: 2 }, { phoenix: 2 }, { elixir: 1, ether: 2 }];
+  const loot = (tier, h) => {
+    if (tier === 1) return [{ gold: 70 + (h % 70), items: { potion: 1 } }, { gold: 50 + (h % 60), items: { antidote: 1 } }, { items: { potion: 2 } }, { gold: 110 + (h % 60) }][h % 4];
+    const o = tier === 2 ? { gold: 150 + (h % 150), items: ITEM2[h % 4] } : { gold: 280 + (h % 260), items: ITEM3[h % 4] };
+    const r = h % 5; if (tier === 2) { if (r === 0) o.accs = [uniq(ACC2, h)]; else if (r === 1) o.gems = [uniq(GEM2, h)]; } else if (r < 2) o.accs = [uniq(ACC3, h)]; else if (r < 4) o.gems = [uniq(GEM3, h)];
+    return o;
+  };
+  MAPS.world.glints = [];
+  GEN.deco.caches.forEach(([x, y, land], i) => {
+    const d = Math.max(Math.abs(x - hx), Math.abs(y - hy)), tier = land !== 'main' ? 3 : d < 30 ? 1 : d < 62 ? 2 : 3, h = (((x * 7919) ^ (y * 104729) ^ (i * 31)) >>> 0);
+    MAPS.world.secrets[P(x, y)] = loot(tier, h); MAPS.world.glints.push([x, y]);
+  });
+}
 // no random fights close to towns, and grassland fights ramp up with distance from Haven (gentle first steps)
 MAPS.world.safe = [[hx, hy, 6], [fx, fy, 4], [mx, my, 4], [cx, cy, 2], [rx, ry, 2], [sx, sy, 2], [tx, ty, 2], [ux, uy, 2], ...['chippy', 'stones', 'bogshed', 'oasis', 'lodge', 'shed', 'dock_s', 'dock_h', 'hopsend', 'brewery', 'dock_f', 'dock_e', 'dock_o', 'dock_p', 'obsidian', 'kilnhaven', 'pizzaoven', 'windmill', 'wreck', 'pyramid', 'icecave'].map((k) => [...GEN.pois[k], 3])];
 MAPS.world.ramp = [hx, hy];

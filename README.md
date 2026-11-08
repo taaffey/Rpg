@@ -43,6 +43,9 @@ keyboard alone, or with the mouse. Options (volumes, battle speed, shake, minima
 - **Feats** (Menu > Feats): 29 silly achievements (Regular, Honk, Round for the House, Groundhog Pub...) with counters on the slow ones; they unlock on autosave and carry into New Game+.
 - **Save backup codes** (Options > Saves): one pasteable code for all three slots, to restore after Safari clears the site's storage or to move a save between phone and iPad.
 - **Roadside moments**: 36 small scenes that can happen while walking the overworld (a goose in the road, a peddler, a snowman with a bus pass), region by region. They are rare, never repeat until all that fit have been seen, and a few give a small gift or hint at an optional place you have not visited.
+- **Boss mechanics**: every boss winds up a big attack every few turns (a red pulse, a ⚠ strip and a stagger bar): hit it hard enough and it fizzles, or Guard to halve it. Bosses also change as they are hurt (phases: more attack, a second wind, a new tempo). The bestiary records each boss's tell once you have beaten it. Tuned with the sims (`tools/bosstest.mjs`, `tools/sim.mjs`).
+- **Hidden caches**: 31 twinkling nooks and dead ends across the open world (found by `tools/genmaps.py`, loot by distance from Haven); the Dowser and Magpie feats track them.
+- **Options**: Menu size (normal / large / huge), Random fights (normal / fewer / off), text and battle speed, touch-aware controls help.
 - **Gear lists** sort usable items first with the biggest gain on top and a ★ Best chip.
 - **Bestiary rewards**: the Goose pays gold at 25/50/75/100% of foes slain. Roads cut random ambushes to about a third, so the long legs between towns are a stroll.
 - Crash safety: a battle error returns you to the map instead of freezing; progress is autosaved.
@@ -169,6 +172,11 @@ Produces `dist/index.html` (the whole game in one file, about 1.2 MB (410 KB gzi
     node tools/regress-mobile.mjs    # iPhone touch regression (portrait + landscape)
     node tools/devices.mjs <outdir>  # device matrix: layout metrics + screenshots (SE, 14, Pro Max, landscape, iPad, desktop)
     node tools/all.mjs [quick]       # the whole suite in one go (quick skips fuzz, music analysis and the progression sim)
+    node tools/bosstest.mjs          # boss wind-ups, stagger, phases, extra actions (pure logic)
+    node tools/bossui.mjs            # the wind-up strip, stage cues and auto-battle in the real battle UI
+    node tools/caches.mjs            # every hidden world cache can be walked onto and opened
+    node tools/options.mjs           # menu size, random-fight rate, text speed, touch/keyboard controls help
+    node tools/loadworld.mjs         # a save that loads onto the overworld does not freeze the page
     node tools/ngplus.mjs            # New Game+ carries the party and gear over and resets the world
     node tools/roadsidecheck.mjs     # roadside moments: data sanity, rarity, no repeats, rewards
     node tools/featstest.mjs         # feats unlock, count, show and survive New Game+

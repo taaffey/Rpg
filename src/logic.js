@@ -1,5 +1,6 @@
 // ===== Pure game logic (no DOM): stats, build rules, gem rewriting, battle engine =====
 import { JOBS, SKILLS, GEMS, WEAPONS, ARMORS, ACCS, WEAPON_TYPES, ENEMIES, ITEMS, DROPS } from './data.js';
+import { MECH } from './bossmech.js';
 
 export const STAT_KEYS = ['hp', 'mp', 'atk', 'def', 'mag', 'spd'];
 export const MAX_LEVEL = 20;
@@ -215,7 +216,7 @@ export class Battle {
     this.e = enemyIds.map((id) => {
       const d = ENEMIES[id]; seen[id] = (seen[id] || 0) + 1;
       const name = counts[id] > 1 ? `${d.name} ${String.fromCharCode(64 + seen[id])}` : d.name;
-      return { side: 'e', tr: new Set(), id, def_: d, name, icon: d.icon, hp: Math.round(d.hp * this.mod.hp), mp: Infinity, maxhp: Math.round(d.hp * this.mod.hp), maxmp: 0, atk: Math.round(d.atk * this.mod.atk), def: Math.round(d.def * this.mod.def), mag: Math.round(d.mag * this.mod.mag), spd: d.spd, weak: d.weak, res: d.res, st: {}, defending: false };
+      return { side: 'e', tr: new Set(), id, def_: d, name, icon: d.icon, hp: Math.round(d.hp * this.mod.hp), mp: Infinity, maxhp: Math.round(d.hp * this.mod.hp), maxmp: 0, atk: Math.round(d.atk * this.mod.atk), def: Math.round(d.def * this.mod.def), mag: Math.round(d.mag * this.mod.mag), spd: d.spd, weak: d.weak, res: d.res, st: {}, defending: false, mech: MECH[id] || null, cyc: 0, ph: 0, charge: null, extra: 0, skills: null };
     });
   }
   side(x) { return x.side === 'p' ? this.p : this.e; }
@@ -224,10 +225,14 @@ export class Battle {
   foes(x) { return x.side === 'p' ? this.e : this.p; }
 
   enemyCmd(e) {
+    if (e.mech?.charge) { // a boss that winds up: every Nth action is spent charging, and while it charges its next action resolves the wind-up (see act)
+      if (e.charge) return { kind: 'chargeturn' };
+      if (++e.cyc % e.mech.charge.every === 0) return { kind: 'charge' };
+    }
     // healing skills are only picked when they would help (self below 60% HP, or a wounded ally for 'ally' heals)
     const hurt = this.e.filter((x) => alive(x) && x.hp < x.maxhp * 0.6).sort((a, b) => a.hp / a.maxhp - b.hp / b.maxhp)[0];
     const useful = ([sid]) => SKILLS[sid].kind !== 'heal' || (SKILLS[sid].tgt === 'self' ? e.hp < e.maxhp * 0.6 : !!hurt);
-    let tbl = e.def_.skills.filter(useful); if (!tbl.length) tbl = e.def_.skills;
+    const pool = e.skills || e.def_.skills; let tbl = pool.filter(useful); if (!tbl.length) tbl = pool;
     const tot = tbl.reduce((n, s) => n + s[1], 0);
     let r = this.rng() * tot, id = tbl[0][0];
     for (const [sid, w] of tbl) { if ((r -= w) < 0) { id = sid; break; } }
@@ -245,10 +250,12 @@ export class Battle {
     if (ambush) yield ['Pre-emptive strike! The foes are caught off guard.'];
     for (const x of [...this.p, ...this.e]) {
       if (!alive(x) || (ambush && x.side === 'e')) continue;
-      const cmd = x.side === 'p' ? cmds.get(x) : this.enemyCmd(x);
-      if (!cmd || cmd.kind === 'assist') continue; // assist: this hero's turn goes into a partner's combo
-      const swift = cmd.kind === 'skill' && skillWithGems(cmd.skillId, cmd.gems).swift, first = this.turn === 1 && x.tr.has('firststrike');
-      order.push({ x, cmd, pri: (first ? 3 : cmd.kind === 'defend' ? 2 : swift ? 1 : 0), spd: this.speed(x) });
+      for (let k = 0; k <= (x.side === 'e' ? x.extra : 0); k++) { // a boss that has found a second wind acts more than once a round
+        const cmd = x.side === 'p' ? cmds.get(x) : this.enemyCmd(x);
+        if (!cmd || cmd.kind === 'assist') continue; // assist: this hero's turn goes into a partner's combo
+        const swift = cmd.kind === 'skill' && skillWithGems(cmd.skillId, cmd.gems).swift, first = this.turn === 1 && x.tr.has('firststrike');
+        order.push({ x, cmd, pri: (first ? 3 : cmd.kind === 'defend' ? 2 : swift ? 1 : 0), spd: this.speed(x) - k * 0.01 });
+      }
     }
     order.sort((a, b) => b.pri - a.pri || b.spd - a.spd);
     this.p.forEach((x) => (x.defending = false));
@@ -256,7 +263,7 @@ export class Battle {
       if (!alive(x) || this.over) continue;
       if (x.st.stun > 0) { x.st.stun = 0; this.fx.push({ t: 'poison' }); yield [`${x.name} is gobsmacked and can't act!`]; continue; }
       const L = this.act(x, cmd);
-      this.check();
+      this.check(); this.phases(L);
       yield L;
       if (this.over) return;
     }
@@ -267,16 +274,35 @@ export class Battle {
       if (alive(x) && x.tr.has('regen') && x.hp < x.maxhp) { const h = Math.min(x.maxhp - x.hp, Math.max(1, Math.round(x.maxhp * 0.05))); x.hp += h; this.fx.push({ t: 'heal', name: x.name, amount: h }); L.push(`${x.name} regenerates ${h} HP.`); }
       for (const k of Object.keys(x.st)) if (k !== 'stun' && x.st[k] > 0) x.st[k]--;
     }
-    this.check();
+    this.check(); this.phases(L);
     if (L.length) yield L;
   }
   check() {
     if (!this.e.some(alive)) this.over = 'win';
     else if (!this.p.some(alive)) this.over = 'lose';
   }
+  // boss phases: when it is hurt enough it changes (see MECH in bossmech.js); each fires once
+  phases(L) {
+    for (const e of this.e) {
+      const list = e.mech?.phases; if (!list) continue;
+      while (alive(e) && e.ph < list.length && e.hp <= list[e.ph].at * e.maxhp) {
+        const ph = list[e.ph++];
+        L.push(`★ ${ph.say}`); this.fx.push({ t: 'phase', name: e.name, text: ph.card || '' });
+        if (ph.atk) { e.atk = Math.round(e.atk * ph.atk); e.mag = Math.round(e.mag * ph.atk); }
+        if (ph.def) e.def = Math.round(e.def * ph.def);
+        if (ph.spd) e.spd *= ph.spd;
+        if (ph.heal) { const h = Math.min(e.maxhp - e.hp, Math.round(e.maxhp * ph.heal)); if (h > 0) { e.hp += h; this.fx.push({ t: 'heal', name: e.name, amount: h }); L.push(`  ${e.name} recovers ${h} HP.`); } }
+        if (ph.cleanse) e.st = {};
+        if (ph.extra) e.extra += ph.extra;
+        if (ph.skills) e.skills = [...(e.skills || e.def_.skills), ...ph.skills];
+        if (ph.charge) { e.mech = { ...e.mech, charge: ph.charge }; e.cyc = 0; e.charge = null; }
+      }
+    }
+  }
   hurt(t, d, L, prefix, weak = false) {
     prefix = /\d/.test(prefix) ? prefix : `${prefix} (${d})`;
     t.hp = Math.max(0, t.hp - d);
+    if (t.charge) t.charge.dmg += d; // damage during a wind-up fills the stagger bar
     this.fx.push({ t: 'hit', name: t.name, d, ko: t.hp <= 0, weak });
     L.push(`${prefix}${t.hp <= 0 ? `  ${t.name} falls!` : ''}`);
   }
@@ -284,6 +310,21 @@ export class Battle {
     const L = [];
     switch (cmd.kind) {
       case 'defend': a.defending = true; L.push(`${a.name} braces for impact.`); break;
+      case 'charge': { // a boss starts winding up a big attack: the party can stagger it with damage, or Guard through it
+        const ch = a.mech.charge;
+        a.charge = { skill: ch.move, left: ch.window || 1, dmg: 0, need: Math.max(1, Math.round(ch.need * a.maxhp * Math.min(1, Math.max(0.5, this.p.filter(alive).length / 4)))), vuln: ch.vuln ?? 1.25, mult: ch.mult ?? 2 }; // a smaller party has less to throw at it, so the bar is lower
+        this.fx.push({ t: 'charge', name: a.name });
+        L.push(`⚠ ${ch.say || `${a.name} is winding up something big!`}${a.warned ? '' : ' (Hit it hard to stagger it, or Guard!)'}`); a.warned = true;
+        break;
+      }
+      case 'chargeturn': {
+        const c = a.charge; if (!c) break;
+        if (c.dmg >= c.need) { a.charge = null; this.fx.push({ t: 'stagger', name: a.name }); L.push(`★ ${a.name} is staggered! The attack fizzles.`); break; }
+        if (--c.left > 0) { L.push(`${a.name} is still winding up...`); break; }
+        a.charge = null; const tgt = pick(this.p.filter(alive), this.rng); this.bonus = c.mult;
+        try { this.cast(a, c.skill, [], tgt, L, true, true); } finally { this.bonus = 1; }
+        break;
+      }
       case 'flee':
         if (!this.boss && this.rng() < 0.65) { this.over = 'fled'; L.push('The party escapes!'); } else L.push('Couldn’t escape!');
         break;
@@ -346,7 +387,7 @@ export class Battle {
   damage(a, t, s, mult = 1, elem = s.elem) {
     const up = a.st.atkup > 0 ? 1.4 : 1, dup = t.st.defup > 0 ? 1.5 : 1;
     let raw = s.kind === 'phys' ? a.atk * up * s.pow - t.def * dup * 0.6 * (1 - s.pierce) : a.mag * up * s.pow - t.def * dup * 0.3 * (1 - s.pierce);
-    raw *= (0.9 + this.rng() * 0.2) * elemMult(t, elem) * mult * (t.defending ? 0.5 : 1);
+    raw *= (0.9 + this.rng() * 0.2) * elemMult(t, elem) * mult * (t.defending ? 0.5 : 1) * (this.bonus || 1) * (t.charge ? t.charge.vuln : 1);
     if (a.tr.has('adrenaline') && a.hp < a.maxhp * 0.4) raw *= 1.3; // traits (see TRAITS in data.js)
     if (t.tr.has('stalwart')) raw *= 0.85;
     if (t.side === 'p' && this.p.some((x) => x !== t && alive(x) && x.tr.has('guardian'))) raw *= 0.9;

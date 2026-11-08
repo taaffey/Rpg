@@ -38,6 +38,7 @@ for (const v of only) {
     G.flags.visited.haven = G.flags.visited.frostholm = G.flags.visited.mirewood = true;
     g.ui.mainMenu(); g.ACT.save();
   });
+  if (process.env.UISIZE) await ev((u) => { window.__game.OPT.ui = u; document.documentElement.style.setProperty('--ui-zoom', { normal: 1, large: 1.2, huge: 1.4 }[u]); }, process.env.UISIZE); // UISIZE=large|huge: audit Options > Menu size
   await ev(() => { const el = document.getElementById('overlay'); el.className = ''; el.innerHTML = ''; });
   await ev(() => { const g = window.__game; g.goto('haven', ...g.MAPS.haven.spots.green); }); await pg.waitForTimeout(900); await shot('05-town');
   await ev(() => window.__game.ui.mainMenu()); await shot('06-menu');

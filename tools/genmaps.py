@@ -591,7 +591,40 @@ def make_dungeon(seed, W=26, H=18, rooms_n=7, chests_n=4):
         return [''.join(row) for row in g], {'spawn': spawn, 'entrance': entrance, 'boss': boss, 'chests': chests}
     raise SystemExit('no dungeon')
 
+
+def make_caches(world, pois, adj, deco, seed):
+    """Hidden caches for the open world: dead ends and nooks off the roads, a few per landmass and region. They are found by walking over
+    them (a glint shows on screen); loot is decided in maps.js from the tier. Uses its own random stream, so nothing else in the world moves."""
+    rc = random.Random(seed + 4242); g = [list(r) for r in world]; H, W = len(g), len(g[0])
+    full = lambda c: c in '.,:d=HD'
+    lands = {'main': bfs(g, adj['haven'], lambda c: full(c) or c == 'B'), 'cinder': bfs(g, adj['dock_e'], full), 'obs': bfs(g, adj['dock_p'], full)}  # (the Hopsend peninsula is joined to the mainland by land)
+    quota = {'main': 26, 'cinder': 3, 'obs': 2}
+    roads = {tuple(t) for t in deco['roads']}
+    keep = [tuple(v) for v in pois.values()] + [tuple(v) for v in adj.values()] + [tuple(deco[k]) for k in ('gift', 'hermit', 'waterfall', 'ruins')]
+    D = lambda a, b: max(abs(a[0]-b[0]), abs(a[1]-b[1]))
+    def nook(x, y):  # how enclosed this tile is: blocked neighbours around it (water, trees, mountains)
+        return sum(1 for dx in (-1, 0, 1) for dy in (-1, 0, 1) if (dx or dy) and g[y+dy][x+dx] not in '.,:d=HD')
+    def walkn(x, y): return sum(1 for dx, dy in ((1,0),(-1,0),(0,1),(0,-1)) if g[y+dy][x+dx] in '.,:d=HD')
+    out = []
+    for land, n in quota.items():
+        cands = []
+        for (x, y) in lands[land]:
+            if not (2 <= x < W-2 and 2 <= y < H-2) or g[y][x] not in '.,:d' or (x, y) in roads: continue
+            if any(D((x, y), k) < 6 for k in keep): continue
+            sc = nook(x, y) + (3 if walkn(x, y) <= 2 else 0) + rc.random() * 1.5
+            if sc >= (4 if land == 'main' else 2.5): cands.append((sc, x, y))
+        cands.sort(reverse=True)
+        pickd = []
+        for sc, x, y in cands:
+            if all(D((x, y), q) >= (11 if land == 'main' else 5) for q in pickd + [tuple(c[:2]) for c in out]):
+                pickd.append((x, y))
+                if len(pickd) >= n: break
+        assert len(pickd) == n, ('not enough cache spots', land, len(pickd))
+        for (x, y) in pickd: out.append([x, y, land])
+    return out
+
 world, pois, adj, deco = make_world_ref(11)
+deco['caches'] = make_caches(world, pois, adj, deco, 11)
 crypt, cinfo = make_dungeon(100)
 spire, sinfo = make_dungeon(300, 28, 18, 8, 5)
 storm, stinfo = make_dungeon(500, 26, 18, 7, 4)
