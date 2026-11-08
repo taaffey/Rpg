@@ -41,14 +41,21 @@ export const ROADSIDE = [
   // ---- Hopsend
   { id: 'scarecrow', regions: ['autumn'], lines: [N(`A scarecrow has been given a hat and a lanyard. It is now Regional Manager of Crows.`), D(`The crows seem to respect it.`), A(`The crows fear it.`)] },
   { id: 'hop_pickers', regions: ['autumn'], lines: [T(`Hop picking! Eight hours a day, sore hands, free beer at the end.`), D(`Where do I sign?`), A(`You're not signing.`)] },
+  { id: 'apple_cart', regions: ['autumn'], lines: [N(`An apple cart has lost a wheel. Its owner is arguing with it.`), P(`Seven years I have had this cart. Seven! And today it chooses to be ONE WHEEL SHORT.`), D(`Can we help?`), P(`Take an apple. Take two. Take ANY apples. Just stop looking at the wheel.`), N(`He presses a few coins on you for your trouble and goes back to glaring at it.`)], reward: { gold: 20 } },
+  { id: 'cider_ground', regions: ['autumn'], lines: [O(`Don't go near the old orchard after dark. The cider ferments the ground. The ground gets ideas.`), D(`What kind of ideas?`), O(`Hugging ideas. Mostly.`)] },
   // ---- Cinder
   { id: 'lava_sausage', regions: ['ember'], lines: [T(`Two minutes, lads. The lava's quick, but it's not that quick.`), N(`A man is grilling sausages directly on a lava flow. He hands you a pint, for the nerves.`)], reward: { items: { potion: 1 } } },
   { id: 'pizza_rumour', regions: ['ember'], lines: [O(`They say the oven in the mountain's been on since 1987. Somebody should turn it off.`), D(`Has anyone asked?`), O(`It's got a manager.`)] },
+  { id: 'lava_surfer', regions: ['ember'], lines: [N(`A man glides past on a front door, surfing a slow lava flow. He gives you a thumbs up. His eyebrows are no longer with us.`), D(`Bro. BRO. That is the best thing I have ever seen.`), A(`It is also the stupidest.`), D(`Best AND stupidest, Adam. That is a rare combo.`)] },
+  { id: 'cinder_postie', regions: ['ember'], lines: [T(`Post for the volcano! Again. Nobody has ever signed for it.`), D(`Who is it from?`), T(`Estate agents. They think it is a property with "great views and potential."`)] },
   // ---- Jade Jungle
   { id: 'parrot', regions: ['jungle'], lines: [N(`A parrot lands on Devon's shoulder and says, in a perfect impression of Adam: "Don't."`), A(`That's not what I sound like.`), D(`That's exactly what you sound like.`)] },
   { id: 'archaeologist', regions: ['jungle'], lines: [T(`Dr Fogg, archaeologist. Have you seen a lost temple?`), D(`Have you seen a FOUND temple?`), T(`That's a hotel.`)] },
+  { id: 'vine_swing', regions: ['jungle'], lines: [N(`Devon grabs a vine and swings. The vine is a snake. It is a very understanding snake.`), A(`Put it down, Dev.`), D(`He picked ME up, Adam.`), N(`The snake sets him down politely, gives Adam a look, and slithers off in a huff.`)] },
   // ---- Obsidian
   { id: 'black_glass', regions: ['obsidian'], lines: [N(`The ground here is black glass. It reflects your faces. You look tired.`), D(`I look incredible.`), A(`You look like you've been in a pub since 2026.`)] },
+  { id: 'echo_orders', regions: ['obsidian'], lines: [N(`Somewhere under the black glass, a bell rings once. A faint voice says: "...last orders."`), D(`Did you hear that?`), A(`I heard that.`), D(`I would like it noted that I did not order anything.`)] },
+  { id: 'glass_pint', regions: ['obsidian'], lines: [N(`A pint glass stands upright on a rock. It is full of black glass. A beermat beneath it reads: "RESERVED".`), D(`Who is it reserved for?`), A(`Nobody who is coming back.`), N(`Under the mat, someone has left a very old tip.`)], reward: { gold: 60 } },
   // ---- anywhere
   { id: 'glints', lines: [O(`Anything that glints off the path is worth the detour. Dead ends especially. Nobody builds a dead end for nothing.`), D(`Except the one in my kitchen.`), O(`Especially that one.`)] },
   { id: 'shovel', regions: ['green', 'swamp', 'desert'], lines: [T(`Don't dig just anywhere, lads. I've tried. Seven holes and a very annoyed badger.`), T(`They twinkle when they're ready. You just walk over them.`), D(`That's the worst treasure map I've ever heard.`)] },
