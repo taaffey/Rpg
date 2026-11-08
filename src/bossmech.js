@@ -1,4 +1,5 @@
-// Boss mechanics, read by the Battle engine (logic.js). A boss fight should be more than a stat check: bosses wind up big attacks the party can
+// Boss mechanics, read by the Battle engine (logic.js). Numbers are tuned with tools/skillsim.mjs (plain vs Guard-aware vs cadence-counting players): a wind-up should be
+// staggerable by a coordinated party (about half the time at the intended level) and hurt when it lands. A boss fight should be more than a stat check: bosses wind up big attacks the party can
 // interrupt (or brace for), and change gear as they are hurt. Keyed by enemy id; anything not listed fights the plain old way.
 //
 //   charge: { move, every, window, need, mult, vuln, say }
@@ -23,18 +24,18 @@ export const MECH = {
     phases: [{ at: 0.5, say: `Its scales glow like coals. The Wyrm is furious!`, card: 'ENRAGED', atk: 1.2 }],
   },
   lich: {
-    charge: { move: 'soulstorm', every: 3, window: 1, need: 0.12, mult: 1.8, vuln: 1.25, say: `Morvath raises both hands. The marsh lamps gutter, one by one...` },
+    charge: { move: 'soulstorm', every: 3, window: 1, need: 0.11, mult: 2.2, vuln: 1.25, say: `Morvath raises both hands. The marsh lamps gutter, one by one...` },
     phases: [{ at: 0.4, say: `Morvath drinks in the last of the lamplight and stands taller.`, card: 'DEEPER', atk: 1.15, heal: 0.08 }],
   },
   titan: {
-    charge: { move: 'blizzard', every: 4, window: 1, need: 0.12, mult: 1.7, vuln: 1.3, say: `The Frost Titan's chest creaks open. A blizzard gathers inside...` },
+    charge: { move: 'blizzard', every: 4, window: 1, need: 0.085, mult: 1.7, vuln: 1.3, say: `The Frost Titan's chest creaks open. A blizzard gathers inside...` },
     phases: [
       { at: 0.6, say: `Rime thickens across the Titan's shoulders.`, card: 'FROSTED', def: 1.15 },
       { at: 0.3, say: `The Titan roars. Icicles shatter off it and it moves faster!`, card: 'ENRAGED', atk: 1.15, spd: 1.15 },
     ],
   },
   storm_drake: {
-    charge: { move: 'thunderbreath', every: 3, window: 1, need: 0.12, mult: 1.8, vuln: 1.25, say: `The Storm Drake's scales crackle. The hair on your arms stands up...` },
+    charge: { move: 'thunderbreath', every: 3, window: 1, need: 0.11, mult: 1.9, vuln: 1.25, say: `The Storm Drake's scales crackle. The hair on your arms stands up...` },
     phases: [{ at: 0.5, say: `Static lashes the cavern. The Drake gets quicker!`, card: 'CHARGED', spd: 1.2 }],
   },
   sphinx: {

@@ -184,6 +184,7 @@ Produces `dist/index.html` (the whole game in one file, about 1.2 MB (410 KB gzi
     node tools/all.mjs [quick]       # the whole suite in one go (quick skips fuzz, music analysis and the progression sim)
     node tools/bosstest.mjs          # boss wind-ups, stagger, phases, extra actions (pure logic)
     node tools/bossui.mjs            # the wind-up strip, stage cues and auto-battle in the real battle UI
+    node tools/skillsim.mjs [runs]   # do wind-ups reward skill? plain vs Guard-aware vs cadence-counting players on every main boss (TUNE=... to try numbers)
     node tools/caches.mjs            # every hidden world cache can be walked onto and opened
     node tools/options.mjs           # menu size, random-fight rate, text speed, touch/keyboard controls help
     node tools/loadworld.mjs         # a save that loads onto the overworld does not freeze the page
