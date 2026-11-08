@@ -140,6 +140,9 @@ foot of the Frost Spire the party meets the one who wants them. The Titan is the
   oracle and a few townsfolk drop hints. The journal counts them.
 - **Ending**: the finale scene, then a cinematic dawn with an epilogue for each hero, scrolling credits and your stats.
 
+## Playtesting
+`PLAYTEST.md` is a one-page guide for human testers: a first-hour route, what to look for, and how to send a report (Options > Report a problem).
+
 ## Visuals and sound (all generated in code)
 - `src/sprites.js`, `src/art2.js`: ASCII-grid pixel sprites (12 callings, townsfolk, 100+ enemies, three 32x32 bosses, furniture,
   tile themes), recolor variants, gem icons.
