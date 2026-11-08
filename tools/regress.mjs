@@ -135,7 +135,7 @@ await pg.click('[data-act=save]'); await pg.waitForTimeout(100);
 const before = await ev(() => ({ x: window.__game.G.x, y: window.__game.G.y, gold: window.__game.G.gold, main: window.__game.G.party[1].main }));
 await pg.reload(); await pg.waitForTimeout(500);
 ok('continue available after reload', !(await ev(() => document.querySelector('[data-act=cont]').disabled)));
-await pg.click('[data-act=cont]'); await pg.click('[data-act=slotpick][data-a="1"]'); await pg.waitForTimeout(300);
+await pg.click('[data-act=cont]'); await pg.click('[data-act=slotpick][data-a="1"]'); await pg.waitForFunction(() => window.__game.G, null, { timeout: 20000 }); await pg.waitForTimeout(300); // a save on the overworld loads behind the "Charting the land" loader
 const after = await ev(() => ({ x: window.__game.G.x, y: window.__game.G.y, gold: window.__game.G.gold, main: window.__game.G.party[1].main, seen: window.__game.G.flags.seen.world.join('').split('1').length - 1 }));
 ok('save restored position/gold/job', after.x === before.x && after.y === before.y && after.gold === before.gold && after.main === before.main);
 ok('fog persisted through save', after.seen === s1);

@@ -1567,12 +1567,12 @@ const muteBtn = $('#mute'), syncMute = () => { muteBtn.innerHTML = ic(isMuted() 
 muteBtn.addEventListener('click', () => { setMuted(!isMuted()); syncMute(); if (!isMuted()) sfx('click'); });
 syncMute();
 
-// debug / test hook
+// debug / test hook: only under browser automation (Playwright sets navigator.webdriver) or with ?debug in the address; real players never get it
 function testParty(jobs = { adam: 'monk', devon: 'mage', brenna: 'cleric', wendell: 'knight' }) { // tests: skip the intro with the full four
   Object.assign(G.flags.story, { woke: true, cellar: true, called: true }); G.flags.bosses.big_gary = true;
   if (!G.party.some((c) => c.look === 'brenna')) joinLocal('brenna'); if (!G.party.some((c) => c.look === 'wendell')) joinLocal('wendell');
   for (const c of G.party) { if (jobs[c.look] && c.main !== jobs[c.look]) { L.setCalling(c, jobs[c.look]); delete c.cp.bloke; c.cp[c.main] = 0; c.weapon = null; c.armor = LIGHT_ARMOR.has(c.main) ? 'cloth' : 'leather'; c.slots = [null, null, null, null]; sanitize(c, G.inv); autofill(c); } const st = maxOf(c); c.hp = st.hp; c.mp = st.mp; }
   for (const c of G.party) { if (c.look === 'brenna' || c.look === 'wendell') { c.cp[c.main] = 0; c.weapon = LOCALS[c.look].weapon || null; c.slots = [null, null, null, null]; sanitize(c, G.inv); autofill(c); } }
 }
-window.__game = { scene, roadside, ROADSIDE, autosave, defeat, ending, newGamePlus, testParty, wipeHome, get G() { return G; }, get BT() { return BT; }, get v() { return [vx, vy]; }, camState, TS, get route() { return route; }, battle, step, goto, MAPS, snap, OPT, ACT, ui: { shop, inn, guild, socketer, title, slotScreen, diffScreen, talk, itemsMenu, mainMenu, awakening } };
+if (navigator.webdriver || /[?&]debug\b/.test(location.search)) window.__game = { scene, roadside, ROADSIDE, autosave, defeat, ending, newGamePlus, testParty, wipeHome, get G() { return G; }, get BT() { return BT; }, get v() { return [vx, vy]; }, camState, TS, get route() { return route; }, battle, step, goto, MAPS, snap, OPT, ACT, ui: { shop, inn, guild, socketer, title, slotScreen, diffScreen, talk, itemsMenu, mainMenu, awakening } };
 title();
