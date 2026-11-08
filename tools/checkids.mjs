@@ -60,6 +60,15 @@ for (const b of Object.values(BOSSES)) for (const id of b.loot.weapons || []) sr
 for (const d of Object.values(DROPS)) for (const s of [d.common, d.rare]) if (s?.[0] === 'weapons') src.add(s[1]);
 for (const q of Object.values(QUESTS)) for (const id of q.reward.weapons || []) src.add(id);
 for (const wid of Object.keys(WEAPONS)) if (!src.has(wid)) errs.push(`weapon ${wid} cannot be obtained anywhere`);
+// ...and so must every armour, accessory, gem and field item (shops, chests, hidden caches, boss loot, drops, quest rewards)
+{ const KINDS_ = { armors: ARMORS, accs: ACCS, gems: GEMS, items: ITEMS }, have = Object.fromEntries(Object.keys(KINDS_).map((k) => [k, new Set(k === 'items' ? ['potion'] : [])]));
+  const add = (k, v) => { if (!v) return; if (Array.isArray(v)) v.forEach((x) => have[k].add(typeof x === 'string' ? x : x?.id)); else if (typeof v === 'object') Object.keys(v).forEach((x) => have[k].add(x)); };
+  for (const s of Object.values(SHOPS)) for (const k of Object.keys(KINDS_)) add(k, s.stock?.[k]);
+  for (const m of Object.values(MAPS)) for (const c of [...Object.values(m.chests || {}), ...Object.values(m.secrets || {})]) for (const k of Object.keys(KINDS_)) add(k, c[k]);
+  for (const b of Object.values(BOSSES)) for (const k of Object.keys(KINDS_)) add(k, b.loot?.[k]);
+  for (const d of Object.values(DROPS)) for (const x of [d.common, d.rare]) if (x && KINDS_[x[0]]) have[x[0]].add(x[1]);
+  for (const q of Object.values(QUESTS)) for (const k of Object.keys(KINDS_)) add(k, q.reward?.[k]);
+  for (const [k, tbl] of Object.entries(KINDS_)) for (const id of Object.keys(tbl)) if (!have[k].has(id)) errs.push(`${k} ${id} cannot be obtained anywhere`); }
 // the new-game inventory and party in saves.js
 const game = readFileSync(new URL('../src/saves.js', import.meta.url), 'utf8'), ng = game.slice(game.indexOf('function newGame('), game.indexOf('function migrate('));
 const inv = ng.match(/inv: (\{.*\}),\s*$/m);
