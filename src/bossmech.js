@@ -24,7 +24,7 @@ export const MECH = {
     phases: [{ at: 0.5, say: `Its scales glow like coals. The Wyrm is furious!`, card: 'ENRAGED', atk: 1.2 }],
   },
   lich: {
-    charge: { move: 'soulstorm', every: 3, window: 1, need: 0.11, mult: 2.2, vuln: 1.25, say: `Morvath raises both hands. The marsh lamps gutter, one by one...` },
+    charge: { move: 'soulstorm', every: 3, window: 1, need: 0.11, mult: 1.9, vuln: 1.25, say: `Morvath raises both hands. The marsh lamps gutter, one by one...` },
     phases: [{ at: 0.4, say: `Morvath drinks in the last of the lamplight and stands taller.`, card: 'DEEPER', atk: 1.15, heal: 0.08 }],
   },
   titan: {
