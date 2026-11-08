@@ -33,7 +33,7 @@ browser regression) but not yet by many humans. This page is for the humans. Pla
 - Switch **Menu size** to Large or Huge on a small phone.
 
 ## Known limits
-- Balance was tuned with bots that never Guard (see `tools/skillsim.mjs` for how much Guarding and staggering should help): human play will be
-  somewhat easier on bosses and somewhat harder on long dungeon crawls. That is exactly what we want your feedback on.
+- Balance was tuned with bots that never Guard and never use items between fights (see `tools/skillsim.mjs` for how much Guarding and staggering
+  should help). Human play is likely to be easier than the bot numbers suggest; how much easier is exactly what we want your feedback on.
 - Audio only starts after your first tap (a browser rule).
 - Saves live in the browser for that link. **Options > Back up saves** makes a code you can paste elsewhere (Restore saves puts it back).
