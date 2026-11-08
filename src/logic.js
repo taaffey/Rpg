@@ -203,7 +203,7 @@ function elemMult(t, e) { if (!e) return 1; if (t.weak.includes(e)) return 1.5; 
 
 export class Battle {
   constructor(party, enemyIds, rng = Math.random, boss = false, mod = {}) {
-    this.mod = { hp: 1, atk: 1, mag: 1, def: 1, reward: 1, ...mod };
+    this.mod = { hp: 1, atk: 1, mag: 1, def: 1, reward: 1, dmg: 1, ...mod };
     this.rng = rng; this.boss = boss; this.over = null; this.turn = 0; this.fx = [];
     this.p = party.map((c) => {
       const s = stats(c);
@@ -216,7 +216,7 @@ export class Battle {
     this.e = enemyIds.map((id) => {
       const d = ENEMIES[id]; seen[id] = (seen[id] || 0) + 1;
       const name = counts[id] > 1 ? `${d.name} ${String.fromCharCode(64 + seen[id])}` : d.name;
-      return { side: 'e', tr: new Set(), id, def_: d, name, icon: d.icon, hp: Math.round(d.hp * this.mod.hp), mp: Infinity, maxhp: Math.round(d.hp * this.mod.hp), maxmp: 0, atk: Math.round(d.atk * this.mod.atk), def: Math.round(d.def * this.mod.def), mag: Math.round(d.mag * this.mod.mag), spd: d.spd, weak: d.weak, res: d.res, st: {}, defending: false, mech: MECH[id] || null, cyc: 0, ph: 0, charge: null, extra: 0, skills: null };
+      return { side: 'e', tr: new Set(), id, def_: d, name, icon: d.icon, hp: Math.round(d.hp * this.mod.hp), mp: Infinity, maxhp: Math.round(d.hp * this.mod.hp), maxmp: 0, atk: Math.round(d.atk * this.mod.atk), def: Math.round(d.def * this.mod.def), mag: Math.round(d.mag * this.mod.mag), spd: d.spd, weak: d.weak, res: d.res, st: {}, defending: false, mech: MECH[id] ? (mod.rush && MECH[id].charge ? { ...MECH[id], charge: { ...MECH[id].charge, every: Math.max(2, MECH[id].charge.every - 1) } } : MECH[id]) : null, cyc: 0, ph: 0, charge: null, extra: 0, skills: null };
     });
   }
   side(x) { return x.side === 'p' ? this.p : this.e; }
@@ -387,7 +387,7 @@ export class Battle {
   damage(a, t, s, mult = 1, elem = s.elem) {
     const up = a.st.atkup > 0 ? 1.4 : 1, dup = t.st.defup > 0 ? 1.5 : 1;
     let raw = s.kind === 'phys' ? a.atk * up * s.pow - t.def * dup * 0.6 * (1 - s.pierce) : a.mag * up * s.pow - t.def * dup * 0.3 * (1 - s.pierce);
-    raw *= (0.9 + this.rng() * 0.2) * elemMult(t, elem) * mult * (t.defending ? 0.5 : 1) * (this.bonus || 1) * (t.charge ? t.charge.vuln : 1);
+    raw *= (0.9 + this.rng() * 0.2) * elemMult(t, elem) * mult * (t.defending ? 0.5 : 1) * (this.bonus || 1) * (t.charge ? t.charge.vuln : 1) * this.mod.dmg;
     if (a.tr.has('adrenaline') && a.hp < a.maxhp * 0.4) raw *= 1.3; // traits (see TRAITS in data.js)
     if (t.tr.has('stalwart')) raw *= 0.85;
     if (t.side === 'p' && this.p.some((x) => x !== t && alive(x) && x.tr.has('guardian'))) raw *= 0.9;

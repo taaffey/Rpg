@@ -2,7 +2,7 @@
 import { SOCKET_COST, DIFFICULTY, DROPS, STORY, KEY_ITEMS, TRAITS, CALLING_BATCHES } from './data.js';
 import { JOBS, SKILLS, GEMS, WEAPONS, ARMORS, ACCS, ITEMS, WEAPON_TYPES, ENEMIES, ENCOUNTERS, BOSSES, SHOPS, QUESTS } from './data.js';
 import { MAPS, WALK, START } from './maps.js';
-import { TEXT_MS, ENC_MUL, UI_ZOOM, SPEEDS, CP_AT_LEVEL, REGION_NAME, MINI, MINI_FLOOR, MINI_WALL, LIGHT, KEYS, DIRV, QITEM, STAT_KEYS, BRO_PICKS, BEAST_TIERS, OBJECTIVES, VICTORY, DEFEAT, HEART_GEM } from './gamedata.js';
+import { TEXT_MS, RULES, ENC_MUL, UI_ZOOM, SPEEDS, CP_AT_LEVEL, REGION_NAME, MINI, MINI_FLOOR, MINI_WALL, LIGHT, KEYS, DIRV, QITEM, STAT_KEYS, BRO_PICKS, BEAST_TIERS, OBJECTIVES, VICTORY, DEFEAT, HEART_GEM } from './gamedata.js';
 import { packSlots, unpackSlots } from './backup.js';
 import { FEATS } from './feats.js';
 import { MECH } from './bossmech.js';
@@ -123,12 +123,13 @@ function newGame(party = DEFAULT_PARTY) {
   };
 }
 // ---------- saves: 3 slots, autosave, migration ----------
+const BUILD = '__BUILD__'; // tools/build.mjs stamps the content hash here
 const VERSION = '2.1.0', LEGACY_SAVE = 'gemforge-save-v2', SLOT_KEY = (i) => `gemforge-save-v3-${i}`, SLOT_IDS = [1, 2, 3];
 function migrate(g) {
   g.v = 3; g.flags ||= {};
   for (const k of ['chests', 'bosses', 'seen', 'talked', 'visited', 'quests', 'qprog', 'qitems', 'tips', 'bestiary', 'story', 'chat', 'feats']) g.flags[k] ||= {};
   if (g.flags.worldv !== WORLD_V) { delete g.flags.seen.world; for (const k of Object.keys(g.flags.chests)) if (k.startsWith('world:')) delete g.flags.chests[k]; g.flags.worldMoved = true; if (g.map === 'world') { [g.x, g.y] = GEN.adj.haven; g.dir = 'down'; } }
-  g.playtime ||= 0; g.ngp = Math.max(0, Math.min(5, g.ngp | 0)); g.stats ||= { wins: 0 }; g.difficulty = DIFFICULTY[g.difficulty] ? g.difficulty : 'normal';
+  g.playtime ||= 0; g.ngp = Math.max(0, Math.min(5, g.ngp | 0)); g.rules = Object.fromEntries(Object.keys(RULES).filter((k) => g.rules?.[k]).map((k) => [k, true])); g.stats ||= { wins: 0 }; g.difficulty = DIFFICULTY[g.difficulty] ? g.difficulty : 'normal';
   for (const c of g.party) { c.extra ||= 0; c.gems ||= []; while (c.gems.length < 5) c.gems.push([]); }
   // old saves keep their gear; only ids that no longer exist are dropped (never a crash on load)
   g.inv ||= {}; for (const k of ['weapons', 'armors', 'accs', 'gems']) g.inv[k] = (g.inv[k] || []).filter((id) => DB[k][id]); g.inv.items ||= {};
@@ -171,7 +172,7 @@ function featEnv() {
   return {
     wins: st.wins || 0, wipes: st.wipes || 0, rides: st.rides || 0, phone: G.flags.story.phone || 0, used: st.used || {}, kills: (id) => G.flags.bestiary[id]?.kills || 0,
     bestiary: beastDone(), bestiaryTotal: Object.keys(ENEMIES).length, quests: Object.keys(QUESTS).filter((id) => qstate(id) === 'done').length, questsTotal: Object.keys(QUESTS).length,
-    secrets: secrets.filter((k) => G.flags.chests[k]).length, secretsTotal: secrets.length, steps: st.steps || 0, roadside: Object.keys(G.flags.chat).filter((k) => k.startsWith('rs:')).length, gold: G.gold, visited: G.flags.visited, bosses: G.flags.bosses, ended: !!G.flags.story.ended, ngp: G.ngp || 0,
+    secrets: secrets.filter((k) => G.flags.chests[k]).length, secretsTotal: secrets.length, steps: st.steps || 0, roadside: Object.keys(G.flags.chat).filter((k) => k.startsWith('rs:')).length, gold: G.gold, visited: G.flags.visited, bosses: G.flags.bosses, ended: !!G.flags.story.ended, ngp: G.ngp || 0, rulesOn: Object.keys(G.rules || {}).length,
     maxLevel: G.party.some((c) => c.level >= L.MAX_LEVEL), mastered: G.party.some((c) => L.mastered(c).length > 0), callings: Math.max(0, ...G.party.map((c) => Object.keys(c.cp || {}).length)), gems: G.party.reduce((x, c) => x + gemsUsed(c), 0),
   };
 }
@@ -181,7 +182,7 @@ function unlockFeats() {
   return fresh;
 }
 function announceFeats(fresh) { // one or two by name, a pile as a count; a save that was already far along unlocks a lot at once
-  sfx('levelup'); toast(fresh.length > 2 ? `🏆 ${fresh.length} feats unlocked! See Menu > Feats` : `🏆 Feat: ${fresh.map((f) => f.name).join(' & ')}`, 3600);
+  diag(`feats ${fresh.map((f) => f.id).join(',')}`); sfx('levelup'); toast(fresh.length > 2 ? `🏆 ${fresh.length} feats unlocked! See Menu > Feats` : `🏆 Feat: ${fresh.map((f) => f.name).join(' & ')}`, 3600);
 }
 ACT.feats = () => {
   const got = G.flags.feats || {}, e = featEnv(), done = FEATS.filter((f) => got[f.id]).length;
@@ -399,7 +400,7 @@ requestAnimationFrame(tick);
 const frame = () => new Promise((r) => requestAnimationFrame(r));
 async function transition() { sfx('encounter'); for (trans = 0.02; trans < 1.2; trans += 0.065) await frame(); trans = 1; await sleep(60); }
 function banner(text) { const b = $('#banner'); b.textContent = text; b.classList.remove('show'); void b.offsetWidth; b.classList.add('show'); }
-function goto(id, x, y) { rain = 0; // (a wipe wakes you in the last town you were in: G.home)
+function goto(id, x, y) { rain = 0; diag(`go ${G?.map} -> ${id} (${x},${y})`); // (a wipe wakes you in the last town you were in: G.home)
   const first = !G.flags.visited[id]; G.map = id; G.x = x; G.y = y; G.flags.visited[id] = true; if (MAPS[id].kind === 'town') G.home = id === 'haven' ? null : { map: id, x: MAPS[id].spawn.x, y: MAPS[id].spawn.y }; snap(); music(musicFor()); sfx('door');
   banner(id === 'world' ? REGION_NAME[regionOf()] : MAPS[id].name); G.region = regionOf(); layoutView(); draw(); autosave();
   arrive(id, first);
@@ -431,7 +432,7 @@ async function step(dx, dy) {
   if (m.boss && t === 'X' && !G.flags.bosses[m.boss.id]) { busy = true; mapShake(); sfx('crit'); await sleep(350); busy = false; return battle([m.boss.id], m.boss.id); }
   const zoneEnc = G.map === 'world' ? { 4: 'hops', 5: 'embers', 6: 'jungle' }[regAt(nx, ny)] : null; // the outlying and jungle areas have their own monsters
   const table = zoneEnc || m.enc || m.encByTile?.[t];
-  if (table && !(m.safe || []).some(([sx2, sy2, r]) => Math.hypot(nx - sx2, ny - sy2) <= r) && Math.random() < m.rate * (G.map === 'world' && roadAt(nx, ny) ? 0.35 : 1) * (ENC_MUL[OPT.enc] ?? 1)) { // the roads are well-trodden: far fewer ambushes on them, so the long legs between towns are a stroll
+  if (table && !(m.safe || []).some(([sx2, sy2, r]) => Math.hypot(nx - sx2, ny - sy2) <= r) && Math.random() < m.rate * (G.map === 'world' && roadAt(nx, ny) ? 0.35 : 1) * (ENC_MUL[OPT.enc] ?? 1) * (G.rules?.rush ? 2 : 1)) { // the roads are well-trodden: far fewer ambushes on them, so the long legs between towns are a stroll
     let tb = ENCOUNTERS[table];
     const lure = Object.entries(QUESTS).find(([id, q]) => q.goal.lure?.table === table && qstate(id) === 'active' && !questDone(id))?.[1].goal.lure; // a hunt quest's quarry shows up more often
     if (lure && Math.random() < lure.p) return battle(lure.group);
@@ -448,7 +449,7 @@ async function roadside() {
   const reg = regionOf(), seen = G.flags.chat, pool = ROADSIDE.filter((e) => (!e.regions || e.regions.includes(reg)) && cond(e.if)), fresh = pool.filter((e) => !seen[`rs:${e.id}`]);
   if (!pool.length || Math.random() > (fresh.length ? 0.016 : 0.004)) return;
   const list = fresh.length ? fresh : pool, e = list[Math.floor(Math.random() * list.length)];
-  sinceRoad = 0; seen[`rs:${e.id}`] = true; route = [];
+  sinceRoad = 0; seen[`rs:${e.id}`] = true; route = []; diag(`roadside ${e.id}`);
   await scene(e.lines); if (e.rain) rain = e.rain;
   if (e.reward) { const got = giveReward(e.reward); sfx('coin'); toast(`Got ${got.join(', ')}`, 2400); }
 }
@@ -883,7 +884,7 @@ async function loadSlot(i) {
   const d = readSlot(i); if (!d?.G || loadingSlot) return;
   let g; try { g = migrate(d.G); } catch (err) { console.error(err); sfx('error'); return toast('⚠ That save looks damaged. Try Restore with a backup code (Options).', 4600); }
   if (g.map === 'world') { loadingSlot = true; try { await chartTheLand(); } finally { loadingSlot = false; } } // a save that loads onto the overworld: bake it behind a loader, not a frozen frame
-  G = g; G.slot = i; snap(); music(musicFor()); hide(); banner(mapDef().name); toast(`Loaded slot ${i}`);
+  G = g; G.slot = i; snap(); diag(`loaded slot ${i} at ${G.map}`); music(musicFor()); hide(); banner(mapDef().name); toast(`Loaded slot ${i}`);
   if (G.flags.worldMoved) { delete G.flags.worldMoved; toast('The world has been redrawn since this save. Fog reset' + (G.map === 'world' ? ' and you are back at Haven\'s gate' : '') + '.', 5200); }
 }
 // ---------- party chat (menu > CHAT): skits about where you are and what just happened (STORY.chat) ----------
@@ -906,7 +907,7 @@ function mainMenu() {
   const menuTip = tipOnce('menu') ? 'TIP: pick a hero, then Edit a skill slot to socket gems. Gems rewrite how a skill works.' : '';
   const cmds = [['items', 'ITEM', 'bag'], ['chat', 'CHAT', 'hero'], ['mapscreen', 'MAP', 'map'], ['journal', 'JOURNAL', 'journal'], ['bestiary', 'BESTIARY', 'bestiary'], ['feats', 'FEATS', 'trophy'], ['opts', 'OPTIONS', 'options'], ['save', 'SAVE', 'save'], ['title', 'TITLE', 'title'], ['close', 'CLOSE', 'close']];
   show(`<div class="menugrid"><div class="menuside"><div class="pane menucmd"><div class="cmdlist">${cmds.map(([a, l, n]) => btn(a, ic(n) + l, '', '', a === 'close' ? 'primary' : '')).join('')}</div></div>
-  <div class="pane menuinfo"><span class="dim">TIME</span><span>${fmtTime(G.playtime)}</span><span class="dim">WINS</span><span>${G.stats?.wins || 0}</span>${G.ngp ? `<span class="dim">LOOP</span><span>NG+${G.ngp}</span>` : ''}<span class="g">${ic('coin')}GOLD</span><span class="gold">${G.gold}</span></div></div>
+  <div class="pane menuinfo"><span class="dim">TIME</span><span>${fmtTime(G.playtime)}</span><span class="dim">WINS</span><span>${G.stats?.wins || 0}</span>${G.ngp ? `<span class="dim">LOOP</span><span>NG+${G.ngp}</span>` : ''}${G.rules && Object.keys(G.rules).length ? `<span class="dim">RULES</span><span>${Object.keys(G.rules).map((k) => RULES[k]?.name.split(' ')[0]).join(', ')}</span>` : ''}<span class="g">${ic('coin')}GOLD</span><span class="gold">${G.gold}</span></div></div>
   <div class="pane menuparty">${G.party.map((c, i) => heroBtn(c, 'build', i)).join('')}</div></div>
   ${menuTip ? `<div id="msg" class="pane">${ic('tip')} ${menuTip}</div>` : '<div id="msg"></div>'}`, '', 'multi');
 }
@@ -1008,25 +1009,47 @@ function optionsScreen() {
   <div class="opt"><label>${ic('sound')} Music volume <b>${Math.round(OPT.music * 100)}%</b></label><input type="range" min="0" max="100" value="${Math.round(OPT.music * 100)}" data-in="music"></div>
   <div class="opt"><label>${ic('sound')} Sound effects <b>${Math.round(OPT.sfx * 100)}%</b></label><input type="range" min="0" max="100" value="${Math.round(OPT.sfx * 100)}" data-in="sfx"></div>
   <div class="opts">${G ? btn('optdiff', `<span>Difficulty</span><b>${DIFFICULTY[G.difficulty].name}</b>`) : ''}${btn('optspeed', `<span>Battle speed</span><b>${OPT.speed}</b>`)}${btn('opttext', `<span>Text speed</span><b>${OPT.text}</b>`)}${btn('optui', `<span>Menu size</span><b>${OPT.ui}</b>`)}${btn('optenc', `<span>Random fights</span><b>${OPT.enc}</b>`)}${btn('optmini', `<span>Minimap</span><b>${onOff(OPT.minimap)}</b>`)}${btn('optshake', `<span>Screen shake</span><b>${onOff(OPT.shake)}</b>`)}${btn('optmute', `<span>${ic(isMuted() ? 'mute' : 'sound')}Sound</span><b>${isMuted() ? 'Muted' : 'On'}</b>`)}</div>
-  <h3>Saves</h3><div class="opts">${btn('backup', '<span>Back up saves</span><b>Copy a code</b>', '', '', '', !anySave())}${btn('restore', '<span>Restore saves</span><b>Paste a code</b>')}</div>
+  <h3>Saves</h3><div class="opts">${btn('backup', '<span>Back up saves</span><b>Copy a code</b>', '', '', '', !anySave())}${btn('restore', '<span>Restore saves</span><b>Paste a code</b>')}${btn('report', '<span>Report a problem</span><b>Copy a report</b>')}</div>
   <h3>Controls</h3>${TOUCH ? '<div class="dim controls"><div><b>Tap the map</b> walk there</div><div><b>Pad</b> press and slide to walk</div><div><b>A</b> talk, check, confirm</div><div><b>B</b> menu, back</div><div><b>MAP</b> the full map</div><div><b>Tap text</b> skip ahead</div></div><div class="dim" style="margin-top:4px">A keyboard works too: arrows or WASD, Enter, Esc.</div>' : '<div class="dim controls"><div><b>Arrows / WASD</b> move</div><div><b>Esc / M</b> menu</div><div><b>N</b> toggle minimap</div><div><b>Arrows</b> move menu focus</div><div><b>Enter / Space</b> select</div><div><b>Esc / Backspace</b> back</div></div>'}
   ${IS_IOS && !root.classList.contains('standalone') && !root.classList.contains('framed') ? '<div class="card"><b>📱 Install on iPhone</b><div class="dim">In Safari tap Share, then <b>Add to Home Screen</b>. Bearded Bros then runs full-screen, works offline, and remembers your saves.</div></div>' : ''}
   <div class="foot"><span class="dim grow" style="font-size:8px;align-self:center">Bearded Bros v${VERSION}</span>${btn('optback', 'Back', '', '', 'primary')}</div>`);
 }
 ACT.opts = () => optionsScreen();
 ACT.optsback = () => optionsScreen();
+// ---------- diagnostics: Options > Report a problem copies the game state and the last things that happened ----------
+const DIAG = [], diag = (msg) => { DIAG.push(`${fmtTime(performance.now() / 1000)} ${msg}`); if (DIAG.length > 80) DIAG.shift(); };
+function buildReport() {
+  const L2 = ['BEARDED BROS REPORT', `version ${VERSION} build ${BUILD.startsWith('__') ? 'dev' : BUILD}`, `when ${new Date().toISOString()}`, `device ${navigator.userAgent.replace(/\s+/g, ' ').slice(0, 150)}`,
+    `screen ${innerWidth}x${innerHeight} @${devicePixelRatio} touch ${TOUCH ? 'yes' : 'no'} installed ${root.classList.contains('standalone') ? 'yes' : 'no'}`,
+    `options music ${Math.round(OPT.music * 100)} sfx ${Math.round(OPT.sfx * 100)} muted ${isMuted() ? 'yes' : 'no'} battle ${OPT.speed} text ${OPT.text} menu ${OPT.ui} fights ${OPT.enc} shake ${OPT.shake ? 'on' : 'off'} minimap ${OPT.minimap ? 'on' : 'off'}`];
+  if (G) {
+    const st = G.stats || {}, m = mapDef();
+    L2.push(`game slot ${G.slot} ${G.difficulty} NG+${G.ngp || 0} rules ${Object.keys(G.rules || {}).join(',') || 'none'} played ${fmtTime(G.playtime)}`,
+      `where ${G.map} (${G.x},${G.y}) ${m.kind === 'outdoor' ? REGION_NAME[regionOf()] : m.name}`,
+      `party ${G.party.map((c) => `${c.name} ${JOBS[c.main].name} L${c.level} ${c.hp}/${maxOf(c).hp}`).join(' | ')}`,
+      `progress gold ${G.gold} bosses ${Object.keys(G.flags.bosses).join(',') || 'none'} quests ${Object.keys(QUESTS).filter((id) => qstate(id) === 'done').length}/${Object.keys(QUESTS).length} feats ${Object.keys(G.flags.feats || {}).length}/${FEATS.length} bestiary ${beastDone()}/${Object.keys(ENEMIES).length}`,
+      `stats wins ${st.wins || 0} wipes ${st.wipes || 0} steps ${st.steps || 0} rides ${st.rides || 0}`);
+  } else L2.push('game none (title screen)');
+  L2.push('recent:', ...(DIAG.length ? DIAG.slice(-45).map((l) => '  ' + l) : ['  (nothing yet)']));
+  return L2.join('\n');
+}
+ACT.report = () => {
+  show(`<h2>🐞 Report a problem</h2><p class="dim">Tap Copy, then paste this into a message with a line about what went wrong. It holds your game state and the last few things that happened, nothing personal.</p><textarea class="code" readonly data-in="bkcode" rows="11" spellcheck="false" aria-label="Report">${esc(buildReport())}</textarea><div class="foot">${btn('rpcopy', 'Copy report', '', '', 'primary')}${btn('optsback', 'Back')}</div>`);
+};
+async function copyBox(done) {
+  const ta = ov.querySelector('textarea'); if (!ta) return;
+  ta.focus(); ta.select(); try { ta.setSelectionRange(0, ta.value.length); } catch {}
+  let ok = false; try { await navigator.clipboard.writeText(ta.value); ok = true; } catch { try { ok = document.execCommand('copy'); } catch {} }
+  toast(ok ? `📋 ${done} copied` : `${done} selected: tap and hold it, then Copy`, 2800); if (ok) sfx('coin');
+}
+ACT.rpcopy = () => copyBox('Report');
 // ---------- save backup / restore (Options): one pasteable code for all three slots ----------
 const slotsRaw = () => Object.fromEntries(SLOT_IDS.map((i) => { try { return [i, localStorage.getItem(SLOT_KEY(i))]; } catch { return [i, null]; } }).filter(([, v]) => v));
 ACT.backup = async () => {
   show(`<h2>💾 Back up saves</h2><p class="dim">Copy this code and keep it somewhere safe: a note, or a message to yourself. Paste it into Restore on any device to get your saves back. Safari can clear a game's storage if you leave it alone for a week.</p><textarea class="code" readonly data-in="bkcode" rows="7" spellcheck="false" aria-label="Backup code">Packing…</textarea><div class="foot">${btn('bkcopy', 'Copy code', '', '', 'primary')}${btn('optsback', 'Back')}</div>`);
   const code = await packSlots(slotsRaw()), ta = ov.querySelector('textarea'); if (ta) ta.value = code || 'No saves yet. Start a game first.';
 };
-ACT.bkcopy = async () => {
-  const ta = ov.querySelector('textarea'); if (!ta || !/^BB[01]:/.test(ta.value)) return;
-  ta.focus(); ta.select(); try { ta.setSelectionRange(0, ta.value.length); } catch {}
-  let ok = false; try { await navigator.clipboard.writeText(ta.value); ok = true; } catch { try { ok = document.execCommand('copy'); } catch {} }
-  toast(ok ? '📋 Code copied' : 'Code selected: tap and hold it, then Copy', 2800); if (ok) sfx('coin');
-};
+ACT.bkcopy = () => { const ta = ov.querySelector('textarea'); if (ta && /^BB[01]:/.test(ta.value)) return copyBox('Code'); };
 let restorePending = null;
 ACT.restore = () => {
   restorePending = null;
@@ -1233,10 +1256,11 @@ async function battle(groupIds, bossId = null) {
   }
 }
 async function battleInner(groupIds, bossId = null) {
-  busy = true;
+  busy = true; diag(`fight ${groupIds.join(',')}${bossId ? ' (boss)' : ''} at ${G.map}`);
   const mod = { ...DIFFICULTY[G.difficulty || 'normal'].mod }, ps = !bossId && PARTY_SCALE[G.party.length];
   if (ps) { mod.hp *= ps.hp; mod.atk *= ps.atk; mod.mag *= ps.atk; }
   for (const k of ['hp', 'atk', 'mag', 'def', 'reward']) mod[k] = (mod[k] ?? 1) * ngMul(k);
+  if (G.rules) { mod.reward *= ruleBonus(); if (G.rules.glass) mod.dmg = 1.5; if (G.rules.rush) mod.rush = true; } // NG+ house rules
   const b = new Battle(G.party, groupIds, Math.random, !!bossId, mod);
   await transition(); music(bossId ? 'boss' : 'battle');
   const firstId = !bossId && b.e.map((e) => e.id).find((id) => !G.flags.bestiary[id] && fieldNote(id)), note = firstId && fieldNote(firstId); // first sight of a new foe: the party says something
@@ -1269,6 +1293,7 @@ async function battleInner(groupIds, bossId = null) {
   BT.stage.stop(); trans = 0;
   b.p.forEach((x) => { x.ch.hp = x.hp; x.ch.mp = x.mp; });
   if (b.over === 'fled') { sfx('flee'); const q = quip('flee', 0.6); if (q) toast(q.replace(/<[^>]+>/g, ''), 2600); }
+  diag(`fight over: ${b.over} after ${b.turn} rounds, party ${b.p.map((x) => `${x.hp}/${x.maxhp}`).join(' ')}`);
   if (b.over === 'win') await victory(b, bossId);
   else if (b.over === 'lose') await defeat();
   else { hide(); }
@@ -1327,7 +1352,7 @@ function quip(kind, chance) {
 }
 function cmdHtml(a) {
   const p = a.p, c = p.ch, head = `<div class="cmdhead">${portrait(ak(c), 'sm')}${esc(p.name)}</div>`, back = btn('c', `${ic('back')}BACK`, 'root');
-  if (a.stage === 'root') return `${head}<div class="cmdlist">${btn('c', `${ic('fight')}FIGHT`, 'attack')}${btn('c', `${ic('skill')}SKILL`, 'skills')}${btn('c', `${ic('item')}ITEM`, 'item')}${btn('c', `${ic('guard')}GUARD`, 'defend')}${comboPartner(p) && combosKnown().length ? btn('c', `${ic('spark')}COMBO`, 'combos') : ''}${veteran() ? `${btn('c', `${ic('repeat')}REPEAT`, 'repeat', '', '', !BT.last.has(p.name))}${btn('c', `${ic('auto')}AUTO`, 'auto')}` : ''}${btn('c', `${ic('run')}RUN`, 'flee', '', '', BT.b.boss)}</div>`;
+  if (a.stage === 'root') return `${head}<div class="cmdlist">${btn('c', `${ic('fight')}FIGHT`, 'attack')}${btn('c', `${ic('skill')}SKILL`, 'skills')}${btn('c', `${ic('item')}ITEM`, 'item', '', '', !!G.rules?.dry)}${btn('c', `${ic('guard')}GUARD`, 'defend')}${comboPartner(p) && combosKnown().length ? btn('c', `${ic('spark')}COMBO`, 'combos') : ''}${veteran() ? `${btn('c', `${ic('repeat')}REPEAT`, 'repeat', '', '', !BT.last.has(p.name))}${btn('c', `${ic('auto')}AUTO`, 'auto')}` : ''}${btn('c', `${ic('run')}RUN`, 'flee', '', '', BT.b.boss)}</div>`;
   if (a.stage === 'skills') {
     return `${head}<div class="cmdlist">` + [0, 1, 2, 3, SIG].map((i) => {
       const sid = slotSkill(c, i); if (!sid) return '';
@@ -1373,7 +1398,7 @@ ACT.c = (what, x) => {
   };
   if (what === 'root') a.stage = 'root';
   else if (what === 'skills') a.stage = 'skills';
-  else if (what === 'item') a.stage = 'item';
+  else if (what === 'item') { if (G.rules?.dry) return toast('Dry January: no items in battle.', 1600); a.stage = 'item'; }
   else if (what === 'combos') a.stage = 'combos';
   else if (what === 'combo') { const s = SKILLS[x], cmd = { kind: 'combo', skillId: x, partner: comboPartner(p) }; if (!cmd.partner) a.stage = 'root'; else if (s.tgt === 'one') toTarget('e', cmd); else finish(cmd); }
   else if (what === 'defend') return finish({ kind: 'defend' });
@@ -1463,12 +1488,20 @@ function awakening({ heart, jobs, gems }) {
   });
 }
 const epilogueOf = (c) => { const e = STORY.epilogue[c.look] ?? STORY.epilogue[c.main]; return (typeof e === 'string' ? e : e?.[c.main] || e?.default) || '{n} went home.'; };
-let ngPending = false;
+let ngPending = false, pendingRules = {};
+// House rules for a New Game+ run: tick any you like (each pays a bonus to EXP and gold), or none for the plain run
+function rulesScreen() {
+  const n = (G.ngp || 0) + 1;
+  show(`<h2>🍺 House rules</h2><p class="dim">New Game+${n}: pick any rules for this run. Each pays extra EXP and gold. None is fine too.</p>${Object.entries(RULES).map(([k, r]) => `<div class="slot ${pendingRules[k] ? 'sel' : ''}"><span class="lead">${ic(pendingRules[k] ? 'check' : 'socket')}</span><div class="t"><b>${r.name} <span class="gold">+${Math.round(r.bonus * 100)}%</span></b><small>${r.desc}</small></div>${btn('ruletog', pendingRules[k] ? 'On' : 'Off', k, '', pendingRules[k] ? 'primary' : '')}</div>`).join('')}<div class="foot">${btn('rulesgo', `Begin New Game+${n}`, '', '', 'primary')}</div>`);
+}
+ACT.ruletog = (k) => { pendingRules[k] = !pendingRules[k]; rulesScreen(); };
+ACT.rulesgo = () => { const r = Object.fromEntries(Object.keys(RULES).filter((k) => pendingRules[k]).map((k) => [k, true])); pendingRules = {}; hide(); newGamePlus(r); };
+const ruleBonus = () => Object.keys(RULES).reduce((m, k) => m * (G.rules?.[k] ? 1 + RULES[k].bonus : 1), 1);
 // New Game+: the bell rings again. Party, gear and gold carry over; the world, its bosses and quests reset and hit back harder (each loop: foes +40% HP, +20% damage).
-function newGamePlus() {
+function newGamePlus(rules = {}) {
   const keep = G.flags.qitems || {}, hearts = Object.fromEntries(Object.keys(KEY_ITEMS).filter((k) => keep[k]).map((k) => [k, true]));
-  const prev = G; newGame(); const n = Math.min(5, (prev.ngp || 0) + 1);
-  Object.assign(G, { party: prev.party, inv: prev.inv, gold: prev.gold, difficulty: prev.difficulty, slot: prev.slot, playtime: prev.playtime, stats: prev.stats, ngp: n });
+  const prev = G; diag('new game plus'); newGame(); const n = Math.min(5, (prev.ngp || 0) + 1);
+  Object.assign(G, { party: prev.party, inv: prev.inv, gold: prev.gold, difficulty: prev.difficulty, slot: prev.slot, playtime: prev.playtime, stats: prev.stats, ngp: n, rules });
   for (const c of G.party) { const st = maxOf(c); c.hp = st.hp; c.mp = st.mp; c.ko = false; }
   Object.assign(G.flags.story, { woke: true, cellar: true, called: true, wendell: true, brenna: true }); G.flags.qitems = hearts; G.flags.visited.haven = true; G.flags.worldv = WORLD_V;
   G.flags.bestiary = prev.flags.bestiary || {}; G.flags.tips = prev.flags.tips || {}; G.flags.feats = prev.flags.feats || {}; if (prev.flags.story.beastTier) G.flags.story.beastTier = prev.flags.story.beastTier; // what you have learned about the monsters, and the Goose's rewards, carry over
@@ -1493,7 +1526,7 @@ async function ending() {
     <div class="credits"><div class="roll">${roll.map(([t, k]) => `<div class="${k}">${t || '&nbsp;'}</div>`).join('')}</div></div>
     ${left.length ? `<p class="dim">Still sleeping: ${left.join(', ')}. The bell is waiting.</p>` : `<p class="gold">The bell of Haven rings for ${esc(partyNames())}.</p>`}<div class="foot">${btn('edone', 'Keep exploring', '', '', 'primary')}${(G.ngp || 0) < 5 ? btn('ngplus', ngPending ? 'Tap again: New Game+' : 'New Game+') : ''}</div>`, '', 'gold');
     ACT.edone = () => { ngPending = false; hide(); music(musicFor()); res(); };
-    ACT.ngplus = () => { if (!ngPending) { ngPending = true; banner('New Game+: keep your party and gear, the world hits back harder. Tap again.'); return; } ngPending = false; hide(); res(); newGamePlus(); };
+    ACT.ngplus = () => { if (!ngPending) { ngPending = true; banner('New Game+: keep your party and gear, the world hits back harder. Tap again.'); return; } ngPending = false; res(); rulesScreen(); };
   });
 }
 function wipeHome() { // where a wipe wakes you: the nearest town you have visited on the same landmass as where you fell (a dungeon counts as its door on the overworld)
@@ -1524,8 +1557,8 @@ async function defeat() {
 // audio controls: browsers need a user gesture before sound can start
 ['pointerdown', 'pointerup', 'touchend', 'click', 'keydown'].forEach((ev) => addEventListener(ev, unlock, { passive: true }));
 document.addEventListener('visibilitychange', () => { setBackgrounded(document.hidden); if (document.hidden) autosave(); });
-addEventListener('error', (e) => { console.error(e.error || e.message); toast('⚠ Something went wrong. Your progress is safe.', 3500); autosave(); });
-addEventListener('unhandledrejection', (e) => { console.error(e.reason); toast('⚠ Something went wrong. Your progress is safe.', 3500); });
+addEventListener('error', (e) => { diag(`ERROR ${String(e.message || e.error).slice(0, 160)}`); console.error(e.error || e.message); toast('⚠ Something went wrong. Your progress is safe.', 3500); autosave(); });
+addEventListener('unhandledrejection', (e) => { diag(`ERROR (promise) ${String(e.reason?.message || e.reason).slice(0, 160)}`); console.error(e.reason); toast('⚠ Something went wrong. Your progress is safe.', 3500); });
 addEventListener('pagehide', () => { setBackgrounded(true); autosave(); });
 addEventListener('pageshow', () => setBackgrounded(false));
 // offline play + install support for the single-file build (only when served over https/localhost, never inside a host frame)

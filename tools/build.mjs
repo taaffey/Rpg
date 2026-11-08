@@ -12,11 +12,13 @@ mkdirSync(root + 'dist', { recursive: true });
 const es = process.env.ESBUILD;
 const args = ['src/game.js', '--bundle', '--minify', '--format=iife', '--target=es2022', '--outfile=dist/game.js', '--log-level=warning'];
 execFileSync(es || 'npx', es ? args : ['--yes', 'esbuild', ...args], { cwd: root, stdio: 'inherit' });
-const js = readFileSync(root + 'dist/game.js', 'utf8').replace(/<\/script/gi, '<\\/script');
+const js0 = readFileSync(root + 'dist/game.js', 'utf8').replace(/<\/script/gi, '<\\/script');
 const font64 = readFileSync(root + 'assets/pressstart2p-latin.woff2').toString('base64');
 const css = readFileSync(root + 'style.css', 'utf8').replace(/url\(['"]?(?:\.\/)?assets\/pressstart2p-latin\.woff2['"]?\)/g, `url(data:font/woff2;base64,${font64})`);
 const html = readFileSync(root + 'index.html', 'utf8');
 const body = html.match(/<body>([\s\S]*)<\/body>/)[1].replace(/<script[^>]*src=[^>]*><\/script>/g, '').trim();
+const build = createHash('sha1').update(js0 + css + body).digest('hex').slice(0, 8); // the build id the game shows in "Report a problem" and the service worker versions its cache with
+const js = js0.replace('__BUILD__', build);
 const fonts = ''; // the pixel font is embedded in style.css, no third-party request
 const icon = html.match(/<link rel="icon"[^>]*>/)[0];
 const style = `<style>:root{color-scheme:dark}body{background-color:#0b0e1c}\n${css}</style>`;
@@ -27,6 +29,5 @@ const head = html.match(/<head>([\s\S]*?)<\/head>/)[1].replace(/<link rel="style
 const standalone = `<!doctype html>\n<html lang="en"><head>\n${head}\n<meta name="gemforge-bundled" content="1">\n<title>Bearded Bros</title>\n${style}</head><body>\n${body}\n<script>${js}</script>\n</body></html>\n`;
 writeFileSync(root + 'dist/index.html', standalone);
 cpSync(root + 'assets', root + 'dist/assets', { recursive: true });
-const build = createHash('sha1').update(standalone).digest('hex').slice(0, 8);
 writeFileSync(root + 'dist/sw.js', readFileSync(root + 'assets/sw.js', 'utf8').replace('__BUILD__', build));
 console.log(`dist/index.html ${(standalone.length / 1024).toFixed(0)} KB (build ${build}), dist/artifact.html ${(fragment.length / 1024).toFixed(0)} KB`);

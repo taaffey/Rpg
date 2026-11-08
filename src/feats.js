@@ -1,6 +1,6 @@
 // Feats: silly achievements, shown in the menu. Pure data: each test reads a snapshot `e` of the game that game.js builds (featEnv).
 // e = { wins, wipes, rides, phone, used{itemId: n}, kills(enemyId), bestiary, bestiaryTotal, quests, questsTotal, secrets, secretsTotal,
-//       steps, roadside (moments seen), gold, visited{mapId}, bosses{bossId}, ended, ngp, maxLevel(any hero at the cap), mastered(any hero), callings(most learned by one hero), gems(socketed in total) }
+//       steps, roadside (moments seen), gold, visited{mapId}, bosses{bossId}, ended, ngp, rulesOn, maxLevel(any hero at the cap), mastered(any hero), callings(most learned by one hero), gems(socketed in total) }
 // prog (optional) returns [now, goal] so the list can show a counter on feats that take a while.
 const n = (v, goal) => [Math.min(v, goal), goal];
 
@@ -35,6 +35,7 @@ export const FEATS = [
   { id: 'treasure', name: 'Magpie', text: 'Find every hidden treasure.', test: (e) => e.secretsTotal > 0 && e.secrets >= e.secretsTotal, prog: (e) => n(e.secrets, e.secretsTotal) },
   { id: 'steps', name: 'Sole Survivor', text: 'Walk 10,000 steps across the world.', test: (e) => e.steps >= 10000, prog: (e) => n(e.steps, 10000) },
   { id: 'roadside', name: 'Roadside Attraction', text: 'Stop for 10 odd little moments on the road.', test: (e) => e.roadside >= 10, prog: (e) => n(e.roadside, 10) },
+  { id: 'rules2', name: 'House Rules', text: 'See the credits of a New Game+ run with two or more house rules on.', test: (e) => !!e.ended && e.rulesOn >= 2 },
   { id: 'ng1', name: 'Round Two', text: 'Start New Game+.', test: (e) => e.ngp >= 1 },
   { id: 'ng3', name: 'Groundhog Pub', text: 'Reach New Game+3.', test: (e) => e.ngp >= 3 },
 ];

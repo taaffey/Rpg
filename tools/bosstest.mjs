@@ -99,6 +99,16 @@ mech({ move: 'flamebreath', every: 3, window: 1, need: 0.5, mult: 2, vuln: 1.25,
   ok(`${Object.keys(MECH).length - 1} bosses have mechanics, all valid`, !problems.length, problems.join('; '));
   const missing = Object.keys(ENEMIES).filter((id) => ENEMIES[id].boss && id !== 'test_boss' && !MECH[id]); ok('every boss in the game has mechanics', !missing.length, missing.join(', '));
 }
+// ---- New Game+ house rules in the engine: Glass Beards (damage), Rush Hour (sooner wind-ups)
+{
+  mech({ move: 'flamebreath', every: 4, window: 1, need: 0.5, mult: 2, vuln: 1, say: 'W' });
+  const plain = new Battle(heroes(), ['test_boss'], fixed(), true), glass = new Battle(heroes(), ['test_boss'], fixed(), true, { dmg: 1.5 }), rush = new Battle(heroes(), ['test_boss'], fixed(), true, { rush: true });
+  const atk = skillWithGems('attack', []), s1 = skillWithGems('claw', []);
+  ok('Glass Beards: heroes hit 50% harder', Math.abs(glass.damage(glass.p[0], glass.e[0], atk) / plain.damage(plain.p[0], plain.e[0], atk) - 1.5) < 0.03);
+  ok('Glass Beards: foes hit 50% harder', Math.abs(glass.damage(glass.e[0], glass.p[0], s1) / plain.damage(plain.e[0], plain.p[0], s1) - 1.5) < 0.03);
+  ok('Rush Hour: the wind-up comes a move sooner', rush.e[0].mech.charge.every === 3 && plain.e[0].mech.charge.every === 4 && MECH.test_boss.charge.every === 4, `${rush.e[0].mech.charge.every} vs ${plain.e[0].mech.charge.every}`);
+  MECH.test_boss.charge.every = 2; const r2 = new Battle(heroes(), ['test_boss'], fixed(), true, { rush: true }); ok('Rush Hour never goes below every 2nd move', r2.e[0].mech.charge.every === 2);
+}
 // ---- everyone else fights as before
 {
   const b = new Battle(heroes(), ['slime'], fixed(), false); ok('plain enemies carry no mechanics', b.e.every((e) => !e.mech) && b.enemyCmd(b.e[0]).kind === 'skill');

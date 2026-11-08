@@ -44,6 +44,8 @@ keyboard alone, or with the mouse. Options (volumes, battle speed, shake, minima
 - **Save backup codes** (Options > Saves): one pasteable code for all three slots, to restore after Safari clears the site's storage or to move a save between phone and iPad.
 - **Roadside moments**: 36 small scenes that can happen while walking the overworld (a goose in the road, a peddler, a snowman with a bus pass), region by region. They are rare, never repeat until all that fit have been seen, and a few give a small gift or hint at an optional place you have not visited.
 - **Boss mechanics**: every boss winds up a big attack every few turns (a red pulse, a ⚠ strip and a stagger bar): hit it hard enough and it fizzles, or Guard to halve it. Bosses also change as they are hurt (phases: more attack, a second wind, a new tempo). The bestiary records each boss's tell once you have beaten it. Tuned with the sims (`tools/bosstest.mjs`, `tools/sim.mjs`).
+- **House rules** (New Game+): pick optional handicaps when a run begins: Dry January (no items in battle), Glass Beards (everyone deals 50% more damage), Rush Hour (more fights, sooner boss wind-ups). Each pays extra EXP and gold.
+- **Report a problem** (Options): copies a plain-text report (version and build, device, options, party and place, progress, the last 45 things that happened and any errors) to paste into a message. Useful for playtesters on a phone.
 - **Hidden caches**: 31 twinkling nooks and dead ends across the open world (found by `tools/genmaps.py`, loot by distance from Haven); the Dowser and Magpie feats track them.
 - **Options**: Menu size (normal / large / huge), Random fights (normal / fewer / off), text and battle speed, touch-aware controls help.
 - **Gear lists** sort usable items first with the biggest gain on top and a ★ Best chip.
@@ -177,6 +179,8 @@ Produces `dist/index.html` (the whole game in one file, about 1.2 MB (410 KB gzi
     node tools/caches.mjs            # every hidden world cache can be walked onto and opened
     node tools/options.mjs           # menu size, random-fight rate, text speed, touch/keyboard controls help
     node tools/loadworld.mjs         # a save that loads onto the overworld does not freeze the page
+    node tools/rules.mjs             # New Game+ house rules: pick, start the run, Dry January blocks ITEM, rewards boosted
+    node tools/report.mjs            # Options > Report a problem: the copyable report and its contents
     node tools/ngplus.mjs            # New Game+ carries the party and gear over and resets the world
     node tools/roadsidecheck.mjs     # roadside moments: data sanity, rarity, no repeats, rewards
     node tools/featstest.mjs         # feats unlock, count, show and survive New Game+

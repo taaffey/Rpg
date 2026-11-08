@@ -1,5 +1,11 @@
 // Static game tables split out of game.js (no runtime state in here).
 import { KEY_ITEMS } from "./data.js";
+// New Game+ house rules: optional handicaps picked when a run begins, each with a bonus to EXP and gold
+export const RULES = {
+  dry: { name: 'Dry January', desc: 'No items in battle. The pints stay in the pub.', bonus: 0.35 },
+  glass: { name: 'Glass Beards', desc: 'Everyone hits harder: heroes and foes deal 50% more damage.', bonus: 0.3 },
+  rush: { name: 'Rush Hour', desc: 'Fights come twice as often and bosses wind up their big attacks sooner.', bonus: 0.25 },
+};
 export const ENC_MUL = { normal: 1, fewer: 0.4, none: 0 }; // Options > Random fights
 export const UI_ZOOM = { normal: 1, large: 1.2, huge: 1.4 }; // Options > Menu size: scales menus and dialogue (not the battle screen, which is already tight)
 export const TEXT_MS = { normal: 28, fast: 10, instant: 0 }; // dialogue typing: ms per character
