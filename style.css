@@ -334,6 +334,7 @@ body:has(#overlay.on) #toast{top:auto;bottom:calc(env(safe-area-inset-bottom,0px
 .autobtn::before{display:none}
 .battle .logtoggle{position:absolute;right:4px;bottom:4px;font-size:8px;min-height:24px;padding:2px 6px;border:4px solid transparent;border-image:var(--chip) 4 stretch;background:linear-gradient(#4a62e0,#1c2a98);background-clip:padding-box;opacity:.9}
 .battle .logtoggle::before{display:none}
+.battle .logtoggle::after{content:"";position:absolute;inset:-9px -6px} /* a fatter thumb target than the 44x24 it draws */
 .battle .logwrap{margin:6px 0}
 .battle .log{border:8px solid transparent;border-image:var(--frame) 8 stretch;background:var(--winbg);background-clip:padding-box;height:260px;padding:6px 8px;font-size:9px;line-height:1.75;overflow:auto;text-shadow:var(--shadow)}
 .battle .log .ic{margin-right:4px}
