@@ -42,6 +42,15 @@ const HERO_FEET = 29; // hero frames are 32x32 with the soles on row 29
 const ATK = 0.5; // hero physical attack duration
 function wtypeOf(p) { const w = p.wpn; return w ? w.type : 'none'; }
 
+// the guard shield, built once from a tiny grid
+let SHIELD = null;
+function shieldImg() {
+  if (SHIELD) return SHIELD;
+  const rows = ['.OOOOOOO.', 'OBBBBBBBO', 'OBWBBBBBO', 'OBWBBBBBO', 'OBBBBBBBO', 'OBBBBBBBO', '.OBBBBBO.', '..OBBBO..', '...OBO...', '....O....'], pal = { O: '#0c1440', B: '#4a7cff', W: '#dce9ff' };
+  SHIELD = document.createElement('canvas'); SHIELD.width = 9; SHIELD.height = 10; const g = SHIELD.getContext('2d');
+  rows.forEach((r, y) => [...r].forEach((ch, x) => { if (pal[ch]) { g.fillStyle = pal[ch]; g.fillRect(x, y, 1, 1); } }));
+  return SHIELD;
+}
 export class Stage {
   constructor(battle, kind) {
     this.b = battle; this.canvas = mk(W, H); this.canvas.className = 'stage'; this.ctx = this.canvas.getContext('2d');
@@ -76,7 +85,7 @@ export class Stage {
     }
     return best && { side: best.side, c: best.c };
   }
-  setActive(name) { this.active = name; }
+  setActive(name) { this.active = name; if (name) for (const u of this.v.values()) u.guard = 0; } // a new round of commands: last round's guards are over
   card(text, dur = 2.2) { this.cardText = text; this.cardT = 0; this.cardDur = dur; }
   victory() {
     this.won = true; this.wonT = 0; this.card('VICTORY!', 1.6);
@@ -112,6 +121,7 @@ export class Stage {
       if (e.ko) { v.dead = true; v.deadT = 0; if (v.side === 'e' && v.big) { this.flashA = 0.6; this.flashC = '#ffffff'; } }
     } else if (e.t === 'charge' && v) { // a boss winds up: it pulses red with a warning mark until it unleashes or is staggered
       v.charging = true; v.blink = 0.4; if (FX.shake) this.shake = Math.max(this.shake, 0.12);
+    } else if (e.t === 'guard' && v) { v.guard = 0.001; // a braced hero gets a shield over their head until the next round of commands
     } else if (e.t === 'stagger' && v) {
       v.charging = false; v.flash = 0.5; const [cx, cy] = this.centre(v); this.effect('slash', cx, cy, v); this.burst(cx, cy, 'bolt', 16, 20); this.card('STAGGERED!', 1.1);
       if (FX.shake) this.shake = Math.max(this.shake, 0.4);
@@ -263,6 +273,10 @@ export class Stage {
     if (v.flash > 0.12) { x.globalAlpha = Math.min(1, (v.flash - 0.12) * 6); x.drawImage(silhouette(spr, '#ffffff'), px, py); x.globalAlpha = 1; }
     if (v.cast > 0) { x.globalAlpha = 0.35 + 0.35 * Math.sin(v.t * 30); x.drawImage(silhouette(spr, '#c8e0ff'), px, py); x.globalAlpha = 1; }
     this.statusIcons(x, v, px + 16, py + 3, t);
+    if (v.guard && v.c.hp > 0) { v.guard += dt; this.shield(x, px + 16, py - 7 + Math.round(Math.sin(v.t * 5) * 1), Math.min(1, 0.5 + v.guard * 5)); }
+  }
+  shield(x, cx, top, k) { // a small blue shield (pop-in scale k)
+    const img = shieldImg(), w = Math.round(9 * k), h = Math.round(10 * k); x.drawImage(img, Math.round(cx - w / 2), top + 10 - h, w, h);
   }
   drawEnemy(x, v, t, dt) {
     v.t += dt; v.flash = Math.max(0, v.flash - dt); v.lunge = Math.max(0, v.lunge - dt); v.cast = Math.max(0, v.cast - dt); v.blink = Math.max(0, v.blink - dt); if (v.dead) v.deadT += dt;
