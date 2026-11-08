@@ -372,7 +372,7 @@ body:has(#overlay.on) #toast{top:auto;bottom:calc(env(safe-area-inset-bottom,0px
 .partywin .pmp{grid-area:m;color:var(--mpc);font-size:8px;text-align:right;white-space:nowrap}
 /* a narrow party panel (choosing a skill or target on a small phone): drop the faces so the names fit */
 .partywin{container-type:inline-size}
-@container (max-width:150px){.partywin .pm{grid-template-columns:minmax(0,1fr) auto;grid-template-areas:"n h" "g m"}.partywin .pm .face{display:none}.partywin .pn,.partywin .ph{font-size:9px}}
+@container (max-width:150px){.partywin .pm{grid-template-columns:minmax(0,1fr) auto;grid-template-areas:"n h" "g m"}.partywin .pm .face{display:none}.partywin .ph{font-size:9px}.partywin .pn{font-size:8px}}
 .partywin .pm.active{background-color:rgba(255,255,255,.1)}.partywin .pm.active .pn{color:var(--yel)}
 .partywin .pm.dead{opacity:.5}.partywin .pm.dead .ph{color:var(--red)}
 .foe.flash,.pm.flash,.er.flash{animation:hit .35s}

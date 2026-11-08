@@ -191,6 +191,7 @@ Produces `dist/index.html` (the whole game in one file, about 1.2 MB (410 KB gzi
     node tools/caches.mjs            # every hidden world cache can be walked onto and opened
     node tools/options.mjs           # menu size, random-fight rate, text speed, touch/keyboard controls help
     node tools/loadworld.mjs         # a save that loads onto the overworld does not freeze the page
+    node tools/clipcheck.mjs         # no clipped text on the main screens and battle menus at small phone sizes (UISIZE=large|huge for Menu size)
     node tools/perf.mjs              # frame rate with the CPU throttled 4x (RATE=6 for harsher): walking, town, battle, boss; first-visit hitches
     node tools/rules.mjs             # New Game+ house rules: pick, start the run, Dry January blocks ITEM, rewards boosted
     node tools/report.mjs            # Options > Report a problem: the copyable report and its contents
