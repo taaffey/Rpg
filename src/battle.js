@@ -41,7 +41,7 @@ function stageKind(bossId) {
 async function battle(groupIds, bossId = null) {
   if (BT || S.busy) return; // never run two battles at once (BT is only set after the start-of-battle wipe, so check busy too)
   try { await battleInner(groupIds, bossId); } catch (err) { // never leave the player stuck in a broken battle
-    console.error(err); try { BT?.stage?.stop(); } catch {} BT = null; S.busy = false; S.trans = 0; hide(); music(musicFor()); toast('⚠ Battle error: back to the map', 3500);
+    console.error(err); try { BT?.stage?.stop(); } catch {} BT = null; S.busy = false; S.trans = 0; hide(); music(musicFor()); toast('⚠ Battle error: back to the map. Options > Report a problem has the details.', 5200);
   }
 }
 async function battleInner(groupIds, bossId = null) {

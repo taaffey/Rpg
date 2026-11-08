@@ -22,8 +22,8 @@ import './options.js';
 // audio controls: browsers need a user gesture before sound can start
 ['pointerdown', 'pointerup', 'touchend', 'click', 'keydown'].forEach((ev) => addEventListener(ev, unlock, { passive: true }));
 document.addEventListener('visibilitychange', () => { setBackgrounded(document.hidden); if (document.hidden) autosave(); });
-addEventListener('error', (e) => { diag(`ERROR ${String(e.message || e.error).slice(0, 160)}`); console.error(e.error || e.message); toast('⚠ Something went wrong. Your progress is safe.', 3500); autosave(); });
-addEventListener('unhandledrejection', (e) => { diag(`ERROR (promise) ${String(e.reason?.message || e.reason).slice(0, 160)}`); console.error(e.reason); toast('⚠ Something went wrong. Your progress is safe.', 3500); });
+addEventListener('error', (e) => { diag(`ERROR ${String(e.message || e.error).slice(0, 160)}`); console.error(e.error || e.message); toast('⚠ Something went wrong. Your progress is safe. Options > Report a problem has the details.', 5200); autosave(); });
+addEventListener('unhandledrejection', (e) => { diag(`ERROR (promise) ${String(e.reason?.message || e.reason).slice(0, 160)}`); console.error(e.reason); toast('⚠ Something went wrong. Your progress is safe. Options > Report a problem has the details.', 5200); });
 addEventListener('pagehide', () => { setBackgrounded(true); autosave(); });
 addEventListener('pageshow', () => setBackgrounded(false));
 // offline play + install support for the single-file build (only when served over https/localhost, never inside a host frame)
