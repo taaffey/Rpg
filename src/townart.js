@@ -20,8 +20,12 @@ const hash = (x, y, s = 0) => { let h = (Math.imul(x | 0, 374761393) + Math.imul
 const sm = (t) => t * t * (3 - 2 * t);
 function vnoise(x, y, c, s, P = 0) { // value noise, cell size c; with P it tiles every P px (P a multiple of c)
   const gx = Math.floor(x / c), gy = Math.floor(y / c), fx = sm(x / c - gx), fy = sm(y / c - gy), n = P / c;
-  const w = (v) => (n ? ((v % n) + n) % n : v);
-  const a = hash(w(gx), w(gy), s), b = hash(w(gx + 1), w(gy), s), d = hash(w(gx), w(gy + 1), s), e = hash(w(gx + 1), w(gy + 1), s);
+  let x0 = gx, x1 = gx + 1, y0 = gy, y1 = gy + 1;
+  if (n) { // wrap the lattice so the texture tiles: a power-of-two period (the usual case) is a mask, anything else a true modulo
+    if (Number.isInteger(n) && (n & (n - 1)) === 0) { const m = n - 1; x0 &= m; x1 &= m; y0 &= m; y1 &= m; }
+    else { x0 = ((x0 % n) + n) % n; x1 = ((x1 % n) + n) % n; y0 = ((y0 % n) + n) % n; y1 = ((y1 % n) + n) % n; }
+  }
+  const a = hash(x0, y0, s), b = hash(x1, y0, s), d = hash(x0, y1, s), e = hash(x1, y1, s);
   return a + (b - a) * fx + (d - a) * fy + (a - b - d + e) * fx * fy;
 }
 const fbm = (x, y, s = 0) => vnoise(x, y, 12, s) * 0.55 + vnoise(x, y, 5, s + 9) * 0.3 + vnoise(x, y, 2, s + 17) * 0.15;
