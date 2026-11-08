@@ -122,9 +122,9 @@ function playFx(list) {
       const el = ov.querySelector(`[data-n="${e.name}"]`); if (el) { el.classList.remove('flash'); void el.offsetWidth; el.classList.add('flash'); }
       setTimeout(() => { sfx(e.weak ? 'crit' : 'hit'); if (e.ko) setTimeout(() => sfx('ko'), 140); }, delay); delay += 110;
     } else if (e.t === 'poison') setTimeout(() => sfx('poison'), delay);
-    else if (e.t === 'guard') { setTimeout(() => sfx('buff'), delay); delay += 90; } // shields go up in a quick run
+    else if (e.t === 'guard') { setTimeout(() => sfx('buff'), delay); delay += 90; if (e.wind) (G.stats ||= { wins: 0 }).braces = (G.stats.braces || 0) + 1; } // shields go up in a quick run; a Guard while a boss winds up counts for the feats
     else if (e.t === 'charge') { setTimeout(() => sfx('debuff'), delay); delay += 250; }
-    else if (e.t === 'stagger') { setTimeout(() => { sfx('crit'); setTimeout(() => sfx('hit'), 120); }, delay); delay += 300; }
+    else if (e.t === 'stagger') { setTimeout(() => { sfx('crit'); setTimeout(() => sfx('hit'), 120); }, delay); delay += 300; (G.stats ||= { wins: 0 }).staggers = (G.stats.staggers || 0) + 1; }
     else if (e.t === 'phase') { setTimeout(() => sfx('dark'), delay); delay += 300; }
   }
 }

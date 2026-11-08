@@ -309,7 +309,7 @@ export class Battle {
   act(a, cmd) {
     const L = [];
     switch (cmd.kind) {
-      case 'defend': a.defending = true; this.fx.push({ t: 'guard', name: a.name }); L.push(`${a.name} braces for impact.`); break;
+      case 'defend': a.defending = true; this.fx.push({ t: 'guard', name: a.name, wind: this.e.some((x) => alive(x) && x.charge) }); L.push(`${a.name} braces for impact.`); break;
       case 'charge': { // a boss starts winding up a big attack: the party can stagger it with damage, or Guard through it
         const ch = a.mech.charge;
         a.charge = { skill: ch.move, left: ch.window || 1, dmg: 0, need: Math.max(1, Math.round(ch.need * a.maxhp * Math.min(1, Math.max(0.5, this.p.filter(alive).length / 4)))), vuln: ch.vuln ?? 1.25, mult: ch.mult ?? 2 }; // a smaller party has less to throw at it, so the bar is lower

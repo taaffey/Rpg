@@ -31,10 +31,17 @@ const auto = await ev(() => { const g = window.__game, b = g.BT.b; b.p[0].hp = M
 // attack the wyrm hard so the bar fills and it staggers
 await ev(() => { window.__game.BT.auto = false; });
 const logBefore = await ev(() => window.__game.BT.log.length);
-for (let k = 0; k < 4; k++) { await ev(() => { const g = window.__game, a = g.BT?.ask; if (!a || a.stage !== 'root') return; g.ACT.c('attack'); }); await ev(() => { const g = window.__game; if (g.BT?.ask?.stage === 'target') g.ACT.tgt('e', 0); }); await pg.waitForTimeout(40); }
+// hero 1 Guards while it winds up, the other three hit it; the bar is lowered so the stagger is certain
+await ev(() => { window.__game.BT.b.e[0].charge.need = 1; });
+const stats0 = await ev(() => ({ braces: window.__game.G.stats?.braces || 0, staggers: window.__game.G.stats?.staggers || 0 }));
+for (let k = 0; k < 4; k++) { await ev((k) => { const g = window.__game, a = g.BT?.ask; if (!a || a.stage !== 'root') return; g.ACT.c(k === 0 ? 'defend' : 'attack'); }, k); await ev(() => { const g = window.__game; if (g.BT?.ask?.stage === 'target') g.ACT.tgt('e', 0); }); await pg.waitForTimeout(40); }
 await pg.waitForFunction(() => !window.__game.BT.b.e[0].charge, null, { timeout: 20000 });
 const log = await ev(() => window.__game.BT.log.join('\n'));
 ok('the wind-up resolved (staggered or unleashed)', /staggered|uses Vindaloo|uses Flame/i.test(log), log.split('\n').slice(-3).join(' / ').slice(0, 120));
+await pg.waitForTimeout(600);
+const stats1 = await ev(() => ({ braces: window.__game.G.stats?.braces || 0, staggers: window.__game.G.stats?.staggers || 0, feats: Object.keys(window.__game.G.flags.feats || {}) }));
+ok('a Guard raised while it winds up is counted for the feats', stats1.braces === stats0.braces + 1, JSON.stringify([stats0.braces, stats1.braces]));
+ok('the stagger happened and is counted once', /is staggered/.test(log) && stats1.staggers === stats0.staggers + 1, `${stats0.staggers} -> ${stats1.staggers}`);
 // finish the fight
 await waitAsk(); await ev(() => { const g = window.__game; g.BT.b.e[0].hp = 1; g.ACT.c('auto'); });
 await pg.waitForFunction(() => window.__done === true || document.querySelector('[data-act=vdone]'), null, { timeout: 30000 });

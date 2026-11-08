@@ -21,6 +21,11 @@ await pg.waitForTimeout(200); await ev(() => window.__game.ACT.ddone()); await p
 ok('a wipe is counted', (await ev(() => window.__game.G.stats.wipes)) === 1);
 await ev(() => { const el = document.getElementById('overlay'); el.className = ''; el.innerHTML = ''; window.__game.autosave(); });
 ok('Learning Experience unlocks after a wipe', await ev(() => !!window.__game.G.flags.feats.wipe));
+// wind-up feats: counters come from the battle UI (tools/bossui.mjs); here the thresholds and the progress counters
+await ev(() => { const g = window.__game; g.G.stats.staggers = 1; g.G.stats.braces = 1; g.autosave(); });
+ok('Not So Fast and Duck! unlock at one stagger / one Guard', await ev(() => { const f = window.__game.G.flags.feats; return !!(f.stagger1 && f.brace1 && !f.stagger15 && !f.brace20); }));
+await ev(() => { const g = window.__game; g.G.stats.staggers = 15; g.G.stats.braces = 20; g.autosave(); });
+ok('Heckler and Safety First unlock at 15 staggers / 20 Guards', await ev(() => { const f = window.__game.G.flags.feats; return !!(f.stagger15 && f.brace20); }));
 // the screen
 await ev(() => window.__game.ui.mainMenu()); await ev(() => window.__game.ACT.feats()); await pg.waitForTimeout(200);
 const txt = await ev(() => document.getElementById('overlay').innerText);

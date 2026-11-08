@@ -22,7 +22,7 @@ function featEnv() {
   return {
     wins: st.wins || 0, wipes: st.wipes || 0, rides: st.rides || 0, phone: G.flags.story.phone || 0, used: st.used || {}, kills: (id) => G.flags.bestiary[id]?.kills || 0,
     bestiary: beastDone(), bestiaryTotal: Object.keys(ENEMIES).length, quests: Object.keys(QUESTS).filter((id) => qstate(id) === 'done').length, questsTotal: Object.keys(QUESTS).length,
-    secrets: secrets.filter((k) => G.flags.chests[k]).length, secretsTotal: secrets.length, steps: st.steps || 0, roadside: Object.keys(G.flags.chat).filter((k) => k.startsWith('rs:')).length, gold: G.gold, visited: G.flags.visited, bosses: G.flags.bosses, ended: !!G.flags.story.ended, ngp: G.ngp || 0, rulesOn: Object.keys(G.rules || {}).length,
+    secrets: secrets.filter((k) => G.flags.chests[k]).length, secretsTotal: secrets.length, steps: st.steps || 0, staggers: st.staggers || 0, braces: st.braces || 0, roadside: Object.keys(G.flags.chat).filter((k) => k.startsWith('rs:')).length, gold: G.gold, visited: G.flags.visited, bosses: G.flags.bosses, ended: !!G.flags.story.ended, ngp: G.ngp || 0, rulesOn: Object.keys(G.rules || {}).length,
     maxLevel: G.party.some((c) => c.level >= L.MAX_LEVEL), mastered: G.party.some((c) => L.mastered(c).length > 0), callings: Math.max(0, ...G.party.map((c) => Object.keys(c.cp || {}).length)), gems: G.party.reduce((x, c) => x + gemsUsed(c), 0),
   };
 }
