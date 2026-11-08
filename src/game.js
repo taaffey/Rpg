@@ -32,6 +32,8 @@ const cv = $('#map'), cx = cv.getContext('2d'), ov = $('#overlay');
 const SETTINGS = 'gemforge-settings-v2', TS = 32;
 let VW = 16, VH = 12; // tiles visible: adapts to the screen (phone portrait / landscape / desktop)
 let G = null;
+const setG = (v) => (G = v); // (modules cannot assign an imported binding)
+const S = { busy: false, trans: 0, miniDirty: true, optBack: 'menu' }; // engine flags several modules read and write
 const root = document.documentElement;
 const IS_IOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
 if (window.self !== window.top) root.classList.add('framed');
@@ -114,13 +116,13 @@ const traitName = (t) => (t ? TRAITS[t].name : '');
 const DEFAULT_PARTY = BROS.map(([n, look]) => [n, 'bloke', look]); // two blokes from 2026; callings come after the Goose's cellar
 const LIGHT_ARMOR = new Set(['mage', 'cleric', 'hexer', 'bard', 'alchemist']);
 function newGame(party = DEFAULT_PARTY) {
-  G = {
+  setG({
     // like FF1: the party starts at level 1, unarmed, with 400 G to arm itself at the Haven hardware shop (~205 G for the cheap weapons)
     party: party.map(([n, j, look]) => Object.assign(newChar(n, j, null, null, LIGHT_ARMOR.has(j) || j === 'bloke' ? 'cloth' : 'leather'), look ? { look } : {})),
     gold: 400, difficulty: 'normal', slot: 1,
     inv: { weapons: [], armors: [], accs: [], gems: [], items: { potion: 3 } },
     map: START.map, x: START.x, y: START.y, flags: { chests: {}, bosses: {}, seen: {}, talked: {}, visited: {}, quests: {}, qprog: {}, qitems: {}, tips: {}, bestiary: {}, story: {}, chat: {}, feats: {} }, playtime: 0,
-  };
+  });
 }
 // ---------- saves: 3 slots, autosave, migration ----------
 const BUILD = '__BUILD__'; // tools/build.mjs stamps the content hash here
@@ -218,7 +220,7 @@ function reveal() { // fog of war
   for (let y = Math.max(0, G.y - r); y <= Math.min(m.rows.length - 1, G.y + r); y++) {
     let row = seen[y], ch = false;
     for (let x = Math.max(0, G.x - r); x <= Math.min(m.rows[0].length - 1, G.x + r); x++) if ((x - G.x) ** 2 + (y - G.y) ** 2 <= r * r + r && row[x] !== '1') { row = row.slice(0, x) + '1' + row.slice(x + 1); ch = true; }
-    if (ch) { seen[y] = row; miniDirty = true; }
+    if (ch) { seen[y] = row; S.miniDirty = true; }
   }
 }
 
@@ -228,14 +230,14 @@ function layoutView() {
   const portrait = box.height > box.width * 1.1, big = Math.min(box.width, box.height) >= 560; // iPad / large windows: more of the world, not giant tiles
   const T = portrait ? box.width / (big ? 16 : 12) : Math.min(box.width / (big ? 22 : 16), box.height / (big ? 15 : 12));
   let cols = clamp(Math.round(box.width / T), 10, 26), rows = clamp(Math.round(box.height / T), 8, 20);
-  if (cols !== VW || rows !== VH) { VW = cols; VH = rows; cv.width = cols * TS; cv.height = rows * TS; miniDirty = true; }
+  if (cols !== VW || rows !== VH) { VW = cols; VH = rows; cv.width = cols * TS; cv.height = rows * TS; S.miniDirty = true; }
   const pad = $('#padL'); root.style.setProperty('--padh', (pad && pad.offsetHeight ? pad.offsetHeight + 8 : 0) + 'px'); // dialogue boxes sit above the touch pads
 }
 new ResizeObserver(() => requestAnimationFrame(layoutView)).observe($('#view'));
 addEventListener('orientationchange', () => setTimeout(layoutView, 250));
 
 // ---------- minimap / map screen ----------
-let miniDirty = true; const miniCache = { id: null, canvas: document.createElement('canvas'), sc: 2 };
+const miniCache = { id: null, canvas: document.createElement('canvas'), sc: 2 };
 function drawMini(c2, id, scale, ox, oy, t, noPlayer = false) {
   const m = MAPS[id], seen = G.flags.seen[id]; if (!seen) return;
   for (let y = 0; y < m.rows.length; y++) for (let x = 0; x < m.rows[0].length; x++) {
@@ -254,8 +256,8 @@ function miniOverlay(t) {
   const W = m.rows[0].length, H = m.rows.length, big = W > 80, VW = big ? 44 : W, VH = big ? 34 : H; // big maps show a window around the party instead of a postage stamp
   const sc = Math.max(1, Math.min(Math.floor(104 / VW), Math.floor(80 / VH)), big ? 3 : 1), w = VW * sc, h = VH * sc, ox = cv.width - w - 8, oy = 8;
   const vx0 = big ? clamp(G.x - (VW >> 1), 0, W - VW) : 0, vy0 = big ? clamp(G.y - (VH >> 1), 0, H - VH) : 0;
-  if (miniDirty || miniCache.id !== G.map || miniCache.vx0 !== vx0 || miniCache.vy0 !== vy0) { // redraw the static layer only when something was revealed or changed
-    miniCache.id = G.map; miniCache.sc = sc; miniCache.vx0 = vx0; miniCache.vy0 = vy0; miniCache.canvas.width = w; miniCache.canvas.height = h; miniDirty = false;
+  if (S.miniDirty || miniCache.id !== G.map || miniCache.vx0 !== vx0 || miniCache.vy0 !== vy0) { // redraw the static layer only when something was revealed or changed
+    miniCache.id = G.map; miniCache.sc = sc; miniCache.vx0 = vx0; miniCache.vy0 = vy0; miniCache.canvas.width = w; miniCache.canvas.height = h; S.miniDirty = false;
     const mc = miniCache.canvas.getContext('2d'), art = G.map === 'world' && TR.mapImage ? TR.mapImage(m) : null, seen = G.flags.seen[G.map] || [];
     if (!art) drawMini(mc, G.map, sc, 0, 0, 0, true);
     else { mc.imageSmoothingEnabled = true; mc.drawImage(art, vx0 * 16, vy0 * 16, VW * 16, VH * 16, 0, 0, w, h); mc.fillStyle = '#04061a'; for (let y = 0; y < VH; y++) for (let x = 0; x < VW; x++) if (seen[vy0 + y]?.[vx0 + x] !== '1') mc.fillRect(x * sc, y * sc, sc, sc); }
@@ -267,7 +269,7 @@ function miniOverlay(t) {
 
 // ---------- map rendering ----------
 const plr = { x: 256, y: 192 };
-let face = 'down', vx = 0, vy = 0, trans = 0, lastT = 0, trail = [], fv = [];
+let face = 'down', vx = 0, vy = 0, lastT = 0, trail = [], fv = [];
 const snap = () => { // place the leader, with the followers lined up behind when there is walkable room (else they share the tile and spread out once moving)
   vx = G.x; vy = G.y; const [bx, by] = { up: [0, 1], down: [0, -1], left: [1, 0], right: [-1, 0] }[face] || [0, -1], spots = [];
   for (let k = 1; k <= 3; k++) { const x = G.x + bx * k, y = G.y + by * k; if (!WALK.has(tileAt(x, y) ?? '#') || (spots.length && spots.length < k - 1)) break; spots.push({ x, y }); }
@@ -362,9 +364,9 @@ function draw(t = performance.now() / 1000) {
     cx.globalCompositeOperation = 'source-over';
   } else if (m.kind !== 'town') { cx.fillStyle = 'rgba(255,170,80,.06)'; cx.fillRect(0, 0, cv.width, cv.height); }
   miniOverlay(t);
-  if (trans > 0) { // battle-start wipe
+  if (S.trans > 0) { // battle-start wipe
     cx.fillStyle = '#000';
-    for (let r = 0; r < VH; r++) { const w = Math.min(1, trans * 1.5 - (r % 6) * 0.08) * cv.width; if (w > 0) cx.fillRect(r % 2 ? cv.width - w : 0, r * TS, w, TS); }
+    for (let r = 0; r < VH; r++) { const w = Math.min(1, S.trans * 1.5 - (r % 6) * 0.08) * cv.width; if (w > 0) cx.fillRect(r % 2 ? cv.width - w : 0, r * TS, w, TS); }
   }
   $('#loc').textContent = m.kind === 'outdoor' ? REGION_NAME[regionOf()] : m.name; $('#gold').textContent = `${G.gold} G`;
 }
@@ -393,27 +395,26 @@ function tick(now) {
   if (!G) return drawTitle(now / 1000);
   G.playtime = (G.playtime || 0) + dt; if (rain > 0) rain = Math.max(0, rain - dt);
   moveTick(dt);
-  if (!inOverlay()) { const still = vx === G.x && vy === G.y && !trans && !busy && !route.length && !fv.some((f) => f.mv); if (!still || (++idleFrame & 1)) draw(now / 1000); } // standing still redraws at ~30fps: nothing on the map animates faster, and phones run cooler
+  if (!inOverlay()) { const still = vx === G.x && vy === G.y && !S.trans && !S.busy && !route.length && !fv.some((f) => f.mv); if (!still || (++idleFrame & 1)) draw(now / 1000); } // standing still redraws at ~30fps: nothing on the map animates faster, and phones run cooler
 }
 let idleFrame = 0, rain = 0; // rain: seconds of a passing shower left (the roadside 'rain' moment)
 requestAnimationFrame(tick);
 const frame = () => new Promise((r) => requestAnimationFrame(r));
-async function transition() { sfx('encounter'); for (trans = 0.02; trans < 1.2; trans += 0.065) await frame(); trans = 1; await sleep(60); }
+async function transition() { sfx('encounter'); for (S.trans = 0.02; S.trans < 1.2; S.trans += 0.065) await frame(); S.trans = 1; await sleep(60); }
 function banner(text) { const b = $('#banner'); b.textContent = text; b.classList.remove('show'); void b.offsetWidth; b.classList.add('show'); }
 function goto(id, x, y) { rain = 0; diag(`go ${G?.map} -> ${id} (${x},${y})`); // (a wipe wakes you in the last town you were in: G.home)
   const first = !G.flags.visited[id]; G.map = id; G.x = x; G.y = y; G.flags.visited[id] = true; if (MAPS[id].kind === 'town') G.home = id === 'haven' ? null : { map: id, x: MAPS[id].spawn.x, y: MAPS[id].spawn.y }; snap(); music(musicFor()); sfx('door');
   banner(id === 'world' ? REGION_NAME[regionOf()] : MAPS[id].name); G.region = regionOf(); layoutView(); draw(); autosave();
   arrive(id, first);
 }
-let busy = false;
 function mapShake() { if (!OPT.shake) return; cv.classList.remove('shake'); void cv.offsetWidth; cv.classList.add('shake'); }
 async function chartTheLand() { // the overworld bakes in the background from the moment the page loads; if the party gets there first (a save that loads onto the map, a quick ferry), show a short loader instead of freezing
   if (!TR.bakeReady || TR.bakeReady()) return;
-  const was = busy; busy = true; let dots = 0; const el = document.createElement('div'); el.id = 'charting'; el.textContent = 'Charting the land'; document.body.appendChild(el);
-  await TR.finishBake(() => { el.textContent = 'Charting the land' + '.'.repeat(1 + (++dots >> 2) % 4); }); el.remove(); busy = was;
+  const was = S.busy; S.busy = true; let dots = 0; const el = document.createElement('div'); el.id = 'charting'; el.textContent = 'Charting the land'; document.body.appendChild(el);
+  await TR.finishBake(() => { el.textContent = 'Charting the land' + '.'.repeat(1 + (++dots >> 2) % 4); }); el.remove(); S.busy = was;
 }
 async function step(dx, dy) {
-  if (inOverlay() || busy || Math.abs(vx - G.x) + Math.abs(vy - G.y) > 0.45) return;
+  if (inOverlay() || S.busy || Math.abs(vx - G.x) + Math.abs(vy - G.y) > 0.45) return;
   const m = mapDef(), nx = G.x + dx, ny = G.y + dy, t = tileAt(nx, ny);
   face = dx > 0 ? 'right' : dx < 0 ? 'left' : dy > 0 ? 'down' : 'up';
   const npc = npcAt(nx, ny); if (npc) { npc.dir = { up: 'down', down: 'up', left: 'right', right: 'left' }[face]; draw(); return talk(npc); } // they turn to face you
@@ -429,7 +430,7 @@ async function step(dx, dy) {
   const sec = m.secrets?.[`${nx},${ny}`]; if (sec && !G.flags.chests[chestKey(nx, ny)]) return openChest(nx, ny, sec);
   tip('move', TOUCH ? 'Tap a spot to travel there, or press and slide on the pad. A talks/checks, B opens the menu.' : 'Arrows or WASD to walk. Esc opens your party menu. A yellow ! marks someone with news.');
   if (m.kind === 'outdoor') { const reg = regionOf(); if (reg !== G.region) { G.region = reg; banner(REGION_NAME[reg]); music(musicFor()); } }
-  if (m.boss && t === 'X' && !G.flags.bosses[m.boss.id]) { busy = true; mapShake(); sfx('crit'); await sleep(350); busy = false; return battle([m.boss.id], m.boss.id); }
+  if (m.boss && t === 'X' && !G.flags.bosses[m.boss.id]) { S.busy = true; mapShake(); sfx('crit'); await sleep(350); S.busy = false; return battle([m.boss.id], m.boss.id); }
   const zoneEnc = G.map === 'world' ? { 4: 'hops', 5: 'embers', 6: 'jungle' }[regAt(nx, ny)] : null; // the outlying and jungle areas have their own monsters
   const table = zoneEnc || m.enc || m.encByTile?.[t];
   if (table && !(m.safe || []).some(([sx2, sy2, r]) => Math.hypot(nx - sx2, ny - sy2) <= r) && Math.random() < m.rate * (G.map === 'world' && roadAt(nx, ny) ? 0.35 : 1) * (ENC_MUL[OPT.enc] ?? 1) * (G.rules?.rush ? 2 : 1)) { // the roads are well-trodden: far fewer ambushes on them, so the long legs between towns are a stroll
@@ -445,7 +446,7 @@ async function step(dx, dy) {
 let sinceRoad = 0;
 async function roadside() {
   (G.stats ||= { wins: 0 }).steps = (G.stats.steps || 0) + 1;
-  if (++sinceRoad < 45 || busy || inOverlay() || mapDef().rate === 0) return; // rate 0 is the tests' "nothing random happens" switch
+  if (++sinceRoad < 45 || S.busy || inOverlay() || mapDef().rate === 0) return; // rate 0 is the tests' "nothing random happens" switch
   const reg = regionOf(), seen = G.flags.chat, pool = ROADSIDE.filter((e) => (!e.regions || e.regions.includes(reg)) && cond(e.if)), fresh = pool.filter((e) => !seen[`rs:${e.id}`]);
   if (!pool.length || Math.random() > (fresh.length ? 0.016 : 0.004)) return;
   const list = fresh.length ? fresh : pool, e = list[Math.floor(Math.random() * list.length)];
@@ -492,7 +493,7 @@ addEventListener('keydown', (e) => {
   const kk = e.key.length === 1 ? e.key.toLowerCase() : e.key; // Shift / Caps Lock must not break walking
   if (KEYS[kk]) { e.preventDefault(); route = []; if (!keysDown.includes(kk)) keysDown.push(kk); if (!e.repeat) step(...KEYS[kk]); }
   else if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); interact(); }
-  else if ((e.key === 'Escape' || e.key === 'm') && !inOverlay() && !busy) mainMenu();
+  else if ((e.key === 'Escape' || e.key === 'm') && !inOverlay() && !S.busy) mainMenu();
   else if (e.key === 'n' && !inOverlay()) { OPT.minimap = !OPT.minimap; applyOptions(); }
 });
 // ---------- touch controls ----------
@@ -516,7 +517,7 @@ if (cross) {
   ['pointerup', 'pointercancel', 'lostpointercapture'].forEach((ev) => cross.addEventListener(ev, (e) => { if (e.pointerId === pid) release(); }));
 }
 const interact = () => { // A button / Enter on the map: talk to or open whatever you face
-  if (!G || inOverlay() || busy) return;
+  if (!G || inOverlay() || S.busy) return;
   const [dx, dy] = DIRV[face] || [0, 1], nx = G.x + dx, ny = G.y + dy, npc = npcAt(nx, ny);
   if (npc) { npc.dir = { up: 'down', down: 'up', left: 'right', right: 'left' }[face]; return talk(npc); }
   if (tileAt(nx, ny) === 'C' && !G.flags.chests[chestKey(nx, ny)]) return openChest(nx, ny);
@@ -524,11 +525,11 @@ const interact = () => { // A button / Enter on the map: talk to or open whateve
 };
 document.querySelectorAll('.pad button[data-d]').forEach((b) => {
   const d = b.dataset.d;
-  if (d === 'menu') b.addEventListener('click', () => { if (G && !inOverlay() && !busy) { route = []; mainMenu(); } });
-  else if (d === 'map') b.addEventListener('click', () => { if (G && !inOverlay() && !busy) { route = []; ACT.mapscreen(); } });
+  if (d === 'menu') b.addEventListener('click', () => { if (G && !inOverlay() && !S.busy) { route = []; mainMenu(); } });
+  else if (d === 'map') b.addEventListener('click', () => { if (G && !inOverlay() && !S.busy) { route = []; ACT.mapscreen(); } });
   else if (d === 'a') b.addEventListener('pointerdown', (e) => { e.preventDefault(); route = []; interact(); });
 });
-$('#hudmenu').addEventListener('click', () => { if (G && !inOverlay() && !busy) mainMenu(); });
+$('#hudmenu').addEventListener('click', () => { if (G && !inOverlay() && !S.busy) mainMenu(); });
 // path finding for tap-to-travel: breadth-first over walkable tiles; portals and the boss tile only as the final step
 const solidAt = (x, y) => { const m = mapDef(); return !walkable(tileAt(x, y)) || !!npcAt(x, y) || decorAt(x, y) || !!m.blocks?.has(`${x},${y}`); };
 function findPath(tx, ty) {
@@ -587,7 +588,7 @@ function moveTick(dt) { // glide at constant speed; when a step lands and input 
       if (Math.abs(rx) > 1e-6) vx += Math.sign(rx) * Math.min(d, Math.abs(rx)); else vy += Math.sign(ry) * Math.min(d, Math.abs(ry));
       continue;
     }
-    if (!G || inOverlay() || busy) { if (inOverlay()) route = []; break; }
+    if (!G || inOverlay() || S.busy) { if (inOverlay()) route = []; break; }
     const map0 = G.map, at = `${G.x},${G.y}`;
     if (!nextMove() || G.map !== map0 || `${G.x},${G.y}` === at) break;
   }
@@ -602,7 +603,7 @@ addEventListener('blur', () => { keysDown.length = 0; held = null; });
 ACT.close = hide;
 
 function openChest(x, y, secret = null) { // secret: loot of a hidden treasure spot (m.secrets), found by stepping on it
-  const c = secret || mapDef().chests?.[`${x},${y}`] || { gold: 50 }; G.flags.chests[chestKey(x, y)] = true; miniDirty = true; sfx('chest');
+  const c = secret || mapDef().chests?.[`${x},${y}`] || { gold: 50 }; G.flags.chests[chestKey(x, y)] = true; S.miniDirty = true; sfx('chest');
   const got = [];
   for (const k of ['weapons', 'armors', 'accs', 'gems']) for (const id of c[k] || []) { G.inv[k].push(id); got.push(lootName(k, id)); }
   for (const [id, n] of Object.entries(c.items || {})) { G.inv.items[id] = (G.inv.items[id] || 0) + n; got.push(`${ITEMS[id].name} ×${n}`); }
@@ -787,7 +788,7 @@ ACT.sell = (k, id) => {
 
 // ---------- title / main menu ----------
 function title() {
-  G = null; optBack = 'title'; const saved = anySave();
+  setG(null); S.optBack = 'title'; const saved = anySave();
   show(`<div class="tagline">Two brothers. Two beards. One bell they really shouldn't have rung.</div>
   <div class="titlecmd">${btn('new', `${ic('star')}New Game`, '', '', saved ? '' : 'primary')}${btn('cont', `${ic('save')}Continue`, '', '', saved ? 'primary' : '', !saved, saved ? 'autofocus' : '')}${btn('opts', `${ic('options')}Options`)}</div>`, 'title'); // a returning player lands on Continue
   ov.insertAdjacentHTML('beforeend', `<div class="ver">v${VERSION} · made in code</div>`);
@@ -884,7 +885,7 @@ async function loadSlot(i) {
   const d = readSlot(i); if (!d?.G || loadingSlot) return;
   let g; try { g = migrate(d.G); } catch (err) { console.error(err); sfx('error'); return toast('⚠ That save looks damaged. Try Restore with a backup code (Options).', 4600); }
   if (g.map === 'world') { loadingSlot = true; try { await chartTheLand(); } finally { loadingSlot = false; } } // a save that loads onto the overworld: bake it behind a loader, not a frozen frame
-  G = g; G.slot = i; snap(); diag(`loaded slot ${i} at ${G.map}`); music(musicFor()); hide(); banner(mapDef().name); toast(`Loaded slot ${i}`);
+  setG(g); G.slot = i; snap(); diag(`loaded slot ${i} at ${G.map}`); music(musicFor()); hide(); banner(mapDef().name); toast(`Loaded slot ${i}`);
   if (G.flags.worldMoved) { delete G.flags.worldMoved; toast('The world has been redrawn since this save. Fog reset' + (G.map === 'world' ? ' and you are back at Haven\'s gate' : '') + '.', 5200); }
 }
 // ---------- party chat (menu > CHAT): skits about where you are and what just happened (STORY.chat) ----------
@@ -1002,7 +1003,6 @@ ACT.journal = () => {
     return (act.length ? act.map(([id, q]) => `<div class="card ${questDone(id) ? 'done' : ''}"><b>${questDone(id) ? '❓' : '◇'} ${esc(q.title)}</b> <span class="dim">(${questProgress(id)})</span><div class="dim">${questDone(id) ? 'Return to ' + esc(q.giver) + ' to claim your reward.' : esc(q.lines.active[0])}</div></div>`).join('') : '<div class="dim">No active quests. Folk in town sometimes need a hand.</div>') + (dn.length ? `<div class="dim">Completed: ${dn.map(([, q]) => '✔ ' + esc(q.title)).join(' · ')}</div>` : ''); })()}
   <h3>💡 Tips</h3><div class="dim">${gemsOn() ? `• Gems rewrite skills: try ${GEMS.wide.name} + a heal, ${GEMS.echo.name} on a big spell, ${GEMS.stun.name} on a fast skill.<br>` : ''}• Battles earn CP for each hero's calling; ranks teach abilities that are kept for good. Change callings from the menu.<br>• Inns heal and save. Frostholm's shops sell much better gear.<br>• Hermits and oracles roam the wilds. Listen to them, and watch the ground for a faint glint of buried treasure.</div><div class="foot">${btn('menu', 'Back', '', '', 'primary')}</div>`);
 };
-let optBack = 'menu';
 function optionsScreen() {
   const onOff = (v) => (v ? 'On' : 'Off');
   show(`<h2>⚙ Options</h2>
@@ -1065,7 +1065,7 @@ ACT.bkgo = async () => {
   try { for (const i of ids) localStorage.setItem(SLOT_KEY(i), slots[i]); } catch { sfx('error'); return note('Could not write the saves: storage is full or blocked.', true); }
   restorePending = null; sfx('levelup'); toast(`📥 Restored ${ids.length} save${ids.length > 1 ? 's' : ''}`, 2600); ACT.cont();
 };
-ACT.optback = () => (optBack === 'title' && !G ? title() : mainMenu());
+ACT.optback = () => (S.optBack === 'title' && !G ? title() : mainMenu());
 ACTIN.music = (v) => { OPT.music = v / 100; applyOptions(); ov.querySelector('[data-in=music]').previousElementSibling.querySelector('b').textContent = `${v}%`; };
 ACTIN.sfx = (v) => { OPT.sfx = v / 100; applyOptions(); ov.querySelector('[data-in=sfx]').previousElementSibling.querySelector('b').textContent = `${v}%`; sfx('click'); };
 ACT.optdiff = () => { const k = Object.keys(DIFFICULTY); G.difficulty = k[(k.indexOf(G.difficulty) + 1) % k.length]; optionsScreen(); };
@@ -1250,13 +1250,13 @@ function stageKind(bossId) {
   return r === 'snow' ? 'snow' : r === 'swamp' ? 'swamp' : r === 'ember' ? 'embers' : r === 'desert' ? 'desert' : woods ? 'forest' : 'world';
 }
 async function battle(groupIds, bossId = null) {
-  if (BT || busy) return; // never run two battles at once (BT is only set after the start-of-battle wipe, so check busy too)
+  if (BT || S.busy) return; // never run two battles at once (BT is only set after the start-of-battle wipe, so check busy too)
   try { await battleInner(groupIds, bossId); } catch (err) { // never leave the player stuck in a broken battle
-    console.error(err); try { BT?.stage?.stop(); } catch {} BT = null; busy = false; trans = 0; hide(); music(musicFor()); toast('⚠ Battle error: back to the map', 3500);
+    console.error(err); try { BT?.stage?.stop(); } catch {} BT = null; S.busy = false; S.trans = 0; hide(); music(musicFor()); toast('⚠ Battle error: back to the map', 3500);
   }
 }
 async function battleInner(groupIds, bossId = null) {
-  busy = true; diag(`fight ${groupIds.join(',')}${bossId ? ' (boss)' : ''} at ${G.map}`);
+  S.busy = true; diag(`fight ${groupIds.join(',')}${bossId ? ' (boss)' : ''} at ${G.map}`);
   const mod = { ...DIFFICULTY[G.difficulty || 'normal'].mod }, ps = !bossId && PARTY_SCALE[G.party.length];
   if (ps) { mod.hp *= ps.hp; mod.atk *= ps.atk; mod.mag *= ps.atk; }
   for (const k of ['hp', 'atk', 'mag', 'def', 'reward']) mod[k] = (mod[k] ?? 1) * ngMul(k);
@@ -1290,14 +1290,14 @@ async function battleInner(groupIds, bossId = null) {
     renderBattle();
   }
   if (b.over === 'win') { BT.stage.victory(); sfx('levelup'); renderBattle(); await sleep(1200); }
-  BT.stage.stop(); trans = 0;
+  BT.stage.stop(); S.trans = 0;
   b.p.forEach((x) => { x.ch.hp = x.hp; x.ch.mp = x.mp; });
   if (b.over === 'fled') { sfx('flee'); const q = quip('flee', 0.6); if (q) toast(q.replace(/<[^>]+>/g, ''), 2600); }
   diag(`fight over: ${b.over} after ${b.turn} rounds, party ${b.p.map((x) => `${x.hp}/${x.maxhp}`).join(' ')}`);
   if (b.over === 'win') await victory(b, bossId);
   else if (b.over === 'lose') await defeat();
   else { hide(); }
-  BT = null; busy = false; if (G) { if (b.over !== 'lose') music(musicFor()); draw(); if (b.over === 'win') autosave(); }
+  BT = null; S.busy = false; if (G) { if (b.over !== 'lose') music(musicFor()); draw(); if (b.over === 'win') autosave(); }
 }
 function renderBattle() {
   const { b, ask } = BT;
@@ -1455,7 +1455,7 @@ async function victory(b, bossId) {
       else if (gems) lines.push(G.inv.gems.length ? 'The heart pulses. The dull stones in your pack wake with it: they were gems all along.' : 'The heart pulses, as if calling to stones like itself.'); }
   }
   if (bossId) G.flags.bosses[bossId] = true;
-  miniDirty = true;
+  S.miniDirty = true;
   for (const e of b.e) { const r2 = (G.flags.bestiary[e.id] ||= { seen: 1, kills: 0 }); r2.kills++; }
   if (G.party.some((c) => c.hp > 0 && c.hp < maxOf(c).hp * 0.35) && tipOnce('rest')) lines.push('💡 Low on HP? Inns heal the whole party and save your game. Pints work from the Items menu.');
   questLog(lines);
