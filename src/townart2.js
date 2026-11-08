@@ -74,7 +74,7 @@ export function makeFestTowns(K) {
   });
   const ground = (theme, get, x, y, t) => { const T = THEMES[theme]; return waterTile(T, T.kindAt(get, x, y), x, y, Math.floor(t * 5) % WF8); };
 
-  // ---------------------------------------------------------------- per-map cache and the draw hooks used by game.js
+  // ---------------------------------------------------------------- per-map cache and the draw hooks used by world.js
   const MC = new WeakMap();
   const state = (m) => { let s = MC.get(m); if (!s) { s = { g: buildGround(m, THEMES[m.theme]) }; MC.set(m, s); } return s; };
   const objects = (theme, get, x, y, t, out, m) => THEMES[theme].tree(get, x, y, out, m);

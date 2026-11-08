@@ -513,7 +513,7 @@ Object.assign(ENEMIES, {
   storm_elemental: E('Weather App Elemental', '🌩️', 320, 14, 16, 58, 11, 146, 70, [['sparkbolt', 2], ['thunderclap', 1], ['hexbolt', 1]], { weak: ['ice'], res: ['bolt', 'fire'] }),
 });
 ENEMIES.ice_golem.elite = ['crystal_golem', 0.08];
-// Greenmarch: the first four groups are what a level-1 party meets near Haven (the distance ramp in game.js slices this list)
+// Greenmarch: the first four groups are what a level-1 party meets near Haven (the distance ramp in world.js slices this list)
 ENCOUNTERS.world = [['slime'], ['slime', 'slime'], ['goblin'], ['goblin', 'slime'], ['hornet'], ['wolf'], ['shroom', 'slime'], ['spider'], ['wolf', 'wolf'], ['boar'], ['goblin', 'goblin', 'wolf'], ['bandit', 'goblin'], ['sapling', 'shroom'], ['hornet', 'hornet'], ['boar', 'slime'], ['bandit', 'bandit'], ['sapling', 'spider']];
 ENCOUNTERS.jungle = [...ENCOUNTERS.world, ['spider', 'spider'], ['hornet', 'hornet', 'spider'], ['boar', 'wolf'], ['wolf', 'wolf', 'boar'], ['spider', 'hornet', 'wolf']]; // the Jade Jungle: grassland monsters, thicker and pricklier
 ENCOUNTERS.swamp.push(['bog_toad'], ['leech', 'leech'], ['wisp', 'bog_slime'], ['lizardman'], ['bog_toad', 'leech'], ['lizardman', 'wisp'], ['wisp', 'wisp']);

@@ -739,7 +739,7 @@ function snowmanPix() {
 function puffPix(k) { return once('puff' + k, () => { const r = 1.6 + k * 0.6, p = new Pix(12, 12); for (let y = 0; y < 12; y++) for (let x = 0; x < 12; x++) { const d = Math.hypot(x + 0.5 - 6, y + 0.5 - 6) / r; if (d > 1) continue; p.set(x, y, pk(k > 3 ? '#c8ccd480' : d > 0.7 ? '#b8bcc8' : x + y < 11 ? '#f4f6fa' : '#d8dce4')); } return canv(p); }); }
 function gullPix(f) { return once('gull' + f, () => { const r = f ? ['.k.....k.', '.ww...ww.', '..wwwww..', '....k....'] : ['.........', 'ww.....ww', '.wwwwwww.', '....k....']; const p = new Pix(11, 6); r.forEach((s, j) => [...s].forEach((c, i) => c !== '.' && p.set(i + 1, j + 1, pk(c === 'k' ? '#404048' : '#ffffff')))); outline(p, 0.5); return canv(p); }); }
 
-// ---------------------------------------------------------------- per-map cache and the draw hooks used by game.js
+// ---------------------------------------------------------------- per-map cache and the draw hooks used by world.js
 const MC = new WeakMap();
 function mapState(m) {
   let s = MC.get(m); if (s) return s;

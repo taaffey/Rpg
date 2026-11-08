@@ -1,5 +1,5 @@
 // Save backups: one pasteable text code for all save slots. (Safari can clear a site's storage after a week unused, and a code also
-// moves a save between phone and iPad.) Pure: no DOM, no localStorage; game.js reads and writes the slots.
+// moves a save between phone and iPad.) Pure: no DOM, no localStorage; options.js reads and writes the slots.
 const APP = 'bearded-bros', TAG_RAW = 'BB0:', TAG_ZIP = 'BB1:';
 
 const toB64 = (u8) => { let s = ''; for (let i = 0; i < u8.length; i += 0x8000) s += String.fromCharCode(...u8.subarray(i, i + 0x8000)); return btoa(s); };

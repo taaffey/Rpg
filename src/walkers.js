@@ -1,5 +1,5 @@
 // ===== Map characters: party members and townsfolk walking around towns and the overworld =====
-// Interface used by game.js draw():
+// Interface used by world.js draw():
 //   walker(job, dir, frame)     -> canvas for a party member; dir 'down' | 'up' | 'left' | 'right'; frame 0 = standing, 1..3 = walk cycle
 //   npcWalker(type, dir, frame) -> canvas for a townsperson (types are the keys of NPC_STYLE in art2.js)
 // 16x24 SNES-style chibi field sprites (taller when a spear/staff pokes above the head), painted from layered

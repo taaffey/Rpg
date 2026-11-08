@@ -1,4 +1,4 @@
-// Feats: silly achievements, shown in the menu. Pure data: each test reads a snapshot `e` of the game that game.js builds (featEnv).
+// Feats: silly achievements, shown in the menu. Pure data: each test reads a snapshot `e` of the game that menus.js builds (featEnv).
 // e = { wins, wipes, rides, phone, used{itemId: n}, kills(enemyId), bestiary, bestiaryTotal, quests, questsTotal, secrets, secretsTotal,
 //       steps, roadside (moments seen), gold, visited{mapId}, bosses{bossId}, ended, ngp, rulesOn, maxLevel(any hero at the cap), mastered(any hero), callings(most learned by one hero), gems(socketed in total) }
 // prog (optional) returns [now, goal] so the list can show a counter on feats that take a while.

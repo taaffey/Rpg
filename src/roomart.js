@@ -568,7 +568,7 @@ const starPix = () => once('star', () => { const p = new Pix(5, 5); for (const [
 function buildDungeon(m) {
   const th = m.theme, T = DUN[th], rows = m.rows, W = rows[0].length, H = rows.length, MG = 3, TW = W + 2 * MG, TH = H + 2 * MG, GW = TW * 16, GH = TH * 16, O = MG * 16, P = new Pix(GW, GH);
   const ch = (tx, ty) => (tx < 0 || ty < 0 || tx >= W || ty >= H ? '#' : rows[ty][tx]), isW = (tx, ty) => ch(tx, ty) === '#';
-  const torch = (tx, ty) => isW(tx, ty) && ch(tx, ty + 1) === '.' && (tx * 5 + ty * 3) % 7 === 0; // where game.js hangs its torches
+  const torch = (tx, ty) => isW(tx, ty) && ch(tx, ty + 1) === '.' && (tx * 5 + ty * 3) % 7 === 0; // where world.js hangs its torches
   for (let py = 0; py < GH; py++) for (let px = 0; px < GW; px++) {
     const x = px - O, y = py - O, tx = x >> 4, ty = y >> 4, lx = x & 15, ly = y & 15; let col;
     if (isW(tx, ty)) {
@@ -702,7 +702,7 @@ export function ground(theme, get, x, y, t) {
 }
 export function objects() {}
 
-// ---------------------------------------------------------------- per-map cache and the draw hooks used by game.js
+// ---------------------------------------------------------------- per-map cache and the draw hooks used by world.js
 const MC = new WeakMap();
 const mapState = (m) => { let s = MC.get(m); if (!s) { s = m.theme === 'interior' ? buildRoom(m) : buildDungeon(m); MC.set(m, s); } return s; };
 const canvasItem = (s) => ({ x: -s.MG, y: -s.MG, w: 1, h: 1, z: 0, draw: (ctx, X, Y, TS) => { const k = TS / 16, sx0 = Math.max(0, Math.floor(-X / k)), sy0 = Math.max(0, Math.floor(-Y / k)), sw = Math.min(s.GW - sx0, Math.ceil(ctx.canvas.width / k) + 2), sh = Math.min(s.GH - sy0, Math.ceil(ctx.canvas.height / k) + 2); if (sw > 0 && sh > 0) ctx.drawImage(s.cv, sx0, sy0, sw, sh, X + sx0 * k, Y + sy0 * k, sw * k, sh * k); } });

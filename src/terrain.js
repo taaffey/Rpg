@@ -1,5 +1,5 @@
 // ===== Overworld renderer (16-bit style): the whole world is painted once into a pixel bake, then served per tile =====
-// Interface used by game.js draw():
+// Interface used by world.js draw():
 //   isTheme(theme)                         -> true if this module draws that map theme
 //   ground(theme, get, x, y, t)            -> 16x16 canvas for the ground of tile (x, y); get(x, y) = map char, t = seconds
 //   objects(theme, get, x, y, t, out, m)   -> push draw items for tile (x, y) into out

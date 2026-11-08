@@ -1,5 +1,5 @@
 // Roadside moments: short scenes that can happen while walking the overworld, so the long legs between towns have a bit of life in them.
-// Rare (see roadside() in game.js), never repeated until every one that fits has been seen, and a few carry a small gift or a diegetic hint
+// Rare (see roadside() in world.js), never repeated until every one that fits has been seen, and a few carry a small gift or a diegetic hint
 // about an optional place the party has not visited yet. `regions` uses regionOf() names (omit = anywhere); `if` is a scene condition
 // (v:<map> visited, p:<name> in the party). Lines: { s, t } with s = 'adam' | 'devon' | 'brenna' | 'wendell' | 'n' (narration) | a cast key below.
 import { STORY } from './data.js';

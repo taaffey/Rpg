@@ -1,4 +1,4 @@
-// Static game tables split out of game.js (no runtime state in here).
+// Static game tables split out of the game modules (no runtime state in here).
 import { KEY_ITEMS } from "./data.js";
 // New Game+ house rules: optional handicaps picked when a run begins, each with a bonus to EXP and gold
 export const RULES = {

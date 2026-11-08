@@ -18,7 +18,7 @@ const loot = (o, where) => {
 };
 for (const [sid, s] of Object.entries(SHOPS)) for (const [k, ids] of Object.entries(s.stock)) for (const id of ids) { has(k, id, `shop ${sid}`); if (DB[k]?.[id] && !(DB[k][id].price > 0)) errs.push(`shop ${sid}: ${id} has no price`); }
 for (const [mid, m] of Object.entries(MAPS)) for (const [pos, c] of Object.entries({ ...(m.chests || {}), ...(m.secrets || {}) })) loot(c, `chest ${mid}@${pos}`);
-// quest items: every find/deliver item has a display name in game.js; every find item sits in some chest; every deliver quest has a recipient
+// quest items: every find/deliver item has a display name in gamedata.js; every find item sits in some chest; every deliver quest has a recipient
 { const gsrc = readFileSync(new URL('../src/gamedata.js', import.meta.url), 'utf8'), qi = gsrc.match(/const QITEM = (\{.*\});/), QITEM = qi ? Function('KEY_ITEMS', `return (${qi[1]})`)(KEY_ITEMS) : {};
   const inChests = new Set(Object.values(MAPS).flatMap((m) => Object.values({ ...(m.chests || {}), ...(m.secrets || {}) }).map((c) => c.qitem).filter(Boolean)));
   const recv = new Set(Object.values(MAPS).flatMap((m) => (m.npcs || []).map((n) => n.deliver).filter(Boolean)));
@@ -59,8 +59,8 @@ for (const b of Object.values(BOSSES)) for (const id of b.loot.weapons || []) sr
 for (const d of Object.values(DROPS)) for (const s of [d.common, d.rare]) if (s?.[0] === 'weapons') src.add(s[1]);
 for (const q of Object.values(QUESTS)) for (const id of q.reward.weapons || []) src.add(id);
 for (const wid of Object.keys(WEAPONS)) if (!src.has(wid)) errs.push(`weapon ${wid} cannot be obtained anywhere`);
-// the new-game inventory and party in game.js
-const game = readFileSync(new URL('../src/game.js', import.meta.url), 'utf8'), ng = game.slice(game.indexOf('function newGame('), game.indexOf('function migrate('));
+// the new-game inventory and party in saves.js
+const game = readFileSync(new URL('../src/saves.js', import.meta.url), 'utf8'), ng = game.slice(game.indexOf('function newGame('), game.indexOf('function migrate('));
 const inv = ng.match(/inv: (\{.*\}),\s*$/m);
 if (!inv) errs.push('could not find the newGame() inventory');
 else { const o = Function(`return (${inv[1]})`)(); loot(o, 'newGame inventory'); }
