@@ -820,7 +820,7 @@ export const STORY = {
 
 // Party Chat (menu > CHAT): short skits. The first unseen match plays (specific `at` beats general), then they cycle.
 // at (optional): a map id ('haven', 'haven_inn', 'cellar', 'cavern', 'crypt', 'spire', 'frostholm', 'mirewood', 'storm', 'ruins', 'world', 'haven_guild', 'frost_inn', 'mire_inn', ...)
-//   or 'region:green' | 'region:plains' | 'region:snow' | 'region:swamp' | 'region:desert' (overworld regions), or 'kind:dungeon' | 'kind:town' | 'kind:interior'.
+//   or 'region:green' | 'region:snow' | 'region:swamp' | 'region:desert' | 'region:autumn' | 'region:ember' | 'region:jungle' | 'region:obsidian' (overworld regions: see regionAt in world.js), or 'kind:dungeon' | 'kind:town' | 'kind:interior'.
 // if: the usual condition string (wyrm, lich, titan, storm_drake, sphinx, big_gary, s:cellar, s:called, s:wendell, s:met, s:gems, v:<map>, q:<quest>, p:brenna, p:wendell; ! negates, a|b either).
 const C = (s, t) => ({ s, t });
 STORY.chat = [
@@ -849,7 +849,7 @@ STORY.chat = [
   { id: 'loyalty', at: 'kind:interior', if: 's:called', lines: [C('devon', 'Bro, do you think they do a loyalty card here?'), C('adam', 'They barely do doors.')] },
   // ---- the overworld
   { id: 'openworld', at: 'region:green', if: 's:called !wyrm', lines: [C('devon', 'Open world, bro. We can go anywhere we want.'), C('adam', 'East, to the Ashen Cavern. That\'s where the Wyrm is. Bring ice.'), C('devon', 'Anywhere we want... as long as it\'s east.')] },
-  { id: 'plains', at: 'region:plains', lines: [C('devon', 'Massive empty plains. Proper epic-walking-music vibes.'), C('adam', 'Watch the ground. The hermit said treasure hides. North-west, under the twin peaks.')] },
+  { id: 'plains', at: 'region:green', lines: [C('devon', 'Massive empty plains. Proper epic-walking-music vibes.'), C('adam', 'Watch the ground. The hermit said treasure hides. North-west, under the twin peaks.')] },
   { id: 'snowfields', at: 'region:snow', lines: [C('adam', 'Fire for the yetis. Stay close, Dev.'), C('devon', 'Close to you or close to the fire?'), C('adam', 'Both. Ideally at once.'), C('wendell', 'I once wrestled a yeti on these very fields! Or a large man in a coat. It was dark.')] },
   { id: 'bogshoes', at: 'region:swamp', lines: [C('devon', 'My shoes are full of bog.'), C('brenna', 'That\'s what you get for wearing cargo shorts to the end of the world.'), C('adam', 'The Crypt\'s out here somewhere. Holy light and fire for the dead.')] },
   { id: 'desert', at: 'region:desert', lines: [C('devon', 'It\'s like a beach but somebody forgot the sea.'), C('adam', 'The Oracle said ice and darkness for the Sphinx, and not to go in under-levelled. And drink water.')] },
@@ -890,6 +890,13 @@ STORY.chat = [
   { id: 'cold_store', at: 'frost_shop', lines: [C('devon', 'A Cold Store. It\'s a shop with a fridge for a roof.'), C('adam', 'Buy a Sunday Roast for the road. It heals the most.'), C('devon', 'Ten roasts. Roast potatoes. Roast everything.')] },
   { id: 'car_boot', at: 'mire_shop', lines: [C('devon', 'Bro. It\'s a car boot sale. Reckon they\'ve got another bell?'), C('adam', 'No.'), C('devon', 'Just a small bell.'), C('adam', 'Devon. No bells.'), C('brenna', 'Put it on the sign. NO BELLS.')] },
   { id: 'guild_rota', at: 'haven_guild', if: 's:called', lines: [C('devon', 'Barmaid, Bouncer, Chancer... it\'s just a pub rota, bro.'), C('adam', 'The bell grabbed us from a pub. It picks the staff it knows.'), C('devon', 'Where do I apply for Landlord?'), C('adam', 'It isn\'t a calling. Yet.')] },
+  { id: 'jungle_walk', at: 'region:jungle', lines: [C('devon', 'Adam, something is watching us from the trees.'), C('adam', 'It is a parrot.'), C('devon', 'It has seen my phone. It knows about the three percent.'), C('adam', 'It does not know about the three percent.'), C('devon', 'It just did the noise. The charging noise. It KNOWS.')] },
+  { id: 'chippy_chat', at: 'wayside_chippy', lines: [C('devon', 'Eleven miles from the sea and the fish is FRESH. How, Adam? HOW?'), C('adam', 'Do not ask the chippy how.'), C('devon', 'I asked him how.'), C('adam', 'What did he say?'), C('devon', '"Batter." That is all he said. "Batter."')] },
+  { id: 'stones_chat', at: 'wayside_stones', lines: [C('devon', 'I have a theory about the stones. Giants. Skittles.'), C('adam', 'The Keeper said that.'), C('devon', 'Great minds, bro. Great, dumb minds.'), C('adam', 'Do not lean on the wobbly one.'), C('devon', 'It is leaning on ME.')] },
+  { id: 'bog_chat', at: 'wayside_bogshed', lines: [C('devon', 'Bog snorkelling. Adam. We could win this. I have been in a bog before.'), C('adam', 'That was a bath. With a lot of leaves.'), C('devon', 'A swamp bath, Adam. Basically a bog.'), C('adam', 'It was a Tuesday and you had lost the plug.')] },
+  { id: 'oasis_chat', at: 'wayside_oasis', lines: [C('devon', 'The kebab is camel. No it is not. Probably. I cannot stop saying it.'), C('adam', 'Eat it quickly. Do not think about it.'), C('devon', 'It is the best kebab I have ever had in a sand dune.'), C('adam', 'It is the only kebab you have ever had in a sand dune.'), C('devon', 'Still the best.')] },
+  { id: 'lodge_chat', at: 'wayside_lodge', lines: [C('devon', 'The beds are heated, bro. By FONDUE.'), C('adam', 'I would like not to know how.'), C('devon', 'A little pipe. Of cheese. Under the mattress.'), C('adam', 'I said I would like not to know.')] },
+  { id: 'shed_chat', at: 'wayside_shed', lines: [C('devon', 'Forty years, one hole, and the only thing he caught was a boot.'), C('adam', 'It was a good boot.'), C('devon', 'It was a LEGENDARY boot. There was a chest in it.'), C('adam', 'There is a lesson in that.'), C('devon', 'Always fish in boots.')] },
 ];
 STORY.chatIdle = [
   [C('devon', 'Are we nearly there yet?'), C('adam', 'No.')],

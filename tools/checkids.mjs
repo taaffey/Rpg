@@ -3,6 +3,7 @@
 import { readFileSync } from 'node:fs';
 import { WEAPONS, ARMORS, ACCS, GEMS, ITEMS, SKILLS, JOBS, WEAPON_TYPES, ENEMIES, ENCOUNTERS, DROPS, BOSSES, SHOPS, QUESTS, ELEMENTS, STORY, KEY_ITEMS, TRAITS, CALLING_BATCHES } from '../src/data.js';
 import { MAPS } from '../src/maps.js';
+import { REGION_NAME } from '../src/gamedata.js';
 import * as BR from '../src/bros.js';
 import '../src/hopsend.js';
 import '../src/embers.js';
@@ -75,7 +76,7 @@ for (const m of ng.matchAll(/newChar\('[^']+', '(\w+)', '(\w+)', (null|'(\w+)'),
   for (const [who, e] of Object.entries(STORY.epilogue)) { if (!PEOPLE.includes(who)) errs.push(`epilogue: unknown person ${who}`); if (!e.default) errs.push(`epilogue ${who}: no default`); for (const j of Object.keys(e)) if (j !== 'default' && !JOBS[j]) errs.push(`epilogue ${who}: unknown job ${j}`); }
   for (const who of PEOPLE) if (!STORY.epilogue[who]) errs.push(`epilogue: no ending for ${who}`);
   if (STORY.finale) scene(STORY.finale, 'finale'); else errs.push('no STORY.finale');
-  const chatIds = new Set(), REGIONS = ['green', 'plains', 'snow', 'swamp', 'desert'], KINDS = ['dungeon', 'town', 'interior', 'outdoor'];
+  const chatIds = new Set(), REGIONS = Object.keys(REGION_NAME) /* what world.js regionAt() can return */, KINDS = ['dungeon', 'town', 'interior', 'outdoor'];
   for (const c of STORY.chat || []) { const w = `chat ${c.id}`; if (!c.id || chatIds.has(c.id)) errs.push(`${w}: missing or duplicate id`); chatIds.add(c.id); conds(c.if, w); scene(c.lines, w);
     if (c.at) { const [k, v] = c.at.includes(':') ? c.at.split(':') : ['map', c.at]; if (!(k === 'map' ? MAPS[v] : k === 'region' ? REGIONS.includes(v) : k === 'kind' ? KINDS.includes(v) : false)) errs.push(`${w}: bad at '${c.at}'`); } }
   (STORY.chatIdle || []).forEach((l, i) => scene(l, `chatIdle ${i}`));

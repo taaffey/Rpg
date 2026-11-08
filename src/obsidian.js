@@ -170,6 +170,7 @@ STORY.chat.push(
   { id: 'ruins_brenna', at: 'obsidian', if: 'p:brenna !landlord', lines: [C('brenna', 'Ten thousand years behind the same bar. I have done a Sunday shift like that.'), C('adam', 'You have a job? In a pub?'), C('brenna', 'I have had worse landlords. Not many. The ghost is almost fair.')] },
   { id: 'ruins_wendell', at: 'obsidian', if: 'p:wendell !landlord', lines: [C('wendell', 'In my youth, I served on a pub quiz team. We were known as the Knights of the Round Table.'), C('devon', 'Round Table. Brilliant.'), C('wendell', 'Wet round table. We came last every week. It is still the proudest moment of my life.')] },
   { id: 'landlord_after', if: 'landlord', lines: [C('devon', 'We beat the first and last landlord, bro. The final boss of drinks.'), C('adam', 'He was lonely, Dev.'), C('devon', 'He had a clock halo, Adam. He had a hand pump for an arm. He was FINE.'), C('adam', 'We gave a ghost his last orders. Let that be enough.')] },
+  { id: 'obsidian_walk', at: 'region:obsidian', lines: [C('devon', 'Bro, every step makes a little chime. Like a shop door. Like I am entering the world\'s worst shop.'), C('adam', 'It is glass. It is just glass.'), C('devon', 'It is glass that KNOWS we are here.'), C('adam', 'It is glass that will cut your trainers if you keep jumping on it.')] },
 );
 
 // ---------------------------------------------------------------- pub quiz
