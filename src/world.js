@@ -227,6 +227,16 @@ async function chartTheLand() { // the overworld bakes in the background from th
   const was = S.busy; S.busy = true; let dots = 0; const el = document.createElement('div'); el.id = 'charting'; el.textContent = 'Charting the land'; document.body.appendChild(el);
   await TR.finishBake(() => { el.textContent = 'Charting the land' + '.'.repeat(1 + (++dots >> 2) % 4); }); el.remove(); S.busy = was;
 }
+// Random fights are spaced out: after any fight the party gets a few quiet steps, and the chance per step after that is raised to match,
+// so the average distance between fights is still 1 / rate but two never land back to back.
+let sinceFight = 0;
+function encounterRoll(rate) {
+  if (!(rate > 0)) return false;
+  const gap = Math.min(4, Math.floor(0.4 / rate)); // quiet steps after a fight (none when the rate is forced very high)
+  if (++sinceFight <= gap) return false;
+  if (Math.random() >= Math.min(1, 1 / (1 / rate - gap))) return false;
+  sinceFight = 0; return true;
+}
 async function step(dx, dy) {
   if (inOverlay() || S.busy || Math.abs(vx - G.x) + Math.abs(vy - G.y) > 0.45) return;
   const m = mapDef(), nx = G.x + dx, ny = G.y + dy, t = tileAt(nx, ny);
@@ -244,10 +254,11 @@ async function step(dx, dy) {
   const sec = m.secrets?.[`${nx},${ny}`]; if (sec && !G.flags.chests[chestKey(nx, ny)]) return openChest(nx, ny, sec);
   tip('move', TOUCH ? 'Tap a spot to travel there, or press and slide on the pad. A talks/checks, B opens the menu.' : 'Arrows or WASD to walk. Esc opens your party menu. A yellow ! marks someone with news.');
   if (m.kind === 'outdoor') { const reg = regionOf(); if (reg !== G.region) { G.region = reg; banner(REGION_NAME[reg]); music(musicFor()); } }
-  if (m.boss && t === 'X' && !G.flags.bosses[m.boss.id]) { S.busy = true; mapShake(); sfx('crit'); await sleep(350); S.busy = false; return battle([m.boss.id], m.boss.id); }
+  if (m.boss && t === 'X' && !G.flags.bosses[m.boss.id]) { sinceFight = 0; S.busy = true; mapShake(); sfx('crit'); await sleep(350); S.busy = false; return battle([m.boss.id], m.boss.id); }
   const zoneEnc = G.map === 'world' ? { 4: 'hops', 5: 'embers', 6: 'jungle' }[regAt(nx, ny)] : null; // the outlying and jungle areas have their own monsters
   const table = zoneEnc || m.enc || m.encByTile?.[t];
-  if (table && !(m.safe || []).some(([sx2, sy2, r]) => Math.hypot(nx - sx2, ny - sy2) <= r) && Math.random() < m.rate * (G.map === 'world' && roadAt(nx, ny) ? 0.35 : 1) * (ENC_MUL[OPT.enc] ?? 1) * (G.rules?.rush ? 2 : 1)) { // the roads are well-trodden: far fewer ambushes on them, so the long legs between towns are a stroll
+  const encRate = m.rate * (G.map === 'world' && roadAt(nx, ny) ? 0.35 : 1) * (ENC_MUL[OPT.enc] ?? 1) * (G.rules?.rush ? 2 : 1); // the roads are well-trodden: far fewer ambushes on them, so the long legs between towns are a stroll
+  if (table && !(m.safe || []).some(([sx2, sy2, r]) => Math.hypot(nx - sx2, ny - sy2) <= r) && encounterRoll(encRate)) {
     let tb = ENCOUNTERS[table];
     const lure = Object.entries(QUESTS).find(([id, q]) => q.goal.lure?.table === table && qstate(id) === 'active' && !questDone(id))?.[1].goal.lure; // a hunt quest's quarry shows up more often
     if (lure && Math.random() < lure.p) return battle(lure.group);

@@ -60,7 +60,7 @@ export const ROADSIDE = [
   { id: 'glints', lines: [O(`Anything that glints off the path is worth the detour. Dead ends especially. Nobody builds a dead end for nothing.`), D(`Except the one in my kitchen.`), O(`Especially that one.`)] },
   { id: 'shovel', regions: ['green', 'swamp', 'desert'], lines: [T(`Don't dig just anywhere, lads. I've tried. Seven holes and a very annoyed badger.`), T(`They twinkle when they're ready. You just walk over them.`), D(`That's the worst treasure map I've ever heard.`)] },
   { id: 'magpie_talk', regions: ['green', 'snow', 'autumn'], lines: [T(`There's a spot up the coast where I keep seeing a sparkle. A little dead end by the water.`), T(`I'd go myself but I get seasick on grass.`)] },
-  { id: 'rain', rain: 45, lines: [N(`It starts to rain. Not heavy. Just committed.`), D(`Bro, my phone says two percent.`), A(`It said three yesterday.`), D(`I think it's grieving.`)] },
+  { id: 'rain', rain: 45, lines: [N(`It starts to rain. Not heavy. Just committed.`), D(`Bro, my weather app says sunny.`), A(`Your weather app thinks it's 2026.`), D(`I think it's grieving.`)] },
   { id: 'shrine', lines: [N(`A roadside shrine with an offering bowl. In the bowl: one coin and a note that says "back in 5 mins".`)] },
   { id: 'rivals', lines: [T(`Heroes, eh? We're Level 30 and sponsored.`), D(`By who?`), T(`A sandwich company.`), A(`...Fair.`)] },
   { id: 'beards', lines: [T(`Lovely beards. Both of you.`), A(`Thanks.`), D(`I've had mine since 2026.`), T(`...What?`), A(`Ignore him.`)] },

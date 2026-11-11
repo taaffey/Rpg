@@ -122,7 +122,7 @@ export const CALLED = [
 ];
 export const CALLED_AFTER = [
   { s: 'guildmaster', t: 'There. Every battle teaches a calling something, and what you learn you keep. Change any time; I won\'t be offended.' },
-  { s: 'brenna', t: 'The Ashen Cavern\'s east of town. The Wyrm\'s in there. Buy weapons first. Real ones. Not Devon\'s fists.' },
+  { s: 'brenna', t: 'The Ashen Cavern\'s north-east of town. The Wyrm\'s in there. Buy weapons first. Real ones. Not Devon\'s fists.' },
   { s: 'devon', t: 'These fists have been banned from three Wetherspoons, Brenna.' },
 ];
 export const WENDELL = [
