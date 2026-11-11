@@ -37,6 +37,7 @@ keyboard alone, or with the mouse. Options (volumes, battle speed, shake, minima
 - **3 save slots** with details, autosave (towns, battles, quests, app backgrounding), delete/overwrite confirmation, and
   migration from older saves.
 - **Difficulty** (Easy / Normal / Hard, changeable in Options). There are no tutorial pop-ups: NPCs and the journal drop hints in the story's voice.
+- **Levels 21-30**: the story ends around level 17-18; the post-game islands carry on to 30 (Hopsend ~18-21, Cinder Isle ~21-25, the Obsidian Ruins ~25-28, the Last Landlord at about 28). The late levels unlock build options (`LEVEL_PERKS` in `src/logic.js`): an extra gem socket at 22 and 28, a second trait slot at 25, and Local Legend (+10% HP and MP) at 30. `LV=28 node tools/landlord_sim.mjs` checks the superboss at any level.
 - **Field magic** (Menu > Magic, the way FF1 does it): pick who casts, then a healing spell, then who gets it. One-ally cures ask for a target, the stronger party-wide ones heal everyone, revives work on the fallen; costs, gems and weapon bonuses match battle. Free (0 MP) heals are battle-only.
 - **Battle QoL**: Repeat your last move, Auto-battle (tap to stop), turn-order bar, expandable log, battle speed and dialogue text speed (normal / fast / instant) in Options.
 - **Menus**: equipment stat comparison (green/red arrows), Bestiary with weaknesses, Journal with quests, full map screen.
@@ -131,7 +132,7 @@ foot of the Frost Spire the party meets the one who wants them. The Titan is the
   Frost Spire (Frost Titan, the final boss), the optional Storm Cavern on Frost Isle (Storm Drake) and the optional
   **Sunscar Ruins** (Lv 11-14): a sandstone temple under the desert ruins far to the east of Haven, with column-lined halls, glyph panels,
   drifting sand, five treasure chests (Scarab Bow, Sandwalker Garb, Mirage Staff...) and the **Sphinx Pharaoh** on its sun-disc altar
-  (drops the Pharaoh's Khopesh and Sun Disc Amulet; weak to ice and dark). 65 enemies including recolored tiers and rare elites. Level cap 20.
+  (drops the Pharaoh's Khopesh and Sun Disc Amulet; weak to ice and dark). 65 enemies including recolored tiers and rare elites. Level cap 30.
 - **Gem-wright** (in each smithy): spend gold for up to 3 bonus sockets per hero, so more gems fit on their skills.
 - **Side quests** (14) from NPCs (`!` = offer, `?` = ready to turn in), tracked in the journal: monster hunts, find-an-item, boss bounties,
   a **delivery** (Mirewood child -> her brother at the Frostholm Forge), a **treasure hunt** (Haven's old sailor and Captain Redwake's gold),

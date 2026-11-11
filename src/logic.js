@@ -3,12 +3,18 @@ import { JOBS, SKILLS, GEMS, WEAPONS, ARMORS, ACCS, WEAPON_TYPES, ENEMIES, ITEMS
 import { MECH } from './bossmech.js';
 
 export const STAT_KEYS = ['hp', 'mp', 'atk', 'def', 'mag', 'spd'];
-export const MAX_LEVEL = 20;
+export const MAX_LEVEL = 30;
 const BASE = { hp: 40, mp: 12, atk: 6, def: 4, mag: 6, spd: 6 };
 const GROW = { hp: 9, mp: 3, atk: 1.6, def: 1.2, mag: 1.6, spd: 0.7 };
 // EXP to go from level lv to lv+1. Early levels come every 1-4 fights near Haven; each later level needs roughly
-// 6-10 fights of the region you are meant to be in (see tools/progress.mjs). Total to the cap: ~26,700.
-export const EXP_TABLE = [20, 40, 70, 110, 170, 280, 440, 630, 840, 1050, 1300, 1600, 1900, 2200, 2500, 2850, 3200, 3600, 4000];
+// 6-10 fights of the region you are meant to be in (see tools/progress.mjs). The story ends around 17-18 (~26,700 EXP gets to 20);
+// 20-30 are paced for the post-game: Hopsend ~18-21, Cinder Isle ~21-25, the Obsidian Ruins ~25-28, the Last Landlord at 28 or so.
+export const EXP_TABLE = [20, 40, 70, 110, 170, 280, 440, 630, 840, 1050, 1300, 1600, 1900, 2200, 2500, 2850, 3200, 3600, 4000, 4500, 5000, 5600, 6200, 6800, 7500, 8200, 9000, 10000, 11000];
+// The levels past 20 each unlock something for the build, not just bigger numbers.
+export const LEVEL_PERKS = { 22: 'an extra gem socket', 25: 'a second trait slot', 28: 'another gem socket', 30: 'Local Legend: +10% HP and MP' };
+export const perkSockets = (lv) => (lv >= 22 ? 1 : 0) + (lv >= 28 ? 1 : 0);
+export const traitSlots = (c) => (c.level >= 25 ? 2 : 1);
+export const nextPerk = (lv) => { const k = Object.keys(LEVEL_PERKS).map(Number).find((n) => n > lv); return k ? [k, LEVEL_PERKS[k]] : null; };
 export const expNeeded = (lv) => EXP_TABLE[Math.max(1, Math.min(lv, EXP_TABLE.length)) - 1];
 
 // ---------- Character build ----------
@@ -17,6 +23,7 @@ export function stats(c) {
   for (const k of STAT_KEYS) s[k] = Math.round((BASE[k] + GROW[k] * (c.level - 1)) * mj.mod[k]); // only the current calling shapes stats
   for (const g of [...gear(c), ...mastered(c).map((j) => JOBS[j].master)]) for (const k of STAT_KEYS) s[k] += g[k] || 0; // gear + mastery bonuses
   if (!c.weapon && fistJob(c)) s.atk += unarmedBonus(c.level); // martial artists fight well bare-handed
+  if (c.level >= 30) { s.hp = Math.round(s.hp * 1.1); s.mp = Math.round(s.mp * 1.1); } // Local Legend
   s.hp = Math.max(1, s.hp);
   return s;
 }
@@ -44,6 +51,7 @@ export const learnedTraits = (c) => Object.keys(c.cp || {}).filter((j) => JOBS[j
 export function activeTraits(c) { // the current calling's own trait (once learned) + the one in the trait slot
   const own = jobTrait(c.main, rankOf(c, c.main)), out = own ? [own] : [];
   if (c.trait && c.trait !== own && learnedTraits(c).includes(c.trait)) out.push(c.trait);
+  if (traitSlots(c) > 1 && c.trait2 && c.trait2 !== own && !out.includes(c.trait2) && learnedTraits(c).includes(c.trait2)) out.push(c.trait2); // the level-25 slot
   return out;
 }
 export const secondOk = (c, job) => !!job && job !== c.main && rankOf(c, job) >= 1;
@@ -70,7 +78,7 @@ export const mpCost = (x, s) => (x.tr?.has('thrift') && s.mp > 0 ? Math.max(1, M
 export const enemyCp = (id) => { const d = ENEMIES[id]; return d.cp ?? Math.min(4, 1 + Math.floor(d.exp / 80)); };
 // Award a battle's CP: every hero still standing gets it in full; KO'd heroes get none. Returns [{ c, cp, ranks }]
 export const awardCP = (party, cp) => party.map((c) => { const n = c.hp > 0 ? cp : 0; return { c, cp: n, ranks: n ? gainCP(c, n) : [] }; });
-export const gemCapacity = (c) => 2 + (c.extra || 0) + gear(c).reduce((n, g) => n + (g.sockets || 0), 0);
+export const gemCapacity = (c) => 2 + (c.extra || 0) + perkSockets(c.level) + gear(c).reduce((n, g) => n + (g.sockets || 0), 0);
 export const gemsUsed = (c) => c.gems.reduce((n, a) => n + a.length, 0);
 export const SLOT_COUNT = 4, SIG = 4, GEMS_PER_SLOT = 3;
 export const slotSkill = (c, i) => (i === SIG ? sigSkill(c) : c.slots[i]);
@@ -84,6 +92,7 @@ export function sanitize(c, inv) {
   c.cp ||= {}; if (c.cp[c.main] == null) c.cp[c.main] = 0;
   if (c.sub && !secondOk(c, c.sub)) c.sub = null;
   if (c.trait && !learnedTraits(c).includes(c.trait)) c.trait = null;
+  if (c.trait2 && (traitSlots(c) < 2 || c.trait2 === c.trait || !learnedTraits(c).includes(c.trait2))) c.trait2 = null;
   if (c.weapon && !weaponOk(c, c.weapon)) { inv.weapons.push(c.weapon); c.weapon = null; }
   const ok = learnable(c);
   c.slots = c.slots.map((s) => (ok.includes(s) ? s : null));

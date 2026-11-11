@@ -217,6 +217,7 @@ async function victory(b, bossId) {
     if (tipOnce('levelup')) lines.push('💡 New skills unlock as heroes level up. Check the build screen for empty skill slots.');
     lvSfx = true; autofill(c);
     lines.push(`🎉 ${esc(c.name)} reached level ${ups.at(-1)}!${ups.length > 1 ? ` (+${ups.length} levels)` : ''}${learned.length ? ` Learned <b>${learned.map((id) => SKILLS[id].name).join(', ')}</b>.` : ''}`);
+    for (const lv of ups) if (L.LEVEL_PERKS[lv]) lines.push(`⭐ ${esc(c.name)} unlocked <b>${L.LEVEL_PERKS[lv]}</b>.`);
   }
   const cpGot = new Map(); // Calling Points: standing heroes only; each rank teaches the next ability of the calling
   for (const { c, cp, ranks } of L.awardCP(G.party, r.cp)) {

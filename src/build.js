@@ -120,7 +120,7 @@ function buildMain(c) {
   };
   const xpN = expNeeded(c.level), maxed = c.level >= L.MAX_LEVEL;
   show(`<div class="buildhead">${btn('bnav', ic('aleft'), -1, '', 'navbtn')}<div class="who2">${portrait(ak(c), 'lg')}<div><h2 style="background:none;padding:0;margin:0">${esc(c.name)}</h2><div class="lv">LV ${c.level}</div></div></div>${btn('bnav', ic('aright'), 1, '', 'navbtn')}</div>
-  <div class="expline"><span>EXP</span>${bar(maxed ? 1 : c.exp, maxed ? 1 : xpN, 'xp')}<span>${maxed ? 'MAX' : `${c.exp}/${xpN}`}</span></div>
+  <div class="expline"><span>EXP</span>${bar(maxed ? 1 : c.exp, maxed ? 1 : xpN, 'xp')}<span>${maxed ? 'MAX' : `${c.exp}/${xpN}`}</span></div>${c.level >= 18 && L.nextPerk(c.level) ? `<div class="dim" style="font-size:8px">${ic('star')} LV ${L.nextPerk(c.level)[0]}: ${L.nextPerk(c.level)[1]}</div>` : ''}
   <div class="card">${callingCard(c)}${statLine(s)}</div>
   <h3>Equipment</h3>${gearRow('Weapon', 'weapon', c.weapon, 'weapons')}${gearRow('Armour', 'armor', c.armor, 'armors')}${gearRow('Acc.', 'acc', c.acc, 'accs')}
   <h3>${gemsOn() ? `Skills &amp; Gems <span class="${used > cap ? 'bad' : 'gold'}">◇ ${used}/${cap}</span>` : 'Skills'}</h3>${[0, 1, 2, 3, SIG].map(slotRow).join('')}
@@ -136,7 +136,7 @@ function callingCard(c) {
   return `<div class="jobrow"><span>${portrait(ak(c), 'sm')}<span><span class="dim">CALLING</span> ${m.name} ${stars(c, c.main)}</span></span>${btn('bview', 'Change', 'jobMain')}</div>
     <div class="expline"><span>RANK ${r}</span>${bar(r >= L.MAX_RANK ? 1 : cp - lo, r >= L.MAX_RANK ? 1 : hi - lo, 'cp')}<span>${r >= L.MAX_RANK ? 'MASTERED' : `${L.cpToNext(c, c.main)} CP`}</span></div>
     ${others.length ? `<div class="jobrow"><span>${sj ? portrait(c.sub, 'sm') : ic('socket')}<span><span class="dim">SECOND</span> ${sj ? `${sj.name} ${stars(c, c.sub)}` : '<span class="dim">— none —</span>'}</span></span>${btn('bview', 'Set', 'jobSub')}</div>` : ''}
-    ${own || spare.length ? `<div class="jobrow"><span>${ic('star')}<span><span class="dim">TRAIT</span> ${own ? `${traitName(own)}${c.trait && c.trait !== own ? ` + ${traitName(c.trait)}` : ''}` : c.trait ? traitName(c.trait) : '<span class="dim">— none —</span>'}</span></span>${spare.length ? btn('bview', 'Set', 'trait') : ''}</div>` : ''}
+    ${own || spare.length ? `<div class="jobrow"><span>${ic('star')}<span><span class="dim">TRAIT</span> ${L.activeTraits(c).map(traitName).join(' + ') || '<span class="dim">— none —</span>'}</span></span>${spare.length ? btn('bview', 'Set', 'trait') : ''}</div>` : ''}
     <div class="jobrow"><span>${ic('scroll')}<span><span class="dim">CALLINGS</span> ${Object.keys(c.cp || {}).length} learned${L.mastered(c).length ? ` · <span class="gold">${L.mastered(c).length}★</span>` : ''}</span></span>${btn('bview', 'View', 'callings')}</div>`;
 }
 const nextAbility = (c, j) => { const r = L.rankOf(c, j), n = [...JOBS[j].skills.map(([id, k]) => [SKILLS[id].name, k]), ...(JOBS[j].trait ? [[TRAITS[JOBS[j].trait[0]].name, JOBS[j].trait[1]]] : [])].filter(([, k]) => k === r + 1); return n.length ? n.map((x) => x[0]).join(', ') : ''; };
@@ -154,12 +154,17 @@ ACT.setjob = (which, id) => {
 };
 function traitPick() {
   const c = G.party[B.i], own = L.jobTrait(c.main, L.rankOf(c, c.main)), list = L.learnedTraits(c).filter((t) => t !== own);
-  const from = (t) => JOBS[Object.keys(JOBS).find((j) => JOBS[j].trait?.[0] === t)].name;
+  const from = (t) => JOBS[Object.keys(JOBS).find((j) => JOBS[j].trait?.[0] === t)].name, two = L.traitSlots(c) > 1;
   show(`<h2>Trait · ${esc(c.name)}</h2>${own ? `<div class="slot"><span class="lead">${ic('star')}</span><div class="t"><b>${traitName(own)} <span class="chip tag">${JOBS[c.main].name}</span></b><small>${TRAITS[own].desc} Always on.</small></div></div>` : ''}
-  <div class="slot"><span class="lead">${ic('socket')}</span><div class="t"><b>None</b></div>${btn('settrait', 'Clear', '', '', '', !c.trait)}</div>${list.map((t) => `<div class="slot ${c.trait === t ? 'sel' : ''}"><span class="lead">${ic('star')}</span><div class="t"><b>${traitName(t)} <span class="dim">${from(t)}</span></b><small>${TRAITS[t].desc}</small></div>${btn('settrait', 'Set', t, '', '', c.trait === t)}</div>`).join('')}
+  ${two ? `<p class="dim">Level 25 gave a second trait slot: pick any two.</p>` : ''}<div class="slot"><span class="lead">${ic('socket')}</span><div class="t"><b>None</b></div>${btn('settrait', 'Clear', '', '', '', !c.trait && !c.trait2)}</div>${list.map((t) => { const on = c.trait === t || (two && c.trait2 === t); return `<div class="slot ${on ? 'sel' : ''}"><span class="lead">${ic('star')}</span><div class="t"><b>${traitName(t)} <span class="dim">${from(t)}</span></b><small>${TRAITS[t].desc}</small></div>${btn('settrait', on && two ? 'Remove' : 'Set', t, '', '', on && !two)}</div>`; }).join('')}
   <div class="foot">${btn('bmain', 'Back', '', '', 'primary')}</div>`);
 }
-ACT.settrait = (t) => { const c = G.party[B.i]; c.trait = t || null; sanitize(c, G.inv); B.view = 'main'; buildScreen(); };
+ACT.settrait = (t) => { // one slot: pick and go back. Two slots (level 25): tap to add or remove, the older pick makes way for a third
+  const c = G.party[B.i];
+  if (L.traitSlots(c) < 2) { c.trait = t || null; sanitize(c, G.inv); B.view = 'main'; return buildScreen(); }
+  if (!t) { c.trait = c.trait2 = null; } else if (c.trait === t) { c.trait = c.trait2 || null; c.trait2 = null; } else if (c.trait2 === t) c.trait2 = null; else if (!c.trait) c.trait = t; else if (!c.trait2) c.trait2 = t; else { c.trait = c.trait2; c.trait2 = t; }
+  sanitize(c, G.inv); buildScreen();
+};
 function callingsView() { // every awakened calling: rank stars, abilities learned, the next one (later ones stay unseen)
   const c = G.party[B.i];
   show(`<h2>Callings · ${esc(c.name)}</h2>${unlockedJobs().map((id) => {

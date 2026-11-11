@@ -1,4 +1,4 @@
-// Obsidian Ruins balance sim (pure logic, no browser): a level-20 party in the best gear against every foe and the Landlord of the Void.
+// Obsidian Ruins balance sim (pure logic, no browser): a level-20 party (LV=n for another level) in the best gear against every foe and the Landlord of the Void.
 //   node tools/landlord_sim.mjs [boss|regular|all] [N]     MODE=smart|dumb  GEAR=old|kiosk|new  PARTY=4|3
 // "dumb" never uses the Landlord's weakness (holy / bolt) and keeps its buffs to a minimum; "smart" exploits both and buffs/heals well.
 import * as D from '../src/data.js';
@@ -16,7 +16,7 @@ const GEARSET = {
 }[GEAR];
 function party() {
   const spec = [['Adam', 'samurai', GEARSET.sam, ['kiai', 'zanshin', 'bladestorm', 'windblade']], ['Wendell', 'paladin', GEARSET.pal, ['divineshield', 'sacredblade', 'layhands', 'crusade']], ['Devon', 'mage', GEARSET.mage, ['firebolt', 'chill', 'inferno', 'spark']], ['Brenna', 'cleric', GEARSET.cle, ['heal', 'cureall', 'revive', 'aegis']]].filter((_, i) => SIZE >= 4 || i !== 1); // a party of 3 leaves the paladin behind
-  return spec.map(([n, job, g, slots]) => { const c = newChar(n, job, null); c.level = 20; c.cp[job] = 130; [c.weapon, c.armor, c.acc] = g; c.slots = slots; const s = stats(c); c.hp = s.hp; c.mp = s.mp; return c; });
+  return spec.map(([n, job, g, slots]) => { const c = newChar(n, job, null); c.level = +(process.env.LV || 20); c.cp[job] = 130; [c.weapon, c.armor, c.acc] = g; c.slots = slots; const s = stats(c); c.hp = s.hp; c.mp = s.mp; return c; });
 }
 const ITEMS = () => ({ elixir: 8, megaether: 5, phoenix: 4, antidote: 6 });
 // ---- the bot
