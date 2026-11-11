@@ -70,7 +70,7 @@ const itemIc = (k, id) => (k === 'gems' ? gemImg(id) : ic(UI.gearIconName(k, { .
 const coin = (n) => `<span class="price">${ic('coin')}${n}</span>`;
 const heroBtn = (c, act = 'build', a = '', b = '') => { // portrait, name, job, level and HP/MP gauges: the party row used by every menu
   const s = maxOf(c), r = c.hp / s.hp;
-  return btn(act, `${portrait(ak(c), c.hp <= 0 ? 'ko' : '')}<span class="hinfo"><span class="hn">${esc(c.name)}</span><span class="hl">LV ${c.level}</span><span class="hj">${JOBS[c.main].name}${c.sub ? ' / ' + JOBS[c.sub].name : ''}</span><span class="hh ${r < 0.25 ? 'low' : r < 0.5 ? 'mid' : ''}">HP <b>${c.hp}</b>/${s.hp}${bar(c.hp, s.hp, 'hp')}</span><span class="hm">MP <b>${c.mp}</b>/${s.mp}${bar(c.mp, s.mp || 1, 'mp')}</span></span>`, a === '' ? '' : a, b, 'hero');
+  return btn(act, `${portrait(ak(c), c.hp <= 0 ? 'ko' : '')}<span class="hinfo"><span class="hn">${esc(c.name)}${c.poison && c.hp > 0 ? ic('poison') : ''}</span><span class="hl">LV ${c.level}</span><span class="hj">${JOBS[c.main].name}${c.sub ? ' / ' + JOBS[c.sub].name : ''}</span><span class="hh ${r < 0.25 ? 'low' : r < 0.5 ? 'mid' : ''}">HP <b>${c.hp}</b>/${s.hp}${bar(c.hp, s.hp, 'hp')}</span><span class="hm">MP <b>${c.mp}</b>/${s.mp}${bar(c.mp, s.mp || 1, 'mp')}</span></span>`, a === '' ? '' : a, b, 'hero');
 };
 const gemChip = (g, short = false) => `<span class="chip" title="${GEMS[g].desc}">${gemImg(g)}${short ? GEMS[g].name.replace(' Gem', '') : GEMS[g].name}</span>`;
 const statLine = (s) => `<div class="stats">${['hp', 'mp', 'atk', 'def', 'mag', 'spd'].map((k) => `<span>${k.toUpperCase()} <b>${s[k]}</b></span>`).join('')}</div>`;

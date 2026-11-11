@@ -221,6 +221,7 @@ export class Battle {
       const s = stats(c);
       return { side: 'p', ch: c, tr: new Set(activeTraits(c)), wpn: WEAPONS[c.weapon] || null, sig: sigSkill(c), name: c.name, hp: c.hp, mp: c.mp, maxhp: s.hp, maxmp: s.mp, atk: s.atk, def: s.def, mag: s.mag, spd: s.spd, weak: [], res: resists(c), st: {}, defending: false };
     });
+    for (const x of this.p) if (x.ch.poison && x.hp > 0) x.st.poison = 4; // FF1: a dodgy tum picked up in one fight comes along to the next
     // rare elites: an enemy with elite: [id, chance] is occasionally replaced by its golden/crystal cousin
     enemyIds = enemyIds.map((id) => { const el = !boss && ENEMIES[id]?.elite; return el && ENEMIES[el[0]] && rng() < el[1] ? el[0] : id; });
     const counts = {}; enemyIds.forEach((id) => (counts[id] = (counts[id] || 0) + 1));
@@ -232,8 +233,14 @@ export class Battle {
     });
   }
   side(x) { return x.side === 'p' ? this.p : this.e; }
-  // Ranger trait: a pre-emptive strike costs the foes their first turn (rolled once, never against a boss)
-  get preempt() { if (this._pre == null) this._pre = !this.boss && this.p.some((x) => x.tr.has('preempt')) && this.rng() < 0.25; return this._pre; }
+  // FF1's opening rolls (once per battle, never against a boss): now and then the party gets the drop on the foes ("Strike first!": the foes
+  // lose round one) or is caught napping ("Ambushed!": the party does). The Darts Player's Oche Stare makes the first far likelier and rules
+  // out the second. mod.noAmbush switches ambushes off (the tutorial cellar).
+  get preempt() {
+    if (this._pre == null) { const stare = this.p.some((x) => x.tr.has('preempt')), r = this.boss ? 1 : this.rng(); this._pre = !this.boss && r < (stare ? 0.25 : 0.08); this._amb = !this.boss && !stare && !this.mod.noAmbush && r >= 0.94; }
+    return this._pre;
+  }
+  get ambushed() { void this.preempt; return this._amb; }
   foes(x) { return x.side === 'p' ? this.e : this.p; }
 
   enemyCmd(e) {
@@ -258,15 +265,16 @@ export class Battle {
   // Generator: yields an array of log lines after every action.
   *round(cmds) {
     this.turn++;
-    const order = [], ambush = this.turn === 1 && this.preempt;
-    if (ambush) yield ['Pre-emptive strike! The foes are caught off guard.'];
+    const order = [], first = this.turn === 1 && this.preempt, caught = this.turn === 1 && this.ambushed;
+    if (first) yield ['Strike first! The foes are caught off guard.'];
+    if (caught) yield ['Ambushed! The foes strike first.'];
     for (const x of [...this.p, ...this.e]) {
-      if (!alive(x) || (ambush && x.side === 'e')) continue;
+      if (!alive(x) || (first && x.side === 'e') || (caught && x.side === 'p')) continue;
       for (let k = 0; k <= (x.side === 'e' ? x.extra : 0); k++) { // a boss that has found a second wind acts more than once a round
         const cmd = x.side === 'p' ? cmds.get(x) : this.enemyCmd(x);
         if (!cmd || cmd.kind === 'assist') continue; // assist: this hero's turn goes into a partner's combo
-        const swift = cmd.kind === 'skill' && skillWithGems(cmd.skillId, cmd.gems).swift, first = this.turn === 1 && x.tr.has('firststrike');
-        order.push({ x, cmd, pri: (first ? 3 : cmd.kind === 'defend' ? 2 : swift ? 1 : 0), spd: this.speed(x) - k * 0.01 });
+        const swift = cmd.kind === 'skill' && skillWithGems(cmd.skillId, cmd.gems).swift, quick = this.turn === 1 && x.tr.has('firststrike');
+        order.push({ x, cmd, pri: (quick ? 3 : cmd.kind === 'defend' ? 2 : swift ? 1 : 0), spd: this.speed(x) - k * 0.01 });
       }
     }
     order.sort((a, b) => b.pri - a.pri || b.spd - a.spd);

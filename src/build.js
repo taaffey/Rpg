@@ -11,7 +11,7 @@ import { ACT, DB, GEMS_PER_SLOT, SIG, ak, akj, bar, btn, coin, describeSkill, es
 import { mainMenu } from './menus.js';
 import { chartTheLand, goto, inTown, mapDef } from './world.js';
 import { scene } from './story.js';
-import { autofill, autosave, stars, traitName, unlockedJobs } from './saves.js';
+import { autofill, autosave, save, stars, traitName, unlockedJobs } from './saves.js';
 import { guild } from './town.js';
 // ---------- items (field use) ----------
 function itemsMenu(msg = '') {
@@ -46,14 +46,24 @@ ACT.phone = async () => { // Devon's phone: still 3%, still no signal, a differe
   await scene(jokes[n]);
 };
 ACT.useitem = (id) => {
+  if (ITEMS[id].camp) return camp(id);
   show(`<h2>${itemIc('items', id)} Use ${ITEMS[id].name} on…</h2><div class="card menuparty">${G.party.map((c, i) => heroBtn(c, 'useon', id, i)).join('')}</div><div class="foot">${btn('items', 'Back', '', '', 'primary')}</div>`);
 };
+// Camping (FF1's Tent / Cabin / House): on the overworld only. Heals everyone still standing (the fallen stay down, as in FF1), then saves.
+function camp(id) {
+  const it = ITEMS[id];
+  if (G.map !== 'world') return itemsMenu(`You can only camp out on the open road. ${mapDef().kind === 'dungeon' ? 'Not in here.' : 'There are beds in town.'}`);
+  for (const c of G.party) { if (c.hp <= 0) continue; const s = maxOf(c); c.hp = Math.min(s.hp, c.hp + Math.ceil(s.hp * it.camp)); if (it.campMp) c.mp = s.mp; }
+  G.inv.items[id]--; countUse(id); sfx('rest'); const saved = save();
+  itemsMenu(`${esc(G.party[0].name)} ${it.verb} the ${it.name}. ${it.camp >= 1 ? 'Everyone standing is fully rested.' : `Everyone standing recovers ${Math.round(it.camp * 100)}% HP.`}${saved ? ' Game saved.' : ''}`);
+}
 const countUse = (id) => { const u = ((G.stats ||= { wins: 0 }).used ||= {}); u[id] = (u[id] || 0) + 1; }; // for the feats
 ACT.useon = (id, i) => {
   const c = G.party[i], it = ITEMS[id], s = maxOf(c); let ok = false;
   if (it.revive && c.hp <= 0) { c.hp = Math.round(s.hp * it.revive); ok = true; }
   else if (c.hp > 0 && it.heal && c.hp < s.hp) { c.hp = Math.min(s.hp, c.hp + it.heal); ok = true; }
   else if (c.hp > 0 && it.mpr && c.mp < s.mp) { c.mp = Math.min(s.mp, c.mp + it.mpr); ok = true; }
+  else if (c.hp > 0 && it.cure && c.poison) { c.poison = false; ok = true; }
   if (ok) { G.inv.items[id]--; countUse(id); }
   itemsMenu(ok ? `${esc(c.name)} ${it.verb || 'uses'} ${it.art || 'a'} ${it.name}.` : 'No effect.');
 };

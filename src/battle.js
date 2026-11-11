@@ -49,6 +49,7 @@ async function battleInner(groupIds, bossId = null) {
   const mod = { ...DIFFICULTY[G.difficulty || 'normal'].mod }, ps = !bossId && PARTY_SCALE[G.party.length];
   if (ps) { mod.hp *= ps.hp; mod.atk *= ps.atk; mod.mag *= ps.atk; }
   for (const k of ['hp', 'atk', 'mag', 'def', 'reward']) mod[k] = (mod[k] ?? 1) * ngMul(k);
+  if (!G.flags.story.called) mod.noAmbush = true; // no ambushes while it is two blokes in a cellar
   if (G.rules) { mod.reward *= ruleBonus(); if (G.rules.glass) mod.dmg = 1.5; if (G.rules.rush) mod.rush = true; } // NG+ house rules
   const b = new Battle(G.party, groupIds, Math.random, !!bossId, mod);
   await transition(); music(bossId ? 'boss' : 'battle');
@@ -68,8 +69,9 @@ async function battleInner(groupIds, bossId = null) {
   renderBattle();
   while (!b.over) {
     if (BT.auto && b.p.some((x) => x.hp <= 0 || x.hp < x.maxhp * 0.3)) { BT.auto = false; toast('⏩ Auto-battle stopped: someone needs help', 3000); renderBattle(); } // never auto-march a party into a wipe
-    const cmds = new Map();
-    for (const p of b.p.filter((x) => x.hp > 0)) {
+    const cmds = new Map(), caught = b.turn === 0 && b.ambushed; // ambushed: nobody gets to choose anything in round one
+    if (b.turn === 0 && (caught || b.preempt)) BT.stage.card(caught ? 'AMBUSHED!' : 'STRIKE FIRST!', 1.6);
+    for (const p of caught ? [] : b.p.filter((x) => x.hp > 0)) {
       if (cmds.get(p)?.kind === 'assist') continue; // already teamed up in a Bro Combo
       const cmd = await askCommand(p);
       cmds.set(p, cmd); if (cmd.kind === 'combo') cmds.set(cmd.partner, { kind: 'assist' });
@@ -80,7 +82,7 @@ async function battleInner(groupIds, bossId = null) {
   }
   if (b.over === 'win') { BT.stage.victory(); sfx('levelup'); renderBattle(); await sleep(1200); }
   BT.stage.stop(); S.trans = 0;
-  b.p.forEach((x) => { x.ch.hp = x.hp; x.ch.mp = x.mp; });
+  b.p.forEach((x) => { x.ch.hp = x.hp; x.ch.mp = x.mp; x.ch.poison = x.hp > 0 && x.st.poison > 0; }); // FF1: poison outlasts the fight
   if (b.over === 'fled') { sfx('flee'); const q = quip('flee', 0.6); if (q) toast(q.replace(/<[^>]+>/g, ''), 2600); }
   diag(`fight over: ${b.over} after ${b.turn} rounds, party ${b.p.map((x) => `${x.hp}/${x.maxhp}`).join(' ')}`);
   if (b.over === 'win') await victory(b, bossId);
@@ -155,7 +157,7 @@ function cmdHtml(a) {
       return btn('c', `<span class="sk">${ic(UI.skillIconName({ ...s, fx: s.fx || [] }))}<b>${s.name}</b></span><small>${m1}+${m2} MP · ${k.desc}</small>`, 'combo', k.id, 'two combo', p.mp < m1 || q.mp < m2); }).join('') + `${back}</div>`;
   }
   if (a.stage === 'item') {
-    const its = Object.entries(G.inv.items).filter(([, n]) => n > 0);
+    const its = Object.entries(G.inv.items).filter(([id, n]) => n > 0 && !ITEMS[id].camp); // camping gear is for the overworld
     return `${head}<div class="cmdlist">` + (its.map(([id, n]) => btn('c', `<span class="sk">${itemIc('items', id)}<b>${ITEMS[id].name} <em>×${n}</em></b></span><small>${ITEMS[id].desc}</small>`, 'useitem', id, 'two')).join('') || '<div class="dim">No items.</div>') + `${back}</div>`;
   }
   // target: pick from a list of names, like the original
@@ -341,7 +343,7 @@ async function defeat() {
   music('gameover');
   await new Promise((res) => {
     ov.innerHTML = `<div class="win red anim"><div class="vhead">${ic('ko')}<h2 class="bad">${DEFEAT[Math.floor(Math.random() * DEFEAT.length)]}</h2>${ic('ko')}</div><div class="vparty">${G.party.map((c) => `<div class="vp">${portrait(ak(c), 'sm ko')}<div class="vi">${esc(c.name)}</div></div>`).join('')}</div><p>You wake up outside ${(HOME = wipeHome()).map === 'haven' ? 'the Goose' : esc(HOME.name)} with a banging headache. Half your gold is gone. Nobody will say where.</p><div class="foot">${btn('ddone', 'Wake up', '', '', 'primary')}</div></div>`;
-    ACT.ddone = () => { G.gold = Math.floor(G.gold / 2); for (const c of G.party) { const s = maxOf(c); c.hp = s.hp; c.mp = s.mp; } const home = HOME || wipeHome(); goto(home.map, home.x, home.y); hide(); res(); };
+    ACT.ddone = () => { G.gold = Math.floor(G.gold / 2); for (const c of G.party) { const s = maxOf(c); c.poison = false; c.hp = s.hp; c.mp = s.mp; } const home = HOME || wipeHome(); goto(home.map, home.x, home.y); hide(); res(); };
   });
 }
 

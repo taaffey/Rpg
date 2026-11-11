@@ -152,7 +152,7 @@ export const STATUS_ICON = { poison: 'poison', slow: 'slow', stun: 'stun', atkup
 export const statusIcons = (st = {}) => Object.keys(STATUS_ICON).filter((k) => st[k] > 0).map((k) => ic(STATUS_ICON[k], 'st')).join('');
 export function itemIconName(id, it = {}) {
   if (DEF[id] && /potion|ether|elixir|phoenix|antidote|remedy/.test(id)) return id;
-  return it.revive ? 'phoenix' : it.cure ? 'antidote' : it.mpr ? 'ether' : 'potion';
+  return it.camp ? 'title' : it.revive ? 'phoenix' : it.cure ? 'antidote' : it.mpr ? 'ether' : 'potion';
 }
 export function gearIconName(kind, d = {}) {
   const n = (d.name || '').toLowerCase();

@@ -85,7 +85,7 @@ Object.assign(ACCS, {
 
 // ---------------------------------------------------------------- shops
 Object.assign(SHOPS, {
-  kiln_general: { title: '🛒 Kilnhaven Beach Shop', greet: 'Sun cream, inflatables, postcards and miracle pints. The postcards are the miracle.', stock: { items: ['hipotion', 'ether', 'megaether', 'phoenix', 'antidote', 'remedy', 'elixir'], gems: ['fire', 'frost', 'bolt', 'holy', 'shadow', 'chain', 'echo', 'vamp', 'pierce', 'thrifty', 'guard', 'crit', 'swift', 'wide'] } },
+  kiln_general: { title: '🛒 Kilnhaven Beach Shop', greet: 'Sun cream, inflatables, postcards and miracle pints. The postcards are the miracle.', stock: { items: ['hipotion', 'ether', 'megaether', 'phoenix', 'antidote', 'remedy', 'elixir', 'cabin', 'house'], gems: ['fire', 'frost', 'bolt', 'holy', 'shadow', 'chain', 'echo', 'vamp', 'pierce', 'thrifty', 'guard', 'crit', 'swift', 'wide'] } },
   kiln_smith: { title: '⚒️ Kilnhaven Forge & Fire Pit', greet: 'We forge swords, flip burgers and juggle the odd torch. Please do not ask which is which.', stock: { weapons: ['cricket_bat', 'ice_pick', 'super_soaker', 'oven_gloves', 'sage_staff', 'arcane_tome', 'blizzard_tome', 'thorn_whip'], armors: ['hivis_overalls', 'mythril_mail', 'frost_robe'], accs: ['beach_towel', 'flipflop_charm', 'ice_bucket', 'life_charm', 'sage_ring', 'socket_jewel'] } },
 });
 

@@ -315,9 +315,9 @@ Object.assign(ENCOUNTERS, {
 });
 // shops: stock lists (ids in WEAPONS / ARMORS / ACCS / GEMS / ITEMS)
 export const SHOPS = {
-  haven_general: { title: '🛒 Haven Corner Store & Offy', greet: 'Cash only. The card machine "isn\'t working". It has never worked.', stock: { items: ['potion', 'ether', 'phoenix'], gems: ['fire', 'frost', 'bolt', 'thrifty', 'venom', 'focusg', 'pierce'] } },
+  haven_general: { title: '🛒 Haven Corner Store & Offy', greet: 'Cash only. The card machine "isn\'t working". It has never worked.', stock: { items: ['potion', 'ether', 'phoenix', 'tent'], gems: ['fire', 'frost', 'bolt', 'thrifty', 'venom', 'focusg', 'pierce'] } },
   haven_smith: { title: '⚒️ Haven Hardware & Forge', greet: 'Ten screws or a sword? Same aisle, mate. Mind the sharp ones.', stock: { weapons: ['oak_staff', 'bronze_dirk', 'dusty_tome', 'iron_knuckle', 'leather_whip', 'short_bow', 'rusty_scythe', 'hand_axe', 'iron_sword', 'wakizashi', 'viper_fang', 'storm_rod', 'frost_codex', 'hunter_bow', 'flame_brand'], armors: ['cloth', 'leather', 'chain', 'plate', 'mage_cloak'], accs: ['power_ring', 'ward_amulet', 'mana_charm', 'swift_boots', 'fire_pendant'] } },
-  frost_general: { title: '🛒 Frostholm Cold Store', greet: 'Everything here is chilled. Including the staff.', stock: { items: ['potion', 'hipotion', 'ether', 'megaether', 'phoenix', 'elixir'], gems: ['fire', 'frost', 'bolt', 'holy', 'shadow', 'chain', 'vamp', 'pierce', 'thrifty', 'overcharge', 'wide', 'venom', 'swift', 'focusg', 'guard', 'crit', 'berserk', 'echo', 'stun', 'siphon', 'execute'] } },
+  frost_general: { title: '🛒 Frostholm Cold Store', greet: 'Everything here is chilled. Including the staff.', stock: { items: ['potion', 'hipotion', 'ether', 'megaether', 'phoenix', 'elixir', 'tent', 'cabin'], gems: ['fire', 'frost', 'bolt', 'holy', 'shadow', 'chain', 'vamp', 'pierce', 'thrifty', 'overcharge', 'wide', 'venom', 'swift', 'focusg', 'guard', 'crit', 'berserk', 'echo', 'stun', 'siphon', 'execute'] } },
   frost_smith: { title: '⚒️ Frostholm DIY Forge', greet: 'Flat-pack weapons. Allen key included. Instructions lost.', stock: { weapons: ['mythril_sword', 'frostbrand', 'stiletto', 'sage_staff', 'longbow', 'frost_bow', 'steel_fist', 'thorn_whip', 'grave_scythe', 'arcane_tome', 'blizzard_tome', 'war_axe', 'moonblade'], armors: ['mythril_mail', 'frost_robe', 'yeti_fur'], accs: ['sage_ring', 'berserk_ring', 'life_charm', 'gem_crown', 'socket_jewel', 'frost_pendant', 'lich_ring'] } },
 };
 
@@ -366,9 +366,9 @@ Object.assign(ENEMIES, {
 });
 Object.assign(ENCOUNTERS, { storm: [['storm_bat', 'storm_bat'], ['thunder_imp', 'thunder_imp'], ['gale_wraith'], ['storm_bat', 'thunder_imp'], ['gale_wraith', 'storm_bat'], ['thunder_imp', 'gale_wraith', 'storm_bat']] });
 BOSSES.storm_drake = { name: 'Storm Drake', intro: 'Thunder splits the cavern. The Storm Drake drops from the dark, crackling! Devon\'s phone does not charge.', optional: true, loot: { weapons: ['storm_katana'], armors: ['storm_cloak'], gems: ['siphon', 'crit'] } };
-SHOPS.chippy = { title: '🍟 Wayside Chippy', greet: 'Salt and vinegar? Open wrapper or it gets soggy. That is science.', stock: { items: ['potion', 'hipotion', 'phoenix', 'antidote'] } };
+SHOPS.chippy = { title: '🍟 Wayside Chippy', greet: 'Salt and vinegar? Open wrapper or it gets soggy. That is science.', stock: { items: ['potion', 'hipotion', 'phoenix', 'antidote', 'tent'] } };
 SHOPS.oasis = { title: '🌯 Oasis Kebab Van', greet: 'Chilli sauce? It is not a question. It is a warning.', stock: { items: ['hipotion', 'ether', 'phoenix', 'remedy'] } };
-SHOPS.mire_general = { title: '🛒 Mirewood Car Boot Shop', greet: 'Boot of a Fiat. No refunds, no questions, no receipts.', stock: { items: ['potion', 'hipotion', 'ether', 'phoenix'], gems: ['fire', 'frost', 'bolt', 'holy', 'shadow', 'chain', 'vamp', 'thrifty', 'venom', 'guard', 'crit'], weapons: ['healing_staff', 'viper_fang', 'serpent_lash', 'thunder_claw', 'bone_scythe', 'battle_axe', 'iron_katana', 'hunter_bow', 'flame_brand'], armors: ['chain', 'mage_cloak', 'yeti_fur'], accs: ['ward_amulet', 'fire_pendant', 'swift_boots'] } };
+SHOPS.mire_general = { title: '🛒 Mirewood Car Boot Shop', greet: 'Boot of a Fiat. No refunds, no questions, no receipts.', stock: { items: ['potion', 'hipotion', 'ether', 'phoenix', 'tent', 'cabin'], gems: ['fire', 'frost', 'bolt', 'holy', 'shadow', 'chain', 'vamp', 'thrifty', 'venom', 'guard', 'crit'], weapons: ['healing_staff', 'viper_fang', 'serpent_lash', 'thunder_claw', 'bone_scythe', 'battle_axe', 'iron_katana', 'hunter_bow', 'flame_brand'], armors: ['chain', 'mage_cloak', 'yeti_fur'], accs: ['ward_amulet', 'fire_pendant', 'swift_boots'] } };
 
 // ---- side quests. goal: {type:'kill', ids, n} | {type:'find', item} | {type:'boss', id}
 export const QUESTS = {
@@ -399,6 +399,10 @@ export const DIFFICULTY = {
 };
 
 Object.assign(ITEMS, {
+  // camping gear (FF1's Tent, Cabin and House): overworld only, heals everyone standing and saves the game
+  tent: { name: 'Sleeping Bag', camp: 0.3, price: 60, desc: 'Camp on the overworld: everyone standing recovers 30% HP, and the game is saved.', verb: 'unrolls' },
+  cabin: { name: 'Two-Man Tent', camp: 0.6, price: 200, desc: 'Camp on the overworld: everyone standing recovers 60% HP, and the game is saved. Sleeps four, badly.', verb: 'pitches' },
+  house: { name: 'Camper Van', camp: 1, campMp: true, price: 650, desc: 'Camp on the overworld: full HP and MP for everyone standing, and the game is saved. One careful owner.', verb: 'parks' },
   antidote: { name: 'Cup of Tea', cure: 'poison', price: 20, desc: 'Cure poison. Tea fixes everything.', verb: 'has' },
   remedy: { name: 'Tea & Biscuits', art: 'some', cure: 'all', price: 80, desc: 'Cure poison, slow and stun. Dunking encouraged.', verb: 'has' },
 });
@@ -918,7 +922,7 @@ export const TRAITS = {
   thrift: { name: 'Free Trial', desc: 'Skills cost 25% less MP. Remember to cancel.' },
   regen: { name: 'Top-Up', desc: 'Recovers 5% HP each round. "Top you up, love?"' },
   counter: { name: 'Spotter', desc: '30% chance to strike back when hit. "I got you, bro."' },
-  preempt: { name: 'Oche Stare', desc: 'Foes may lose their first turn (25%, not bosses). Intense eye contact.' },
+  preempt: { name: 'Oche Stare', desc: 'The party strikes first far more often (25%, not bosses) and is never ambushed. Intense eye contact.' },
   hunger: { name: 'Parasocial', desc: 'Drain effects heal 50% more. Feeds on engagement.' },
   encore: { name: 'Tip Jar', desc: 'The party earns 10% more EXP. Cash, card or compliments.' },
   adrenaline: { name: 'Dutch Courage', desc: '+30% damage below 40% HP. Three pints in, nothing hurts.' },

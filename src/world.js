@@ -267,6 +267,13 @@ async function chartTheLand() { // the overworld bakes in the background from th
 }
 // Random fights are spaced out: after any fight the party gets a few quiet steps, and the chance per step after that is raised to match,
 // so the average distance between fights is still 1 / rate but two never land back to back.
+// FF1: poison outlasts the fight. Each step costs a poisoned hero 1 HP (never the last one) until a Cup of Tea or an inn sorts it out.
+let poisonNag = 0;
+function poisonStep() {
+  const sick = G.party.filter((c) => c.poison && c.hp > 0); if (!sick.length) { poisonNag = 0; return; }
+  for (const c of sick) if (c.hp > 1) c.hp--;
+  if (poisonNag++ % 40 === 0) toast(`${ic('poison')} ${sick.map((c) => c.name).join(' and ')} ${sick.length > 1 ? 'have' : 'has'} a dodgy tum: 1 HP a step. A Cup of Tea or an inn will fix it.`, 3600);
+}
 let sinceFight = 0;
 function encounterRoll(rate) {
   if (!(rate > 0)) return false;
@@ -284,6 +291,7 @@ async function step(dx, dy) {
   if (t === 'C') { if (!G.flags.chests[chestKey(nx, ny)]) openChest(nx, ny); return; }
   if (!walkable(t)) { if (t === 'B' && m.gate && !G.flags.bosses[m.gate.flag]) toast('A rockslide blocks the pass. Nothing is getting through that yet.', 2800); return; }
   G.x = nx; G.y = ny; trail.push({ x: nx, y: ny }); if (trail.length > 8) trail.shift();
+  poisonStep();
   const pt = m.portals?.[`${nx},${ny}`];
   if (pt?.need && !cond(pt.need)) { G.x -= dx; G.y -= dy; trail.pop(); snap(); draw(); const seenKey = `deny:${G.map}:${G.x + dx},${G.y + dy}`; if (G.flags.talked[seenKey]) { toast('Still sealed. ' + ((pt.deny || []).slice(-1)[0]?.t || ''), 4200); return; } G.flags.talked[seenKey] = true; return scene(pt.deny || []); } // not yet: a word at the gate, and back a step
   if (pt && pt.to === 'world') await chartTheLand();
