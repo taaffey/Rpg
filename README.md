@@ -37,6 +37,7 @@ keyboard alone, or with the mouse. Options (volumes, battle speed, shake, minima
 - **3 save slots** with details, autosave (towns, battles, quests, app backgrounding), delete/overwrite confirmation, and
   migration from older saves.
 - **Difficulty** (Easy / Normal / Hard, changeable in Options). There are no tutorial pop-ups: NPCs and the journal drop hints in the story's voice.
+- **Field magic** (Menu > Magic, the way FF1 does it): pick who casts, then a healing spell, then who gets it. One-ally cures ask for a target, the stronger party-wide ones heal everyone, revives work on the fallen; costs, gems and weapon bonuses match battle. Free (0 MP) heals are battle-only.
 - **Battle QoL**: Repeat your last move, Auto-battle (tap to stop), turn-order bar, expandable log, battle speed and dialogue text speed (normal / fast / instant) in Options.
 - **Menus**: equipment stat comparison (green/red arrows), Bestiary with weaknesses, Journal with quests, full map screen.
 - **New Game+** (offered after the credits, up to NG+5): keep your party, gear and gold; the world, bosses and quests reset and foes hit harder each loop (+40% HP, +20% damage, more rewards). Save slots show an NG+ badge.

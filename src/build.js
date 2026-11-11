@@ -57,6 +57,48 @@ ACT.useon = (id, i) => {
   if (ok) { G.inv.items[id]--; countUse(id); }
   itemsMenu(ok ? `${esc(c.name)} ${it.verb || 'uses'} ${it.art || 'a'} ${it.name}.` : 'No effect.');
 };
+// ---------- field magic, the way FF1 does it: Menu > Magic > who casts > which spell > on whom ----------
+// Only healing spells work outside battle. A spell keeps its battle shape: a one-ally cure asks for a target, the stronger
+// party-wide ones just go off, and gems, weapon bonuses and MP costs are the same as in a fight. Free (0 MP) heals are battle-only.
+function fieldSpells(c) {
+  const thrift = L.activeTraits(c).includes('thrift');
+  return [0, 1, 2, 3, SIG].map((i) => {
+    const sid = L.slotSkill(c, i); if (!sid) return null;
+    const m = L.withWeapon(skillWithGems(sid, L.slotGems(c, i)), c.weapon ? WEAPONS[c.weapon] : null, false, i === SIG);
+    if (m.kind !== 'heal' || !(m.mp > 0)) return null;
+    if (thrift) m.mp = Math.max(1, Math.round(m.mp * 0.75));
+    return { ...m, slot: i, revive: m.fx.includes('revive'), amount: m.pow ? Math.round((maxOf(c).mag * m.pow + 8) * (m.healMul || 1)) : 0 };
+  }).filter(Boolean);
+}
+const spellOf = (c, slot) => fieldSpells(c).find((m) => m.slot === +slot);
+const helps = (m, t) => { const s = maxOf(t); return t.hp <= 0 ? m.revive : m.amount > 0 && t.hp < s.hp; }; // would this spell do anything for this hero?
+function castField(c, m, targets) { // spend the MP and heal; returns what happened, or null if it would do nothing
+  const hit = targets.filter((t) => helps(m, t)); if (c.hp <= 0 || c.mp < m.mp || !hit.length) return null;
+  c.mp -= m.mp; sfx('holy');
+  const out = hit.map((t) => { const s = maxOf(t); if (t.hp <= 0) { t.hp = Math.round(s.hp * 0.4); return `${esc(t.name)} is back on their feet.`; } const h = Math.min(m.amount, s.hp - t.hp); t.hp += h; return `${esc(t.name)} +${h} HP`; });
+  (G.stats ||= { wins: 0 }).fieldCasts = (G.stats.fieldCasts || 0) + 1;
+  return `${esc(c.name)} casts ${m.name}${/[?!.]$/.test(m.name) ? '' : '.'} ${out.join(' · ')}`;
+}
+const spellLine = (m) => `${m.mp} MP · ${m.tgt === 'allies' ? 'whole party' : m.tgt === 'self' ? 'self' : 'one ally'}${m.amount ? ` · +${m.amount} HP` : ''}${m.revive ? ' · revives' : ''}`;
+ACT.magic = (msg) => {
+  const any = G.party.some((c) => fieldSpells(c).length);
+  show(`<h2>${ic('heal')} Magic</h2>${msg ? `<p class="gold">${msg}</p>` : ''}<p class="dim">${any ? 'Who casts? Healing spells work out here just as they do in a fight.' : 'Nobody has a healing spell ready. Barmaids learn them first; put one in a skill slot.'}</p><div class="card menuparty">${G.party.map((c, i) => { const n = fieldSpells(c).length; return heroBtn(c, 'magicwho', i).replace('<button ', `<button ${n && c.hp > 0 ? '' : 'disabled '}`); }).join('')}</div><div class="foot">${btn('menu', 'Back', '', '', 'primary')}</div>`);
+};
+ACT.magicwho = (i, msg) => {
+  const c = G.party[+i], list = fieldSpells(c);
+  show(`<h2>${ic('heal')} ${esc(c.name)} · MP ${c.mp}/${maxOf(c).mp}</h2>${msg ? `<p class="gold">${msg}</p>` : ''}<div class="cmdlist">${list.map((m) => btn('magiccast', `<span class="sk">${ic(UI.skillIconName(m))}<b>${m.name}</b></span><small>${spellLine(m)}</small>`, i, m.slot, 'two', c.hp <= 0 || c.mp < m.mp)).join('')}</div><div class="foot">${btn('magic', 'Back', '', '', 'primary')}</div>`);
+};
+ACT.magiccast = (i, slot, msg) => {
+  const c = G.party[+i], m = spellOf(c, slot); if (!m) return ACT.magicwho(i);
+  if (m.tgt !== 'ally') return ACT.magicwho(i, castField(c, m, m.tgt === 'self' ? [c] : G.party) || (c.mp < m.mp ? 'Not enough MP.' : 'No effect.'));
+  show(`<h2>${ic('heal')} ${m.name} on…</h2>${msg ? `<p class="gold">${msg}</p>` : `<p class="dim">${esc(c.name)} · MP ${c.mp}/${maxOf(c).mp} · ${spellLine(m)}</p>`}<div class="card menuparty">${G.party.map((t, j) => heroBtn(t, 'magicon', `${+i}_${m.slot}`, j)).join('')}</div><div class="foot">${btn('magicwho', 'Back', i, '', 'primary')}</div>`);
+};
+ACT.magicon = (key, j) => { // stay on the target list after a cast, so topping up the whole party is a few taps
+  const [i, slot] = String(key).split('_'), c = G.party[+i], m = spellOf(c, slot); if (!m) return ACT.magicwho(i);
+  const r = castField(c, m, [G.party[+j]]) || (c.mp < m.mp ? 'Not enough MP.' : 'No effect.');
+  if (c.mp < m.mp) return ACT.magicwho(i, r);
+  ACT.magiccast(i, slot, `${r} <span class="dim">(MP ${c.mp}/${maxOf(c).mp})</span>`);
+};
 // ---------- build screen: jobs, gear, skills, gems ----------
 let B = { i: 0, view: 'main', slot: 0, guild: false };
 ACT.build = (i) => { B = { i: +i, view: 'main', slot: 0, guild: B.guild && inTown() }; buildScreen(); };

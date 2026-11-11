@@ -186,23 +186,61 @@ function draw(t = performance.now() / 1000) {
   }
   $('#loc').textContent = m.kind === 'outdoor' ? REGION_NAME[regionOf()] : m.name; $('#gold').textContent = `${G.gold} G`;
 }
+// ---------- title screen: four small figures with their backs to us, three great evils on the horizon, and the bell ----------
+const titleCache = new Map();
+function titleShade(id) { // a boss as a dark shape against the sky, a touch lighter at the top where the moon catches it
+  if (titleCache.has(id)) return titleCache.get(id);
+  const src = SP.enemy(id), c = document.createElement('canvas'); c.width = src.width; c.height = src.height; const x = c.getContext('2d');
+  x.drawImage(src, 0, 0); x.globalCompositeOperation = 'source-in'; const g = x.createLinearGradient(0, 0, 0, c.height); g.addColorStop(0, '#1a1238'); g.addColorStop(1, '#0c0820'); x.fillStyle = g; x.fillRect(0, 0, c.width, c.height);
+  const rim = document.createElement('canvas'); rim.width = c.width + 2; rim.height = c.height + 2; const r = rim.getContext('2d'); // the same shape in pale violet, peeking out one pixel up and to the right (the moon's side)
+  r.drawImage(c, 2, 0); r.globalCompositeOperation = 'source-in'; r.fillStyle = '#8a6ad8'; r.fillRect(0, 0, rim.width, rim.height); r.globalCompositeOperation = 'source-over'; r.drawImage(c, 1, 1);
+  titleCache.set(id, rim); return rim;
+}
+const BELL = ['......LL......', '.....LYYd.....', '.....LYYd.....', '....LYYYYd....', '...LYYYYYYd...', '...LYWYYYYd...', '..LYWWYYYYYd..', '..LYWYYYYYYd..', '..LYWYYYYYYd..', '..LYYYYYYYYd..', '.LYYYYYYYYYYd.', '.LYYYYYYYYYYd.', 'LLYYYYYYYYYYdd', 'LYYYYYYYYYYYYd', 'dddddddddddddd', '.....kKKk.....', '......kk......'];
+const titleBell = () => { if (!titleCache.has('bell')) titleCache.set('bell', SP.sprite(BELL, { L: '#fff2a8', Y: '#e8b23a', W: '#fff8d8', d: '#9a6414', k: '#5a3a10', K: '#b88428' })); return titleCache.get('bell'); };
+const HEARTS = { wyrm: ['#ff7a3a', '#ffd25a'], lich: ['#b07aff', '#e8d0ff'], titan: ['#5ab8ff', '#d8f4ff'] };
 function drawTitle(t) {
   const W = cv.width, H = cv.height, u = Math.min(W / 512, H / 384), cxm = W / 2; cx.imageSmoothingEnabled = false;
-  const g = cx.createLinearGradient(0, 0, 0, H); g.addColorStop(0, '#0a0c24'); g.addColorStop(0.6, '#2a2060'); g.addColorStop(1, '#6a3a78'); cx.fillStyle = g; cx.fillRect(0, 0, W, H);
-  for (let i = 0; i < 70; i++) { const x = (i * 97) % W, y = (i * 53) % (H * 0.6), a = 0.4 + 0.6 * Math.abs(Math.sin(t * 1.5 + i)); cx.fillStyle = `rgba(255,255,255,${a})`; cx.fillRect(x, y, i % 5 ? 2 : 3, i % 5 ? 2 : 3); }
-  cx.fillStyle = '#f4ecc8'; cx.beginPath(); cx.arc(W - 44 * u, H * 0.14, 22 * u, 0, 7); cx.fill(); cx.fillStyle = '#d8cfa0'; cx.beginPath(); cx.arc(W - 51 * u, H * 0.12, 5 * u, 0, 7); cx.arc(W - 37 * u, H * 0.16, 4 * u, 0, 7); cx.fill();
-  const tall = H > W * 1.2, base = H * (tall ? 0.56 : 0.75), ground = H * (tall ? 0.63 : 0.875);
-  for (const [col, off, amp, f] of [['#2a1f58', 0, 50, 0.011], ['#1a1440', 30, 38, 0.02]]) { cx.fillStyle = col; cx.beginPath(); cx.moveTo(0, H); for (let x = 0; x <= W; x += 8) cx.lineTo(x, base + off * u - Math.abs(Math.sin(x * f / u + 1)) * amp * u - Math.sin(x * f * 3 / u) * 8 * u); cx.lineTo(W, H); cx.fill(); }
-  cx.fillStyle = '#0e0b24'; cx.fillRect(0, ground, W, H - ground);
-  const gemCols = ['#ff7a3a', '#7fd8f0', '#fff27a', '#ffffff', '#b07aff'], n = Math.max(5, Math.round(W / 54));
-  for (let i = 0; i < n; i++) { const x = (i + 0.5) * W / n, y = H * (tall ? 0.45 : 0.5) + Math.sin(t * 1.4 + i * 1.7) * 14 * u, c = gemCols[i % 5], q = u; cx.fillStyle = c; cx.beginPath(); cx.moveTo(x, y - 7 * q); cx.lineTo(x + 5 * q, y); cx.lineTo(x, y + 7 * q); cx.lineTo(x - 5 * q, y); cx.fill(); cx.fillStyle = 'rgba(255,255,255,.6)'; cx.fillRect(x - q, y - 4 * q, 2 * q, 3 * q); }
-  const sz = Math.round(48 * u / 8) * 8 || 24, heroes = ['bloke@adam', 'bloke@devon', 'cleric@brenna', 'knight@wendell'];
-  heroes.forEach((j, i) => { const x = ((t * 34 * u + i * 118 * u) % (heroes.length * 118 * u)) - 56 * u, y = ground - sz - Math.round(Math.abs(Math.sin(t * 9 + i)) * 4 * u) + 8 * u; cx.fillStyle = 'rgba(0,0,0,.4)'; cx.fillRect(x + sz * 0.16, ground + 4 * u, sz * 0.66, 4 * u); const im = WK.walker(j, 'right', 1 + (Math.floor(t * 8 + i) % 3)), h = sz * im.height / 16; cx.drawImage(im, x, y + sz - h + 4 * u, sz, h); }); // the party marches along in their field sprites
+  const tall = H > W * 1.2, safe = H * (tall ? 0.84 : 0.66); // the menu window covers everything below `safe`
+  const ground = safe - 10 * u, horizon = ground - (tall ? 70 : 44) * u, px = Math.max(1, Math.round(u * 1.5));
+  // dusk sky, stars, moon
+  const g = cx.createLinearGradient(0, 0, 0, ground); g.addColorStop(0, '#070920'); g.addColorStop(0.4, '#231a5a'); g.addColorStop(0.68, '#6a3484'); g.addColorStop(0.86, '#d0607a'); g.addColorStop(1, '#f0a070'); cx.fillStyle = g; cx.fillRect(0, 0, W, H);
+  for (let i = 0; i < 90; i++) { const x = (i * 97 + 13) % W, y = (i * 53 + (i % 7) * 31) % Math.max(1, horizon - 20 * u), a = 0.25 + 0.75 * Math.abs(Math.sin(t * (0.8 + (i % 5) * 0.3) + i)), z = i % 9 ? px : px * 2; cx.fillStyle = `rgba(255,${240 - (i % 3) * 20},${255 - (i % 4) * 30},${a})`; cx.fillRect(x, y, z, z); }
+  const mx = W - 58 * u, my = H * (tall ? 0.1 : 0.16), mr = 30 * u;
+  for (const [r, a] of [[2.2, 0.05], [1.6, 0.08], [1.25, 0.12]]) { cx.fillStyle = `rgba(255,240,200,${a})`; cx.beginPath(); cx.arc(mx, my, mr * r, 0, 7); cx.fill(); }
+  cx.fillStyle = '#f6eecb'; cx.beginPath(); cx.arc(mx, my, mr, 0, 7); cx.fill(); cx.fillStyle = '#d9cfa2'; cx.beginPath(); cx.arc(mx - 9 * u, my - 6 * u, 6 * u, 0, 7); cx.arc(mx + 8 * u, my + 7 * u, 5 * u, 0, 7); cx.arc(mx + 10 * u, my - 12 * u, 3 * u, 0, 7); cx.fill();
+  // far ridge, then the three evils looming over it, each with its heart-gem alight
+  const ridge = (col, base, amp, f, ph) => { cx.fillStyle = col; cx.beginPath(); cx.moveTo(0, H); for (let x = 0; x <= W; x += 4) cx.lineTo(x, base - Math.abs(Math.sin(x * f / u + ph)) * amp * u - Math.sin(x * f * 3.1 / u + ph) * 6 * u); cx.lineTo(W, H); cx.fill(); };
+  ridge('#4a2a78', horizon + 22 * u, 26, 0.009, 1);
+  const es = Math.max(1, Math.round(u * (tall ? 2.4 : 1.5)));
+  for (const [id, fx, dy, hx, hy] of [['wyrm', tall ? 0.2 : 0.15, 40, 0.6, 0.52], ['titan', tall ? 0.82 : 0.86, 38, 0.5, 0.42], ['lich', 0.5, 26, 0.5, 0.64]]) {
+    const im = titleShade(id), w = im.width * es, h = im.height * es, x = Math.round(W * fx - w / 2), y = Math.round(horizon + dy * u - h + Math.sin(t * 0.7 + fx * 9) * 2 * u);
+    cx.drawImage(im, x, y, w, h);
+    const [c1, c2] = HEARTS[id], gx = x + w * hx, gy = y + h * hy, k = 0.6 + 0.4 * Math.sin(t * 2.2 + fx * 7), q = es * 2;
+    for (const [r, a] of [[9, 0.07], [6, 0.12], [3.5, 0.2]]) { cx.fillStyle = c1; cx.globalAlpha = a * (0.6 + k * 0.6); cx.beginPath(); cx.arc(gx, gy, r * q * (0.8 + k * 0.3), 0, 7); cx.fill(); } cx.globalAlpha = 1;
+    cx.fillStyle = c1; cx.beginPath(); cx.moveTo(gx, gy - 3.5 * q); cx.lineTo(gx + 2.5 * q, gy); cx.lineTo(gx, gy + 3.5 * q); cx.lineTo(gx - 2.5 * q, gy); cx.fill(); cx.fillStyle = c2; cx.fillRect(Math.round(gx - q * 0.5), Math.round(gy - q * 2), q, Math.round(q * 1.5));
+  }
+  ridge('#1a1242', horizon + 34 * u, 30, 0.017, 2.4);
+  // the ground, a strip of moonlit grass, and the party seen from behind
+  const gg = cx.createLinearGradient(0, ground - 14 * u, 0, H); gg.addColorStop(0, '#16123a'); gg.addColorStop(0.2, '#0d0a26'); gg.addColorStop(1, '#070514'); cx.fillStyle = gg; cx.fillRect(0, ground - 14 * u, W, H);
+  cx.fillStyle = '#2a2c6a'; for (let i = 0; i < W / (6 * px); i++) { const x = i * 6 * px + ((i * 7) % 5) * px, hgt = (2 + (i * 13) % 3) * px; cx.fillRect(x, ground - 14 * u - hgt + px, px, hgt); }
+  const hs = Math.max(2, Math.round(u * (tall ? 3.2 : 2.2))), heroes = ['knight@wendell', 'bloke@adam', 'bloke@devon', 'cleric@brenna'], gap = 21 * hs, x0 = cxm - (gap * (heroes.length - 1)) / 2;
+  heroes.forEach((j, i) => { const im = WK.walker(j, 'up', 0), w = im.width * hs, h = im.height * hs, x = Math.round(x0 + i * gap - w / 2), y = Math.round(ground - h + (i % 2 ? 2 : 6) * u + (Math.sin(t * 1.6 + i * 1.9) > 0.86 ? -px : 0));
+    cx.fillStyle = 'rgba(0,0,0,.45)'; cx.beginPath(); cx.ellipse(x + w / 2, y + h - px, w * 0.36, 3 * hs * 0.6, 0, 0, 7); cx.fill(); cx.drawImage(im, x, y, w, h); });
+  // embers drifting up from the horizon
+  for (let i = 0; i < 16; i++) { const life = (t * 0.07 + i * 0.137) % 1, x = (i * 151 + 40) % W + Math.sin(t * 0.9 + i) * 10 * u, y = horizon + 30 * u - life * (horizon * 0.7); cx.globalAlpha = (1 - life) * 0.8; cx.fillStyle = ['#ff9a4a', '#c8a0ff', '#8ad0ff'][i % 3]; cx.fillRect(Math.round(x), Math.round(y), px, px); } cx.globalAlpha = 1;
+  // the logo, with the bell swinging above it
   cx.textAlign = 'center'; cx.textBaseline = 'alphabetic'; cx.lineJoin = 'round';
-  const ty = H * 0.29, tg = cx.createLinearGradient(0, ty - 44 * u, 0, ty + 8 * u); tg.addColorStop(0, '#fff6c0'); tg.addColorStop(1, '#e89a30');
-  const f1 = Math.min(50 * u, (W - 24) / 7.6); cx.font = `${f1}px "Press Start 2P", ui-monospace, Menlo, monospace`; cx.lineWidth = Math.max(4, f1 * 0.2); cx.strokeStyle = '#2a1050'; cx.strokeText('BEARDED', cxm, ty); cx.fillStyle = tg; cx.fillText('BEARDED', cxm, ty);
-  const f2 = f1 * 0.43; cx.font = `${f2}px "Press Start 2P", ui-monospace, Menlo, monospace`; cx.lineWidth = Math.max(3, f2 * 0.3); cx.strokeText('BROS', cxm, ty + f1 * 1.05); cx.fillStyle = tg; cx.fillText('BROS', cxm, ty + f1 * 1.05);
-  const f3 = f1 * 0.3; cx.font = `${f3}px "Press Start 2P", ui-monospace, Menlo, monospace`; cx.lineWidth = Math.max(3, f3 * 0.35); cx.strokeText('AND THE BELL OF GEMFORGE', cxm, ty + f1 * 1.75); cx.fillStyle = '#c8b8ff'; cx.fillText('AND THE BELL OF GEMFORGE', cxm, ty + f1 * 1.75);
+  const FONT = '"Press Start 2P", ui-monospace, Menlo, monospace', f1 = Math.min(52 * u, (W - 20) / 7.4, tall ? 1e9 : (ground - 24 * hs - 26 * u) / 4.5), bell = titleBell(), bs = Math.max(2, Math.round(f1 / 14)), ty = tall ? H * 0.2 + f1 : 4 * u + bell.height * bs + f1 * 1.28;
+  const sw = Math.sin(t * 2.4) * 0.22 * (0.55 + 0.45 * Math.sin(t * 0.5)), bx = cxm, by = ty - f1 * 1.28 - bell.height * bs;
+  cx.strokeStyle = '#8a6a3a'; cx.lineWidth = Math.max(1, bs * 0.8); cx.beginPath(); cx.moveTo(bx, 0); cx.lineTo(bx, by); cx.stroke();
+  for (let k = 0; k < 3; k++) { const rr = ((t * 0.6 + k / 3) % 1); cx.strokeStyle = `rgba(255,232,150,${(1 - rr) * 0.35})`; cx.lineWidth = Math.max(1, px); cx.beginPath(); cx.arc(bx, by + bell.height * bs * 0.6, (10 + rr * 60) * bs * 0.5, Math.PI * 0.1, Math.PI * 0.9); cx.stroke(); }
+  cx.save(); cx.translate(bx, by); cx.rotate(sw); cx.drawImage(bell, Math.round(-bell.width * bs / 2), 0, bell.width * bs, bell.height * bs); cx.restore();
+  const word = (txt, y, f, top, bot, depth) => { cx.font = `${f}px ${FONT}`; const d = Math.max(2, Math.round(f * depth)); cx.lineWidth = Math.max(4, f * 0.2); cx.strokeStyle = '#150a38'; cx.strokeText(txt, cxm, y + d); cx.strokeText(txt, cxm, y); for (let k = d; k > 0; k--) { cx.fillStyle = k === d ? '#3a1456' : '#8a3a22'; cx.fillText(txt, cxm, y + k); }
+    const tg = cx.createLinearGradient(0, y - f, 0, y); tg.addColorStop(0, top); tg.addColorStop(0.55, top); tg.addColorStop(0.56, bot); tg.addColorStop(1, '#c86a1e'); cx.fillStyle = tg; cx.fillText(txt, cxm, y); };
+  word('BEARDED', ty, f1, '#fff6c0', '#f0b040', 0.09);
+  word('BROS', ty + f1 * 1.12, f1, '#fff6c0', '#f0b040', 0.09);
+  const f3 = Math.max(7, f1 * 0.27); cx.font = `${f3}px ${FONT}`; cx.lineWidth = Math.max(3, f3 * 0.4); cx.strokeStyle = '#150a38'; cx.strokeText('AND THE BELL OF GEMFORGE', cxm, ty + f1 * 1.12 + f3 * 2.2); cx.fillStyle = '#d8c8ff'; cx.fillText('AND THE BELL OF GEMFORGE', cxm, ty + f1 * 1.12 + f3 * 2.2);
 }
 function tick(now) {
   requestAnimationFrame(tick);
