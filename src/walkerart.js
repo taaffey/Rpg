@@ -145,3 +145,23 @@ export function compose(cfg, dir, f, blink = false) {
   for (let y = 0; y < h; y++) for (let X = 0; X < BW; X++) { const v = col[(y + top) * BW + X]; if (v) { x.fillStyle = v; x.fillRect(X, y, 1, 1); } }
   return c;
 }
+
+// ---------- battle heads: the walker's side-view head on its own (face, hair, ear, headgear; no body, no props) ----------
+// Returns { w: 16, h: HEAD_H, chin: HEAD_CHIN, col: [hex|null], ol: [hex|null] } facing RIGHT; row r of the grid is sprite row r - HEAD_TOP.
+// col = body colours (no outline), ol = the outline tint each pixel would give a neighbouring empty pixel. eyes: 'open' | 'shut' | 'glad'.
+export const HEAD_TOP = 11, HEAD_H = 24, HEAD_CHIN = HEAD_TOP + 11;
+const HEADC = new Map();
+export function headArt(key, eyes = 'open') {
+  const ck = key + '|' + eyes; let o = HEADC.get(ck); if (o) return o;
+  const cfg = cfgFor(key), buf = new Array(BW * BH).fill(null);
+  paint(buf, FACE.right); paint(buf, HAIR[cfg.hair]?.right); paint(buf, EAR);
+  for (const h of [].concat(cfg.head || [])) for (const p of HEADS[h]?.right || []) paint(buf, p);
+  if (eyes === 'shut') for (let i = 0; i < buf.length; i++) { if (buf[i] === 'e') buf[i] = 'S'; else if (buf[i] === 'E') buf[i] = 'e'; }
+  if (eyes === 'glad') for (let i = 0; i < buf.length; i++) { if (buf[i] === 'E') buf[i] = 'S'; }
+  const R = rampsFor(cfg), col = new Array(BW * HEAD_H).fill(null), ol = new Array(BW * HEAD_H).fill(null), top = OY - HEAD_TOP;
+  for (let y = 0; y < HEAD_H; y++) for (let x = 0; x < BW; x++) {
+    const ch = buf[(y + top) * BW + x]; if (!ch) continue; const i = y * BW + x;
+    if (CODE[ch]) { const [m, s] = CODE[ch]; col[i] = R[m][s]; ol[i] = R[m][4]; } else { col[i] = R.x[ch] || SPECIAL.o; ol[i] = '#1a1022'; }
+  }
+  o = { w: BW, h: HEAD_H, chin: HEAD_CHIN, col, ol }; HEADC.set(ck, o); return o;
+}

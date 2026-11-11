@@ -1,7 +1,6 @@
 // UI art: a 16x16 pixel icon set, window frames, hero face crops and the emoji -> icon bridge.
 // Everything is drawn in code at load time and handed to CSS as data-URLs (classes .ic-<name>, vars --frame etc).
 import * as SP from './sprites.js';
-import * as BA from './battleart.js';
 import * as WK from './walkers.js';
 
 const mk = (w, h) => { const c = document.createElement('canvas'); c.width = w; c.height = h; return c; };
@@ -176,17 +175,13 @@ const EMOJI = {
 const EMOJI_RE = new RegExp(`(${Object.keys(EMOJI).map((k) => k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|')})\\uFE0F?`, 'gu');
 export const deco = (html) => String(html).replace(EMOJI_RE, (_, k) => ic(EMOJI[k]));
 
-// ---------- hero faces: a 16x16 head-and-shoulders crop of the battle portrait ----------
+// ---------- hero faces: the front-facing head of the map sprite (16x16, hat brim to collar), so faces read at menu size ----------
 const faces = new Map();
 export function faceURL(job) {
   if (faces.has(job)) return faces.get(job);
-  let src; try { src = BA.heroPortrait(job); } catch { src = null; }
+  let src; try { src = WK.walker(job, 'down', 0); } catch { src = null; }
   if (!src) return SP.heroURL(job);
-  const w = src.width, h = src.height, d = src.getContext('2d').getImageData(0, 0, w, h).data, op = (x, y) => d[(y * w + x) * 4 + 3] > 40;
-  let top = 0; while (top < h && ![...Array(w).keys()].some((x) => op(x, top))) top++;
-  let sx = 0, n = 0; for (let y = top; y < Math.min(h, top + 9); y++) for (let x = 0; x < w; x++) if (op(x, y)) { sx += x; n++; }
-  const cxp = n ? Math.round(sx / n) : w / 2, S = 18, c = mk(S, S), x = c.getContext('2d');
-  x.drawImage(src, Math.round(S / 2 - cxp), 1 - top);
+  const S = 16, c = mk(S, S); c.getContext('2d').drawImage(src, Math.round((S - src.width) / 2), 2 - Math.max(0, src.height - 24)); // field sprites are 16x24, taller only under a tall hat
   const u = SP.url(c, 4); faces.set(job, u); return u;
 }
 export function npcFaceURL(type) { // head crop of a townsperson's field sprite

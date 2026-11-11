@@ -24,16 +24,16 @@ async function main() {
         const k = l === 'plain' ? j : j + '@' + l, ox = 110 + i * cw;
         x.fillStyle = '#58704a'; x.fillRect(ox, oy, 48, 78); x.fillRect(ox + 50, oy, 48, 78);
         for (const [di, d] of ['down', 'right'].entries()) { const s = WK.walker(k, d, 0); x.drawImage(s, ox + di * 50, oy + 76 - s.height * 3, 48, s.height * 3); }
-        const f = BA.heroFrame(k, 'idle'); x.fillStyle = '#4a5468'; x.fillRect(ox + 100, oy, 96, 96); x.drawImage(f, ox + 100, oy, 96, 96);
+        const f = BA.heroPortrait(k); x.fillStyle = '#4a5468'; x.fillRect(ox + 100, oy, 96, 96); x.drawImage(f, ox + 100, oy, 96, 96);
         const fc = await img(UI.faceURL(k)); x.fillStyle = '#2a2a50'; x.fillRect(ox + 198, oy, 76, 76); x.drawImage(fc, ox + 198, oy, 76, 76);
       }
     }
   } else if (mode === 'poses') {
-    const keys = (q.get('keys') || 'knight@adam,mage@devon,cleric@brenna,paladin@wendell').split(','), n = BA.HERO_POSES.length, cw = 32 * Z + 4;
-    size(90 + (n + 2) * cw, 20 + keys.length * (32 * Z + 6)); BA.HERO_POSES.forEach((p, i) => label(p, 90 + i * cw, 14, '#fff'));
+    const keys = (q.get('keys') || 'knight@adam,mage@devon,cleric@brenna,paladin@wendell').split(','), n = BA.HERO_POSES.length, FW = BA.HERO_W, FH = BA.HERO_H, cw = FW * Z + 4;
+    size(90 + (n + 2) * cw, 20 + keys.length * (FH * Z + 6)); BA.HERO_POSES.forEach((p, i) => label(p, 90 + i * cw, 14, '#fff'));
     for (const [r, k] of keys.entries()) {
-      const oy = 20 + r * (32 * Z + 6); label(k, 4, oy + 20);
-      BA.HERO_POSES.forEach((p, i) => { x.fillStyle = '#4a5468'; x.fillRect(90 + i * cw, oy, 32 * Z, 32 * Z); x.drawImage(BA.heroFrame(k, p, q.get('w') || null), 90 + i * cw, oy, 32 * Z, 32 * Z); });
+      const oy = 20 + r * (FH * Z + 6); label(k, 4, oy + 20);
+      BA.HERO_POSES.forEach((p, i) => { x.fillStyle = '#4a5468'; x.fillRect(90 + i * cw, oy, FW * Z, FH * Z); x.drawImage(BA.heroFrame(k, p, q.get('w') || null), 90 + i * cw, oy, FW * Z, FH * Z); });
       const pt = BA.heroPortrait(k); x.drawImage(pt, 90 + n * cw, oy, pt.width * Z, pt.height * Z);
       const fc = await img(UI.faceURL(k)); x.drawImage(fc, 90 + (n + 1) * cw, oy, 72, 72);
     }
@@ -42,16 +42,16 @@ async function main() {
     const who = ['bloke', 'knight', 'rogue', 'cleric', 'bard', 'mage', 'hexer', 'paladin', 'monk'];
     T.forEach((t, i) => {
       const ox = 10 + i * cw; label(t, ox, 16, '#fff');
-      ['bloke', q.get('who') || 'knight'].forEach((j, r) => { x.fillStyle = '#4a5468'; x.fillRect(ox, 24 + r * 132, 128, 128); x.drawImage(BA.heroFrame(j, 'strike', t), ox, 24 + r * 132, 128, 128); label(j, ox + 2, 38 + r * 132, '#ccc'); });
+      ['bloke', q.get('who') || 'knight'].forEach((j, r) => { x.fillStyle = '#4a5468'; x.fillRect(ox, 24 + r * 132, 128, 128); x.drawImage(BA.heroFrame(j, 'strike', t), ox, 24 + r * 132 + 10, 128, 108); label(j, ox + 2, 38 + r * 132, '#ccc'); });
       x.fillStyle = '#2a2a50'; x.fillRect(ox, 292, 16, 16); x.drawImage(UI.iconCanvas(t), ox, 292); x.fillRect(ox + 24, 292, 128, 128); x.drawImage(UI.iconCanvas(t), ox + 24, 292, 128, 128);
     });
     // class variants of the family art
-    [['bard', 'sword'], ['paladin', 'sword'], ['mage', 'staff'], ['cleric', 'staff'], ['cleric', 'fists'], ['bard', 'whip'], ['monk', 'whip'], ['hexer', 'tome'], ['rogue', 'dagger']].forEach(([j, t], i) => { const ox = 10 + i * 112; x.fillStyle = '#4a5468'; x.fillRect(ox, 430, 96, 96); x.drawImage(BA.heroFrame(j, 'ready', t), ox, 430, 96, 96); label(j + ':' + t, ox, 540, '#ccc'); });
+    [['bard', 'sword'], ['paladin', 'sword'], ['mage', 'staff'], ['cleric', 'staff'], ['cleric', 'fists'], ['bard', 'whip'], ['monk', 'whip'], ['hexer', 'tome'], ['rogue', 'dagger']].forEach(([j, t], i) => { const ox = 10 + i * 112; x.fillStyle = '#4a5468'; x.fillRect(ox, 430, 96, 96); x.drawImage(BA.heroFrame(j, 'ready', t), ox, 430 + 8, 96, 81); label(j + ':' + t, ox, 540, '#ccc'); });
   } else if (mode === 'big') { // idle frames and field walkers, big
-    const keys = (q.get('keys') || 'knight@adam,mage@devon').split(','), pose = q.get('pose') || 'idle', S = +(q.get('s') || 8), cw = 32 * S + 8;
-    size(10 + keys.length * cw, 32 * S + 30 + 24 * 6 * 2);
-    keys.forEach((k, i) => { const ox = 8 + i * cw; label(k, ox, 14, '#fff'); x.fillStyle = '#4a5468'; x.fillRect(ox, 20, 32 * S, 32 * S); x.drawImage(BA.heroFrame(k, pose, q.get('w') || null), ox, 20, 32 * S, 32 * S);
-      ['down', 'right'].forEach((d, di) => { const sp = WK.walker(k, d, 0); x.fillStyle = '#58704a'; x.fillRect(ox + di * 100, 32 * S + 26, 96, 144); x.drawImage(sp, ox + di * 100, 32 * S + 26 + 144 - sp.height * 6, 96, sp.height * 6); }); });
+    const keys = (q.get('keys') || 'knight@adam,mage@devon').split(','), pose = q.get('pose') || 'idle', S = +(q.get('s') || 8), FW = BA.HERO_W, FH = BA.HERO_H, cw = FW * S + 8;
+    size(10 + keys.length * cw, FH * S + 30 + 24 * 6 * 2);
+    keys.forEach((k, i) => { const ox = 8 + i * cw; label(k, ox, 14, '#fff'); x.fillStyle = '#4a5468'; x.fillRect(ox, 20, FW * S, FH * S); x.drawImage(BA.heroFrame(k, pose, q.get('w') || null), ox, 20, FW * S, FH * S);
+      ['down', 'right'].forEach((d, di) => { const sp = WK.walker(k, d, 0); x.fillStyle = '#58704a'; x.fillRect(ox + di * 100, FH * S + 26, 96, 144); x.drawImage(sp, ox + di * 100, FH * S + 26 + 144 - sp.height * 6, 96, sp.height * 6); }); });
   } else if (mode === 'icons') {
     const names = UI.ICON_NAMES, cols = 16; size(cols * 72 + 10, Math.ceil(names.length / cols) * 90 + 10);
     names.forEach((n, i) => { const ox = 8 + (i % cols) * 72, oy = 8 + Math.floor(i / cols) * 90; x.fillStyle = '#2a2a50'; x.fillRect(ox, oy, 64, 64); x.drawImage(UI.iconCanvas(n), ox, oy, 64, 64); x.fillStyle = '#ccc'; x.font = '10px monospace'; x.fillText(n, ox, oy + 76); });

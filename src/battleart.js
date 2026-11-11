@@ -4,6 +4,7 @@
 // 3-6 tone ramps with a little ordered dither, creased where parts overlap, rim-lit and outlined (sel-out).
 // Small details (faces, eyes, teeth, trims) are stamped as pixels on top.
 
+import { headArt } from './walkerart.js';
 const mk = (w, h) => { const c = document.createElement('canvas'); c.width = w; c.height = h; return c; };
 export function rng(seed) { let a = seed | 0; return () => { a = (a + 0x6D2B79F5) | 0; let t = Math.imul(a ^ (a >>> 15), 1 | a); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
 const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
@@ -175,56 +176,20 @@ export function bbox(src) { // tight box of opaque pixels: [x0,y0,x1,y1]
 export function toURL(canvas, scale) { const c = mk(canvas.width * scale, canvas.height * scale), x = c.getContext('2d'); x.imageSmoothingEnabled = false; x.drawImage(canvas, 0, 0, c.width, c.height); return c.toDataURL(); }
 
 // =====================================================================
-// ===== Party: 16x24-ish side-view heroes (facing left) built from a pose skeleton =====
+// ===== Party: chibi side-view heroes (facing left): a pose-skeleton body under the map sprite's big head =====
 // =====================================================================
 // THE SILLY PASS. The twelve callings are silly archetypes (job ids unchanged): knight = Bouncer, rogue = Chancer, mage = Spreadsheet
 // Sorcerer, cleric = Barmaid, monk = Gym Bro, ranger = Darts Player, hexer = Influencer, bard = Busker, berserker = Stag Do Lad,
 // alchemist = Home Brewer, samurai = Angry Chef, paladin = Traffic Warden (+ bloke, the jobless intro class).
-// A hero = class outfit (CLS) + a person's look (BA_LOOKS: hair, skin, beard) + the weapon art for the equipped weapon TYPE (ART).
-// Heads are stamps facing left, bottom-aligned on the chin: a base (the person's hair) + headgear / glasses overlays + the beard,
-// so Adam's beard, Devon's bush and Wendell's walrus show under any hat, cone or pair of shades. Clothes never change with the look.
-// Stamp letters: H h j W = hair (bases) or headgear (overlays) light..dark, R r = hair, F f g = skin, e = eye, A a = accent,
-// S k = shades / black, w = glint, c = cord, P p = pale (pom-pom, white stripes), Y = flushed skin, m = brass, G = glass, Q = leaf
-const HEADS = {
-  short: { ax: 6, rows: ['..HHHHH...', '.HWHHhhhh.', 'HWHhhhhhhj', 'HHhhhhhhjj', 'hFFFhhhhjj', 'FeFFfghhj.', 'FeFFfgjhj.', '.FFffgj...', '..fgg.....'] },
-  messy: { ax: 6, rows: ['.H..H.H...', '..HHHHHHh.', '.HWHHhhhhj', 'HWHhhhhhhj', 'HHhhhhhhjj', 'hFhFhhhhjj', 'FeFFfghhjj', 'FeFFfgjhj.', '.FFffgj...', '..fgg.....'] },
-  buzz: { ax: 6, rows: ['...hhhh...', '.hHHHhhhh.', 'hHHhhhhhhj', 'hHhhhhhhjj', 'hFFhhhhhjj', 'FeFFfghhj.', 'FeFFfgjhj.', '.FFffgj...', '..fgg.....'] },
-  quiff: { ax: 6, rows: ['.HW.......', 'HWHHH.....', 'HHHWHHhh..', 'HWHHHhhhhj', 'HHhhhhhhjj', 'hFFFhhhhjj', 'FeFFfghhj.', 'FeFFfgjhj.', '.FFffgj...', '..fgg.....'] },
-  bun: { ax: 6, rows: ['......HHh.', '.....HWhhj', '...HHHhhj.', '.HHWhhhhh.', 'HHhhhhhhjj', 'hFFFFhhhjj', 'FeFFfghjj.', 'FeFFfgjhj.', '.FFffgjj..', '..fgg.....'] },
-  bald: { ax: 6, rows: ['...FFFF...', '.FFFFFffg.', 'FFFFFfffgg', 'FFFfffffgg', 'FFFFffrRrg', 'FeFFfgRrr.', 'FeFFfgRr..', '.FFffgr...', '..fgg.....'] },
-  beanie: { ax: 6, rows: ['...HHHH...', '..HWHHhhh.', '.HWHhhhhhj', 'HWHhhhhhhj', 'jhjhjhjhjj', 'RFFFFRrrr.', 'FeFFfgRrr.', 'FeFFfgrr..', '.FFffgr...', '..fgg.....'] },
-};
-const HAIRBASE = new Set(['short', 'messy', 'buzz', 'quiff', 'bun', 'bald']); // stamps whose H h j W are hair, not headgear
-// overlays: canonical 9-row head (row 0 = top of the skull, 5-6 = eyes, 8 = chin); dx shifts left/right, y0 = first row
-const OVER = {
-  shades: { y0: 5, rows: ['SSSSkkkk..', 'SwSS......'] },
-  bigshades: { y0: 4, rows: ['SSSSSkkkk.', 'SSSSSS....', 'SwSSSS....', '.SSSS.....'] },
-  specs: { y0: 4, rows: ['kkkk......', 'k..kkkkk..', 'k..k......', 'kkkk......'] },
-  earpiece: { y0: 6, rows: ['......w...', '......c...', '......c...', '.....c....', '.....c....'] },
-  sweat: { y0: 4, rows: ['AAAAAAAAaa'] },
-  flatcap: { dx: -2, y0: -1, rows: ['...HHHHHH...', '..HWHHHHhhj.', '.HWHHHHHhhhj', '.HHHHHHHhhhj', 'jjjjjjjHhhhj', '.jjjj.......'] },
-  wiz: { y0: -3, rows: ['........Hj.', '.......HHj.', '......HHhj.', '.....HWhhj.', '....HHhhhj.', '...HHAAAAj.', 'HHHHhhhhhhj'] },
-  postit: { y0: 0, rows: ['.....PP...', '.....Pp...'] },
-  bobble: { y0: -3, rows: ['...PPpp...', '...PPpp...', '..HHHHHh..', '.HWHHHhhj.', 'HWHHHhhhhj', 'HHHHhhhhhj', 'HhHhHhHhHj'] },
-  goggles: { y0: 4, rows: ['mGGm......', '.QQ.......'] },
-  toque: { y0: -3, rows: ['..HWHHHh..', '.HWHHHHhh.', 'HWHHHHHhhj', 'HHHHHhHhhj', '.HHhHHhhj.', '.HHHHhhhj.', '.hhhhhhhj.'] },
-  angry: { y0: 4, rows: ['.kkk......', '..Y.......', '..YY......', '.YYY......'] },
-  peaked: { dx: -2, y0: -2, rows: ['....HHHHH...', '..HHWHHHhhj.', '..HHHHHHhhj.', '..HHHHHHhhj.', '..wkwkwkwkj.', 'SSSSSjjjjj..', '.SSSS.......'] },
-  dartear: { y0: 3, rows: ['....w.....', '.....k....', '......k...', '.......q..', '.......qq.'] },
-  cone: { y0: -4, rows: ['....Wh....', '...HHhh...', '...PPPP...', '..PPPPpp..', '..HHhhhj..', '.HHhhhhhj.', '.kkkkkkkk.'] },
-};
-// beard stamps, facing left: rows from (mouth row + dy0), column 0 = front-most face pixel + dx0. L hi, B mid, b shade, d deep, o mouth, g grey
-const BEARDS = {
-  adam: { dx0: -1, dy0: -2, rows: ['.....g', '....bb', '.LLBBb', 'BBoBBb', 'BBBBbd', '.BBbd.'] },
-  devon: { dx0: -2, dy0: -2, rows: ['.......b', '.....Bbb', '.LLLBBbb', 'LBBoBBBb', 'BBBBBBbd', 'BBLBBBbd', '.BBBBbd.', '.BBBbbd.', '..BBbd..', '..bdd...'] },
-  walrus: { dx0: -2, dy0: -3, rows: ['......BB', '.....BBb', '.....BBb', 'LLLLLBBb', 'BBBBBbBb', 'dBBbd.bd', '.d..d...'] },
-};
-// per-person looks (hair, skin, beard). `head` is the base stamp used under hats, `hairstyle` what the person wears bare-headed
+// A hero = class outfit (CLS) + a person's look (BA_LOOKS: hair and skin tones for the body) + the weapon art for the equipped weapon TYPE (ART).
+// The head is the map sprite's own side-view head (walkerart.js headArt: face, hair, beard, headgear), so a hero looks the same in battle
+// as on the map and Adam's beard, Devon's bush and Wendell's walrus show under any hat. Clothes never change with the look.
+// per-person tones for the body (hands, bare arms and legs); the head itself comes from the map sprite
 const BA_LOOKS = {
-  adam: { head: 'short', hair: '#5a3a22', skin: '#f2c8a2', beard: 'adam', beardCol: '#5a3a22' },
-  devon: { head: 'messy', hair: '#d0702c', skin: '#f6caa4', beard: 'devon', beardCol: '#d0702c' },
-  brenna: { head: 'bun', hair: '#a8462a', skin: '#f4c8a2' },
-  wendell: { head: 'bald', hair: '#e4e4ec', skin: '#e4a47e', beard: 'walrus', beardCol: '#eeeef4', brows: true },
+  adam: { hair: '#5a3a22', skin: '#f2c8a2' },
+  devon: { hair: '#d0702c', skin: '#f6caa4' },
+  brenna: { hair: '#a8462a', skin: '#f4c8a2' },
+  wendell: { hair: '#e4e4ec', skin: '#e4a47e' },
 };
 export function parseKey(key) { const [job, look] = String(key || '').split('@'); return { job, look: BA_LOOKS[look] ? look : null }; }
 
@@ -250,7 +215,6 @@ function allMats(K, LK) {
   const hair = LK ? LK.hair : K.hair || '#6a4428', skin = LK ? LK.skin : K.skin || '#f0c8a0', shirt = K.shirt || '#6a8ac0';
   const tex = (f) => (f ? { tex: f } : {});
   const m = {
-    hat: { r: R(K.hat || hair, 5), spec: undefined },
     hair: { r: R(hair, 4) },
     tunic: { r: R(shirt, 5), ...tex(K.plaid ? (x, y) => { const a = x % 3 === 0, b = (y + 1) % 3 === 0; return a && b ? -0.75 : a || b ? -0.36 : 0; } : null) },
     sleeve: { r: R(K.sleeve || shirt, 5) },
@@ -268,7 +232,6 @@ function allMats(K, LK) {
   for (const [k, [hex, n = 4, o]] of Object.entries(XC)) m[k] = { r: R(hex, n, o), spec: k === 'jug' || k === 'inflat' || k === 'can' ? '#ffffff' : undefined, specAt: 0.86 };
   for (const [k, [hex]] of Object.entries(GLOW)) m[k] = { r: R(hex, 4, { hi: 0.9 }), glow: true, lift: 0.15 };
   for (const [k, [hex, n = 4, o]] of Object.entries(K.mats || {})) m[k] = { r: R(hex, n, o) };
-  if (LK && LK.beardCol) m.beard = { r: R(LK.beardCol, 4, { lo: 0.42 }) };
   return m;
 }
 
@@ -344,35 +307,33 @@ function weaponParts(art, hand, ang, pose, J) {
 
 // ---------- the twelve silly classes ----------
 // K fields: shirt sleeve skirt legs shoe belt hat tee (hex) · short (short sleeves) tank (bare arms) shin ('skin' = shorts) body ('robe' = long skirt) noBelt
-// chest [rx,ry] belly [rx,ry] armR · head {dflt, map, base, over[]} · weapon (type) · pal (stamp letter colours) · mats {name: [hex, n, opts]} · torso/late/post hooks
+// chest [rx,ry] belly [rx,ry] armR · weapon (type) · mats {name: [hex, n, opts]} · torso/late/post hooks
 const poly1 = (c, pts, m, o = {}) => c.parts.push(poly(pts, m, { bev: 0.7, ...o }));
 const paintPoly = (c, pts, m) => c.parts.push(paint(poly(pts, m, { bev: 0.5 })));
 const paintCap = (c, a, b, r, m) => c.parts.push(paint(cap(a[0], a[1], b[0], b[1], r, r, m)));
 const towelParts = (c) => { const s = c.J.shF; poly1(c, [add(s, [-1.8, -1.3]), add(s, [1.5, -1.3]), add(s, [1.7, 5]), add(s, [-1.7, 5])], 'towel', { z: 6.5, bev: 0.5 }); paintPoly(c, [add(s, [-1.8, 2.2]), add(s, [1.7, 2.2]), add(s, [1.7, 3.4]), add(s, [-1.8, 3.4])], 'towel2'); };
 const CLS = {
-  bloke: { shirt: '#8a8e98', legs: '#3e5a92', shoe: '#e6e6ee', belt: '#3a3036', short: true, weapon: 'fists', bare: true, head: { dflt: 'short' } },
+  bloke: { shirt: '#8a8e98', legs: '#3e5a92', shoe: '#e6e6ee', belt: '#3a3036', short: true, weapon: 'fists', bare: true },
   knight: { // BOUNCER: black bomber, shades and a curly-cord earpiece, a guest-list clipboard, a bat
     shirt: '#30303a', legs: '#26262e', shoe: '#17171c', belt: '#4a4a58', cuff: 'acc', weapon: 'sword', offhand: true,
-    head: { dflt: 'buzz', map: { short: 'buzz', messy: 'buzz' }, over: ['shades', 'earpiece'] }, pal: { c: '#e0d8c8', w: '#8aa0c8' },
     mats: { shirtw: ['#f4f4f8'], zip: ['#aab0bc'] },
     torso(c) { const { J } = c, n = J.neck; paintPoly(c, [[n[0] - 3, n[1] + 0.8], [n[0] + 0.6, n[1] + 0.3], [n[0] - 0.9, n[1] + 4.8]], 'shirtw'); paintCap(c, [J.chest[0] - 2.3, J.chest[1] - 0.2], [J.belly[0] - 2.2, J.belly[1] + 0.9], 0.42, 'zip'); },
     late(c) { const { J, bz } = c, h = J.haB, o = bz < 0 ? 1.6 : 0; poly1(c, [[h[0] - 1.6 + o, h[1] - 2.6], [h[0] + 2 + o, h[1] - 2.9], [h[0] + 2.2 + o, h[1] + 2.9], [h[0] - 1.4 + o, h[1] + 3.3]], 'wood', { z: bz + 0.4 }); poly1(c, [[h[0] - 1 + o, h[1] - 1.8], [h[0] + 1.5 + o, h[1] - 2], [h[0] + 1.6 + o, h[1] + 2], [h[0] - 0.8 + o, h[1] + 2.3]], 'paper', { z: bz + 0.7, bev: 0.5 }); poly1(c, [[h[0] - 0.8 + o, h[1] - 3.2], [h[0] + 1.2 + o, h[1] - 3.4], [h[0] + 1.2 + o, h[1] - 2.4], [h[0] - 0.8 + o, h[1] - 2.2]], 'steel', { z: bz + 0.8, bev: 0.3 }); },
   },
   rogue: { // CHANCER: teal shell suit, flat cap, gold chain, a lot of watches
     shirt: '#22b2a4', legs: '#7c3cb8', shoe: '#f2f2f6', belt: '#22b2a4', noBelt: true, weapon: 'dagger',
-    head: { dflt: 'short', over: ['flatcap'] }, hat: '#8a7a64', mats: { band: ['#f6f6fa'], gold: ['#f0c840'], silver: ['#d8dce6'] },
+    mats: { band: ['#f6f6fa'], gold: ['#f0c840'], silver: ['#d8dce6'] },
     late(c) { const { J } = c, s = (a, b) => paintCap(c, a, b, 0.42, 'band'); s(J.shF, J.elF); s(J.elF, J.haF); s(J.hipF, J.kneeF); s(J.kneeF, J.ankF); },
     post(c) { const { api, J } = c, n = J.neck, G = c.m.gold.r; for (const [dx, dy, k] of [[-2.3, 1.4, 2], [-2.7, 2.4, 3], [-2.2, 3.4, 2], [-1.1, 4, 3]]) api.px(n[0] + dx, n[1] + dy, G[k]); const fd = unit(J.elF, J.haF); api.px(...add(J.haF, fd, -2.6), G[3]); api.px(...add(J.haF, fd, -3.6), c.m.silver.r[3]); },
   },
   mage: { // SPREADSHEET SORCERER: green wizard robe, specs, lanyard, a Post-it on the hat
-    shirt: '#2c9c5e', hat: '#1f7c4c', belt: '#e6e8f0', legs: '#2a2a32', shoe: '#2a2a32', body: 'robe', weapon: 'staff',
-    head: { dflt: 'short', over: ['wiz', 'postit', 'specs'] }, pal: { A: '#e6e8f0', a: '#a8acc0', P: '#fff070', p: '#e8d040', k: '#1a1620' },
+    shirt: '#2c9c5e', belt: '#e6e8f0', legs: '#2a2a32', shoe: '#2a2a32', body: 'robe', weapon: 'staff',
     mats: { tie: ['#e04a4a'], cord: ['#2a9ad8'], collar: ['#f4f4f8'], badge: ['#f4f4f8'] },
     torso(c) { const { J } = c, n = J.neck; paintPoly(c, [[n[0] - 3, n[1] + 0.8], [n[0] + 0.6, n[1] + 0.3], [n[0] - 1.2, n[1] + 2.4]], 'collar'); paintCap(c, [n[0] - 1.7, n[1] + 1.6], [J.belly[0] - 2.3, J.belly[1] + 1.2], 0.55, 'tie'); paintCap(c, [n[0] - 2.5, n[1] + 1], [J.chest[0] - 3, J.chest[1] + 3.2], 0.4, 'cord'); paintPoly(c, [[J.chest[0] - 4, J.chest[1] + 3], [J.chest[0] - 1.8, J.chest[1] + 3], [J.chest[0] - 1.8, J.chest[1] + 6], [J.chest[0] - 4, J.chest[1] + 6]], 'badge'); },
     late(c) { if (c.poseName === 'cast') { const h = c.J.haB; poly1(c, [[h[0] - 2.8, h[1] - 3.4], [h[0] + 2.2, h[1] - 3.9], [h[0] + 2.8, h[1] + 2.2], [h[0] - 2.4, h[1] + 2.6]], 'rubber', { z: 11 }); poly1(c, [[h[0] - 2, h[1] - 2.7], [h[0] + 1.6, h[1] - 3.1], [h[0] + 2.1, h[1] + 1.5], [h[0] - 1.7, h[1] + 1.9]], 'screen', { z: 11.5, bev: 0.5 }); } },
   },
   cleric: { // BARMAID: wine skirt, white blouse, bar apron, tea towel, a pint in the off hand
-    shirt: '#f6f2f6', skirt: '#8c2c3e', legs: '#2a2028', shoe: '#2a2028', belt: '#f0a424', body: 'robe', noHem: true, weapon: 'rod', offhand: true, head: { dflt: 'bun' },
+    shirt: '#f6f2f6', skirt: '#8c2c3e', legs: '#2a2028', shoe: '#2a2028', belt: '#f0a424', body: 'robe', noHem: true, weapon: 'rod', offhand: true,
     torso(c) { const { J } = c, n = J.neck, hem = Math.max(J.ankF[1], J.ankB[1]) + 0.6, mx = (J.ankF[0] + J.ankB[0]) / 2;
       paintPoly(c, [[n[0] - 2.8, n[1] + 2.4], [n[0] - 0.5, n[1] + 2.2], [J.belly[0] + 0.6, J.belly[1] + 0.6], [J.belly[0] - 3.4, J.belly[1] + 0.6]], 'apron');
       paintPoly(c, [[J.belly[0] - 3.4, J.belly[1] + 0.6], [J.belly[0] + 0.6, J.belly[1] + 0.6], [mx + 1.6, hem], [mx - 4.2, hem]], 'apron'); towelParts(c); },
@@ -380,46 +341,45 @@ const CLS = {
   },
   monk: { // GYM BRO: tank top, sweatband, shorts, big arms, a protein shaker
     shirt: '#2a8cf2', legs: '#1e1e28', shoe: '#f2f2f6', belt: '#f6f6fa', tank: true, armR: 1.4, shin: 'skin', cuff: 'band', weapon: 'fists',
-    head: { dflt: 'short', over: ['sweat'] }, pal: { A: '#f6f6fa', a: '#b8bcd0' }, mats: { shake: ['#e8e060'], lid: ['#e84a3a'] },
+    mats: { shake: ['#e8e060'], lid: ['#e84a3a'] },
     torso(c) { const n = c.J.neck; paintPoly(c, [[n[0] - 2.8, n[1] + 0.8], [n[0] + 0.4, n[1] + 0.5], [n[0] - 1.2, n[1] + 3.6]], 'skin'); c.parts.push(ell(c.J.shF[0] + 0.5, c.J.shF[1] - 0.2, 2.3, 2, 'skin', { z: 6 })); },
     late(c) { const h = c.J.haB, z = c.bz + 0.4, o = c.bz < 0 ? 1.6 : 0, r = (a, b, w, hh, m, zz) => poly1(c, [[h[0] - w + o, h[1] + a], [h[0] + w + o, h[1] + a], [h[0] + w + o, h[1] + b], [h[0] - w + o, h[1] + b]], m, { z: zz, bev: 0.4 }); r(-3.2, 1.8, 1.3, 0, 'wht', z); r(-0.8, 1.8, 1.3, 0, 'shake', z + 0.1); r(-4.2, -3.2, 1.5, 0, 'lid', z + 0.2); },
   },
   ranger: { // DARTS PLAYER: loud sponsor shirt, belly, gold chain, a dart
-    shirt: '#d6322e', legs: '#2c2c3a', shoe: '#1c1c22', belt: '#2a2228', short: true, weapon: 'bow', chest: [3.8, 3.5], belly: [3.4, 2.9], head: { dflt: 'short', over: ['dartear'] }, pal: { q: '#d63a34', k: '#8a90a0', w: '#f0f4fa' },
+    shirt: '#d6322e', legs: '#2c2c3a', shoe: '#1c1c22', belt: '#2a2228', short: true, weapon: 'bow', chest: [3.8, 3.5], belly: [3.4, 2.9],
     mats: { patch: ['#f6d838'], patch2: ['#f6f6fa'], logo: ['#26202a'], gold: ['#f0c840'] },
     torso(c) { const { J } = c, cx = J.chest[0], cy = J.chest[1]; c.parts.push(ell(J.belly[0] - 1.8, J.belly[1] + 0.5, 3.7, 3.2, 'tunic', { z: 2.5 })); paintPoly(c, [[cx - 4.2, cy - 0.6], [cx + 0.4, cy - 0.6], [cx + 0.4, cy + 2.2], [cx - 4.2, cy + 2.2]], 'patch'); paintPoly(c, [[cx - 5.4, J.belly[1] + 0.8], [cx - 1.4, J.belly[1] + 0.8], [cx - 1.4, J.belly[1] + 3], [cx - 5.4, J.belly[1] + 3]], 'patch2'); },
     post(c) { const { api, J } = c, n = J.neck, G = c.m.gold.r, cx = J.chest[0], cy = J.chest[1]; for (const [dx, dy, k] of [[-2.3, 1.4, 3], [-3.0, 2.2, 2], [-3.2, 3.2, 3], [-2.6, 4.2, 2], [-1.6, 4.8, 3], [-0.6, 4.6, 2]]) { api.px(n[0] + dx, n[1] + dy, G[k]); api.px(n[0] + dx + 1, n[1] + dy, G[k]); } api.px(n[0] - 1.8, n[1] + 6, G[3]); api.px(n[0] - 1.8, n[1] + 7, G[2]); for (const [dx, dy] of [[-3.4, 0.2], [-2.4, 0.2], [-1.4, 0.2], [-3.4, 1.4], [-1.4, 1.4]]) api.px(cx + dx, cy + dy, c.m.logo.r[1]); },
   },
   hexer: { // INFLUENCER: lavender puffer, quiff, huge shades, a phone
     shirt: '#b6a0f2', legs: '#26262e', shoe: '#f6f6fa', belt: '#26262e', noBelt: true, chest: [4.5, 4.1], belly: [3.9, 3.2], armR: 1.45, weapon: 'tome',
-    head: { dflt: 'quiff', map: { short: 'quiff', messy: 'quiff' }, over: ['bigshades'] },
     torso(c) { const { J } = c, cx = J.chest[0], cy = J.chest[1]; for (const dy of [-1.8, 0.7, 3.2, 5.4]) paintCap(c, [cx - 5, cy + dy], [cx + 4.6, cy + dy], 0.4, 'seam'); },
     late(c) { const { J } = c, perp = (a, b, t) => { const m = add(a, [b[0] - a[0], b[1] - a[1]], t), u = unit(a, b); paintCap(c, add(m, [-u[1], u[0]], -2.3), add(m, [-u[1], u[0]], 2.3), 0.45, 'seam'); }; perp(J.shF, J.elF, 0.5); perp(J.elF, J.haF, 0.4); perp(J.shB, J.elB, 0.5); },
     post(c) { if (c.poseName === 'cast') { const h = c.J.haF, R = 5.2; for (let a = 0; a < 40; a++) { const t = (a / 40) * Math.PI * 2; c.api.px(Math.round(h[0] - 1 + Math.cos(t) * R), Math.round(h[1] - 1 + Math.sin(t) * R * 0.95), a % 2 ? '#ff9ad0' : '#fff0fa'); } } },
   },
   bard: { // BUSKER: beanie, red scarf, olive jacket, an acoustic guitar
-    shirt: '#6c7c3c', legs: '#3c4c70', shoe: '#5a3a24', belt: '#4a3a24', weapon: 'whip', head: { base: 'beanie' }, hat: '#e2a82e',
+    shirt: '#6c7c3c', legs: '#3c4c70', shoe: '#5a3a24', belt: '#4a3a24', weapon: 'whip',
     torso(c) { const { J } = c, n = J.neck; c.parts.push(ell(n[0] + 0.5, n[1] + 1.2, 2.9, 1.6, 'scarf', { z: 5.5 })); c.parts.push(cap(n[0] + 1.5, n[1] + 1.2, n[0] + 4.6, n[1] + 4.6, 0.95, 0.7, 'scarf', { z: -1 }));
       if (c.art !== 'guitar') { const b = [J.hipB[0] + 3.4, J.belly[1] - 0.4]; c.parts.push(ell(b[0], b[1] + 1.2, 3.4, 3.2, 'gtr', { z: -5 })); c.parts.push(ell(b[0] - 0.2, b[1] - 2.2, 2.4, 2.4, 'gtr', { z: -5 })); c.parts.push(cap(b[0] + 0.4, b[1] - 3.6, b[0] + 3.8, b[1] - 10, 0.5, 0.5, 'wood', { z: -5 })); c.parts.push(ell(b[0] + 4, b[1] - 10.6, 0.8, 1.1, 'wood', { z: -5 })); } },
   },
   berserker: { // STAG DO LAD: the matching hot-pink STAG tee (a class constant), traffic cone, a can of lager
-    shirt: '#ff4fa6', legs: '#2c3c6c', shoe: '#f2f2f6', belt: '#2c3c6c', noBelt: true, short: true, shin: 'skin', weapon: 'axe', offhand: true, head: { dflt: 'short', over: ['cone'] }, hat: '#ff8c1e', pal: { P: '#f8f8fa', p: '#c8c8d8', k: '#1c1824' },
+    shirt: '#ff4fa6', legs: '#2c3c6c', shoe: '#f2f2f6', belt: '#2c3c6c', noBelt: true, short: true, shin: 'skin', weapon: 'axe', offhand: true,
     mats: { tee2: ['#f8f8fa'], text: ['#26202a'] },
     torso(c) { const { J } = c, cx = J.chest[0], cy = J.chest[1]; paintPoly(c, [[cx - 4.6, cy - 0.4], [cx + 4.6, cy - 0.4], [cx + 4.6, cy + 2.8], [cx - 4.6, cy + 2.8]], 'tee2'); },
     late(c) { const h = c.J.haB, z = c.bz + 0.4, o = c.bz < 0 ? 1.6 : 0, r = (a, b, w, m, zz) => poly1(c, [[h[0] - w + o, h[1] + a], [h[0] + w + o, h[1] + a], [h[0] + w + o, h[1] + b], [h[0] - w + o, h[1] + b]], m, { z: zz, bev: 0.4 }); r(-3.2, 1.4, 1.2, 'can', z); r(-1.4, 0.2, 1.3, 'gold', z + 0.1); },
     post(c) { const { api, J } = c, cx = J.chest[0], cy = J.chest[1], T = c.m.text.r[1]; for (const [dx, dy] of [[-3.6, 0.7], [-2.6, 0.7], [-1.6, 0.7], [-0.6, 0.7], [0.8, 0.7], [1.8, 0.7], [-3.1, 1.9], [-1.1, 1.9], [0.3, 1.9], [2.3, 1.9]]) api.px(cx + dx, cy + dy, T); },
   },
   alchemist: { // HOME BREWER: bobble hat with hops, goggles up, leather apron, a demijohn
-    shirt: '#e8c44c', legs: '#4c4a3a', shoe: '#7c4c28', belt: '#5a3a20', short: true, weapon: 'flask', head: { dflt: 'short', over: ['bobble', 'goggles'] }, hat: '#c45e2a', pal: { P: '#f6f2ea', p: '#c8c4b8', m: '#d0a842', G: '#8adcf2', Q: '#6cc44c' },
+    shirt: '#e8c44c', legs: '#4c4a3a', shoe: '#7c4c28', belt: '#5a3a20', short: true, weapon: 'flask',
     torso(c) { const { J } = c, n = J.neck, hem = J.kneeF[1] + 1; paintPoly(c, [[n[0] - 2.6, n[1] + 2], [n[0] - 0.4, n[1] + 1.8], [J.belly[0] + 0.8, J.belly[1] + 0.8], [J.belly[0] - 3.6, J.belly[1] + 0.8]], 'leather'); paintPoly(c, [[J.belly[0] - 3.6, J.belly[1] + 0.8], [J.belly[0] + 0.8, J.belly[1] + 0.8], [J.hipB[0] + 0.2, hem], [J.hipF[0] - 2.8, hem]], 'leather'); paintCap(c, [n[0] - 2.2, n[1] + 0.6], [J.chest[0] + 2.4, J.chest[1] - 1.6], 0.45, 'leather'); },
   },
   samurai: { // ANGRY CHEF: whites, toque, red face, kitchen towel, a big knife
-    shirt: '#f4f4f8', legs: '#464654', check: true, shoe: '#2a2a32', belt: '#f4f4f8', noBelt: true, weapon: 'katana', head: { dflt: 'short', over: ['toque', 'angry'] }, hat: '#f6f6fa', pal: { k: '#2a1a20' }, mats: { neck: ['#d83a2a'], btn: ['#a8acb8'] },
+    shirt: '#f4f4f8', legs: '#464654', check: true, shoe: '#2a2a32', belt: '#f4f4f8', noBelt: true, weapon: 'katana', mats: { neck: ['#d83a2a'], btn: ['#a8acb8'] },
     torso(c) { const n = c.J.neck; c.parts.push(ell(n[0] - 0.6, n[1] + 0.9, 2.2, 1.3, 'neck', { z: 5.5 })); towelParts(c); },
     post(c) { const { api, J } = c, cx = J.chest[0], cy = J.chest[1]; for (const dy of [0, 2.2, 4.4]) { api.px(cx - 2.6, cy + dy, c.m.btn.r[3]); api.px(cx - 1.6, cy + dy, c.m.btn.r[2]); } },
   },
   paladin: { // TRAFFIC WARDEN: hi-vis, peaked cap, STOP lollipop, ticket machine
-    shirt: '#eee83a', legs: '#2a3052', shoe: '#1a1a22', belt: '#2a2a34', cuff: 'refl', weapon: 'sword', head: { dflt: 'short', over: ['peaked'] }, hat: '#242c4a', pal: { w: '#f6f6fa', k: '#14141c' },
+    shirt: '#eee83a', legs: '#2a3052', shoe: '#1a1a22', belt: '#2a2a34', cuff: 'refl', weapon: 'sword',
     torso(c) { const { J } = c, cx = J.chest[0]; paintCap(c, [cx - 4.6, J.chest[1] + 0.2], [cx + 4.6, J.chest[1] + 0.2], 0.5, 'refl'); paintCap(c, [cx - 4.6, J.belly[1] - 0.6], [cx + 4.6, J.belly[1] - 0.6], 0.5, 'refl'); paintCap(c, [J.neck[0] - 1.6, J.neck[1] + 1], [J.belly[0] - 1.4, J.belly[1] - 1], 0.4, 'refl'); },
     late(c) { const { J } = c, h = J.hipF; poly1(c, [[h[0] - 2.8, h[1] - 0.6], [h[0] - 0.8, h[1] - 0.6], [h[0] - 0.8, h[1] + 2.4], [h[0] - 2.8, h[1] + 2.4]], 'rubber', { z: 3.6 }); },
     post(c) { const h = c.J.hipF; c.api.px(h[0] - 2.2, h[1] + 0.2, '#8ad8ff'); c.api.px(h[0] - 1.6, h[1] + 0.2, '#8ad8ff'); },
@@ -428,7 +388,7 @@ const CLS = {
 // person-specific outfits of the jobless intro class ('bloke@adam' ...): the 2026 pub clothes
 const OUT = {
   'bloke@adam': { shirt: '#b8323a', plaid: true, tee: '#2c2a34', belt: '#2a2228', shoe: '#ecebf2' },
-  'bloke@devon': { shirt: '#2c3c72', legs: '#b8a274', shin: 'skin', shoe: '#c8ccd6', belt: '#8a7650', hood: true, logo: '#f4d35e', head: { base: 'beanie' }, hat: '#8e9098' },
+  'bloke@devon': { shirt: '#2c3c72', legs: '#b8a274', shin: 'skin', shoe: '#c8ccd6', belt: '#8a7650', hood: true, logo: '#f4d35e' },
 };
 export const CLASS_FX = { // cast accents (the stage reads these): ring colour, accent colour, and what the burst looks like
   knight: { c1: '#c8ccd6', c2: '#ffffff' }, rogue: { c1: '#f0c840', c2: '#fff4b0' }, mage: { c1: '#8ad8ff', c2: '#e8fbff' }, cleric: { c1: '#f6f0e0', c2: '#f0b840' },
@@ -436,7 +396,13 @@ export const CLASS_FX = { // cast accents (the stage reads these): ring colour, 
   berserker: { c1: '#ff8c1e', c2: '#ffd0e8' }, alchemist: { c1: '#f0b840', c2: '#f6f0e0' }, samurai: { c1: '#ff6a4a', c2: '#fff4e8' }, paladin: { c1: '#eee83a', c2: '#d42a2a' },
 };
 
-const hexMix = mix;
+// hero frames: the skeleton is posed in the old 32x32 "model" space (soles on row 29, body centre x 16.5), then scaled up
+// about the feet into a HERO_W x HERO_H frame, so the body is chunky enough to carry the big walker head and tall hats fit
+export const HERO_W = 64, HERO_H = 54, HERO_CX = 40, HERO_FEET = 46;
+const HSX = 1.4, HSY = 1.12;
+const hsc = () => [HSX, HSY];
+const htx = (x) => HERO_CX + (x - 16.5) * hsc()[0], hty = (y) => HERO_FEET - (29 - y) * hsc()[1];
+const heroScale = (parts) => parts.filter(Boolean).map((p) => { const [sx, sy] = hsc(); return { ...p, bb: [Math.floor(htx(p.bb[0])) - 1, Math.floor(hty(p.bb[1])) - 1, Math.ceil(htx(p.bb[2])) + 1, Math.ceil(hty(p.bb[3])) + 1], f: (px, py, hit) => p.f(16.5 + (px - HERO_CX) / sx, 29 + (py - HERO_FEET) / sy, hit) }; });
 function heroSpec(job, poseName, wover, look = null, key = job) {
   const K = { ...(CLS[job] || CLS.knight), ...(OUT[key] || {}) }, LK = look ? BA_LOOKS[look] : null;
   let art = wover == null ? weaponArt(job, K.weapon) : weaponArt(job, wover); if (art === 'glove' && K.bare) art = 'fist';
@@ -475,34 +441,20 @@ function heroSpec(job, poseName, wover, look = null, key = job) {
   const hand = J.wHand === 'F' ? J.haF : J.haB;
   if (art) parts.push(...weaponParts(art, hand, J.wAng, poseName, J));
   if (!(art === 'glove' || art === 'marigold')) parts.push(ell(J.haF[0], J.haF[1], 1.2, 1.2, 'skin', { z: 13.5 }));
-  // the head: base stamp (the person's hair) + overlays, the beard, then class details
-  const hd = K.head || {}, over = hd.over || [];
-  let baseKey = hd.base || (LK ? LK.head : hd.dflt || 'short'); if (!hd.base && LK && hd.map && hd.map[baseKey]) baseKey = hd.map[baseKey]; if (!hd.base && !LK) baseKey = hd.dflt || 'short';
-  const head = HEADS[baseKey] || HEADS.short;
-  return { w: 32, h: 32, mats, parts, crease: 1.2, post(api) {
-    const m = mats, hx = Math.round(J.neck[0] - 6), chinY = Math.round(J.neck[1] + 0.6) - 1, top0 = chinY - 8;
-    const hr = R(LK ? LK.hair : K.hair || '#6a4428', 5), ht = R(K.hat || (LK ? LK.hair : '#8e9098'), 5);
-    const skin = m.skin.r, extra = { S: '#12101c', k: '#1a1620', w: '#9ab4dc', c: '#d8d0c0', P: '#f6f2ea', p: '#c8c4d0', Y: hexMix(skin[3], '#e8402c', 0.5), m: '#d0a842', G: '#8adcf0', Q: '#6cc44c', A: m.acc.r[3], a: m.acc.r[1], ...(K.pal || {}) };
-    const common = { R: hr[2], r: hr[1], F: skin[3], f: skin[2], g: skin[1], e: '#2a1c34', ...extra };
-    const isHair = HAIRBASE.has(baseKey), palB = { ...common, H: (isHair ? hr : ht)[3], h: (isHair ? hr : ht)[2], j: (isHair ? hr : ht)[1], W: (isHair ? hr : ht)[4], _ol: (isHair ? hr : ht)[0] };
-    const palO = { ...common, H: ht[3], h: ht[2], j: ht[1], W: ht[4], _ol: ht[0] };
-    const shaded = over.includes('shades') || over.includes('bigshades');
-    let rows = head.rows; if (J.face !== 'n') rows = rows.map((r) => r.replace(/e/g, 'F'));
-    api.stamp(rows, palB, hx, chinY - (rows.length - 1));
-    for (const k of over) { const o = OVER[k]; api.stamp(o.rows, palO, hx + (o.dx || 0), top0 + o.y0); }
-    const ex = hx + 1, e1 = chinY - 3, e2 = chinY - 2;
-    if (!shaded) {
-      if (J.face === 'x') { api.px(ex, e2, '#2a1c34'); api.px(ex + 1, e2 - 1, '#2a1c34'); }
-      if (J.face === 'd') { api.px(ex, e2, '#2a1c34'); api.px(ex + 1, e2, '#2a1c34'); }
-      if (J.face === 'h') { api.px(ex, e1 + 1, '#2a1c34'); api.px(ex + 1, e1, '#2a1c34'); }
+  // the head: the walker's big side-view head (face, hair, beard, headgear), so a hero looks the same in battle as on the map
+  const eyes = J.face === 'x' || J.face === 'd' ? 'shut' : J.face === 'h' ? 'glad' : 'open', HD = headArt(key, eyes);
+  return { w: HERO_W, h: HERO_H, mats, parts: heroScale(parts), crease: 1.2, post(api) {
+    const hx = Math.round(htx(J.neck[0])) - 8, hy = Math.round(hty(J.neck[1] + 0.9)) - HD.chin + (J.face === 'd' ? 1 : 0);
+    const mapi = { ...api, px: (x, y, col, ol) => api.px(Math.round(htx(x)), Math.round(hty(y)), col, ol) }; // class details are placed in model space
+    const at = (c, r) => (c < 0 || r < 0 || c >= HD.w || r >= HD.h ? null : HD.col[r * HD.w + c]);
+    for (let r = 0; r < HD.h; r++) for (let c = 0; c < HD.w; c++) { // inner outline where the head overlaps the body (the renderer outlines the rest)
+      if (at(c, r)) continue; const X = hx + 15 - c, Y = hy + r; if (!api.on(X, Y)) continue;
+      const nb = [[0, -1], [1, 0], [-1, 0]].map(([dx, dy]) => (at(c + dx, r + dy) ? HD.ol[(r + dy) * HD.w + c + dx] : null)).find(Boolean);
+      if (nb) api.px(X, Y, nb);
     }
-    if (LK && LK.beard) { // beard stamped under the mouth: reads on every pose, under hats and shades too
-      const bd = BEARDS[LK.beard], br = m.beard.r, bp = { L: br[3], B: br[2], b: br[1], d: br[0], o: '#2a1418', g: '#b4aca8', _ol: br[0] };
-      api.stamp(bd.rows, bp, hx + 1 + bd.dx0, chinY - 1 + bd.dy0);
-      if (LK.brows && !shaded) for (let k = -1; k <= 1; k++) api.px(ex + k, e1 - 1, k < 1 ? br[3] : br[2]); // bushy white brows
-    }
-    if (K.logo && poseName !== 'ko') api.px(Math.round(J.chest[0] - 1.6), Math.round(J.chest[1]), K.logo);
-    if (K.post) K.post({ ...ctx, api });
+    for (let r = 0; r < HD.h; r++) for (let c = 0; c < HD.w; c++) { const v = HD.col[r * HD.w + c]; if (v) api.px(hx + 15 - c, hy + r, v, HD.ol[r * HD.w + c]); }
+    if (K.post) K.post({ ...ctx, api: mapi });
+    if (K.logo && poseName !== 'ko') mapi.px(J.chest[0] - 1.6, J.chest[1], K.logo);
   } };
 }
 export const HERO_POSES = ['idle', 'ready', 'windup', 'strike', 'cast', 'hurt', 'kneel', 'victory', 'ko'];
@@ -517,7 +469,7 @@ export function heroFrame(job, pose = 'idle', weapon = null) {
   if (pose === 'ko') { const [x0, y0, x1, y1] = bbox(c); c = rot90(c, false); BBOX.set(c, [c.width - 1 - y1, x0, c.width - 1 - y0, x1]); } // lie on the back: pixel-exact quarter turn
   HCACHE.set(k, c); return c;
 }
-export function heroPortrait(job) { // square idle frame cropped around the body, for menus and the turn-order bar
+export function heroPortrait(job) { // square crop of the idle battle frame (the calling's full outfit, e.g. on the awakening screen)
   const k = job + ':portrait'; if (HCACHE.has(k)) return HCACHE.get(k);
   const f = heroFrame(job, 'idle'), [x0, y0, x1, y1] = bbox(f), s = Math.max(x1 - x0 + 1, y1 - y0 + 1) + 2, c = mk(s, s);
   c.getContext('2d').drawImage(f, Math.round((s - (x1 - x0 + 1)) / 2) - x0, Math.round((s - (y1 - y0 + 1)) / 2) - y0);

@@ -38,7 +38,7 @@ function digit(ch, col) {
 const POS = { 1: [[78, 142]], 2: [[56, 124], [102, 154]], 3: [[42, 118], [100, 134], [60, 162]], 4: [[36, 112], [94, 122], [46, 148], [108, 162]], 5: [[30, 108], [82, 114], [130, 128], [42, 148], [98, 164]] };
 const BOSS_POS = [72, 166];
 const HERO_POS = [[206, 106], [217, 124], [206, 142], [217, 160]];
-const HERO_FEET = 29; // hero frames are 32x32 with the soles on row 29
+const HERO_FEET = BA.HERO_FEET, HERO_CX = BA.HERO_CX, HERO_BB = [HERO_CX - 8, HERO_FEET - 30, HERO_CX + 7, HERO_FEET]; // hero frames: body centre column, soles row, and the standing body's box
 const ATK = 0.5; // hero physical attack duration
 function wtypeOf(p) { const w = p.wpn; return w ? w.type : 'none'; }
 
@@ -68,7 +68,7 @@ export class Stage {
     battle.p.forEach((p, i) => {
       const [cx, feet] = HERO_POS[i] || HERO_POS[3], wt = wtypeOf(p);
       const frames = Object.fromEntries(BA.HERO_POSES.map((k) => [k, BA.heroFrame(p.ch.look ? `${p.ch.main}@${p.ch.look}` : p.ch.main, k, wt)]));
-      this.v.set(p.name, { c: p, side: 'p', frames, spr: frames.idle, x: cx - 16, y: feet - HERO_FEET, feet, bb: [10, 4, 23, 29], w: 32, h: 32, dead: p.hp <= 0, deadT: p.hp <= 0 ? 9 : 0, t: 0, flash: 0, lunge: 0, cast: 0, atk: 0, step: 0, seed: i * 1.3 });
+      this.v.set(p.name, { c: p, side: 'p', frames, spr: frames.idle, x: cx - HERO_CX, y: feet - HERO_FEET, feet, bb: HERO_BB, w: BA.HERO_W, h: BA.HERO_H, dead: p.hp <= 0, deadT: p.hp <= 0 ? 9 : 0, t: 0, flash: 0, lunge: 0, cast: 0, atk: 0, step: 0, seed: i * 1.3 });
     });
     this.born = performance.now(); this.zoom = 0; this.cardT = -1; this.cardText = ''; this.cardDur = 2; this.won = false; this.ease = 0;
     this.fpsT = 0; this.fpsN = 0; this.fps = 60;
@@ -239,7 +239,7 @@ export class Stage {
   }
   shadowOf(x, v) {
     if (v.side === 'e' && v.dead && v.deadT > (v.big ? 1.4 : 0.55)) return;
-    const bw = v.bb[2] - v.bb[0] + 1, sw = v.side === 'p' ? (v.dead ? 22 : 14) : Math.min(bw * 0.8, v.big ? 80 : 40), s = shadow(sw);
+    const bw = v.bb[2] - v.bb[0] + 1, sw = v.side === 'p' ? (v.dead ? 26 : 18) : Math.min(bw * 0.8, v.big ? 80 : 40), s = shadow(sw);
     const cx = v.x + (v.bb[0] + v.bb[2] + 1) / 2 + (v.side === 'p' ? (v.dead ? 0 : 1) - v.step : (v.ox || 0) * 0.6);
     x.drawImage(s, Math.round(cx - s.width / 2), Math.round(v.feet - s.height / 2 + 0.5));
   }
@@ -267,13 +267,13 @@ export class Stage {
     let ox = -Math.round(v.step) + Math.round((1 - this.ease) * 80);
     if (pose === 'hurt') ox += 3 + Math.round(Math.sin(v.t * 60));
     if (this.won && pose === 'victory') oy = -Math.round(Math.abs(Math.sin((this.wonT || 0) * Math.PI * 3)) * 3);
-    if (pose === 'ko') { const [, , , y1] = BA.bbox(spr); x.drawImage(spr, v.x + ox, v.feet - y1 - 1); return; }
+    if (pose === 'ko') { const [x0, , x1, y1] = BA.bbox(spr); x.drawImage(spr, Math.round(v.x + HERO_CX + ox - (x0 + x1 + 1) / 2), v.feet - y1 - 1); return; }
     const px = v.x + ox, py = v.y + oy;
     x.drawImage(spr, px, py);
     if (v.flash > 0.12) { x.globalAlpha = Math.min(1, (v.flash - 0.12) * 6); x.drawImage(silhouette(spr, '#ffffff'), px, py); x.globalAlpha = 1; }
     if (v.cast > 0) { x.globalAlpha = 0.35 + 0.35 * Math.sin(v.t * 30); x.drawImage(silhouette(spr, '#c8e0ff'), px, py); x.globalAlpha = 1; }
-    this.statusIcons(x, v, px + 16, py + 3, t);
-    if (v.guard && v.c.hp > 0) { v.guard += dt; this.shield(x, px + 16, py - 7 + Math.round(Math.sin(v.t * 5) * 1), Math.min(1, 0.5 + v.guard * 5)); }
+    this.statusIcons(x, v, px + HERO_CX, py + HERO_BB[1] - 1, t);
+    if (v.guard && v.c.hp > 0) { v.guard += dt; this.shield(x, px + HERO_CX, py + HERO_BB[1] - 11 + Math.round(Math.sin(v.t * 5) * 1), Math.min(1, 0.5 + v.guard * 5)); }
   }
   shield(x, cx, top, k) { // a small blue shield (pop-in scale k)
     const img = shieldImg(), w = Math.round(9 * k), h = Math.round(10 * k); x.drawImage(img, Math.round(cx - w / 2), top + 10 - h, w, h);

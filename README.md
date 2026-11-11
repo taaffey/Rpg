@@ -146,6 +146,9 @@ foot of the Frost Spire the party meets the one who wants them. The Titan is the
 ## Visuals and sound (all generated in code)
 - `src/sprites.js`, `src/art2.js`: ASCII-grid pixel sprites (12 callings, townsfolk, 100+ enemies, three 32x32 bosses, furniture,
   tile themes), recolor variants, gem icons.
+- `src/battleart.js`: battle art. Heroes are chibi: a posed body (nine poses, the weapon in hand) under the map sprite's own big
+  side-view head (`headArt` in `src/walkerart.js`), so a hero looks the same in battle as on the map. Frames are `HERO_W` x `HERO_H`
+  with the soles on row `HERO_FEET`. Menu and turn-order portraits are the map sprite's front-facing head (`faceURL` in `src/uiart.js`).
 - `src/stage.js`: animated battle stage: painted backdrops per region, per-enemy attack animations (squash, swoop, pounce,
   float, stomp), hit flashes, spell projectiles and per-element particles, floating damage numbers, an arena slide-in, boss title cards,
   camera zoom on big hits and a victory pose.
