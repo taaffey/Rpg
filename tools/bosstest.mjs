@@ -2,7 +2,7 @@
 import { Battle, newChar, stats, skillWithGems } from '../src/logic.js';
 import { ENEMIES, SKILLS } from '../src/data.js';
 import { MECH } from '../src/bossmech.js';
-for (const m of ['bros', 'hopsend', 'embers', 'obsidian', 'sidequests']) { try { await import(`../src/${m}.js`); } catch { /* optional content */ } }
+for (const m of ['bros', 'hopsend', 'embers', 'obsidian', 'sidequests', 'lastround']) { try { await import(`../src/${m}.js`); } catch { /* optional content */ } }
 let fails = 0; const ok = (n, c, x = '') => { console.log(c ? 'PASS' : 'FAIL', n, x); if (!c) fails++; };
 const fixed = (v = 0.5) => () => v; // constant rng: damage variance 1.0, no crits, no random picks beyond the first
 // a boss that cannot be killed in a test, with real skills so cast() works

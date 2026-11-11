@@ -60,6 +60,13 @@ export const MECH = {
       { at: 0.35, say: `"TIME, GENTLEMEN. PLEASE." The whole bar rattles. Everyone is going home. Permanently.`, card: 'TIME!', charge: { move: 'lastbell', every: 3, window: 2, need: 0.14, mult: 2.6, vuln: 1.3, say: `The Landlord rings the great bell. It will not stop. Get him off it or get down!` } },
     ],
   },
+  quizmaster: {
+    charge: { move: 'qntiebreak', every: 3, window: 1, need: 0.1, mult: 1.9, vuln: 1.25, say: `Sereth taps the microphone twice. "Tie-breaker. Fingers on buzzers..."` },
+    phases: [
+      { at: 0.6, say: `"Round two is the music round." The fruit machine starts to sing.`, card: 'ROUND TWO', spd: 1.15 },
+      { at: 0.3, say: `The Rime Heart blazes through his jacket. "FINAL ROUND. Double points."`, card: 'FINAL ROUND', atk: 1.2, heal: 0.06 },
+    ],
+  },
   miller: {
     charge: { move: 'rollstone', every: 3, window: 1, need: 0.3, mult: 1.8, vuln: 1.25, say: `The Miller winds the great millstone back like a bowling ball...` },
     phases: [{ at: 0.5, say: `Flour everywhere. The Miller is properly angry now.`, card: 'FLOURED', atk: 1.15 }],

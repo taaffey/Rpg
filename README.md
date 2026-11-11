@@ -38,6 +38,9 @@ keyboard alone, or with the mouse. Options (volumes, battle speed, shake, minima
   migration from older saves.
 - **Difficulty** (Easy / Normal / Hard, changeable in Options). There are no tutorial pop-ups: NPCs and the journal drop hints in the story's voice.
 - **Levels 21-30**: the story ends around level 17-18; the post-game islands carry on to 30 (Hopsend ~18-21, Cinder Isle ~21-25, the Obsidian Ruins ~25-28, the Last Landlord at about 28). The late levels unlock build options (`LEVEL_PERKS` in `src/logic.js`): an extra gem socket at 22 and 28, a second trait slot at 25, and Local Legend (+10% HP and MP) at 30. `LV=28 node tools/landlord_sim.mjs` checks the superboss at any level.
+- **One for the Road** (`src/lastround.js`): a last chapter after the ending. The bricked-up arch at the back of the Goose's cellar opens onto the same cellar a thousand years on, the Bell & Anvil in 2026, where the Rime Heart Devon pocketed has woken what is left of Sereth as a quizmaster. Six new foes, one boss, about level 20.
+- **Landlord** (the capstone calling): opens for any hero who has mastered three callings. Strong all round, with party heals and buffs, and a trait that earns 20% more gold.
+- **Evening classes** (any Guild): spare gold buys 10 Calling Points for a hero's current calling; the price rises with rank.
 - **Field magic** (Menu > Magic, the way FF1 does it): pick who casts, then a healing spell, then who gets it. One-ally cures ask for a target, the stronger party-wide ones heal everyone, revives work on the fallen; costs, gems and weapon bonuses match battle. Free (0 MP) heals are battle-only.
 - **Battle QoL**: Repeat your last move, Auto-battle (tap to stop), turn-order bar, expandable log, battle speed and dialogue text speed (normal / fast / instant) in Options.
 - **Menus**: equipment stat comparison (green/red arrows), Bestiary with weaknesses, Journal with quests, full map screen.

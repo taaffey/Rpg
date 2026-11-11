@@ -333,6 +333,8 @@ Object.assign(SKILLS, {
   bladestorm: S('Mandoline Mayhem', 10, 'one', 'phys', 0.5, { hits: 5 }),
   zanshin: S('Head Chef\'s Fury', 16, 'one', 'phys', 3.4, { pierce: 0.5 }),
   // paladin (Traffic Warden)
+  lastorders: S('Last Orders', 8, 'all', 'mag', 1.1, { fx: ['slow'] }), onthehouse: S('One on the House', 12, 'allies', 'heal', 1.2, { fx: ['atkup'] }), barred: S('You\'re Barred', 10, 'one', 'phys', 2.6, { stun: 0.35 }),
+  lockin: S('Lock-In', 12, 'allies', 'buff', 0, { fx: ['defup', 'atkup'] }), timeplease: S('Time, Gentlemen, Please', 18, 'all', 'phys', 1.8, { elem: 'holy', fx: ['slow'] }),
   holylight: S('Flashing Beacon', 4, 'one', 'mag', 1.5, { elem: 'holy' }),
   layhands: S('Ticket Cancelled', 4, 'ally', 'heal', 1.6),
   divineshield: S('Resident Permit', 8, 'allies', 'buff', 0, { fx: ['defup'] }),
@@ -348,6 +350,8 @@ WEAPON_TYPES.katana = { name: 'Kitchen Knife', sig: 'iai' };
 Object.assign(JOBS, {
   samurai: { name: 'Angry Chef', icon: '🗾', desc: 'Kitchen blades, rapid cuts and big crits. "IT\'S RAW!"', mod: { hp: 1.1, mp: 0.7, atk: 1.4, def: 0.95, mag: 0.6, spd: 1.3 }, weapons: ['katana', 'bow'], skills: [['flashcut', 1], ['kiai', 2], ['windblade', 3], ['bladestorm', 5], ['zanshin', 6]], trait: ['bushido', 4], master: { atk: 4, spd: 2 } },
   paladin: { name: 'Traffic Warden', icon: '⚜️', desc: 'Holy authority in hi-vis. Fights, heals, guards. Ticket? Clamp? Smite?', mod: { hp: 1.3, mp: 1.0, atk: 1.0, def: 1.4, mag: 1.0, spd: 0.8 }, weapons: ['sword', 'staff'], skills: [['holylight', 1], ['layhands', 1], ['divineshield', 2], ['crusade', 3], ['sacredblade', 5], ['divinegrace', 6]], trait: ['guardian', 4], master: { def: 3, hp: 20 } },
+  // the capstone calling: only for a hero who has mastered three others (needs), so it never shows in the Guild's batches
+  landlord: { name: 'Landlord', icon: '🍺', needs: 3, desc: 'Runs the whole pub. Strong at everything, pours for the party, bars the rest. "Time, gentlemen, please."', mod: { hp: 1.3, mp: 1.1, atk: 1.2, def: 1.2, mag: 1.2, spd: 1.0 }, weapons: ['sword', 'staff', 'axe', 'fists'], skills: [['lastorders', 1], ['onthehouse', 2], ['barred', 3], ['lockin', 5], ['timeplease', 6]], trait: ['house', 4], master: { hp: 30, mp: 10, atk: 2, def: 2, mag: 2 } },
 });
 Object.assign(ARMORS, { storm_cloak: { name: 'Rubber Rain Cloak', desc: 'Insulated against lightning. Squeaks when you walk.', def: 18, mp: 28, mag: 8, spd: 3, res: ['bolt'], sockets: 2, price: 0 } });
 Object.assign(ACCS, {
@@ -755,7 +759,7 @@ export const STORY = {
   // ending: one line per hero, by character, then by main calling (default if the calling has none)
   epilogue: {
     adam: {
-      default: '{n} went back to IT. When the printer jams, he stares at it, calmly, until it remembers its place.',
+      landlord: '{n} bought the Bell & Anvil. The quiz is fair, the lines are clean, and the bell is behind glass.', default: '{n} went back to IT. When the printer jams, he stares at it, calmly, until it remembers its place.',
       knight: '{n} works the door at the Bell & Anvil on quiz night. Devon, somehow, is never on the list.',
       rogue: '{n} got the parking ticket cancelled through a bloke who knows a bloke. He feels slightly bad. Slightly.',
       mage: '{n} fixes the office servers by looking at them. After the Frost Titan, a macro is not much of a threat.',
@@ -770,7 +774,7 @@ export const STORY = {
       paladin: '{n} became a Traffic Warden. The ticket from the night they left hangs framed above his desk.',
     },
     devon: {
-      default: '{n} told everyone he went back in time. Nobody believed him. His phone, still on 3%, had no photos.',
+      landlord: '{n} ran the Bell & Anvil for one weekend. Record takings. No stock left. Three new house rules, all about him.', default: '{n} told everyone he went back in time. Nobody believed him. His phone, still on 3%, had no photos.',
       knight: '{n} got a job on the door. He let the whole pub in, then asked everyone for a selfie. Sacked by ten.',
       rogue: '{n} sold "genuine" watches outside the pub. Every one of them read 3% battery. Nobody knows how.',
       mage: '{n} was given a spreadsheet at work. It burst into flames within a minute. He was promoted.',
@@ -785,7 +789,7 @@ export const STORY = {
       paladin: '{n} wardened the pub car park for one afternoon, ticketed the landlord, and was sacked by tea.',
     },
     brenna: {
-      default: '{n} took over the Gilded Goose. Prices up, fights down, and a brass plaque behind the bar: NO BELLS.',
+      landlord: '{n} owns the Goose outright now, and the one in Mirewood, and the lease on a third. Barnaby calls her "boss".', default: '{n} took over the Gilded Goose. Prices up, fights down, and a brass plaque behind the bar: NO BELLS.',
       knight: '{n} does the door at the Goose herself. Nobody gets in or out without a nod from her.',
       rogue: '{n} runs the Goose and, it is whispered, half of Haven. Nobody skips their tab twice.',
       mage: '{n} runs the Goose\'s books so well the tax collector cried. Her tab system is feared in three counties.',
@@ -800,7 +804,7 @@ export const STORY = {
       paladin: '{n} issues tickets to carts parked outside the Goose. Haven has never been so orderly, or so furious.',
     },
     wendell: {
-      default: '{n} finally took a day off. Then another. He is now in his fourth year of a well-earned sit-down.',
+      landlord: '{n} opened The Rusty Helm. It has one stool, one ale and no closing time. He guards the door himself.', default: '{n} finally took a day off. Then another. He is now in his fourth year of a well-earned sit-down.',
       knight: '{n} guarded a door for eleven years. Now he guards a deckchair. Nobody has got past it either.',
       rogue: '{n} was caught selling "genuine" moustache wax at the fair. It was boot polish. It sold out.',
       mage: '{n} learned to use a spreadsheet at last. He now keeps meticulous records of every nap.',
@@ -921,6 +925,7 @@ export const TRAITS = {
   pharmacy: { name: 'Happy Hour', desc: 'Items used in battle are twice as potent. Two for one.' },
   bushido: { name: 'Sharp Tongue', desc: '+10% critical chance on physical skills. Words cut deeper.' },
   guardian: { name: 'Hi-Vis', desc: 'While standing, allies take 10% less damage. Be seen, be safe.' },
+  house: { name: 'The House Always Wins', desc: 'The party earns 20% more gold. It is, after all, your pub.' },
 };
 // ---- Callings wake in batches with the heart-gems (FF5's crystals): the bell, then each great evil's heart.
 export const CALLING_BATCHES = [['knight', 'rogue', 'mage', 'cleric', 'monk', 'ranger'], ['hexer', 'bard', 'berserker'], ['alchemist', 'samurai', 'paladin']];

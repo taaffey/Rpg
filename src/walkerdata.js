@@ -1381,6 +1381,11 @@ Object.assign(PROPS, {
 });
 
 Object.assign(HEROES, {
+  landlord: { // LANDLORD: white shirt, wine waistcoat, bar towel on the shoulder, a pint in hand
+    hair: 'short', openOk: true, hood: false,
+    ramps: { T: '#f4f0e6', C: '#8c2c3e', P: '#2c2a34', B: '#3a2618', F: '#f6f1e6', A: '#f0a424', H: '#6a4428' },
+    props: ['vest', 'towel', 'pint'], spec: { 1: '#3a6ac0' },
+  },
   knight: { // BOUNCER: bomber, shades, earpiece, clipboard, bat
     head: ['shades', 'earpiece'], hair: 'buzz', openOk: false, hood: false, hairBy: { short: 'buzz', messy: 'buzz' },
     ramps: { T: '#34343e', P: '#2a2a32', B: '#1a1a20', A: '#6a6a78', F: '#f4f4f8', R: '#b07a3e', M: '#c8ccd6', H: '#3a2a20' },

@@ -32,7 +32,7 @@ const fieldNote = (id) => {
   return { name: who.name, text: n[1] };
 };
 function stageKind(bossId) {
-  if (bossId) return { big_gary: 'cellar', miller: 'windmill', captain_barnacle: 'wreck', clerk_pharaoh: 'ruins', frozen_angler: 'spire', mash_tun: 'brewery', margherita: 'pizzaoven', landlord: 'obsidian', wyrm: 'boss', lich: 'crypt', storm_drake: 'storm', sphinx: 'ruins' }[bossId] || 'spire';
+  if (bossId) return { big_gary: 'cellar', miller: 'windmill', captain_barnacle: 'wreck', clerk_pharaoh: 'ruins', frozen_angler: 'spire', mash_tun: 'brewery', margherita: 'pizzaoven', landlord: 'obsidian', quizmaster: 'cellar', wyrm: 'boss', lich: 'crypt', storm_drake: 'storm', sphinx: 'ruins' }[bossId] || 'spire';
   const m = mapDef();
   if (m.kind === 'dungeon') return G.map === 'pizzaoven' || G.map === 'obsidian' || G.map === 'wreck' || G.map === 'windmill' ? G.map : m.theme === 'cavern' ? 'dungeon' : m.theme;
   const r = regionOf(), woods = [[1, 0], [-1, 0], [0, 1], [0, -1]].some(([a, b2]) => tileAt(G.x + a, G.y + b2) === 'T'); // fighting at a forest's edge
@@ -223,7 +223,8 @@ async function victory(b, bossId) {
   for (const { c, cp, ranks } of L.awardCP(G.party, r.cp)) {
     cpGot.set(c, cp); if (ranks.length) { lvSfx = true; autofill(c); }
     for (const k of ranks) { const got = [...k.skills.map((id) => SKILLS[id].name), ...(k.trait ? [TRAITS[k.trait].name] : [])]; if (!got.length && !k.mastered && k.job === 'bloke') continue;
-      lines.push(`✦ Rank up! ${esc(c.name)}: ${JOBS[k.job].name} ${k.rank}${got.length ? ` — learned <b>${got.join(', ')}</b>` : ''}${k.mastered ? ' <b class="gold">★ Mastered</b>' : ''}`); }
+      lines.push(`✦ Rank up! ${esc(c.name)}: ${JOBS[k.job].name} ${k.rank}${got.length ? ` — learned <b>${got.join(', ')}</b>` : ''}${k.mastered ? ' <b class="gold">★ Mastered</b>' : ''}`);
+      if (k.mastered) for (const j of L.capstonesJustOpened(c)) lines.push(`⭐ ${esc(c.name)} has mastered ${JOBS[j].needs} callings. A new calling is open to them: <b>${JOBS[j].name}</b>.`); }
   }
   if (lvSfx) setTimeout(() => sfx('levelup'), 1400);
   for (const d of r.drops) {

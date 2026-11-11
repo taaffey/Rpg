@@ -2,7 +2,7 @@
 //   node tools/landlord_sim.mjs [boss|regular|all] [N]     MODE=smart|dumb  GEAR=old|kiosk|new  PARTY=4|3
 // "dumb" never uses the Landlord's weakness (holy / bolt) and keeps its buffs to a minimum; "smart" exploits both and buffs/heals well.
 import * as D from '../src/data.js';
-import '../src/hopsend.js'; import '../src/embers.js'; import '../src/sidequests.js'; import '../src/obsidian.js';
+import '../src/hopsend.js'; import '../src/embers.js'; import '../src/sidequests.js'; import '../src/obsidian.js'; import '../src/lastround.js';
 import * as L from '../src/logic.js';
 const { Battle, stats, newChar, slotGems, SIG } = L;
 const [what = 'boss', N = '300'] = process.argv.slice(2), MODE = process.env.MODE || 'smart', GEAR = process.env.GEAR || 'old', SIZE = +(process.env.PARTY || 4);
@@ -78,10 +78,11 @@ function rate(ids, boss, n, mod) { let w = 0, rs = 0, alive = 0; for (let i = 0;
 for (const k of ['hp', 'atk', 'def', 'mag', 'spd']) if (process.env['B_' + k.toUpperCase()]) D.ENEMIES.landlord[k] = +process.env['B_' + k.toUpperCase()]; // tuning overrides
 const n = +N;
 if (what === 'boss' || what === 'all') {
-  for (const id of ['margherita', 'mash_tun', 'titan', 'landlord']) { const r = rate([id], true, n); console.log(`${MODE}/${GEAR} ${id.padEnd(11)} win ${(r.win * 100).toFixed(0)}%  rounds ${r.rounds}  survivors ${r.alive}`); }
+  for (const id of ['margherita', 'mash_tun', 'titan', 'quizmaster', 'landlord']) { const r = rate([id], true, n); console.log(`${MODE}/${GEAR} ${id.padEnd(11)} win ${(r.win * 100).toFixed(0)}%  rounds ${r.rounds}  survivors ${r.alive}`); }
 }
 if (what === 'regular' || what === 'all') {
   for (const grp of D.ENCOUNTERS.obsidian) { const r = rate(grp, false, n); console.log(`${grp.join(' + ').padEnd(80)} win ${(r.win * 100).toFixed(0)}%  rounds ${r.rounds}`); }
+  for (const grp of D.ENCOUNTERS.bellanvil) { const r = rate(grp, false, n); console.log(`[bell&anvil] ${grp.join(' + ').padEnd(66)} win ${(r.win * 100).toFixed(0)}%  rounds ${r.rounds}`); }
   for (const grp of D.ENCOUNTERS.embers.slice(0, 4)) { const r = rate(grp, false, n); console.log(`[cinder] ${grp.join(' + ').padEnd(70)} win ${(r.win * 100).toFixed(0)}%  rounds ${r.rounds}`); }
 }
 const PS = party().map((c) => { const s = stats(c); return `${c.name}(${c.main}) hp${s.hp} mp${s.mp} atk${s.atk} def${s.def} mag${s.mag} spd${s.spd}`; }); console.log(PS.join(' | '));

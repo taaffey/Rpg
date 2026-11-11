@@ -378,6 +378,12 @@ const CLS = {
     torso(c) { const n = c.J.neck; c.parts.push(ell(n[0] - 0.6, n[1] + 0.9, 2.2, 1.3, 'neck', { z: 5.5 })); towelParts(c); },
     post(c) { const { api, J } = c, cx = J.chest[0], cy = J.chest[1]; for (const dy of [0, 2.2, 4.4]) { api.px(cx - 2.6, cy + dy, c.m.btn.r[3]); api.px(cx - 1.6, cy + dy, c.m.btn.r[2]); } },
   },
+  landlord: { // LANDLORD (capstone): white shirt with rolled sleeves, wine waistcoat, bar towel, a pint in the off hand
+    shirt: '#f4f0e6', legs: '#2c2a34', shoe: '#3a2618', belt: '#2a2028', short: true, weapon: 'sword', offhand: true, mats: { vest: ['#8c2c3e'], btn: ['#f0c840'] },
+    torso(c) { const { J } = c, n = J.neck; paintPoly(c, [[n[0] - 3.4, n[1] + 1.2], [n[0] - 1.6, n[1] + 1], [J.belly[0] - 1.2, J.belly[1] + 1.4], [J.belly[0] - 3.6, J.belly[1] + 1.4]], 'vest'); paintPoly(c, [[n[0] + 0.4, n[1] + 0.8], [n[0] + 3.2, n[1] + 1.2], [J.belly[0] + 3.2, J.belly[1] + 1.4], [J.belly[0] + 0.2, J.belly[1] + 1.4]], 'vest'); towelParts(c); },
+    late(c) { const h = c.J.haB, z = c.bz + 0.4, o = c.bz < 0 ? 1.6 : 0; poly1(c, [[h[0] - 1.6 + o, h[1] - 3.7], [h[0] + 1.6 + o, h[1] - 3.7], [h[0] + 1.1 + o, h[1] + 0.8], [h[0] - 1.1 + o, h[1] + 0.8]], 'amber', { z }); c.parts.push(ell(h[0] + o, h[1] - 4, 1.9, 1, 'foam', { z: z + 0.1 })); },
+    post(c) { const { api, J } = c; for (const dy of [0.6, 2.6]) api.px(J.chest[0] - 2.4, J.chest[1] + dy, c.m.btn.r[3]); },
+  },
   paladin: { // TRAFFIC WARDEN: hi-vis, peaked cap, STOP lollipop, ticket machine
     shirt: '#eee83a', legs: '#2a3052', shoe: '#1a1a22', belt: '#2a2a34', cuff: 'refl', weapon: 'sword',
     torso(c) { const { J } = c, cx = J.chest[0]; paintCap(c, [cx - 4.6, J.chest[1] + 0.2], [cx + 4.6, J.chest[1] + 0.2], 0.5, 'refl'); paintCap(c, [cx - 4.6, J.belly[1] - 0.6], [cx + 4.6, J.belly[1] - 0.6], 0.5, 'refl'); paintCap(c, [J.neck[0] - 1.6, J.neck[1] + 1], [J.belly[0] - 1.4, J.belly[1] - 1], 0.4, 'refl'); },
@@ -393,7 +399,7 @@ const OUT = {
 export const CLASS_FX = { // cast accents (the stage reads these): ring colour, accent colour, and what the burst looks like
   knight: { c1: '#c8ccd6', c2: '#ffffff' }, rogue: { c1: '#f0c840', c2: '#fff4b0' }, mage: { c1: '#8ad8ff', c2: '#e8fbff' }, cleric: { c1: '#f6f0e0', c2: '#f0b840' },
   monk: { c1: '#4aa0ff', c2: '#e8f4ff' }, ranger: { c1: '#f6d838', c2: '#ff6a5a' }, hexer: { c1: '#ff7ac0', c2: '#fff0fa' }, bard: { c1: '#e2a82e', c2: '#fff0b0' },
-  berserker: { c1: '#ff8c1e', c2: '#ffd0e8' }, alchemist: { c1: '#f0b840', c2: '#f6f0e0' }, samurai: { c1: '#ff6a4a', c2: '#fff4e8' }, paladin: { c1: '#eee83a', c2: '#d42a2a' },
+  landlord: { c1: '#f0a424', c2: '#f6f0e0' }, berserker: { c1: '#ff8c1e', c2: '#ffd0e8' }, alchemist: { c1: '#f0b840', c2: '#f6f0e0' }, samurai: { c1: '#ff6a4a', c2: '#fff4e8' }, paladin: { c1: '#eee83a', c2: '#d42a2a' },
 };
 
 // hero frames: the skeleton is posed in the old 32x32 "model" space (soles on row 29, body centre x 16.5), then scaled up
@@ -724,6 +730,14 @@ const MODELS = {
   } },
 };
 const ENEMY_VARIANTS = {
+  // One for the Road (src/lastround.js): the Bell & Anvil's cellar, 2026
+  qn_rat: ['cellar_rat', { fur: '#6a6a74', belly: '#c8c8d0', tail: '#e8a8b0' }],
+  qn_gull: ['thunderbird', { feather: '#e8ecf2', wing: '#aab2c0', wing2: '#6a7280', chest: '#ffffff', beak: '#f0a020', crest: '#e8ecf2', eye: '#f0d020' }],
+  qn_fruitie: ['crystal_sentinel', { crystal: '#e03a3a', crystal2: '#8a1a24', gold: '#f0c840', core: '#fff27a', eye: '#ffffff' }],
+  qn_hen: ['harpy', { feather: '#ffd0e8', wing: '#ff7ac0', wing2: '#c83a8c', skin: '#f6caa4', hair: '#f0e070', leg: '#f6caa4', eye: '#3a6ac8' }],
+  qn_doorman: ['golem', { rock: '#2e2e38', moss: '#f6f6fa', glow: '#8ad8ff', dark: '#16161c' }],
+  qn_straggler: ['zombie', { skin: '#b8c8a0', cloth: '#3a4a7a', pants: '#2a2a34', hair: '#5a3a22', eye: '#ffe0a0' }],
+  quizmaster: ['lich', { robe: '#b01838', robe2: '#5a0c20', trim: '#f0c840', bone: '#c8ccd6', gem: '#5ab8ff', eye: '#8ad8ff', staff: '#26262e', orb: '#d8dce6' }],
   storm_drake: ['wyrm', { scale: '#3a62b8', belly: '#ffe070', wing: '#24306a', horn: '#fff6c8', eye: '#ffffff', spike: '#f4d35e' }, { bolt: true }],
   ghoul: ['zombie', { skin: '#8a8a9a', cloth: '#3a3048', pants: '#2a2a34', hair: '#d8d8e0', eye: '#ff5040' }],
   wraith_elder: ['wraith', { cloak: '#6a3aa0', hand: '#d8c8f0', eye: '#ff70ff' }],

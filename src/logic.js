@@ -54,6 +54,9 @@ export function activeTraits(c) { // the current calling's own trait (once learn
   if (traitSlots(c) > 1 && c.trait2 && c.trait2 !== own && !out.includes(c.trait2) && learnedTraits(c).includes(c.trait2)) out.push(c.trait2); // the level-25 slot
   return out;
 }
+// a capstone calling (JOBS[job].needs = n) opens for a hero once they have mastered n other callings; once taken up it stays
+export const callingOpen = (c, job) => !JOBS[job].needs || c.cp?.[job] != null || mastered(c).filter((j) => j !== job).length >= JOBS[job].needs;
+export const capstonesJustOpened = (c) => Object.keys(JOBS).filter((j) => JOBS[j].needs && c.cp?.[j] == null && mastered(c).filter((m) => m !== j).length === JOBS[j].needs); // call right after a mastery
 export const secondOk = (c, job) => !!job && job !== c.main && rankOf(c, job) >= 1;
 // skills a character may slot: the current calling's learned abilities, then the second calling's
 export function learnable(c) {
@@ -457,10 +460,10 @@ export class Battle {
 }
 
 export function rewards(battle) {
-  const r = { exp: 0, gold: 0, cp: 0, drops: [] };
+  const r = { exp: 0, gold: 0, cp: 0, drops: [] }, house = battle.p.some((x) => x.hp > 0 && x.tr?.has('house')) ? 1.2 : 1; // Landlord trait
   for (const e of battle.e) {
     r.cp += enemyCp(e.id);
-    r.exp += Math.round(e.def_.exp * battle.mod.reward); r.gold += Math.round(e.def_.gold * battle.mod.reward);
+    r.exp += Math.round(e.def_.exp * battle.mod.reward); r.gold += Math.round(e.def_.gold * battle.mod.reward * house);
     const d = DROPS[e.id];
     if (!d) continue;
     if (Array.isArray(d)) { if (battle.rng() < d[0]) r.drops.push({ kind: d[1], id: d[2], rare: false, from: e.id }); continue; } // legacy [chance, kind, id]

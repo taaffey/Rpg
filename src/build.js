@@ -140,10 +140,13 @@ function callingCard(c) {
     <div class="jobrow"><span>${ic('scroll')}<span><span class="dim">CALLINGS</span> ${Object.keys(c.cp || {}).length} learned${L.mastered(c).length ? ` · <span class="gold">${L.mastered(c).length}★</span>` : ''}</span></span>${btn('bview', 'View', 'callings')}</div>`;
 }
 const nextAbility = (c, j) => { const r = L.rankOf(c, j), n = [...JOBS[j].skills.map(([id, k]) => [SKILLS[id].name, k]), ...(JOBS[j].trait ? [[TRAITS[JOBS[j].trait[0]].name, JOBS[j].trait[1]]] : [])].filter(([, k]) => k === r + 1); return n.length ? n.map((x) => x[0]).join(', ') : ''; };
+// the callings a hero can see: the awakened ones, plus any capstone once they have a mastery to their name (locked until earned)
+const jobsFor = (c) => [...unlockedJobs().filter((j) => !JOBS[j].needs), ...Object.keys(JOBS).filter((j) => JOBS[j].needs && (L.callingOpen(c, j) || L.mastered(c).length > 0))];
 function jobPick(which) {
-  const c = G.party[B.i], list = which === 'main' ? unlockedJobs() : Object.keys(JOBS).filter((j) => L.secondOk(c, j));
+  const c = G.party[B.i], list = which === 'main' ? jobsFor(c) : Object.keys(JOBS).filter((j) => L.secondOk(c, j));
   show(`<h2>${which === 'main' ? 'Calling' : 'Second calling'} · ${esc(c.name)}</h2>${which === 'sub' ? `<div class="slot"><span class="lead">${ic('socket')}</span><div class="t"><b>None</b></div>${btn('setjob', 'Clear', which, '', '', !c.sub)}</div>` : ''}${list.map((id) => {
     const j = JOBS[id], r = L.rankOf(c, id), now = c[which] === id, learned = L.jobSkills(id, r), nx = nextAbility(c, id);
+    if (which === 'main' && !L.callingOpen(c, id)) return `<div class="slot"><span class="lead">${ic('socket')}</span><div class="t"><b class="dim">???</b><small>A calling for those who have mastered ${j.needs} others. ${esc(c.name)} has mastered ${L.mastered(c).length}.</small></div></div>`;
     const info = which === 'main' ? `${j.desc} ${!r ? `<span class="gold">New:</span> starts with ${nx}.` : nx ? `Next: ${nx}.` : 'Mastered.'}` : `Lends: ${learned.map((x) => SKILLS[x].name).join(', ')}`;
     return `<div class="slot ${now ? 'sel' : ''}">${portrait(akj(c, id))}<div class="t"><b>${j.name} ${which === 'main' ? j.weapons.map((w) => ic(UI.gearIconName('weapons', { type: w }))).join('') : ''} ${r ? stars(c, id) : ''}${now ? ' <span class="chip tag">NOW</span>' : ''}</b><small>${info}</small></div>${btn('setjob', 'Select', which, id, '', now)}</div>`;
   }).join('')}<div class="foot">${btn('bmain', 'Back', '', '', 'primary')}</div>`);
@@ -167,7 +170,7 @@ ACT.settrait = (t) => { // one slot: pick and go back. Two slots (level 25): tap
 };
 function callingsView() { // every awakened calling: rank stars, abilities learned, the next one (later ones stay unseen)
   const c = G.party[B.i];
-  show(`<h2>Callings · ${esc(c.name)}</h2>${unlockedJobs().map((id) => {
+  show(`<h2>Callings · ${esc(c.name)}</h2>${jobsFor(c).filter((id) => L.callingOpen(c, id)).map((id) => {
     const j = JOBS[id], r = L.rankOf(c, id), got = [...L.jobSkills(id, r).map((x) => SKILLS[x].name), ...(L.jobTrait(id, r) ? [traitName(L.jobTrait(id, r))] : [])], nx = nextAbility(c, id);
     const master = r >= L.MAX_RANK ? ` · <span class="gold">★ ${Object.entries(j.master).map(([k, v]) => `+${v} ${k.toUpperCase()}`).join(' ')}</span>` : '';
     return `<div class="slot callrow ${id === c.main ? 'sel' : ''}">${portrait(akj(c, id), r ? '' : 'ko')}<div class="t"><b>${j.name} ${stars(c, id)}${id === c.main ? ' <span class="chip tag">NOW</span>' : id === c.sub ? ' <span class="chip tag">2ND</span>' : ''}</b><small>${got.length ? got.join(' · ') : '<span class="dim">Not yet taken up.</span>'}${nx ? ` <span class="dim">→ ${nx}${r ? ` (${L.cpToNext(c, id)} CP)` : ''}</span>` : ''}${master}</small></div></div>`;

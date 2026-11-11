@@ -2,10 +2,11 @@
 // portal targets land on walkable tiles, and the overworld gate really gates the north.
 import { MAPS, WALK } from '../src/maps.js';
 import { GEN } from '../src/mapgen.js';
+await import('../src/bros.js'); await import('../src/lastround.js'); // hand-made dungeons added by the story packs
 let bad = 0; const fail = (m) => { bad++; console.log('FAIL', m); };
 function reach(id, from, gateOpen, sub) {
   const m = MAPS[id], H = m.rows.length, W = m.rows[0].length;
-  const blocked = new Set([...(m.decor || []).map((d) => `${d[0]},${d[1]}`), ...(m.npcs || []).map((n) => `${n.x},${n.y}`)]);
+  const blocked = new Set([...(m.decor || []).filter((d) => d[2] !== 'trapdoor').map((d) => `${d[0]},${d[1]}`), ...(m.npcs || []).map((n) => `${n.x},${n.y}`)]);
   const ok = (x, y) => {
     const c = m.rows[y]?.[x]; if (c === undefined || blocked.has(`${x},${y}`)) return false;
     if (c === 'B') return gateOpen; return WALK.has(c);

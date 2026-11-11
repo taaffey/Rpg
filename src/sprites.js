@@ -72,6 +72,7 @@ const HEAD = {
 const BODY = ['.....kTTTTk.....', '...kkTTAATTkk...', '..kFkTTTTTTkFk..', '..kFkTTAATTkFk..', '...kkTTTTTTkk...', '....kTTkkTTk....', '....kttk.kttk...', '....kkkk.kkkk...', '................'];
 export const HERO_STYLE = { // job -> [head, H, h, T, t, A, F]  (the silly classes; the legacy 16x16 hero used on the title and ending screens)
   knight: ['hair', '#3a2a20', '#241810', '#30303a', '#26262e', '#f4f4f8', '#f0c8a0'], // Bouncer
+  landlord: ['hair', '#6a4428', '#4a2e1a', '#f4f0e6', '#8c2c3e', '#f0a424', '#f0c8a0'], // Landlord (the capstone calling)
   rogue: ['hair', '#8a7a64', '#5a4a38', '#22b2a4', '#7c3cb8', '#f0c840', '#f0c8a0'], // Chancer
   mage: ['pointy', '#1f7c4c', '#145a36', '#2c9c5e', '#1c6a40', '#e6e8f0', '#f0c8a0'], // Spreadsheet Sorcerer
   cleric: ['hair', '#a8462a', '#7a3218', '#f6f2f6', '#8c2c3e', '#f0a424', '#f0c8a0'], // Barmaid

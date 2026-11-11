@@ -15,7 +15,7 @@ async function boot(vw, vh) {
   await pg.goto(`http://localhost:${process.env.PORT || 8135}/index.html`); await pg.waitForTimeout(400);
   await pg.evaluate(() => { window.__game.ACT.diff(1, 'normal'); }); await pg.waitForTimeout(400);
   await pg.evaluate(async (LV) => {
-    await import('/src/obsidian.js'); const L = await import('/src/logic.js'), g = window.__game, G = g.G;
+    await import('/src/obsidian.js'), import('/src/lastround.js'); const L = await import('/src/logic.js'), g = window.__game, G = g.G;
     document.getElementById('overlay').className = ''; document.getElementById('overlay').innerHTML = '';
     g.testParty(); G.flags.bosses.titan = true; G.stats = G.stats || {}; G.stats.wins = 20;
     const gear = [['beermat_knuckles', 'bouncer_parka', 'egg_charm'], ['licensing_act', 'lich_robes', 'optic_ring'], ['hand_pump_staff', 'frost_robe', 'optic_ring'], ['brass_rail', 'titan_plate', 'egg_charm']];

@@ -1,6 +1,7 @@
 // ===== Entry point: loads the content packs and every module, wires the global listeners, the test hook, and starts at the title screen. =====
 import './sidequests.js'; // four small optional dungeons on the main islands
 import './obsidian.js'; // the Obsidian Ruins: the last optional island and its superboss
+import './lastround.js'; // One for the Road: the last chapter, back in the Bell & Anvil's cellar
 import './embers.js'; // Cinder Isle content (post-ending volcano island)
 import './hopsend.js'; // Hopsend Isle content (enemies, gear, shops, quests, scenes)
 import { setBackgrounded, unlock } from './audio.js';

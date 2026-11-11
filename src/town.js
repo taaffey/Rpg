@@ -9,8 +9,20 @@ import { ACT, DB, ak, bar, btn, coin, esc, gearDesc, gemCapacity, gemsOn, heroBt
 import { draw, mapDef } from './world.js';
 import { G } from './state.js';
 import { cond, fill, npcLines } from './story.js';
-import { autosave, save } from './saves.js';
-function guild() { B.guild = true; show(`<h2>⚔️ ${esc(mapDef().name)}</h2><div class="npc">${npcImg('guildmaster', 48)}<p>Every battle teaches a calling something, and what is learned stays learned. Change as you please; the road ahead won't wait.</p></div><div class="card menuparty">${G.party.map((c, i) => heroBtn(c, 'build', i)).join('')}</div><div class="foot">${btn('leave', 'Leave', '', '', 'primary')}</div>`); }
+import { autofill, autosave, save, stars } from './saves.js';
+// Evening classes: gold buys Calling Points for a hero's current calling. Dearer than earning them in fights, so it is a use for spare gold, not a shortcut.
+const CLASS_CP = 10, classCost = (c) => 600 + 150 * L.rankOf(c, c.main);
+function guild(msg = '') {
+  B.guild = true;
+  const classes = G.flags.story.called ? `<h3>Evening classes</h3><p class="dim">${CLASS_CP} Calling Points for a hero's current calling. Bring a pencil.</p><div class="card"><div class="gilbox"><span>You have</span>${coin(G.gold + ' G')}</div></div>${G.party.map((c, i) => { const done = L.rankOf(c, c.main) >= L.MAX_RANK, cost = classCost(c); return `<div class="slot">${portrait(ak(c), 'sm')}<div class="t"><b>${esc(c.name)} <span class="dim">${DATA.JOBS[c.main].name}</span> ${stars(c, c.main)}</b><small>${done ? 'Mastered. Nothing left to teach.' : `${L.cpToNext(c, c.main)} CP to the next rank`}</small></div>${done ? '<span class="dim">MAX</span>' : btn('nightclass', `${cost} G`, i, '', '', G.gold < cost)}</div>`; }).join('')}` : '';
+  show(`<h2>⚔️ ${esc(mapDef().name)}</h2><div class="npc">${npcImg('guildmaster', 48)}<p>Every battle teaches a calling something, and what is learned stays learned. Change as you please; the road ahead won't wait.</p></div>${msg ? `<p class="gold">${msg}</p>` : ''}<div class="card menuparty">${G.party.map((c, i) => heroBtn(c, 'build', i)).join('')}</div>${classes}<div class="foot">${btn('leave', 'Leave', '', '', 'primary')}</div>`);
+}
+ACT.nightclass = (i) => {
+  const c = G.party[+i], cost = c ? classCost(c) : 0; if (!c || G.gold < cost || L.rankOf(c, c.main) >= L.MAX_RANK) return;
+  G.gold -= cost; const ranks = L.gainCP(c, CLASS_CP); autofill(c); sfx(ranks.length ? 'levelup' : 'coin'); (G.stats ||= { wins: 0 }).classes = (G.stats.classes || 0) + 1;
+  const got = ranks.flatMap((r) => [...r.skills.map((id) => DATA.SKILLS[id].name), ...(r.trait ? [DATA.TRAITS[r.trait].name] : []), ...(r.mastered ? ['mastery'] : [])]);
+  guild(`${esc(c.name)} sat through an evening class: +${CLASS_CP} CP.${ranks.length ? ` Rank ${ranks.at(-1).rank}!${got.length ? ` Learned <b>${got.join(', ')}</b>.` : ''}` : ''}${ranks.some((r) => r.mastered) ? L.capstonesJustOpened(c).map((j) => ` A new calling is open to ${esc(c.name)}: <b>${DATA.JOBS[j].name}</b>.`).join('') : ''}`);
+};
 ACT.leave = () => { B.guild = false; hide(); };
 function inn(npc) {
   const cost = npc.cost || 25;
