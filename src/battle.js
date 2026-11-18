@@ -55,7 +55,7 @@ async function battleInner(groupIds, bossId = null) {
   await transition(); music(bossId ? 'boss' : 'battle');
   const firstId = !bossId && b.e.map((e) => e.id).find((id) => !G.flags.bestiary[id] && fieldNote(id)), note = firstId && fieldNote(firstId); // first sight of a new foe: the party says something
   BT = { b, boss: bossId, logBig: false, log: [bossId ? BOSSES[bossId].intro : `${b.e.map((e) => e.name).join(', ')} ${b.e.length > 1 ? 'appear' : 'appears'}!`, ...(note ? [`${note.name}: “${note.text}”`] : [])], ask: null };
-  BT.last = new Map(); BT.auto = false;
+  BT.last = new Map(); BT.auto = OPT.auto === 'random fights' && !bossId && !!G.flags.story.called; // Options > Auto-battle can start random fights on auto
   for (const e of b.e) G.flags.bestiary[e.id] = G.flags.bestiary[e.id] || { seen: 1, kills: 0 };
   BT.stage = new Stage(b, stageKind(bossId));
   BT.stage.canvas.addEventListener('pointerdown', (e) => { // touch targeting: tap a foe to attack it, or tap the target you're choosing
@@ -68,7 +68,8 @@ async function battleInner(groupIds, bossId = null) {
   if (bossId) BT.stage.card(BOSSES[bossId].name.toUpperCase(), 2.6);
   renderBattle();
   while (!b.over) {
-    if (BT.auto && b.p.some((x) => x.hp <= 0 || x.hp < x.maxhp * 0.3)) { BT.auto = false; toast('⏩ Auto-battle stopped: someone needs help', 3000); renderBattle(); } // never auto-march a party into a wipe
+    const trouble = BT.auto && autoTrouble(b); if (trouble) { BT.auto = false; toast(`⏩ Auto-battle paused: ${trouble}`, 3000); renderBattle(); } // never auto-march a party into a wipe
+    BT.autoPlan = new Set(); // who this round's heals and revives are already going to
     const cmds = new Map(), caught = b.turn === 0 && b.ambushed; // ambushed: nobody gets to choose anything in round one
     if (b.turn === 0 && (caught || b.preempt)) BT.stage.card(caught ? 'AMBUSHED!' : 'STRIKE FIRST!', 1.6);
     for (const p of caught ? [] : b.p.filter((x) => x.hp > 0)) {
@@ -99,7 +100,7 @@ function renderBattle() {
   const enemyWin = `<div class="elist">${groups.map(({ name, n, e }) => `<div class="er" data-n="${esc(name)}"><span class="en">${esc(name)}</span><span class="ec">${n > 1 ? '×' + n : ''}</span>${e.weak.length || e.res.length ? `<span class="ew">${e.weak.length ? '<span class="lab">WEAK</span>' + icons(e.weak) : ''}${e.res.length ? '<span class="lab">RES</span>' + icons(e.res) : ''}</span>` : ''}</div>`).join('')}</div>`;
   const msg = BT.log.slice(-2).map(line).join('');
   const winding = b.e.filter((x) => x.hp > 0 && x.charge).map((x) => { const pct = Math.min(100, Math.round(100 * x.charge.dmg / x.charge.need)); return `<div class="chg${pct >= 100 ? ' ready' : ''}"><b>${UI.deco('⚠')} WIND-UP</b><span class="cbar"><i style="width:${pct}%"></i></span><small>${pct >= 100 ? 'STAGGER READY' : 'Hit it hard, or Guard'}</small></div>`; }).join('');
-  ov.innerHTML = `<div class="win battle"><div class="bl"><div class="order"><span class="olab">ORDER</span>${order}${BT.auto ? '<button class="autobtn on" data-tap="autotoggle" tabindex="-1">AUTO ON</button>' : ''}</div>
+  ov.innerHTML = `<div class="win battle"><div class="bl"><div class="order"><span class="olab">ORDER</span>${order}<button class="autobtn${BT.auto ? ' on' : ''}" data-tap="autotoggle" tabindex="-1" title="Auto-battle (T)">${BT.auto ? 'AUTO ON' : 'AUTO'}</button></div>
   <div class="stagewrap"><div id="stagehost"></div>${msg && !BT.logBig ? `<div class="bmsg">${msg}</div>` : ''}${winding ? `<div class="chgwrap">${winding}</div>` : ''}<button class="logtoggle" data-tap="logsize" tabindex="-1" title="Battle log (L)">${BT.logBig ? 'CLOSE' : 'LOG'}</button></div>
   ${BT.logBig ? `<div class="logwrap"><div class="log big" id="log">${BT.log.map(line).join('')}</div></div>` : ''}</div>
   <div class="br${ask && ask.stage !== 'root' ? ' subcmd' : ''}"><div class="pane cmdwin"><div id="cmd">${ask ? cmdHtml(ask) : enemyWin}</div></div>
@@ -108,11 +109,15 @@ function renderBattle() {
   $('#stagehost').appendChild(BT.stage.canvas);
   const lg = $('#log'); if (lg) lg.scrollTop = lg.scrollHeight;
 }
-ACT.autotoggle = () => { if (!BT) return; BT.auto = !BT.auto; toast(BT.auto ? '⏩ Auto-battle on' : 'Auto-battle off', 1400); renderBattle(); };
+ACT.autotoggle = () => { // the corner button: on mid-prompt, the hero being asked hands over at once; off takes effect from the next hero's turn
+  if (!BT) return; BT.auto = !BT.auto; toast(BT.auto ? '⏩ Auto-battle on' : 'Auto-battle off', 1400);
+  if (BT.auto && BT.ask) { const a = BT.ask; BT.ask = null; a.resolve(autoCommand(a.p)); }
+  renderBattle();
+};
 const toggleLog = () => { if (!BT) return; BT.logBig = !BT.logBig; renderBattle(); };
 ACT.logsize = toggleLog;
 ov.addEventListener('click', (e) => { const t = e.target.closest('[data-tap]'); if (t) ACT[t.dataset.tap]?.(); });
-addEventListener('keydown', (e) => { if (BT && (e.key === 'l' || e.key === 'L') && !e.ctrlKey && !e.metaKey) toggleLog(); });
+addEventListener('keydown', (e) => { if (!BT || e.ctrlKey || e.metaKey) return; if (e.key === 'l' || e.key === 'L') toggleLog(); if (e.key === 't' || e.key === 'T') ACT.autotoggle(); });
 function playFx(list) {
   let delay = 0;
   for (const e of list) {
@@ -164,14 +169,43 @@ function cmdHtml(a) {
   const list = a.tside === 'e' ? BT.b.e.map((e, i) => (e.hp > 0 ? btn('tgt', `<span class="tgtname">${e.name}</span>${e.weak.length ? `<span class="tw">${e.weak.map((w) => UI.elemIcon(w)).join('')}</span>` : ''}<i>${e.hp}</i>`, 'e', i) : '')) : BT.b.p.map((x, i) => btn('tgt', `${portrait(ak(x.ch), 'sm' + (x.hp > 0 ? '' : ' ko'))}<span class="tgtname">&nbsp;${esc(x.name)}</span><i>${x.hp > 0 ? x.hp : 'KO'}</i>`, 'p', i));
   return `${head}<div class="cmdlist"><div class="dim">${a.tside === 'e' ? 'ATTACK WHICH?' : 'WHO?'}</div>${list.join('')}${back}</div>`;
 }
-function autoCommand(p) { // reuse the hero's last move with sensible targets; fall back to a basic attack
-  const b = BT.b, last = BT.last.get(p.name), foes = b.e.filter((x) => x.hp > 0), friends = b.p.filter((x) => x.hp > 0);
-  if (foes.some((x) => x.charge && x.charge.dmg < x.charge.need) && p.hp < p.maxhp * 0.7) return { kind: 'defend' }; // a boss is winding up a big one: the hurt ones brace
-  let cmd = last && last.kind === 'skill' && L.mpCost(p, skillWithGems(last.skillId, last.gems)) <= p.mp ? { ...last } : { kind: 'skill', skillId: 'attack', gems: [] };
-  const s = skillWithGems(cmd.skillId, cmd.gems);
-  if (s.tgt === 'one') cmd.target = foes.sort((x, y) => x.hp - y.hp)[0];
-  else if (s.tgt === 'ally') cmd.target = s.fx.includes('revive') ? b.p.find((x) => x.hp <= 0) || p : friends.sort((x, y) => x.hp / x.maxhp - y.hp / y.maxhp)[0];
-  return cmd;
+// ---------- auto-battle: a sensible plan for each hero, every round ----------
+// In order: brace for a boss wind-up when hurt, raise a fallen friend, patch up whoever is low (party-wide heals when several are),
+// then hit as hard as the MP allows: weaknesses first, group attacks against groups, the winding-up boss before anything else.
+// Healers keep some MP back for healing. Items are never used: those stay the player's call.
+const autoSkills = (p) => [0, 1, 2, 3, SIG].map((i) => { const id = slotSkill(p.ch, i); if (!id) return null; const gems = slotGems(p.ch, i), s = L.withWeapon(skillWithGems(id, gems), p.wpn, false, i === SIG); s.mp = L.mpCost(p, s); return { id, gems, s }; }).filter((k) => k && k.s.mp <= p.mp);
+const canRevive = (p) => p.hp > 0 && autoSkills(p).some((k) => k.s.fx.includes('revive'));
+const canHeal = (p) => p.hp > 0 && autoSkills(p).some((k) => k.s.kind === 'heal' && k.s.pow > 0 && k.s.tgt !== 'self');
+function hitScore(p, s, t) { // rough damage of one cast on one foe (no luck, no crits): enough to rank the options
+  if (!t || !(s.pow > 0)) return 0; const up = p.st.atkup > 0 ? 1.4 : 1, dup = t.st.defup > 0 ? 1.5 : 1;
+  const raw = s.kind === 'phys' ? p.atk * up * s.pow - t.def * dup * 0.6 * (1 - (s.pierce || 0)) : p.mag * up * s.pow - t.def * dup * 0.3 * (1 - (s.pierce || 0));
+  return Math.max(1, raw) * L.elemMult(t, s.elem) * (s.hits || 1) * (t.charge ? 1.6 : 1); // a foe winding up is worth more: staggering it saves the party a big hit
+}
+function autoCommand(p) {
+  const b = BT.b, foes = b.e.filter((x) => x.hp > 0), friends = b.p.filter((x) => x.hp > 0), down = b.p.filter((x) => x.hp <= 0), plan = (BT.autoPlan ||= new Set());
+  const ks = autoSkills(p), frac = (x) => x.hp / x.maxhp, cast = (k, target) => ({ kind: 'skill', skillId: k.id, gems: k.gems, target });
+  if (foes.some((x) => x.charge && x.charge.dmg < x.charge.need) && frac(p) < 0.6 && !ks.some((k) => k.s.kind === 'heal')) return { kind: 'defend' }; // brace for the big one
+  const rev = ks.find((k) => k.s.fx.includes('revive')), fallen = down.find((x) => !plan.has(x));
+  if (rev && fallen) { plan.add(fallen); return cast(rev, fallen); }
+  const heals = ks.filter((k) => k.s.kind === 'heal' && k.s.pow > 0), low = friends.filter((x) => frac(x) < 0.5 && !plan.has(x)).sort((x, y) => frac(x) - frac(y));
+  const group = heals.filter((k) => k.s.tgt === 'allies').sort((x, y) => y.s.pow - x.s.pow)[0], single = heals.filter((k) => k.s.tgt === 'ally').sort((x, y) => y.s.pow - x.s.pow)[0], self = heals.find((k) => k.s.tgt === 'self');
+  if (group && low.length >= 2) { low.forEach((x) => plan.add(x)); return cast(group, p); }
+  if (single && low[0]) { plan.add(low[0]); return cast(single, low[0]); }
+  if (self && frac(p) < 0.4 && !plan.has(p)) { plan.add(p); return cast(self, p); }
+  const healer = heals.length > 0 || !!rev, reserve = healer ? Math.round(p.maxmp * 0.4) : 0; // healers keep MP back for the next emergency
+  let best = { score: 0, cmd: null };
+  for (const k of [...ks.filter((k) => (k.s.kind === 'phys' || k.s.kind === 'mag') && k.s.pow > 0 && k.id !== 'attack' && p.mp - k.s.mp >= reserve), { id: 'attack', gems: [], s: L.withWeapon(skillWithGems('attack', []), p.wpn, true, false) }]) {
+    if (k.s.tgt === 'all') { const sc = foes.reduce((n, t) => n + hitScore(p, k.s, t), 0); if (sc > best.score) best = { score: sc, cmd: cast(k) }; continue; }
+    for (const t of foes) { const sc = hitScore(p, k.s, t) * (k.id === 'attack' ? 1 : 0.97) + (t.hp <= hitScore(p, k.s, t) ? 5 : 0); if (sc > best.score) best = { score: sc, cmd: cast(k, t) }; } // a sure kill gets a nudge; free beats costly when they tie
+  }
+  return best.cmd || { kind: 'skill', skillId: 'attack', gems: [], target: foes.sort((x, y) => x.hp - y.hp)[0] };
+}
+// auto pauses only when the party cannot look after itself: someone is down and nobody can raise them, or someone is low and nobody can heal
+function autoTrouble(b) {
+  const able = b.p.filter((x) => x.hp > 0);
+  if (b.p.some((x) => x.hp <= 0) && !able.some(canRevive)) return 'someone is down';
+  if (able.some((x) => x.hp < x.maxhp * 0.3) && !able.some(canHeal)) return 'someone needs healing';
+  return '';
 }
 function askCommand(p) {
   if (BT.auto) { BT.stage.setActive(p.name); return Promise.resolve(autoCommand(p)); }

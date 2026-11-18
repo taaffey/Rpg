@@ -366,9 +366,9 @@ await ev(() => { window.__game.battle(['goblin', 'slime']); }); await pg.waitFor
 await ev(() => window.__game.BT.b.e.forEach((e) => { e.hp = e.maxhp = 5000; }));
 await pg.click('[data-act=c][data-a=auto]'); await pg.waitForTimeout(300);
 ok('Auto-battle is on', await ev(() => window.__game.BT.auto === true));
-await ev(() => { const bt = window.__game.BT; bt.b.p[1].hp = 1; }); // a hero is nearly dead
+await ev(() => { const bt = window.__game.BT; bt.b.p.forEach((x) => { x.mp = 0; }); bt.b.p[1].hp = 1; }); // a hero is nearly dead and nobody has the MP to heal
 for (let i = 0; i < 60 && (await ev(() => window.__game.BT.auto)); i++) await pg.waitForTimeout(100);
-ok('Auto-battle stops when a hero is in danger', (await ev(() => window.__game.BT.auto)) === false);
+ok('Auto-battle pauses when a hero is low and nobody can heal', (await ev(() => window.__game.BT.auto)) === false);
 await ev(() => window.__game.BT.b.e.forEach((e) => { e.hp = 1; })); await finishBattle();
 
 // --- engine robustness: a skill/item with no target (stale Repeat/Auto) must not throw

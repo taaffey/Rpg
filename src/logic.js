@@ -211,7 +211,7 @@ export function awardExp(party, exp) {
 // ---------- Battle ----------
 const alive = (x) => x.hp > 0;
 const pick = (arr, rng) => arr[Math.floor(rng() * arr.length)];
-function elemMult(t, e) { if (!e) return 1; if (t.weak.includes(e)) return 1.5; if (t.res.includes(e)) return 0.5; return 1; }
+export function elemMult(t, e) { if (!e) return 1; if (t.weak.includes(e)) return 1.5; if (t.res.includes(e)) return 0.5; return 1; }
 
 export class Battle {
   constructor(party, enemyIds, rng = Math.random, boss = false, mod = {}) {
