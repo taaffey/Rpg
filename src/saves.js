@@ -1,4 +1,5 @@
 // ===== Saves and party plumbing: callings helpers, new game, slots, migration, autosave, loading a slot. =====
+import { BOSS_ECHO, ECHOES } from './echoes.js';
 import { ACCS, ARMORS, BOSSES, CALLING_BATCHES, DIFFICULTY, ITEMS, JOBS, KEY_ITEMS, TRAITS, WEAPONS } from './data.js';
 import * as L from './logic.js';
 import { BROS } from './bros.js';
@@ -27,7 +28,7 @@ function newGame(party = DEFAULT_PARTY) {
     // like FF1: the party starts at level 1, unarmed, with 400 G to arm itself at the Haven hardware shop (~205 G for the cheap weapons)
     party: party.map(([n, j, look]) => Object.assign(newChar(n, j, null, null, LIGHT_ARMOR.has(j) || j === 'bloke' ? 'cloth' : 'leather'), look ? { look } : {})),
     gold: 400, difficulty: 'normal', slot: 1,
-    inv: { weapons: [], armors: [], accs: [], gems: [], items: { potion: 3 } },
+    inv: { weapons: [], armors: [], accs: [], gems: [], echoes: [], items: { potion: 3 } },
     map: START.map, x: START.x, y: START.y, flags: { chests: {}, bosses: {}, seen: {}, talked: {}, visited: {}, quests: {}, qprog: {}, qitems: {}, tips: {}, bestiary: {}, story: {}, chat: {}, feats: {} }, playtime: 0,
   });
 }
@@ -43,6 +44,7 @@ function migrate(g) {
   // old saves keep their gear; only ids that no longer exist are dropped (never a crash on load)
   g.inv ||= {}; for (const k of ['weapons', 'armors', 'accs', 'gems']) g.inv[k] = (g.inv[k] || []).filter((id) => DB[k][id]); g.inv.items ||= {};
   for (const id of Object.keys(g.inv.items)) if (!ITEMS[id]) delete g.inv.items[id];
+  g.inv.echoes = (g.inv.echoes || []).filter((id) => ECHOES[id]); for (const [b, e] of Object.entries(BOSS_ECHO)) if (g.flags.bosses?.[b] && !g.inv.echoes.includes(e)) g.inv.echoes.push(e); // stones from evils slain before Echo Stones existed
   g.flags ||= {}; g.flags.story ||= {}; if (g.inv.gems.length || g.party.some((c) => c.gems.some((x) => x.length)) || Object.keys(g.flags.bosses || {}).length) g.flags.story.gems = true; // saves from before gems were paced keep them
   for (const [b, d] of Object.entries(BOSSES)) if (d.heart && g.flags.bosses[b]) g.flags.qitems[d.heart] = true; // hearts of evils slain before hearts existed
   for (const c of g.party) { if (c.weapon && !WEAPONS[c.weapon]) c.weapon = null; if (c.armor && !ARMORS[c.armor]) c.armor = null; if (c.acc && !ACCS[c.acc]) c.acc = null; if (c.acc2 && !ACCS[c.acc2]) c.acc2 = null; c.exp = Math.max(0, c.exp || 0); c.level = Math.min(L.MAX_LEVEL, c.level || 1); gainExp(c, 0); } // gainExp(0) settles EXP banked under an older curve

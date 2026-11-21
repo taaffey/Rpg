@@ -2,6 +2,7 @@
 import { JOBS, SKILLS, GEMS, WEAPONS, ARMORS, ACCS, WEAPON_TYPES, ENEMIES, ITEMS, DROPS } from './data.js';
 import { MECH } from './bossmech.js';
 import { BLITZ, BUSHIDO, DANCES, DANCE_ODDS, TOOLS, loreCost, loreable, terrainDance } from './commands.js';
+import { ECHOES, callPower } from './echoes.js';
 const lootLabel = (k, id) => (k === 'items' ? ITEMS[id]?.name : k === 'weapons' ? WEAPONS[id]?.name : k === 'armors' ? ARMORS[id]?.name : k === 'accs' ? ACCS[id]?.name : k === 'gems' ? GEMS[id]?.name : id) || id;
 
 export const STAT_KEYS = ['hp', 'mp', 'atk', 'def', 'mag', 'spd'];
@@ -23,7 +24,7 @@ export const expNeeded = (lv) => EXP_TABLE[Math.max(1, Math.min(lv, EXP_TABLE.le
 export function stats(c) {
   const mj = JOBS[c.main], s = {};
   for (const k of STAT_KEYS) s[k] = Math.round((BASE[k] + GROW[k] * (c.level - 1)) * mj.mod[k]); // only the current calling shapes stats
-  for (const g of [...gear(c), ...mastered(c).map((j) => JOBS[j].master)]) for (const k of STAT_KEYS) s[k] += g[k] || 0; // gear + mastery bonuses
+  for (const g of [...gear(c), ...mastered(c).map((j) => JOBS[j].master), c.eb || {}]) for (const k of STAT_KEYS) s[k] += g[k] || 0; // gear + mastery bonuses + Echo Stone level-up bonuses
   if (!c.weapon && fistJob(c)) s.atk += unarmedBonus(c.level); // martial artists fight well bare-handed
   if (c.level >= 30) { s.hp = Math.round(s.hp * 1.1); s.mp = Math.round(s.mp * 1.1); } // Local Legend
   s.hp = Math.max(1, s.hp);
@@ -64,6 +65,7 @@ export const secondOk = (c, job) => !!job && job !== c.main && rankOf(c, job) >=
 export function learnable(c) {
   const out = jobSkills(c.main, Math.max(1, rankOf(c, c.main)));
   if (secondOk(c, c.sub)) for (const id of jobSkills(c.sub, rankOf(c, c.sub))) if (!out.includes(id)) out.push(id);
+  for (const id of c.spells || []) if (!out.includes(id)) out.push(id); // spells learned from Echo Stones, whatever the calling
   return out;
 }
 // take up a calling: level and every learned ability are kept; CP now flow to the new calling
@@ -189,6 +191,7 @@ export function gainExp(c, amount) {
   while (c.level < MAX_LEVEL && c.exp >= expNeeded(c.level)) {
     c.exp -= expNeeded(c.level);
     const before = stats(c); c.level++;
+    const eb = ECHOES[c.echo]?.bonus; if (eb) { c.eb ||= {}; for (const [k, v] of Object.entries(eb)) c.eb[k] = (c.eb[k] || 0) + v; } // an attuned Echo Stone adds its bonus at every level-up
     const after = stats(c);
     if (c.hp > 0) c.hp = Math.min(after.hp, c.hp + after.hp - before.hp);
     c.mp = Math.min(after.mp, c.mp + after.mp - before.mp);
@@ -464,6 +467,11 @@ export class Battle {
         else if (it.heal) { const h = Math.min(it.heal * pot, t.maxhp - t.hp); t.hp += h; this.fx.push({ t: 'heal', name: t.name, amount: h }); L.push(`${use}: ${t.name} +${h} HP`); }
         else if (it.mpr) { const h = Math.min(it.mpr * pot, t.maxmp - t.mp); t.mp += h; L.push(`${use}: ${t.name} +${h} MP`); }
         break;
+      }
+      case 'call': { // Echo Stone: call the spirit, once per battle; stronger for every spell learned from it
+        const st = ECHOES[a.ch.echo]; if (!st || a.called) { L.push(`${a.name} reaches for the stone... nothing answers.`); break; }
+        a.called = true; L.push(`${a.name} calls ${st.name}!`); this.fx.push({ t: 'phase', name: a.name, text: st.name.toUpperCase() });
+        this.bonus = callPower(a.ch, a.ch.echo); try { this.cast(a, st.call, [], null, L, true, true); } finally { this.bonus = 1; } break;
       }
       case 'command': this.command(a, cmd, L); if (a.side === 'p' && cmd.id !== 'mimic') this.lastAlly = { who: a.name, cmd }; break;
       case 'skill': {

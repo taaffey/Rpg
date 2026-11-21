@@ -1,4 +1,5 @@
 // ===== Battle UI and flow, victory, defeat, the ending, New Game+ and house rules. =====
+import { BOSS_ECHO, ECHOES, resonate } from './echoes.js';
 import { GEN } from './mapgen.js';
 import * as DATA from './data.js';
 import { BOSSES, CALLING_BATCHES, DIFFICULTY, ENEMIES, ITEMS, JOBS, KEY_ITEMS, QUESTS, SKILLS, STORY, TRAITS, WEAPONS } from './data.js';
@@ -195,7 +196,7 @@ function classCmdBtn(p) {
 }
 function cmdHtml(a) {
   const p = a.p, c = p.ch, head = `<div class="cmdhead">${portrait(ak(c), 'sm')}${esc(p.name)}</div>`, back = btn('c', `${ic('back')}BACK`, 'root');
-  if (a.stage === 'root') return `${head}<div class="cmdlist">${btn('c', `${ic('fight')}FIGHT`, 'attack')}${classCmdBtn(p)}${btn('c', `${ic('skill')}SKILL`, 'skills')}${btn('c', `${ic('item')}ITEM`, 'item', '', '', !!G.rules?.dry)}${btn('c', `${ic('guard')}GUARD`, 'defend')}${comboPartner(p) && combosKnown().length ? btn('c', `${ic('spark')}COMBO`, 'combos') : ''}${veteran() ? `${btn('c', `${ic('repeat')}REPEAT`, 'repeat', '', '', !BT.last.has(p.name))}${btn('c', `${ic('auto')}AUTO`, 'auto')}` : ''}${btn('c', `${ic('run')}RUN`, 'flee', '', '', BT.b.boss)}</div>`;
+  if (a.stage === 'root') return `${head}<div class="cmdlist">${btn('c', `${ic('fight')}FIGHT`, 'attack')}${classCmdBtn(p)}${btn('c', `${ic('skill')}SKILL`, 'skills')}${p.ch.echo && ECHOES[p.ch.echo] ? btn('c', `${ic('spark')}CALL`, 'call', '', '', !!p.called) : ''}${btn('c', `${ic('item')}ITEM`, 'item', '', '', !!G.rules?.dry)}${btn('c', `${ic('guard')}GUARD`, 'defend')}${comboPartner(p) && combosKnown().length ? btn('c', `${ic('spark')}COMBO`, 'combos') : ''}${veteran() ? `${btn('c', `${ic('repeat')}REPEAT`, 'repeat', '', '', !BT.last.has(p.name))}${btn('c', `${ic('auto')}AUTO`, 'auto')}` : ''}${btn('c', `${ic('run')}RUN`, 'flee', '', '', BT.b.boss)}</div>`;
   if (a.stage === 'cmdmoves') return `${head}<div class="cmdlist"><div class="dim">${esc(classCmd(p).name.toUpperCase())}</div>` + (cmdMoves(p, a.cmdId).map((m) => btn('c', `<span class="sk"><b>${esc(m.label)}</b></span><small>${esc(m.sub)}</small>`, 'cmdmove', m.id, 'two', m.off)).join('') || '<div class="dim">Nothing here yet.</div>') + `${back}</div>`;
   if (a.stage === 'skills') {
     return `${head}<div class="cmdlist">` + [0, 1, 2, 3, SIG].map((i) => {
@@ -281,6 +282,7 @@ ACT.c = (what, x) => {
   else if (what === 'flee') return finish({ kind: 'flee' });
   else if (what === 'attack') castDirect('attack', []);
   else if (what === 'repeat') return finish(autoCommand(p));
+  else if (what === 'call') return finish({ kind: 'call' });
   else if (what === 'cmd') { const k = classCmd(p); if (!k) return; const id = k.id;
     if (id === 'steal' || id === 'sketch') toTarget('e', { kind: 'command', id });
     else if (['blitz', 'tools', 'bushido', 'lore', 'dance', 'throw'].includes(id)) { a.stage = 'cmdmoves'; a.cmdId = id; }
@@ -321,6 +323,7 @@ async function victory(b, bossId) {
       if (k.mastered) for (const j of L.capstonesJustOpened(c)) lines.push(`⭐ ${esc(c.name)} has mastered ${JOBS[j].needs} callings. A new calling is open to them: <b>${JOBS[j].name}</b>.`); }
   }
   for (const m of b.learned || []) lines.push(`📖 ${m}`);
+  for (const m of resonate(G.party, new Set(G.party.filter((c) => c.hp > 0)), bossId ? 3 : 1)) lines.push(`◈ ${m}`); // Echo Stones: Resonance
   if (b.loot.length || b.goldBonus) lines.push(`🧺 Pilfered: ${[...b.loot.map((it) => esc(lootName(it.kind, it.id))), ...(b.goldBonus ? [`${b.goldBonus} G`] : [])].join(', ')}`);
   if (b.found?.length) lines.push(`🗡 Found again: ${b.found.map((w) => esc(WEAPONS[w].name)).join(', ')}`);
   if (lvSfx) setTimeout(() => sfx('levelup'), 1400);
@@ -337,6 +340,7 @@ async function victory(b, bossId) {
     G.flags.bosses[bossId] = true; const names = [];
     for (const k of ['weapons', 'armors', 'accs', 'gems']) for (const id of def.loot[k] || []) { G.inv[k].push(id); names.push(lootName(k, id)); }
     if (names.length) lines.push(`Found <b class="gold">${names.join(', ')}</b>!`);
+    const echo = BOSS_ECHO[bossId]; if (echo && !(G.inv.echoes ||= []).includes(echo)) { G.inv.echoes.push(echo); lines.push(`◈ Something small glows where it fell: the Echo Stone <b class="gold">${ECHOES[echo].name}</b>. ${tipOnce('echo') ? 'Attune it on a hero\'s screen (Party) to learn its spells and call its spirit.' : ''}`); }
     if (def.heart) { G.flags.qitems[def.heart] = true; lines.push(`Obtained the <b class="gold">${KEY_ITEMS[def.heart]}</b>.`);
       const gems = !gemsOn(); if (gems) G.flags.story.gems = true; // the first heart wakes the dull stones too (told in the awakening)
       if (batchesOpen() > open0) awake = { heart: def.heart, jobs: CALLING_BATCHES[batchesOpen() - 1], gems: gems ? (G.inv.gems.length ? 'stones' : 'call') : '' };

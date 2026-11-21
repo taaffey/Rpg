@@ -1,4 +1,5 @@
 // ===== Field items and the hero build screens (callings, gear, skills, gems). =====
+import { ECHOES, harmony } from './echoes.js';
 import { GEMS, ITEMS, JOBS, SKILLS, TRAITS, WEAPONS } from './data.js';
 import { MAPS } from './maps.js';
 import { GEN } from './mapgen.js';
@@ -114,7 +115,7 @@ let B = { i: 0, view: 'main', slot: 0, guild: false };
 ACT.build = (i) => { B = { i: +i, view: 'main', slot: 0, guild: B.guild && inTown() }; buildScreen(); };
 function buildScreen() {
   const c = G.party[B.i];
-  ({ main: buildMain, jobMain: () => jobPick('main'), jobSub: () => jobPick('sub'), trait: traitPick, callings: callingsView, weapon: () => gearPick('weapons'), armor: () => gearPick('armors'), acc: () => gearPick('accs'), acc2: () => gearPick('accs2'), slot: slotEdit }[B.view])(c);
+  ({ main: buildMain, jobMain: () => jobPick('main'), jobSub: () => jobPick('sub'), trait: traitPick, callings: callingsView, weapon: () => gearPick('weapons'), armor: () => gearPick('armors'), acc: () => gearPick('accs'), acc2: () => gearPick('accs2'), echo: echoPick, slot: slotEdit }[B.view])(c);
 }
 const back = (v = 'main') => () => { B.view = v; buildScreen(); };
 ACT.bmain = back('main');
@@ -132,11 +133,25 @@ function buildMain(c) {
   show(`<div class="buildhead">${btn('bnav', ic('aleft'), -1, '', 'navbtn')}<div class="who2">${portrait(ak(c), 'lg')}<div><h2 style="background:none;padding:0;margin:0">${esc(c.name)}</h2><div class="lv">LV ${c.level}</div></div></div>${btn('bnav', ic('aright'), 1, '', 'navbtn')}</div>
   <div class="expline"><span>EXP</span>${bar(maxed ? 1 : c.exp, maxed ? 1 : xpN, 'xp')}<span>${maxed ? 'MAX' : `${c.exp}/${xpN}`}</span></div>${c.level >= 18 && L.nextPerk(c.level) ? `<div class="dim" style="font-size:8px">${ic('star')} LV ${L.nextPerk(c.level)[0]}: ${L.nextPerk(c.level)[1]}</div>` : ''}
   <div class="card">${callingCard(c)}${statLine(s)}<div class="jobrow"><span>${ic('guard')}<span><span class="dim">ROW</span> ${c.row === 'back' ? 'Back' : 'Front'} <small class="dim">${c.row === 'back' ? 'half physical damage dealt and taken (shooters hit fully)' : 'full physical damage dealt and taken'}</small></span></span>${btn('brow', 'Swap')}</div></div>
-  <h3>Equipment</h3>${gearRow('Weapon', 'weapon', c.weapon, 'weapons')}${gearRow('Armour', 'armor', c.armor, 'armors')}${gearRow('Relic', 'acc', c.acc, 'accs')}${gearRow('Relic 2', 'acc2', c.acc2, 'accs2')}
+  <h3>Equipment</h3>${gearRow('Weapon', 'weapon', c.weapon, 'weapons')}${gearRow('Armour', 'armor', c.armor, 'armors')}${gearRow('Relic', 'acc', c.acc, 'accs')}${gearRow('Relic 2', 'acc2', c.acc2, 'accs2')}${echoRow(c)}
   <h3>${gemsOn() ? `Skills &amp; Gems <span class="${used > cap ? 'bad' : 'gold'}">◇ ${used}/${cap}</span>` : 'Skills'}</h3>${[0, 1, 2, 3, SIG].map(slotRow).join('')}
   <div class="foot">${btn('bclose', 'Done', '', '', 'primary')}</div>`);
 }
 ACT.bview = (v) => { B.view = v; buildScreen(); };
+// ===== Echo Stones: one per hero. Spells learned are kept; the stone can move to another hero any time (outside battle).
+const echoInfo = (c, id) => { const st = ECHOES[id]; return st.spells.map(([sp]) => (c.spells || []).includes(sp) ? `<b>${SKILLS[sp].name} ✓</b>` : `${SKILLS[sp].name} ${Math.floor(c.ep?.[sp] || 0)}%`).join(' · ') + ` · level-up ${Object.entries(st.bonus).map(([k, v]) => `+${v} ${k.toUpperCase()}`).join(' ')}${harmony(c, id) ? ' · <span class="gold">Harmony ×2</span>' : ''}`; };
+function echoRow(c) {
+  if (!(G.inv.echoes || []).length) return '';
+  const st = ECHOES[c.echo];
+  return `<div class="slot"><span class="lead">${ic('spark', st ? '' : 'dimic')}</span><div class="t"><b><span class="dim">Echo</span> ${st ? st.name : '<span class="dim">— none —</span>'}</b><small>${st ? echoInfo(c, c.echo) : 'Attune a stone to learn its spells and call its spirit once per battle.'}</small></div>${btn('bview', 'Change', 'echo')}</div>`;
+}
+function echoPick(c) {
+  const holder = (id) => G.party.find((x) => x !== c && x.echo === id);
+  show(`<h2>${ic('spark')} ${esc(c.name)}: Echo Stone</h2><p class="dim">Each stone teaches its spells through Resonance after battles won (bosses count triple). Learned spells stay, and can be slotted whatever the calling. Calling the spirit grows 15% stronger for each spell learned from it.</p>${c.echo ? `<div class="slot"><div class="t"><b>Put ${ECHOES[c.echo].name} away</b></div>${btn('setecho', 'Remove', '')}</div>` : ''}${G.inv.echoes.map((id) => { const st = ECHOES[id], h = holder(id);
+    return `<div class="slot"><span class="lead">${ic('spark')}</span><div class="t"><b>${st.name}${c.echo === id ? ' <span class="dim">NOW</span>' : ''}${h ? ` <span class="dim">(${esc(h.name)})</span>` : ''}</b><small>${st.desc}<br>${echoInfo(c, id)}<br>Call: ${SKILLS[st.call].name.split(': ')[1]} · harmony with ${st.affinity.map((j) => JOBS[j].name).join(', ')}</small></div>${c.echo === id ? '' : btn('setecho', h ? 'Take' : 'Attune', id)}</div>`; }).join('')}
+  <div class="foot">${btn('bmain', 'Back', '', '', 'primary')}</div>`);
+}
+ACT.setecho = (id) => { const c = G.party[B.i]; for (const x of G.party) if (id && x.echo === id) x.echo = null; c.echo = id || null; if (id) sfx('holy'); autofill(c); B.view = 'main'; buildScreen(); };
 ACT.brow = () => { const c = G.party[B.i]; c.row = c.row === 'back' ? 'front' : 'back'; buildScreen(); }; // FF6 rows
 ACT.bslot = (i) => { B.slot = +i; B.view = 'slot'; buildScreen(); };
 // the calling card: current calling with its rank bar, the second-calling and trait slots (each shown once it can be used)
