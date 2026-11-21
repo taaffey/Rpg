@@ -115,9 +115,9 @@ export const GARY_DOWN = [
 ];
 export const CALLED = [
   { s: 'guildmaster', t: 'Right. Callings. The heroes of old left us a list. Nobody knows why they all had such odd trades.' },
-  { s: 'devon', t: 'Bouncer. Chancer. Darts Player. Bro, these are all just blokes from a pub.' },
-  { s: 'adam', t: 'Spreadsheet Sorcerer is on here too. I\'m choosing to take that personally.' },
-  { s: 'guildmaster', t: 'Pick what suits. More wake as the great evils fall. Yes, one of them is "Influencer". We don\'t talk about it.' },
+  { s: 'devon', t: 'Knight. Mage. Monk. Bro, it\'s an actual fantasy game. I KNEW it.' },
+  { s: 'adam', t: 'There\'s a Hexer on here. You are not being the Hexer.' },
+  { s: 'guildmaster', t: 'Pick what suits. More wake as the great evils fall: Hexers, Bards, Samurai, the lot.' },
   { s: 'adam', t: 'Something sensible for me, then. And for him, whatever keeps him alive. I\'ve done that job since he was four.' },
 ];
 export const CALLED_AFTER = [

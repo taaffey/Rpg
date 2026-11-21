@@ -1131,9 +1131,7 @@ Object.assign(TOWNS, {
 });
 
 // =====================================================================================================
-// ---------- THE SILLY PASS: twelve silly callings (job ids unchanged; only the clothes changed) ----------
-// knight = Bouncer · rogue = Chancer · mage = Spreadsheet Sorcerer · cleric = Barmaid · monk = Gym Bro · ranger = Darts Player
-// hexer = Influencer · bard = Busker · berserker = Stag Do Lad · alchemist = Home Brewer · samurai = Angry Chef · paladin = Traffic Warden
+// ---------- modern outfits and props (the 2026 blokes, townsfolk extras); the twelve callings wear the fantasy recipes in HEROES ----------
 // Special colours used here (cfg.spec): 1-3 and 5-7 per class; 4 / 8 / 9 are reserved for the looks (grey beard, ribbon...).
 const CUFFROW = [15, 16, 14]; // sleeve end row of the three arm-swing variants
 // wrist details that follow the swinging arms: lL / lR = the one-row letters of the left / right cuff, (rows = [dy offsets])
@@ -1381,71 +1379,9 @@ Object.assign(PROPS, {
 });
 
 Object.assign(HEROES, {
-  landlord: { // LANDLORD: white shirt, wine waistcoat, bar towel on the shoulder, a pint in hand
-    hair: 'short', openOk: true, hood: false,
-    ramps: { T: '#f4f0e6', C: '#8c2c3e', P: '#2c2a34', B: '#3a2618', F: '#f6f1e6', A: '#f0a424', H: '#6a4428' },
-    props: ['vest', 'towel', 'pint'], spec: { 1: '#3a6ac0' },
-  },
-  knight: { // BOUNCER: bomber, shades, earpiece, clipboard, bat
-    head: ['shades', 'earpiece'], hair: 'buzz', openOk: false, hood: false, hairBy: { short: 'buzz', messy: 'buzz' },
-    ramps: { T: '#34343e', P: '#2a2a32', B: '#1a1a20', A: '#6a6a78', F: '#f4f4f8', R: '#b07a3e', M: '#c8ccd6', H: '#3a2a20' },
-    props: ['bat', 'clipboard', 'bomber'], spec: { 5: '#7a98c8', 2: '#e0d8c8' },
-  },
-  rogue: { // CHANCER: teal shell suit, flat cap, gold chain, a lot of watches
-    head: ['flatcap'], hair: 'short', openOk: false, hood: false,
-    ramps: { T: '#22b2a4', P: '#7c3cb8', B: '#f2f2f6', A: '#f0c840', C: '#8a7a64', F: '#f6f6fa', M: '#cfd4de', H: '#4a3220' },
-    remap: { torso: { A: 'T', Z: 'W', a: 't', z: 'u' } }, props: ['shell', 'chain', 'watches', 'penknife'], spec: { 1: '#d63a34' },
-  },
-  mage: { // SPREADSHEET SORCERER: green wizard robe, specs, lanyard, a Post-it on the hat
-    head: ['wizoffice', 'glasses'], hair: 'short', body: 'robe', h: 29, hold: true, openOk: false, hood: false,
-    ramps: { C: '#1f7c4c', T: '#2c9c5e', A: '#e6e8f0', H: '#5a4630', M: '#8a90a0', B: '#2a2a32', F: '#f4f4f8' },
-    props: ['selfie', 'office'], spec: { 1: '#e04a4a', 2: '#2a9ad8', 3: '#fff070', 5: '#8ad8ff' },
-  },
-  cleric: { // BARMAID: wine skirt, white blouse, apron, tea towel, a pint
-    head: ['bun'], hair: 'long', body: 'robe', hold: true, openOk: false, hood: false,
-    look: { adam: { head: [], openOk: true }, devon: { head: [], openOk: true }, wendell: { head: [], openOk: true } },
-    ramps: { T: '#f6f2f6', P: '#8c2c3e', F: '#f6f1e6', A: '#f0a424', B: '#2a2028', H: '#a8462a' },
-    remap: { torso: SKIRT }, props: ['apronB', 'towelB', 'pint'], spec: { 1: '#3a6ac0' },
-  },
-  monk: { // GYM BRO: tank top, sweatband, shorts, big arms, protein shaker
-    head: ['sweat'], hair: 'short', openOk: true, hood: false,
-    ramps: { T: '#2a8cf2', P: '#1e1e28', B: '#f2f2f6', A: '#f6f6fa', H: '#4a3020' },
-    remap: { arms: BARE, legs: SHORTS }, props: ['tank', 'shaker', 'gloves'], spec: { 1: '#e84a3a', 2: '#e8e060', 3: '#a8281e' },
-  },
-  ranger: { // DARTS PLAYER: loud sponsor shirt, belly, gold chain, a dart between the fingers
-    head: [], hair: 'short', openOk: true, hood: false,
-    ramps: { T: '#d6322e', P: '#2c2c3a', B: '#1c1c22', A: '#f0c840', F: '#f6f6fa', M: '#c8ccd6', H: '#5a4630' },
-    remap: { arms: TEE }, props: ['jersey', 'belly', 'chainD', 'dart', 'wristband'], spec: { 1: '#f6d838' },
-  },
-  hexer: { // INFLUENCER: lavender puffer, quiff, huge shades, selfie
-    head: ['bigshades'], hair: 'quiff', h: 27, hold: true, openOk: false, hood: false, hairBy: { short: 'quiff', messy: 'quiff' },
-    ramps: { T: '#b6a0f2', P: '#2a2a34', B: '#f6f6fa', H: '#4a3020' },
-    remap: { arms: { W: 'W', T: 'T', t: 't', u: 'u' } }, props: ['puffer', 'phoneup'], spec: { 1: '#8aeaff', 5: '#8a7ab8' },
-  },
-  bard: { // BUSKER: beanie, scarf, olive jacket, acoustic guitar
-    head: ['beanie'], hair: 'short', openOk: false, hood: false,
-    ramps: { T: '#6c7c3c', P: '#3c4c70', B: '#5a3a24', C: '#e2a82e', F: '#d8483e', R: '#b8702e', H: '#4a3020' },
-    props: ['guitar', 'scarf'],
-  },
-  berserker: { // STAG DO LAD: matching hot-pink STAG tee, traffic cone, lager
-    head: ['cone'], hair: 'short', h: 32, openOk: false, hood: false,
-    ramps: { T: '#ff4fa6', P: '#2c3c6c', B: '#f2f2f6', A: '#ff8c1e', F: '#f8f8fa', M: '#d0d4de', H: '#5a4630' },
-    remap: { arms: TEE, legs: SHORTS }, props: ['stagtee', 'can'],
-  },
-  alchemist: { // HOME BREWER: bobble hat with hops, goggles up, leather apron, demijohn
-    head: ['bobble', 'goggles'], hair: 'short', h: 27, openOk: false, hood: false,
-    ramps: { T: '#e8c44c', P: '#4c4a3a', B: '#7c4c28', C: '#c45e2a', F: '#f6f2ea', M: '#d0a842', A: '#f0a420', H: '#5a4630' },
-    props: ['apronH', 'demijohn'], spec: { 1: '#6cc44c', 3: '#8adcf2' },
-  },
-  samurai: { // ANGRY CHEF: whites, toque, red face, towel, cleaver
-    head: ['toque', 'angry'], hair: 'short', h: 30, openOk: false, hood: false,
-    ramps: { T: '#f4f4f8', P: '#464654', B: '#2a2a32', F: '#f8f8fa', K: '#d83a2a', M: '#cfd4de', D: '#6a4428', H: '#4a3020' },
-    props: ['chefjacket', 'towel2', 'cleaver'], spec: { 1: '#ea4a36', 2: '#3a6cc8' },
-  },
-  paladin: { // TRAFFIC WARDEN: hi-vis jacket, peaked cap, STOP lollipop, ticket machine
-    head: ['peaked'], hair: 'short', hold: true, openOk: false, hood: false,
-    ramps: { T: '#eee83a', P: '#2a3052', B: '#1a1a22', A: '#2a2a34', C: '#242c4a', F: '#f6f6fa', M: '#e4e8f0', H: '#4a3020' },
-    props: ['lollipop', 'hivis', 'ticketbox'], spec: { 1: '#d42a2a' }, h: 29,
+  landlord: { // SAGE (the capstone calling, id 'landlord'): a deep blue robe with gold trim, a hood down, a staff with a glowing orb
+    head: 'cleric', hair: 'short', body: 'robe', h: 28, hold: true, openOk: true,
+    ramps: { C: '#2a3a8a', T: '#24307a', A: '#f0c840', H: '#6a4a30', R: '#8a5a30', B: '#2a2440' }, props: ['hem', 'collar', 'staffOrb'], spec: { 1: '#8ad8ff', 2: '#ffffff' },
   },
 });
 PROPS.wristband = armBand('FF', 'FF'); // darts player's sweat wristbands

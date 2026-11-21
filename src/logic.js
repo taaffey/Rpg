@@ -237,7 +237,7 @@ export class Battle {
   }
   side(x) { return x.side === 'p' ? this.p : this.e; }
   // FF1's opening rolls (once per battle, never against a boss): now and then the party gets the drop on the foes ("Strike first!": the foes
-  // lose round one) or is caught napping ("Ambushed!": the party does). The Darts Player's Oche Stare makes the first far likelier and rules
+  // lose round one) or is caught napping ("Ambushed!": the party does). The Ranger's Pre-emptive trait makes the first far likelier and rules
   // out the second. mod.noAmbush switches ambushes off (the tutorial cellar).
   get preempt() {
     if (this._pre == null) { const stare = this.p.some((x) => x.tr.has('preempt')), r = this.boss ? 1 : this.rng(); this._pre = !this.boss && r < (stare ? 0.25 : 0.08); this._amb = !this.boss && !stare && !this.mod.noAmbush && r >= 0.94; }

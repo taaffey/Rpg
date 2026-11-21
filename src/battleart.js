@@ -197,8 +197,6 @@ export function parseKey(key) { const [job, look] = String(key || '').split('@')
 // ---------- weapon art: the ten weapon TYPES are silly families; a class may carry its own version (ART[job][type]) ----------
 const ART = {
   _: { sword: 'bat', dagger: 'screwdriver', staff: 'broom', rod: 'mop', bow: 'dart', fists: 'glove', whip: 'cable', scythe: 'strimmer', tome: 'tablet', axe: 'hammer', katana: 'knife', flask: 'demijohn' },
-  rogue: { dagger: 'penknife' }, mage: { staff: 'selfie' }, cleric: { staff: 'mop', fists: 'marigold' }, monk: { whip: 'band' },
-  hexer: { tome: 'phone' }, bard: { sword: 'guitar', whip: 'miccable' }, paladin: { sword: 'lollipop' },
 };
 const FAMILY = { bat: 'sword', guitar: 'sword', lollipop: 'staff', screwdriver: 'dagger', penknife: 'dagger', dart: 'dagger', broom: 'staff', mop: 'staff', selfie: 'staff', glove: 'fists', marigold: 'fists', cable: 'whip', band: 'whip', miccable: 'whip', strimmer: 'scythe', tablet: 'tome', phone: 'tome', hammer: 'axe', knife: 'katana', demijohn: 'flask' };
 export const weaponArt = (job, type) => (type === 'none' ? null : (ART[job] && ART[job][type]) || ART._[type] || null);
@@ -315,81 +313,62 @@ const paintCap = (c, a, b, r, m) => c.parts.push(paint(cap(a[0], a[1], b[0], b[1
 const towelParts = (c) => { const s = c.J.shF; poly1(c, [add(s, [-1.8, -1.3]), add(s, [1.5, -1.3]), add(s, [1.7, 5]), add(s, [-1.7, 5])], 'towel', { z: 6.5, bev: 0.5 }); paintPoly(c, [add(s, [-1.8, 2.2]), add(s, [1.7, 2.2]), add(s, [1.7, 3.4]), add(s, [-1.8, 3.4])], 'towel2'); };
 const CLS = {
   bloke: { shirt: '#8a8e98', legs: '#3e5a92', shoe: '#e6e6ee', belt: '#3a3036', short: true, weapon: 'fists', bare: true },
-  knight: { // BOUNCER: black bomber, shades and a curly-cord earpiece, a guest-list clipboard, a bat
-    shirt: '#30303a', legs: '#26262e', shoe: '#17171c', belt: '#4a4a58', cuff: 'acc', weapon: 'sword', offhand: true,
-    mats: { shirtw: ['#f4f4f8'], zip: ['#aab0bc'] },
-    torso(c) { const { J } = c, n = J.neck; paintPoly(c, [[n[0] - 3, n[1] + 0.8], [n[0] + 0.6, n[1] + 0.3], [n[0] - 0.9, n[1] + 4.8]], 'shirtw'); paintCap(c, [J.chest[0] - 2.3, J.chest[1] - 0.2], [J.belly[0] - 2.2, J.belly[1] + 0.9], 0.42, 'zip'); },
-    late(c) { const { J, bz } = c, h = J.haB, o = bz < 0 ? 1.6 : 0; poly1(c, [[h[0] - 1.6 + o, h[1] - 2.6], [h[0] + 2 + o, h[1] - 2.9], [h[0] + 2.2 + o, h[1] + 2.9], [h[0] - 1.4 + o, h[1] + 3.3]], 'wood', { z: bz + 0.4 }); poly1(c, [[h[0] - 1 + o, h[1] - 1.8], [h[0] + 1.5 + o, h[1] - 2], [h[0] + 1.6 + o, h[1] + 2], [h[0] - 0.8 + o, h[1] + 2.3]], 'paper', { z: bz + 0.7, bev: 0.5 }); poly1(c, [[h[0] - 0.8 + o, h[1] - 3.2], [h[0] + 1.2 + o, h[1] - 3.4], [h[0] + 1.2 + o, h[1] - 2.4], [h[0] - 0.8 + o, h[1] - 2.2]], 'steel', { z: bz + 0.8, bev: 0.3 }); },
+  // ---- the twelve callings in fantasy kit (job ids unchanged), plus the Sage (id 'landlord'); heads come from the map sprite ----
+  knight: { // KNIGHT: steel plate, a blue tabard, a kite shield in the off hand
+    shirt: '#a8b0c4', sleeve: '#a8b0c4', legs: '#7a8499', shoe: '#4a4a62', belt: '#6a4a2a', armR: 1.15, chest: [3.9, 3.6], weapon: 'sword', offhand: true,
+    mats: { tabard: ['#3a6ac0'], trim: ['#e8e8f0'], shield: ['#3a6ac0'], rim: ['#c8ccd6', 4, { hi: 0.85 }] },
+    torso(c) { const { J } = c; paintPoly(c, [[J.chest[0] - 2.2, J.chest[1] - 2.4], [J.chest[0] + 1.6, J.chest[1] - 2.4], [J.belly[0] + 1.4, J.belly[1] + 3.6], [J.belly[0] - 2.6, J.belly[1] + 3.6]], 'tabard'); paintCap(c, [J.chest[0] - 0.4, J.chest[1] - 1.4], [J.chest[0] - 0.4, J.chest[1] + 2.4], 0.4, 'trim'); paintCap(c, [J.chest[0] - 1.8, J.chest[1] - 0.2], [J.chest[0] + 1, J.chest[1] - 0.2], 0.4, 'trim'); },
+    late(c) { const h = c.J.haB, z = c.bz + 0.4, o = c.bz < 0 ? 1.6 : 0; poly1(c, [[h[0] - 2.6 + o, h[1] - 3.4], [h[0] + 2.6 + o, h[1] - 3.4], [h[0] + 2.2 + o, h[1] + 1.4], [h[0] + o, h[1] + 4], [h[0] - 2.2 + o, h[1] + 1.4]], 'rim', { z }); poly1(c, [[h[0] - 1.8 + o, h[1] - 2.6], [h[0] + 1.8 + o, h[1] - 2.6], [h[0] + 1.5 + o, h[1] + 1], [h[0] + o, h[1] + 3], [h[0] - 1.5 + o, h[1] + 1]], 'shield', { z: z + 0.2, bev: 0.5 }); },
   },
-  rogue: { // CHANCER: teal shell suit, flat cap, gold chain, a lot of watches
-    shirt: '#22b2a4', legs: '#7c3cb8', shoe: '#f2f2f6', belt: '#22b2a4', noBelt: true, weapon: 'dagger',
-    mats: { band: ['#f6f6fa'], gold: ['#f0c840'], silver: ['#d8dce6'] },
-    late(c) { const { J } = c, s = (a, b) => paintCap(c, a, b, 0.42, 'band'); s(J.shF, J.elF); s(J.elF, J.haF); s(J.hipF, J.kneeF); s(J.kneeF, J.ankF); },
-    post(c) { const { api, J } = c, n = J.neck, G = c.m.gold.r; for (const [dx, dy, k] of [[-2.3, 1.4, 2], [-2.7, 2.4, 3], [-2.2, 3.4, 2], [-1.1, 4, 3]]) api.px(n[0] + dx, n[1] + dy, G[k]); const fd = unit(J.elF, J.haF); api.px(...add(J.haF, fd, -2.6), G[3]); api.px(...add(J.haF, fd, -3.6), c.m.silver.r[3]); },
+  rogue: { // ROGUE: dark leather, a mossy scarf, a belt of pouches
+    shirt: '#4a4a58', legs: '#3a3440', shoe: '#5a3a2a', belt: '#7a5030', weapon: 'dagger', mats: { scarf: ['#4e5e56'], pouch: ['#8a5a30'] },
+    torso(c) { const { J } = c, n = J.neck; c.parts.push(ell(n[0] + 0.4, n[1] + 1.2, 2.8, 1.5, 'scarf', { z: 5.5 })); c.parts.push(cap(n[0] + 1.6, n[1] + 1.2, n[0] + 4.2, n[1] + 4.4, 0.9, 0.6, 'scarf', { z: -1 })); },
+    post(c) { const { api, J } = c, P = c.m.pouch.r; for (const dx of [-2.4, 0.6]) { api.px(J.belly[0] + dx, J.belly[1] + 1.8, P[2]); api.px(J.belly[0] + dx + 1, J.belly[1] + 1.8, P[1]); } },
   },
-  mage: { // SPREADSHEET SORCERER: green wizard robe, specs, lanyard, a Post-it on the hat
-    shirt: '#2c9c5e', belt: '#e6e8f0', legs: '#2a2a32', shoe: '#2a2a32', body: 'robe', weapon: 'staff',
-    mats: { tie: ['#e04a4a'], cord: ['#2a9ad8'], collar: ['#f4f4f8'], badge: ['#f4f4f8'] },
-    torso(c) { const { J } = c, n = J.neck; paintPoly(c, [[n[0] - 3, n[1] + 0.8], [n[0] + 0.6, n[1] + 0.3], [n[0] - 1.2, n[1] + 2.4]], 'collar'); paintCap(c, [n[0] - 1.7, n[1] + 1.6], [J.belly[0] - 2.3, J.belly[1] + 1.2], 0.55, 'tie'); paintCap(c, [n[0] - 2.5, n[1] + 1], [J.chest[0] - 3, J.chest[1] + 3.2], 0.4, 'cord'); paintPoly(c, [[J.chest[0] - 4, J.chest[1] + 3], [J.chest[0] - 1.8, J.chest[1] + 3], [J.chest[0] - 1.8, J.chest[1] + 6], [J.chest[0] - 4, J.chest[1] + 6]], 'badge'); },
-    late(c) { if (c.poseName === 'cast') { const h = c.J.haB; poly1(c, [[h[0] - 2.8, h[1] - 3.4], [h[0] + 2.2, h[1] - 3.9], [h[0] + 2.8, h[1] + 2.2], [h[0] - 2.4, h[1] + 2.6]], 'rubber', { z: 11 }); poly1(c, [[h[0] - 2, h[1] - 2.7], [h[0] + 1.6, h[1] - 3.1], [h[0] + 2.1, h[1] + 1.5], [h[0] - 1.7, h[1] + 1.9]], 'screen', { z: 11.5, bev: 0.5 }); } },
+  mage: { // MAGE: a violet robe with gold trim
+    shirt: '#5a38b0', belt: '#f4d35e', legs: '#2a2a32', shoe: '#2a2a32', body: 'robe', weapon: 'staff', mats: { trim: ['#f4d35e'] },
+    torso(c) { const { J } = c; paintCap(c, [J.neck[0] - 1.6, J.neck[1] + 1.4], [J.belly[0] - 1.6, J.belly[1] + 6], 0.45, 'trim'); },
   },
-  cleric: { // BARMAID: wine skirt, white blouse, bar apron, tea towel, a pint in the off hand
-    shirt: '#f6f2f6', skirt: '#8c2c3e', legs: '#2a2028', shoe: '#2a2028', belt: '#f0a424', body: 'robe', noHem: true, weapon: 'rod', offhand: true,
-    torso(c) { const { J } = c, n = J.neck, hem = Math.max(J.ankF[1], J.ankB[1]) + 0.6, mx = (J.ankF[0] + J.ankB[0]) / 2;
-      paintPoly(c, [[n[0] - 2.8, n[1] + 2.4], [n[0] - 0.5, n[1] + 2.2], [J.belly[0] + 0.6, J.belly[1] + 0.6], [J.belly[0] - 3.4, J.belly[1] + 0.6]], 'apron');
-      paintPoly(c, [[J.belly[0] - 3.4, J.belly[1] + 0.6], [J.belly[0] + 0.6, J.belly[1] + 0.6], [mx + 1.6, hem], [mx - 4.2, hem]], 'apron'); towelParts(c); },
-    late(c) { const h = c.J.haB, z = c.bz + 0.4, o = c.bz < 0 ? 1.6 : 0; poly1(c, [[h[0] - 1.6 + o, h[1] - 3.7], [h[0] + 1.6 + o, h[1] - 3.7], [h[0] + 1.1 + o, h[1] + 0.8], [h[0] - 1.1 + o, h[1] + 0.8]], 'amber', { z }); c.parts.push(ell(h[0] + o, h[1] - 4, 1.9, 1, 'foam', { z: z + 0.1 })); },
+  cleric: { // CLERIC: white robe with a gold stole
+    shirt: '#eceaf4', belt: '#c89a50', legs: '#8a7060', shoe: '#8a7060', body: 'robe', weapon: 'rod', mats: { stole: ['#e0b040'] },
+    torso(c) { const { J } = c, n = J.neck; paintCap(c, [n[0] - 2, n[1] + 1], [J.belly[0] - 2.6, J.belly[1] + 5.5], 0.55, 'stole'); paintCap(c, [n[0] + 0.6, n[1] + 1], [J.belly[0] - 0.2, J.belly[1] + 5.5], 0.55, 'stole'); },
   },
-  monk: { // GYM BRO: tank top, sweatband, shorts, big arms, a protein shaker
-    shirt: '#2a8cf2', legs: '#1e1e28', shoe: '#f2f2f6', belt: '#f6f6fa', tank: true, armR: 1.4, shin: 'skin', cuff: 'band', weapon: 'fists',
-    mats: { shake: ['#e8e060'], lid: ['#e84a3a'] },
-    torso(c) { const n = c.J.neck; paintPoly(c, [[n[0] - 2.8, n[1] + 0.8], [n[0] + 0.4, n[1] + 0.5], [n[0] - 1.2, n[1] + 3.6]], 'skin'); c.parts.push(ell(c.J.shF[0] + 0.5, c.J.shF[1] - 0.2, 2.3, 2, 'skin', { z: 6 })); },
-    late(c) { const h = c.J.haB, z = c.bz + 0.4, o = c.bz < 0 ? 1.6 : 0, r = (a, b, w, hh, m, zz) => poly1(c, [[h[0] - w + o, h[1] + a], [h[0] + w + o, h[1] + a], [h[0] + w + o, h[1] + b], [h[0] - w + o, h[1] + b]], m, { z: zz, bev: 0.4 }); r(-3.2, 1.8, 1.3, 0, 'wht', z); r(-0.8, 1.8, 1.3, 0, 'shake', z + 0.1); r(-4.2, -3.2, 1.5, 0, 'lid', z + 0.2); },
+  monk: { // MONK: an orange gi with a red sash, bare forearms, wraps on the fists
+    shirt: '#e88a30', legs: '#6a4a3a', shoe: '#3a2a2a', belt: '#d94a4a', short: true, armR: 1.25, weapon: 'fists', mats: { lapel: ['#c06a20'] },
+    torso(c) { const n = c.J.neck; paintPoly(c, [[n[0] - 2.8, n[1] + 0.8], [n[0] + 0.4, n[1] + 0.5], [n[0] - 1.2, n[1] + 4]], 'skin'); paintCap(c, [n[0] - 1.4, n[1] + 1], [c.J.belly[0] - 0.4, c.J.belly[1]], 0.4, 'lapel'); },
   },
-  ranger: { // DARTS PLAYER: loud sponsor shirt, belly, gold chain, a dart
-    shirt: '#d6322e', legs: '#2c2c3a', shoe: '#1c1c22', belt: '#2a2228', short: true, weapon: 'bow', chest: [3.8, 3.5], belly: [3.4, 2.9],
-    mats: { patch: ['#f6d838'], patch2: ['#f6f6fa'], logo: ['#26202a'], gold: ['#f0c840'] },
-    torso(c) { const { J } = c, cx = J.chest[0], cy = J.chest[1]; c.parts.push(ell(J.belly[0] - 1.8, J.belly[1] + 0.5, 3.7, 3.2, 'tunic', { z: 2.5 })); paintPoly(c, [[cx - 4.2, cy - 0.6], [cx + 0.4, cy - 0.6], [cx + 0.4, cy + 2.2], [cx - 4.2, cy + 2.2]], 'patch'); paintPoly(c, [[cx - 5.4, J.belly[1] + 0.8], [cx - 1.4, J.belly[1] + 0.8], [cx - 1.4, J.belly[1] + 3], [cx - 5.4, J.belly[1] + 3]], 'patch2'); },
-    post(c) { const { api, J } = c, n = J.neck, G = c.m.gold.r, cx = J.chest[0], cy = J.chest[1]; for (const [dx, dy, k] of [[-2.3, 1.4, 3], [-3.0, 2.2, 2], [-3.2, 3.2, 3], [-2.6, 4.2, 2], [-1.6, 4.8, 3], [-0.6, 4.6, 2]]) { api.px(n[0] + dx, n[1] + dy, G[k]); api.px(n[0] + dx + 1, n[1] + dy, G[k]); } api.px(n[0] - 1.8, n[1] + 6, G[3]); api.px(n[0] - 1.8, n[1] + 7, G[2]); for (const [dx, dy] of [[-3.4, 0.2], [-2.4, 0.2], [-1.4, 0.2], [-3.4, 1.4], [-1.4, 1.4]]) api.px(cx + dx, cy + dy, c.m.logo.r[1]); },
+  ranger: { // RANGER: a green tunic, brown leggings, a quiver over the shoulder
+    shirt: '#3a8a3a', legs: '#6a5038', shoe: '#5a3a24', belt: '#8a5a30', weapon: 'bow', mats: { quiver: ['#7a4a26'], fletch: ['#f2f2f2'] },
+    torso(c) { const { J } = c; c.parts.push(cap(J.shB[0] + 1.6, J.shB[1] - 2.4, J.hipB[0] + 0.6, J.hipB[1] - 1, 1.2, 1.1, 'quiver', { z: -2 })); c.parts.push(ell(J.shB[0] + 1.8, J.shB[1] - 3, 1.1, 0.8, 'fletch', { z: -1.8 })); paintCap(c, [J.neck[0] - 2.4, J.neck[1] + 1.4], [J.belly[0] + 2, J.belly[1] - 1], 0.4, 'quiver'); },
   },
-  hexer: { // INFLUENCER: lavender puffer, quiff, huge shades, a phone
-    shirt: '#b6a0f2', legs: '#26262e', shoe: '#f6f6fa', belt: '#26262e', noBelt: true, chest: [4.5, 4.1], belly: [3.9, 3.2], armR: 1.45, weapon: 'tome',
-    torso(c) { const { J } = c, cx = J.chest[0], cy = J.chest[1]; for (const dy of [-1.8, 0.7, 3.2, 5.4]) paintCap(c, [cx - 5, cy + dy], [cx + 4.6, cy + dy], 0.4, 'seam'); },
-    late(c) { const { J } = c, perp = (a, b, t) => { const m = add(a, [b[0] - a[0], b[1] - a[1]], t), u = unit(a, b); paintCap(c, add(m, [-u[1], u[0]], -2.3), add(m, [-u[1], u[0]], 2.3), 0.45, 'seam'); }; perp(J.shF, J.elF, 0.5); perp(J.elF, J.haF, 0.4); perp(J.shB, J.elB, 0.5); },
-    post(c) { if (c.poseName === 'cast') { const h = c.J.haF, R = 5.2; for (let a = 0; a < 40; a++) { const t = (a / 40) * Math.PI * 2; c.api.px(Math.round(h[0] - 1 + Math.cos(t) * R), Math.round(h[1] - 1 + Math.sin(t) * R * 0.95), a % 2 ? '#ff9ad0' : '#fff0fa'); } } },
+  hexer: { // HEXER: a near-black robe with a green-glowing trim
+    shirt: '#2e2440', belt: '#6ef0a0', legs: '#2a2030', shoe: '#2a2030', body: 'robe', weapon: 'tome', mats: { glowtrim: ['#6ef0a0'] },
+    torso(c) { const { J } = c; paintCap(c, [J.neck[0] - 1.8, J.neck[1] + 1.4], [J.belly[0] - 1.8, J.belly[1] + 6], 0.4, 'glowtrim'); },
   },
-  bard: { // BUSKER: beanie, red scarf, olive jacket, an acoustic guitar
-    shirt: '#6c7c3c', legs: '#3c4c70', shoe: '#5a3a24', belt: '#4a3a24', weapon: 'whip',
-    torso(c) { const { J } = c, n = J.neck; c.parts.push(ell(n[0] + 0.5, n[1] + 1.2, 2.9, 1.6, 'scarf', { z: 5.5 })); c.parts.push(cap(n[0] + 1.5, n[1] + 1.2, n[0] + 4.6, n[1] + 4.6, 0.95, 0.7, 'scarf', { z: -1 }));
-      if (c.art !== 'guitar') { const b = [J.hipB[0] + 3.4, J.belly[1] - 0.4]; c.parts.push(ell(b[0], b[1] + 1.2, 3.4, 3.2, 'gtr', { z: -5 })); c.parts.push(ell(b[0] - 0.2, b[1] - 2.2, 2.4, 2.4, 'gtr', { z: -5 })); c.parts.push(cap(b[0] + 0.4, b[1] - 3.6, b[0] + 3.8, b[1] - 10, 0.5, 0.5, 'wood', { z: -5 })); c.parts.push(ell(b[0] + 4, b[1] - 10.6, 0.8, 1.1, 'wood', { z: -5 })); } },
+  bard: { // BARD: a teal doublet, cream hose, a red short cape
+    shirt: '#2aa0a0', legs: '#e8e0d0', shoe: '#6a3a2a', belt: '#f4d35e', weapon: 'whip', mats: { cape: ['#d94a4a'] },
+    torso(c) { const { J } = c; c.parts.push(poly([add(J.shB, [-0.6, -1]), add(J.shB, [2.6, -0.6]), add(J.hipB, [3.2, -0.6]), add(J.hipB, [0.6, -1.2])], 'cape', { z: -2.5, bev: 1 })); },
   },
-  berserker: { // STAG DO LAD: the matching hot-pink STAG tee (a class constant), traffic cone, a can of lager
-    shirt: '#ff4fa6', legs: '#2c3c6c', shoe: '#f2f2f6', belt: '#2c3c6c', noBelt: true, short: true, shin: 'skin', weapon: 'axe', offhand: true,
-    mats: { tee2: ['#f8f8fa'], text: ['#26202a'] },
-    torso(c) { const { J } = c, cx = J.chest[0], cy = J.chest[1]; paintPoly(c, [[cx - 4.6, cy - 0.4], [cx + 4.6, cy - 0.4], [cx + 4.6, cy + 2.8], [cx - 4.6, cy + 2.8]], 'tee2'); },
-    late(c) { const h = c.J.haB, z = c.bz + 0.4, o = c.bz < 0 ? 1.6 : 0, r = (a, b, w, m, zz) => poly1(c, [[h[0] - w + o, h[1] + a], [h[0] + w + o, h[1] + a], [h[0] + w + o, h[1] + b], [h[0] - w + o, h[1] + b]], m, { z: zz, bev: 0.4 }); r(-3.2, 1.4, 1.2, 'can', z); r(-1.4, 0.2, 1.3, 'gold', z + 0.1); },
-    post(c) { const { api, J } = c, cx = J.chest[0], cy = J.chest[1], T = c.m.text.r[1]; for (const [dx, dy] of [[-3.6, 0.7], [-2.6, 0.7], [-1.6, 0.7], [-0.6, 0.7], [0.8, 0.7], [1.8, 0.7], [-3.1, 1.9], [-1.1, 1.9], [0.3, 1.9], [2.3, 1.9]]) api.px(cx + dx, cy + dy, T); },
+  berserker: { // BERSERKER: bare arms, a leather harness, a fur mantle
+    shirt: '#8a5a30', legs: '#5a4030', shoe: '#3a2a20', belt: '#3a2a20', tank: true, armR: 1.4, weapon: 'axe', mats: { fur: ['#a88a6a'] },
+    torso(c) { const { J } = c; c.parts.push(ell(J.neck[0] + 0.6, J.neck[1] + 1.4, 4, 2, 'fur', { z: 6 })); paintCap(c, [J.shF[0], J.shF[1]], [J.belly[0] + 2.6, J.belly[1] + 0.4], 0.5, 'acc'); },
   },
-  alchemist: { // HOME BREWER: bobble hat with hops, goggles up, leather apron, a demijohn
-    shirt: '#e8c44c', legs: '#4c4a3a', shoe: '#7c4c28', belt: '#5a3a20', short: true, weapon: 'flask',
-    torso(c) { const { J } = c, n = J.neck, hem = J.kneeF[1] + 1; paintPoly(c, [[n[0] - 2.6, n[1] + 2], [n[0] - 0.4, n[1] + 1.8], [J.belly[0] + 0.8, J.belly[1] + 0.8], [J.belly[0] - 3.6, J.belly[1] + 0.8]], 'leather'); paintPoly(c, [[J.belly[0] - 3.6, J.belly[1] + 0.8], [J.belly[0] + 0.8, J.belly[1] + 0.8], [J.hipB[0] + 0.2, hem], [J.hipF[0] - 2.8, hem]], 'leather'); paintCap(c, [n[0] - 2.2, n[1] + 0.6], [J.chest[0] + 2.4, J.chest[1] - 1.6], 0.45, 'leather'); },
+  alchemist: { // ALCHEMIST: a green coat over a cream shirt, a leather apron, a satchel of flasks
+    shirt: '#3aa86a', legs: '#5a4a36', shoe: '#5a4030', belt: '#c89a40', weapon: 'flask', mats: { apron: ['#7c4c28'], vial: ['#7fd8f0', 4, { hi: 0.9 }] },
+    torso(c) { const { J } = c, n = J.neck; paintPoly(c, [[n[0] - 2.6, n[1] + 2], [n[0] - 0.4, n[1] + 1.8], [J.belly[0] + 0.8, J.belly[1] + 0.8], [J.belly[0] - 3.6, J.belly[1] + 0.8]], 'apron'); paintPoly(c, [[J.belly[0] - 3.6, J.belly[1] + 0.8], [J.belly[0] + 0.8, J.belly[1] + 0.8], [J.hipB[0] + 0.2, J.kneeF[1] + 1], [J.hipF[0] - 2.8, J.kneeF[1] + 1]], 'apron'); },
+    post(c) { const { api, J } = c, V = c.m.vial.r; api.px(J.belly[0] + 2.2, J.belly[1] + 1.4, V[2]); api.px(J.belly[0] + 2.2, J.belly[1] + 0.4, V[3]); },
   },
-  samurai: { // ANGRY CHEF: whites, toque, red face, kitchen towel, a big knife
-    shirt: '#f4f4f8', legs: '#464654', check: true, shoe: '#2a2a32', belt: '#f4f4f8', noBelt: true, weapon: 'katana', mats: { neck: ['#d83a2a'], btn: ['#a8acb8'] },
-    torso(c) { const n = c.J.neck; c.parts.push(ell(n[0] - 0.6, n[1] + 0.9, 2.2, 1.3, 'neck', { z: 5.5 })); towelParts(c); },
-    post(c) { const { api, J } = c, cx = J.chest[0], cy = J.chest[1]; for (const dy of [0, 2.2, 4.4]) { api.px(cx - 2.6, cy + dy, c.m.btn.r[3]); api.px(cx - 1.6, cy + dy, c.m.btn.r[2]); } },
+  samurai: { // SAMURAI: red lacquered armour over dark hakama, white sash
+    shirt: '#c04040', sleeve: '#c04040', legs: '#3a3a50', shoe: '#2a2a30', belt: '#f2f2f2', chest: [3.9, 3.6], weapon: 'katana', mats: { lace: ['#24242e'] },
+    torso(c) { const { J } = c; for (const dy of [-1.4, 0.8, 3]) paintCap(c, [J.chest[0] - 3.6, J.chest[1] + dy], [J.chest[0] + 3.4, J.chest[1] + dy], 0.3, 'lace'); c.parts.push(ell(J.shF[0] + 0.4, J.shF[1] - 0.2, 2.4, 1.8, 'tunic', { z: 6 })); },
   },
-  landlord: { // LANDLORD (capstone): white shirt with rolled sleeves, wine waistcoat, bar towel, a pint in the off hand
-    shirt: '#f4f0e6', legs: '#2c2a34', shoe: '#3a2618', belt: '#2a2028', short: true, weapon: 'sword', offhand: true, mats: { vest: ['#8c2c3e'], btn: ['#f0c840'] },
-    torso(c) { const { J } = c, n = J.neck; paintPoly(c, [[n[0] - 3.4, n[1] + 1.2], [n[0] - 1.6, n[1] + 1], [J.belly[0] - 1.2, J.belly[1] + 1.4], [J.belly[0] - 3.6, J.belly[1] + 1.4]], 'vest'); paintPoly(c, [[n[0] + 0.4, n[1] + 0.8], [n[0] + 3.2, n[1] + 1.2], [J.belly[0] + 3.2, J.belly[1] + 1.4], [J.belly[0] + 0.2, J.belly[1] + 1.4]], 'vest'); towelParts(c); },
-    late(c) { const h = c.J.haB, z = c.bz + 0.4, o = c.bz < 0 ? 1.6 : 0; poly1(c, [[h[0] - 1.6 + o, h[1] - 3.7], [h[0] + 1.6 + o, h[1] - 3.7], [h[0] + 1.1 + o, h[1] + 0.8], [h[0] - 1.1 + o, h[1] + 0.8]], 'amber', { z }); c.parts.push(ell(h[0] + o, h[1] - 4, 1.9, 1, 'foam', { z: z + 0.1 })); },
-    post(c) { const { api, J } = c; for (const dy of [0.6, 2.6]) api.px(J.chest[0] - 2.4, J.chest[1] + dy, c.m.btn.r[3]); },
+  paladin: { // PALADIN: white-gold plate, a red cape
+    shirt: '#e8e8f0', sleeve: '#e8e8f0', legs: '#c8c8d8', shoe: '#8a7a5a', belt: '#f4d35e', armR: 1.15, chest: [3.9, 3.6], weapon: 'sword', mats: { cape: ['#c03a40'], gild: ['#f4d35e'] },
+    torso(c) { const { J } = c; c.parts.push(poly([add(J.shB, [-1, -1.2]), add(J.shB, [2.4, -0.8]), add(J.ankB, [3.6, -1.4]), add(J.ankB, [-0.6, -2])], 'cape', { z: -3.5, bev: 1.2 })); paintCap(c, [J.chest[0] - 2.6, J.chest[1] + 0.2], [J.chest[0] + 2.6, J.chest[1] + 0.2], 0.45, 'gild'); paintCap(c, [J.chest[0] - 0.2, J.chest[1] - 2], [J.chest[0] - 0.2, J.chest[1] + 2.4], 0.45, 'gild'); },
   },
-  paladin: { // TRAFFIC WARDEN: hi-vis, peaked cap, STOP lollipop, ticket machine
-    shirt: '#eee83a', legs: '#2a3052', shoe: '#1a1a22', belt: '#2a2a34', cuff: 'refl', weapon: 'sword',
-    torso(c) { const { J } = c, cx = J.chest[0]; paintCap(c, [cx - 4.6, J.chest[1] + 0.2], [cx + 4.6, J.chest[1] + 0.2], 0.5, 'refl'); paintCap(c, [cx - 4.6, J.belly[1] - 0.6], [cx + 4.6, J.belly[1] - 0.6], 0.5, 'refl'); paintCap(c, [J.neck[0] - 1.6, J.neck[1] + 1], [J.belly[0] - 1.4, J.belly[1] - 1], 0.4, 'refl'); },
-    late(c) { const { J } = c, h = J.hipF; poly1(c, [[h[0] - 2.8, h[1] - 0.6], [h[0] - 0.8, h[1] - 0.6], [h[0] - 0.8, h[1] + 2.4], [h[0] - 2.8, h[1] + 2.4]], 'rubber', { z: 3.6 }); },
-    post(c) { const h = c.J.hipF; c.api.px(h[0] - 2.2, h[1] + 0.2, '#8ad8ff'); c.api.px(h[0] - 1.6, h[1] + 0.2, '#8ad8ff'); },
+  landlord: { // SAGE (the capstone, id 'landlord'): a deep blue robe with gold trim and a long stole
+    shirt: '#2a3a8a', belt: '#f0c840', legs: '#2a2440', shoe: '#2a2440', body: 'robe', weapon: 'staff', mats: { stole: ['#f0c840'] },
+    torso(c) { const { J } = c, n = J.neck; paintCap(c, [n[0] - 2, n[1] + 1], [J.belly[0] - 2.6, J.belly[1] + 6], 0.5, 'stole'); paintCap(c, [n[0] + 0.6, n[1] + 1], [J.belly[0] - 0.2, J.belly[1] + 6], 0.5, 'stole'); },
   },
 };
 // person-specific outfits of the jobless intro class ('bloke@adam' ...): the 2026 pub clothes
@@ -398,9 +377,9 @@ const OUT = {
   'bloke@devon': { shirt: '#2c3c72', legs: '#b8a274', shin: 'skin', shoe: '#c8ccd6', belt: '#8a7650', hood: true, logo: '#f4d35e' },
 };
 export const CLASS_FX = { // cast accents (the stage reads these): ring colour, accent colour, and what the burst looks like
-  knight: { c1: '#c8ccd6', c2: '#ffffff' }, rogue: { c1: '#f0c840', c2: '#fff4b0' }, mage: { c1: '#8ad8ff', c2: '#e8fbff' }, cleric: { c1: '#f6f0e0', c2: '#f0b840' },
-  monk: { c1: '#4aa0ff', c2: '#e8f4ff' }, ranger: { c1: '#f6d838', c2: '#ff6a5a' }, hexer: { c1: '#ff7ac0', c2: '#fff0fa' }, bard: { c1: '#e2a82e', c2: '#fff0b0' },
-  landlord: { c1: '#f0a424', c2: '#f6f0e0' }, berserker: { c1: '#ff8c1e', c2: '#ffd0e8' }, alchemist: { c1: '#f0b840', c2: '#f6f0e0' }, samurai: { c1: '#ff6a4a', c2: '#fff4e8' }, paladin: { c1: '#eee83a', c2: '#d42a2a' },
+  knight: { c1: '#c8ccd6', c2: '#ffffff' }, rogue: { c1: '#9adfb0', c2: '#e8fff0' }, mage: { c1: '#b88aff', c2: '#f0e8ff' }, cleric: { c1: '#fff6d0', c2: '#f0d060' },
+  monk: { c1: '#4aa0ff', c2: '#e8f4ff' }, ranger: { c1: '#f6d838', c2: '#ff6a5a' }, hexer: { c1: '#6ef0a0', c2: '#20103a' }, bard: { c1: '#e2a82e', c2: '#fff0b0' },
+  landlord: { c1: '#f0a424', c2: '#f6f0e0' }, berserker: { c1: '#ff6a3a', c2: '#ffd0a0' }, alchemist: { c1: '#7fd8f0', c2: '#e8ffd0' }, samurai: { c1: '#ff6a4a', c2: '#fff4e8' }, paladin: { c1: '#fff6c0', c2: '#f4d35e' },
 };
 
 // hero frames: the skeleton is posed in the old 32x32 "model" space (soles on row 29, body centre x 16.5), then scaled up

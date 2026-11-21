@@ -92,7 +92,7 @@ function castField(c, m, targets) { // spend the MP and heal; returns what happe
 const spellLine = (m) => `${m.mp} MP · ${m.tgt === 'allies' ? 'whole party' : m.tgt === 'self' ? 'self' : 'one ally'}${m.amount ? ` · +${m.amount} HP` : ''}${m.revive ? ' · revives' : ''}`;
 ACT.magic = (msg) => {
   const any = G.party.some((c) => fieldSpells(c).length);
-  show(`<h2>${ic('heal')} Magic</h2>${msg ? `<p class="gold">${msg}</p>` : ''}<p class="dim">${any ? 'Who casts? Healing spells work out here just as they do in a fight.' : 'Nobody has a healing spell ready. Barmaids learn them first; put one in a skill slot.'}</p><div class="card menuparty">${G.party.map((c, i) => { const n = fieldSpells(c).length; return heroBtn(c, 'magicwho', i).replace('<button ', `<button ${n && c.hp > 0 ? '' : 'disabled '}`); }).join('')}</div><div class="foot">${btn('menu', 'Back', '', '', 'primary')}</div>`);
+  show(`<h2>${ic('heal')} Magic</h2>${msg ? `<p class="gold">${msg}</p>` : ''}<p class="dim">${any ? 'Who casts? Healing spells work out here just as they do in a fight.' : 'Nobody has a healing spell ready. Clerics learn them first; put one in a skill slot.'}</p><div class="card menuparty">${G.party.map((c, i) => { const n = fieldSpells(c).length; return heroBtn(c, 'magicwho', i).replace('<button ', `<button ${n && c.hp > 0 ? '' : 'disabled '}`); }).join('')}</div><div class="foot">${btn('menu', 'Back', '', '', 'primary')}</div>`);
 };
 ACT.magicwho = (i, msg) => {
   const c = G.party[+i], list = fieldSpells(c);

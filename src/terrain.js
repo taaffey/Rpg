@@ -348,7 +348,8 @@ function* bakeGen() { // generator: yields often so the bake can run in idle sli
     tt[ty * TW + tx] = !anyW ? 0 : deep ? 2 : 1;
   }
   mark('BK = { S,'); yield;
-  BK = { S, wT, wD, wF, tt, TW, TH, PW, PH, W, H, tiles: new Map(), PROF };
+  BK = { S, wT, wD, wF, tt, TW, TH, PW, PH, W, H, tiles: new Map(), PROF, clean: new Uint8Array(TW * TH) };
+  setTimeout(cleanIdle, 0); // start the background clean-up of the world's tiles
 }
 let GENR = null;
 function bake() { // finish (or run) the bake right now
@@ -407,9 +408,23 @@ function deepTile(x, y, f) {
   const id = new ImageData(16, 16); for (let p = 0; p < 256; p++) waterPx(id.data, p * 4, (x & 3) * 16 + (p & 15), (y & 3) * 16 + (p >> 4), 1, 31, 0, f);
   c = mk(16, 16); c.getContext('2d').putImageData(id, 0, 0); deepTiles.set(k, c); return c;
 }
-// the remaster clean-up, one tile at a time (with a 1 px border so tile edges match their neighbours); water is left alone
+// the remaster clean-up, one tile at a time (with a 1 px border so tile edges match their neighbours); water is left alone.
+// The result is written back into the baked image, so each tile is cleaned once: in the background while the game is idle
+// (cleanIdle), or on the spot if the party walks onto it first.
+const CLD = new Uint8ClampedArray(18 * 18 * 4);
+function cleanTile(B, tx, ty) {
+  const k = ty * B.TW + tx; if (B.clean[k]) return; B.clean[k] = 1; if (B.tt[k] === 2) return;
+  const d = cleanLand(B, tx, ty);
+  for (let j = 0; j < 16; j++) for (let i = 0; i < 16; i++) { const X = tx * 16 + i, Y = ty * 16 + j, p = Y * B.PW + X; if (B.wT[p]) continue; const s = p * 4, o = ((j + 1) * 18 + i + 1) * 4; B.S[s] = d[o]; B.S[s + 1] = d[o + 1]; B.S[s + 2] = d[o + 2]; }
+}
+let idleAt = 0;
+function cleanIdle(dl) { // background pass over the whole world, a few ms at a time
+  const B = BK; if (!B || !REMASTER.on) return; const end = performance.now() + (dl?.timeRemaining ? Math.min(8, dl.timeRemaining()) : 4);
+  while (idleAt < B.TW * B.TH && performance.now() < end) { cleanTile(B, idleAt % B.TW, (idleAt / B.TW) | 0); idleAt++; }
+  if (idleAt < B.TW * B.TH) (globalThis.requestIdleCallback || ((f) => setTimeout(f, 40)))(cleanIdle);
+}
 function cleanLand(B, tx, ty) {
-  const d = new Uint8ClampedArray(18 * 18 * 4);
+  const d = CLD;
   for (let j = 0; j < 18; j++) for (let i = 0; i < 18; i++) { const X = Math.min(B.PW - 1, Math.max(0, tx * 16 + i - 1)), Y = Math.min(B.PH - 1, Math.max(0, ty * 16 + j - 1)), k = Y * B.PW + X, s = k * 4, o = (j * 18 + i) * 4; d[o] = B.S[s]; d[o + 1] = B.S[s + 1]; d[o + 2] = B.S[s + 2]; d[o + 3] = B.wT[k] ? 0 : 255; }
   return cleanPixels(d, 18, 18);
 }
@@ -418,10 +433,11 @@ function bakedTile(x, y, f) {
   if (tx < 0 || ty < 0 || tx >= B.TW || ty >= B.TH) return deepTile(x, y, f);
   const t = B.tt[ty * B.TW + tx]; if (t === 2) return deepTile(x, y, f);
   const key = (ty * B.TW + tx) * FRAMES + (t ? f : 0); let c = B.tiles.get(key); if (c) return c;
-  const id = new ImageData(16, 16), o = id.data, cl = REMASTER.on ? cleanLand(B, tx, ty) : null;
+  if (REMASTER.on) cleanTile(B, tx, ty);
+  const id = new ImageData(16, 16), o = id.data;
   for (let p = 0; p < 256; p++) {
     const X = tx * 16 + (p & 15), Y = ty * 16 + (p >> 4), i = Y * B.PW + X, j = p * 4;
-    if (!B.wT[i]) { const s = cl ? (((p >> 4) + 1) * 18 + (p & 15) + 1) * 4 : i * 4, src = cl || B.S; o[j] = src[s]; o[j + 1] = src[s + 1]; o[j + 2] = src[s + 2]; o[j + 3] = 255; }
+    if (!B.wT[i]) { const s = i * 4; o[j] = B.S[s]; o[j + 1] = B.S[s + 1]; o[j + 2] = B.S[s + 2]; o[j + 3] = 255; }
     else waterPx(o, j, X, Y, B.wT[i], B.wD[i], B.wF[i], f);
   }
   c = mk(16, 16); c.getContext('2d').putImageData(id, 0, 0); B.tiles.set(key, c); return c;

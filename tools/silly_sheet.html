@@ -8,7 +8,7 @@ import * as BA from '../src/battleart.js';
 import * as UI from '../src/uiart.js';
 const q = new URLSearchParams(location.search), mode = q.get('mode') || 'grid', Z = +(q.get('z') || 3);
 const JOBS = ['knight', 'rogue', 'mage', 'cleric', 'monk', 'ranger', 'hexer', 'bard', 'berserker', 'alchemist', 'samurai', 'paladin'];
-const NAME = { knight: 'Bouncer', rogue: 'Chancer', mage: 'Sorcerer', cleric: 'Barmaid', monk: 'Gym Bro', ranger: 'Darts', hexer: 'Influencer', bard: 'Busker', berserker: 'Stag Do', alchemist: 'Brewer', samurai: 'Chef', paladin: 'Warden' };
+const NAME = { knight: 'Knight', rogue: 'Rogue', mage: 'Mage', cleric: 'Cleric', monk: 'Monk', ranger: 'Ranger', hexer: 'Hexer', bard: 'Bard', berserker: 'Berserker', alchemist: 'Alchemist', samurai: 'Samurai', paladin: 'Paladin', landlord: 'Sage' };
 const c = document.getElementById('c'), x = c.getContext('2d'); x.imageSmoothingEnabled = false; x.font = 'bold 13px monospace';
 const img = (src) => new Promise((r) => { const i = new Image(); i.onload = () => r(i); i.src = src; });
 const label = (s, X, Y, col = '#ffd860') => { x.fillStyle = col; x.fillText(s, X, Y); };

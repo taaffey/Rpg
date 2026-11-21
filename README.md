@@ -39,9 +39,9 @@ keyboard alone, or with the mouse. Options (volumes, battle speed, shake, minima
 - **Difficulty** (Easy / Normal / Hard, changeable in Options). There are no tutorial pop-ups: NPCs and the journal drop hints in the story's voice.
 - **Levels 21-30**: the story ends around level 17-18; the post-game islands carry on to 30 (Hopsend ~18-21, Cinder Isle ~21-25, the Obsidian Ruins ~25-28, the Last Landlord at about 28). The late levels unlock build options (`LEVEL_PERKS` in `src/logic.js`): an extra gem socket at 22 and 28, a second trait slot at 25, and Local Legend (+10% HP and MP) at 30. `LV=28 node tools/landlord_sim.mjs` checks the superboss at any level.
 - **One for the Road** (`src/lastround.js`): a last chapter after the ending. The bricked-up arch at the back of the Goose's cellar opens onto the same cellar a thousand years on, the Bell & Anvil in 2026, where the Rime Heart Devon pocketed has woken what is left of Sereth as a quizmaster. Six new foes, one boss, about level 20.
-- **Landlord** (the capstone calling): opens for any hero who has mastered three callings. Strong all round, with party heals and buffs, and a trait that earns 20% more gold.
+- **Sage** (the capstone calling, id `landlord`): opens for any hero who has mastered three callings. Strong all round, with holy judgement, party-wide healing and wards, and a trait that earns 20% more gold.
 - **Evening classes** (any Guild): spare gold buys 10 Calling Points for a hero's current calling; the price rises with rank.
-- **FF1 staples**: battles can open with *Strike first!* (8%: the foes lose round one) or *Ambushed!* (6%: the party does; never against bosses, never in the tutorial cellar, never with the Darts Player's Oche Stare). Poison outlasts the fight: 1 HP a step on the map until a Cup of Tea or an inn cures it. Camping gear (Sleeping Bag, Two-Man Tent, Camper Van: FF1's Tent, Cabin and House) heals everyone standing and saves, on the overworld only.
+- **FF1 staples**: battles can open with *Strike first!* (8%: the foes lose round one) or *Ambushed!* (6%: the party does; never against bosses, never in the tutorial cellar, never with the Ranger's Pre-emptive trait). Poison outlasts the fight: 1 HP a step on the map until a Cup of Tea or an inn cures it. Camping gear (Sleeping Bag, Two-Man Tent, Camper Van: FF1's Tent, Cabin and House) heals everyone standing and saves, on the overworld only.
 - **Field magic** (Menu > Magic, the way FF1 does it): pick who casts, then a healing spell, then who gets it. One-ally cures ask for a target, the stronger party-wide ones heal everyone, revives work on the fallen; costs, gems and weapon bonuses match battle. Free (0 MP) heals are battle-only.
 - **Active Time Battle** (FF6): every fighter has a gauge that fills in real time at a rate set by speed (Slow halves it). Foes act the moment theirs fills; each hero is asked for an order when theirs does, and the gauge shows under their HP. Options > Battle mode: Wait (default) stops the clock in sub-menus, Active never does. Statuses tick at the start of each fighter's own turn, Guard lasts until that hero's next turn, a Bro Combo needs both brothers ready, a boss winding up fills slower (so everyone can answer it), and Swift skills leave the gauge part-filled. `Battle.round()` is the older all-at-once engine, kept for the balance simulators.
 - **Rows, desperation attacks, relics** (FF6): a hero in the back row (hero screen > Row) deals and takes half physical damage, except with shooters. Below 1/8 HP, Fight has a 1-in-16 chance of becoming that hero's desperation attack (Big Brother Energy, Hold My Pint, Last Orders Now, Eleven Years of Standing). Heroes have two relic slots.
@@ -67,16 +67,16 @@ a **Late-Night Kebab** gets a fallen mate back on their feet, **Cup of Tea / Tea
 Brewer's passive, Happy Hour, makes them twice as potent. Status effects are pub-style too: a dodgy tum, hungover, gobsmacked.
 
 ## How builds work (three layered systems)
-1. **Callings** (12 silly archetypes, FF5-style job system): every win gives each standing hero **Calling Points** for their current
+1. **Callings** (12 fantasy classes, FF5-style job system): every win gives each standing hero **Calling Points** for their current
    calling (1 per foe, more for tough ones, 10-15 for a great evil; KO'd heroes get none). Each calling has 6 **ranks**
    (CP 0 / 6 / 18 / 45 / 80 / 130); every rank teaches one ability, rank 4 a passive **trait** (Door Policy, Sucker Punch,
    Free Trial, Top-Up, Spotter, Oche Stare, Parasocial, Tip Jar, Dutch Courage, Happy Hour, Sharp Tongue, Hi-Vis) and rank 6
    **masters** the calling: a small stat bonus kept whatever the hero does next. Learned abilities are permanent: the
    current calling's are always usable, plus one **second calling**'s (any calling the hero has taken up) and one extra
    **trait** slot. Stats and weapon types come from the current calling only; character level still raises stats.
-   Change callings from the menu at any time. Six callings are on the Guild's list from the start (**Bouncer, Chancer,
-   Spreadsheet Sorcerer, Barmaid, Gym Bro, Darts Player**); **Influencer, Busker and Stag Do Lad** wake with the first
-   heart-gem claimed, **Home Brewer, Angry Chef and Traffic Warden** with the second (see CALLING_BATCHES in data.js).
+   Change callings from the menu at any time. Six callings are on the Guild's list from the start (**Knight, Rogue,
+   Mage, Cleric, Monk, Ranger**); **Hexer, Bard and Berserker** wake with the first
+   heart-gem claimed, **Alchemist, Samurai and Paladin** with the second (see CALLING_BATCHES in data.js).
    The ids stay the classic ones (knight, rogue, mage, cleric, monk, ranger, hexer, bard, berserker, alchemist, samurai,
    paladin), so the engine, art keys and saves are unchanged; only the names, jokes and artwork are silly.
 2. **Weapons** (10 silly families: Bats, Pointy Things, Poles, Shooters, Knuckles, Cables, Strimmers, Gadgets, Novelties, Kitchen Knives; 53 weapons from a Biro to a Titanic Extinguisher; tiers: Haven hardware shop -> Mirewood car boot -> Frostholm DIY forge -> chests, bosses and rare drops):
@@ -92,7 +92,7 @@ Brewer's passive, Happy Hour, makes them twice as potent. Status effects are pub
 Blue gradient windows with white borders, the Press Start 2P pixel font and a pointing-hand cursor. Battles use the FF1 GBA layout: the scene on top with a message box over it, an enemy-name window bottom-left (the command menu replaces it on your turn) and the party HP window bottom-right. Shops show the keeper, Buy/Sell and a gold window; dialogue types out line by line.
 
 **An actual start:** like FF1, the party begins at level 1, **unarmed**, with 400 G: arming everyone at the Haven hardware shop
-costs about 205 G and leaves room for pints. Gym Bros (and other fist-wielding main jobs) punch hard bare-handed.
+costs about 205 G and leaves room for pints. Monks (and other fist-wielding main jobs) punch hard bare-handed.
 
 **Loot and growth:** every monster has a common drop (pints, spliffs, cups of tea...) and a ★ RARE drop (a gem, accessory or a
 unique weapon, 4-8%); bosses always drop their treasure. The Bestiary lists each foe's drops once defeated (rares stay `???` until found).
