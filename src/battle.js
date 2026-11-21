@@ -107,6 +107,7 @@ async function battleInner(groupIds, bossId = null) {
   b.p.forEach((x) => { x.ch.hp = x.hp; x.ch.mp = x.mp; x.ch.poison = x.hp > 0 && x.st.poison > 0; }); // FF1: poison outlasts the fight
   if (b.over === 'fled') { sfx('flee'); const q = quip('flee', 0.6); if (q) toast(q.replace(/<[^>]+>/g, ''), 2600); }
   diag(`fight over: ${b.over} after ${b.turn} rounds, party ${b.p.map((x) => `${x.hp}/${x.maxhp}`).join(' ')}`);
+  if (b.over !== 'lose') { G.gold += b.goldBonus; b.found = b.thrown.filter(() => Math.random() < 0.4); G.inv.weapons.push(...b.found); } // gold lifted by Pilfer; some hurled weapons are found again
   if (b.over !== 'lose') for (const it of b.loot) { if (it.kind === 'items') G.inv.items[it.id] = (G.inv.items[it.id] || 0) + 1; else G.inv[it.kind].push(it.id); } // stolen goods are yours to keep
   if (b.over === 'win') b.learned = b.learnFromBattle();
   if (b.over === 'win') await victory(b, bossId);
@@ -183,7 +184,7 @@ function cmdMoves(p, id) { // [{ id, label, sub, off }]
   if (id === 'bushido') return BUSHIDO.map(([sid, need, rec]) => ({ ...skillRow([sid, need]), sub: lv >= need ? `${describeSkill({ ...skillWithGems(sid, []), mp: 0 }).replace(/^0 MP · /, '')} · recovery ${'▮'.repeat(rec)}` : `learned at level ${need}` }));
   if (id === 'lore') return (c.lore || []).map((sid) => { const cost = L.mpCost(p, { mp: loreCost(sid) }); return { id: sid, label: SKILLS[sid].name, sub: `${cost} MP · ${describeSkill({ ...skillWithGems(sid, []), mp: cost }).replace(/^\d+ MP · /, '')}`, off: p.mp < cost }; });
   if (id === 'dance') return (c.dances || []).map((d) => ({ id: d, label: DANCES[d].name, sub: DANCES[d].moves.map((m) => SKILLS[m].name).join(' · ') }));
-  if (id === 'throw') return [...new Set(G.inv.weapons)].map((w) => ({ id: w, label: `${WEAPONS[w].name} ×${G.inv.weapons.filter((x) => x === w).length}`, sub: `${WEAPONS[w].atk || 0} atk${WEAPONS[w].elem ? ' · ' + WEAPONS[w].elem : ''} · used up` }));
+  if (id === 'throw') return [...new Set(G.inv.weapons)].map((w) => ({ id: w, label: `${WEAPONS[w].name} ×${G.inv.weapons.filter((x) => x === w).length}`, sub: `${WEAPONS[w].atk || 0} atk${WEAPONS[w].elem ? ' · ' + WEAPONS[w].elem : ''} · may be found again` }));
   return [];
 }
 function classCmdBtn(p) {
@@ -320,7 +321,8 @@ async function victory(b, bossId) {
       if (k.mastered) for (const j of L.capstonesJustOpened(c)) lines.push(`⭐ ${esc(c.name)} has mastered ${JOBS[j].needs} callings. A new calling is open to them: <b>${JOBS[j].name}</b>.`); }
   }
   for (const m of b.learned || []) lines.push(`📖 ${m}`);
-  if (b.loot.length) lines.push(`🧺 Stolen: ${b.loot.map((it) => esc(lootName(it.kind, it.id))).join(', ')}`);
+  if (b.loot.length || b.goldBonus) lines.push(`🧺 Pilfered: ${[...b.loot.map((it) => esc(lootName(it.kind, it.id))), ...(b.goldBonus ? [`${b.goldBonus} G`] : [])].join(', ')}`);
+  if (b.found?.length) lines.push(`🗡 Found again: ${b.found.map((w) => esc(WEAPONS[w].name)).join(', ')}`);
   if (lvSfx) setTimeout(() => sfx('levelup'), 1400);
   for (const d of r.drops) {
     if (d.kind === 'items') G.inv.items[d.id] = (G.inv.items[d.id] || 0) + 1; else G.inv[d.kind].push(d.id);
