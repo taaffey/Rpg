@@ -4,6 +4,7 @@
 // fences, flower beds, small props and every drop shadow); ground() only supplies the animated water that shows through its
 // holes. Buildings, trees, lamps, stalls, the fountain, boats and the castle are cached sprites sorted with the characters.
 // Art is authored at 16 px per tile (TS = 32 on screen) with 6-12 shade ramps, ordered dithering and selective outlines.
+import { cleanPixels, REMASTER } from './pixclean.js';
 import { mk } from './autotile.js';
 import { makeFestTowns } from './townart2.js';
 
@@ -41,7 +42,7 @@ class Pix {
   rect(x, y, w, h, c) { for (let j = y; j < y + h; j++) for (let i = x; i < x + w; i++) this.set(i, j, c); }
   blend(x, y, c, t) { const o = this.get(x, y); if (cA(o)) this.set(x, y, mix(o, c, t)); }
   blit(s, dx, dy) { for (let j = 0; j < s.h; j++) for (let i = 0; i < s.w; i++) { const c = s.d[j * s.w + i], a = cA(c); if (!a) continue; if (a === 255) this.set(dx + i, dy + j, c); else { const o = this.get(dx + i, dy + j); this.set(dx + i, dy + j, cA(o) ? rgba(cR(o) + (cR(c) - cR(o)) * a / 255, cG(o) + (cG(c) - cG(o)) * a / 255, cB(o) + (cB(c) - cB(o)) * a / 255, Math.max(cA(o), a)) : c); } } }
-  canvas() { const c = mk(this.w, this.h), x = c.getContext('2d'), id = x.createImageData(this.w, this.h); new Uint32Array(id.data.buffer).set(this.d); x.putImageData(id, 0, 0); return c; }
+  canvas() { const c = mk(this.w, this.h), x = c.getContext('2d'), id = x.createImageData(this.w, this.h); new Uint32Array(id.data.buffer).set(this.d); if (REMASTER.on && !this.raw && this.w * this.h >= 4096) cleanPixels(id.data, this.w, this.h); x.putImageData(id, 0, 0); return c; }
 }
 // selective outline: transparent pixels next to the shape take a darkened copy of their neighbour (needs 1 px padding)
 function outline(p, f = 0.38, skipDown = false) {

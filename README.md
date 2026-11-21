@@ -153,6 +153,7 @@ foot of the Frost Spire the party meets the one who wants them. The Titan is the
 ## Visuals and sound (all generated in code)
 - `src/sprites.js`, `src/art2.js`: ASCII-grid pixel sprites (12 callings, townsfolk, 100+ enemies, three 32x32 bosses, furniture,
   tile themes), recolor variants, gem icons.
+- `src/pixclean.js`: the remaster clean-up. Town, room and battle-backdrop canvases and every overworld tile pass through it as they are built: lone speckles and dither close to a neighbouring tone are snapped to that tone (real palette colours only), so surfaces read as clean flat shading while edges, outlines and lettering are untouched. `REMASTER.on = false` shows the raw art. Battle sprites shade in clean bands (no ordered dither), and dungeons use softer, tinted lighting (`LIGHT` in `src/gamedata.js`).
 - `src/battleart.js`: battle art. Heroes are chibi: a posed body (nine poses, the weapon in hand) under the map sprite's own big
   side-view head (`headArt` in `src/walkerart.js`), so a hero looks the same in battle as on the map. Frames are `HERO_W` x `HERO_H`
   with the soles on row `HERO_FEET`. Menu and turn-order portraits are the map sprite's front-facing head (`faceURL` in `src/uiart.js`).

@@ -173,7 +173,7 @@ function draw(t = performance.now() / 1000) {
   } else if (m.kind === 'dungeon') { // torch-lit darkness around the party
     const lt = LIGHT[theme], fl = Math.sin(t * 9) * 4 + Math.sin(t * 23) * 2, gx = px + TS / 2, gy = py + TS / 2;
     const g = cx.createRadialGradient(gx, gy, 30, gx, gy, lt.r + fl);
-    g.addColorStop(0, `rgba(${lt.glow},.07)`); g.addColorStop(0.45, `rgba(0,0,10,${lt.dark * 0.32})`); g.addColorStop(1, `rgba(0,0,10,${lt.dark})`);
+    const tn = lt.tint || '0,0,10'; g.addColorStop(0, `rgba(${lt.glow},.10)`); g.addColorStop(0.5, `rgba(${tn},${lt.dark * 0.25})`); g.addColorStop(1, `rgba(${tn},${lt.dark})`);
     cx.fillStyle = g; cx.fillRect(0, 0, cv.width, cv.height);
     cx.globalCompositeOperation = 'lighter'; // torch glow on top of the darkness
     for (const [tx, ty] of torches) { const r = 52 + Math.sin(t * 11 + tx) * 4, tg = cx.createRadialGradient(tx, ty, 2, tx, ty, r); tg.addColorStop(0, `rgba(${lt.glow},.38)`); tg.addColorStop(1, `rgba(${lt.glow},0)`); cx.fillStyle = tg; cx.fillRect(tx - r, ty - r, r * 2, r * 2); }

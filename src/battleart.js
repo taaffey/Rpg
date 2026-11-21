@@ -5,6 +5,7 @@
 // Small details (faces, eyes, teeth, trims) are stamped as pixels on top.
 
 import { headArt } from './walkerart.js';
+import { cleanPixels, REMASTER } from './pixclean.js';
 const mk = (w, h) => { const c = document.createElement('canvas'); c.width = w; c.height = h; return c; };
 export function rng(seed) { let a = seed | 0; return () => { a = (a + 0x6D2B79F5) | 0; let t = Math.imul(a ^ (a >>> 15), 1 | a); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
 const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
@@ -126,7 +127,7 @@ export function render(spec) {
       const j = yy * w + xx; if (MI[j] < 0) { edge = true; if (dx > 0 || dy > 0) rimSide = true; continue; }
       if (PT[j] !== PT[i] && HT[j] > HT[i] + crease && !mat.nocrease) v -= 0.34;
     }
-    let f = clamp(v, 0, 0.999) * (n - 1), b = Math.floor(f); if (f - b > (spec.dither === false ? 0.5 : 0.38 + 0.24 * bayer(x, y))) b++;
+    let f = clamp(v, 0, 0.999) * (n - 1), b = Math.floor(f); if (f - b > (spec.dither === true ? 0.38 + 0.24 * bayer(x, y) : 0.5)) b++; // remaster pass: clean shade bands, no ordered dither (spec.dither: true brings it back)
     if (spec.rim !== false && edge && rimSide && lum < 0.3 && !mat.glow) b = Math.max(b, Math.min(n - 1, Math.round((n - 1) * 0.6)));
     b = clamp(b, 0, n - 1);
     let c = rr[b]; if (mat.spec && lum > (mat.specAt ?? 0.92)) c = hex2rgb(mat.spec);
@@ -1672,6 +1673,7 @@ function paintBackdrop(kind) {
   const W = BW, H = BH, hy = 74;
   if (base === 'world' || !BD_FNS[base]) BD_FNS.world(P, hy, lights, boss, info);
   else BD_FNS[base](P, hy, lights, boss, info);
+  if (REMASTER.on) cleanPixels(P.img, BW, BH, { flat: 20 }); // remaster pass: the painted backdrops lose their speckle
   info.c = P.canvas(); return info;
 }
 const GRASS = ['#1a4228', '#245e2c', '#347a32', '#4c963a', '#6cae44', '#94c856'];

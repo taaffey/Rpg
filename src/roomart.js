@@ -4,6 +4,7 @@
 // light field) is pre-rendered once into one big canvas; ground() only supplies animated lava under the cavern's cracks.
 // Furniture, chests and the boss dais are cached sprites sorted with the characters; fire, coals, candles, embers,
 // ghost-lights, ice twinkles and storm crystals are tiny cached frames. Art is 16 px per tile (TS = 32 on screen).
+import { cleanPixels, REMASTER } from './pixclean.js';
 import { mk } from './autotile.js';
 
 // ---------------------------------------------------------------- colour + pixel helpers (same conventions as townart.js)
@@ -48,7 +49,7 @@ class Pix {
   get(x, y) { x = Math.floor(x); y = Math.floor(y); return x >= 0 && y >= 0 && x < this.w && y < this.h ? this.d[y * this.w + x] : 0; }
   on(x, y) { return cA(this.get(x, y)) > 0; }
   rect(x, y, w, h, c) { for (let j = y; j < y + h; j++) for (let i = x; i < x + w; i++) this.set(i, j, c); }
-  canvas() { const c = mk(this.w, this.h), x = c.getContext('2d'), id = x.createImageData(this.w, this.h); new Uint32Array(id.data.buffer).set(this.d); x.putImageData(id, 0, 0); return c; }
+  canvas() { const c = mk(this.w, this.h), x = c.getContext('2d'), id = x.createImageData(this.w, this.h); new Uint32Array(id.data.buffer).set(this.d); if (REMASTER.on && !this.raw && this.w * this.h >= 4096) cleanPixels(id.data, this.w, this.h); x.putImageData(id, 0, 0); return c; }
 }
 function outline(p, f = 0.38) { // transparent pixels next to the shape take a darkened copy of their neighbour (needs 1 px padding)
   const o = p.d.slice(), w = p.w, h = p.h, at = (x, y) => (x < 0 || y < 0 || x >= w || y >= h ? 0 : o[y * w + x]);

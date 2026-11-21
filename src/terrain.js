@@ -13,6 +13,7 @@
 // rivers, bridges and a canyon pass. Water pixels stay "dynamic": each tile that shows water is composed for 8 animation
 // frames (depth shading, shimmering ripples, surf lines, waterfalls) and cached. Open ocean tiles share 16 cached tiles.
 // Towns, caves, the shrine, the tower, ruins and the ship are separate sprites drawn as depth-sorted items.
+import { cleanPixels, REMASTER } from './pixclean.js';
 import { GEN } from './mapgen.js';
 import { mk, hex, fracMask } from './autotile.js';
 
@@ -406,15 +407,21 @@ function deepTile(x, y, f) {
   const id = new ImageData(16, 16); for (let p = 0; p < 256; p++) waterPx(id.data, p * 4, (x & 3) * 16 + (p & 15), (y & 3) * 16 + (p >> 4), 1, 31, 0, f);
   c = mk(16, 16); c.getContext('2d').putImageData(id, 0, 0); deepTiles.set(k, c); return c;
 }
+// the remaster clean-up, one tile at a time (with a 1 px border so tile edges match their neighbours); water is left alone
+function cleanLand(B, tx, ty) {
+  const d = new Uint8ClampedArray(18 * 18 * 4);
+  for (let j = 0; j < 18; j++) for (let i = 0; i < 18; i++) { const X = Math.min(B.PW - 1, Math.max(0, tx * 16 + i - 1)), Y = Math.min(B.PH - 1, Math.max(0, ty * 16 + j - 1)), k = Y * B.PW + X, s = k * 4, o = (j * 18 + i) * 4; d[o] = B.S[s]; d[o + 1] = B.S[s + 1]; d[o + 2] = B.S[s + 2]; d[o + 3] = B.wT[k] ? 0 : 255; }
+  return cleanPixels(d, 18, 18);
+}
 function bakedTile(x, y, f) {
   const B = bake(), tx = x + PAD, ty = y + PAD;
   if (tx < 0 || ty < 0 || tx >= B.TW || ty >= B.TH) return deepTile(x, y, f);
   const t = B.tt[ty * B.TW + tx]; if (t === 2) return deepTile(x, y, f);
   const key = (ty * B.TW + tx) * FRAMES + (t ? f : 0); let c = B.tiles.get(key); if (c) return c;
-  const id = new ImageData(16, 16), o = id.data;
+  const id = new ImageData(16, 16), o = id.data, cl = REMASTER.on ? cleanLand(B, tx, ty) : null;
   for (let p = 0; p < 256; p++) {
     const X = tx * 16 + (p & 15), Y = ty * 16 + (p >> 4), i = Y * B.PW + X, j = p * 4;
-    if (!B.wT[i]) { const s = i * 4; o[j] = B.S[s]; o[j + 1] = B.S[s + 1]; o[j + 2] = B.S[s + 2]; o[j + 3] = 255; }
+    if (!B.wT[i]) { const s = cl ? (((p >> 4) + 1) * 18 + (p & 15) + 1) * 4 : i * 4, src = cl || B.S; o[j] = src[s]; o[j + 1] = src[s + 1]; o[j + 2] = src[s + 2]; o[j + 3] = 255; }
     else waterPx(o, j, X, Y, B.wT[i], B.wD[i], B.wF[i], f);
   }
   c = mk(16, 16); c.getContext('2d').putImageData(id, 0, 0); B.tiles.set(key, c); return c;
