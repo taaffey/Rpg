@@ -74,10 +74,14 @@ function impulse(c, secs) {
 function graph(c, offline = false) {
   const G = { ctx: c, waves: {}, voices: [] }, gain = (v, to) => { const g = c.createGain(); g.gain.value = v; if (to) g.connect(to); return g; };
   const comp = c.createDynamicsCompressor(); comp.threshold.value = -12; comp.knee.value = 10; comp.ratio.value = 5; comp.attack.value = 0.004; comp.release.value = 0.25; comp.connect(c.destination);
-  G.master = gain(muted && !offline ? 0 : MASTER, comp); G.music = gain(MUSIC_LVL * (offline ? 1 : musicVol), G.master); G.sfx = gain(SFX_LVL * (offline ? 1 : sfxVol), G.master);
+  // the SNES S-DSP's character (FF6): 32 kHz output through Gaussian sample interpolation rolls off the top end, so everything sounds warm
+  // and slightly soft rather than crisp. Two gentle filters before the compressor give the whole mix (music and effects) that colour.
+  const dspLp = c.createBiquadFilter(), dspShelf = c.createBiquadFilter(); dspLp.type = 'lowpass'; dspLp.frequency.value = 10500; dspLp.Q.value = 0.55; dspShelf.type = 'highshelf'; dspShelf.frequency.value = 6000; dspShelf.gain.value = -3.5;
+  dspShelf.connect(dspLp); dspLp.connect(comp);
+  G.master = gain(muted && !offline ? 0 : MASTER, dspShelf); G.music = gain(MUSIC_LVL * (offline ? 1 : musicVol), G.master); G.sfx = gain(SFX_LVL * (offline ? 1 : sfxVol), G.master);
   // SNES-style echo: feedback delay through a lowpass (each repeat darker), plus a little high-pass so lows don't pile up
   G.echoIn = gain(1); G.delay = c.createDelay(1.5); G.delay.delayTime.value = 0.3; const elp = c.createBiquadFilter(), ehp = c.createBiquadFilter();
-  elp.type = 'lowpass'; elp.frequency.value = 2600; ehp.type = 'highpass'; ehp.frequency.value = 220; G.fb = gain(0.3);
+  elp.type = 'lowpass'; elp.frequency.value = 3800; ehp.type = 'highpass'; ehp.frequency.value = 200; G.fb = gain(0.3); // the SNES echo's 8-tap FIR: each repeat a little darker
   G.echoIn.connect(G.delay); G.delay.connect(elp); elp.connect(ehp); ehp.connect(G.fb); G.fb.connect(G.delay); ehp.connect(gain(0.6, G.music));
   G.revIn = gain(1); const cv = c.createConvolver(); cv.buffer = impulse(c, 2.2); G.revIn.connect(cv); cv.connect(gain(0.55, G.music));
   G.noise = c.createBuffer(1, c.sampleRate, c.sampleRate); const d = G.noise.getChannelData(0); for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
@@ -276,10 +280,11 @@ function burst(t, dur, vol, hp = 800, sweep = null) {
 const arp = (notes, step = 0.07, wave = 'square', vol = 0.12) => { const t = now(); notes.forEach((n, i) => tone(wave, hz(midi(n)), t + i * step, step * 1.6, vol)); };
 const chime = (notes, step, inst, vol) => { const t = now(); notes.forEach((n, i) => play(inst, t + i * step, hz(midi(n)), step * 2, vol, E.sfx)); };
 const SFX = {
-  blip: () => tone('square', 1500, now(), 0.025, 0.035),
-  click: () => tone('square', 880, now(), 0.05, 0.08),
-  back: () => tone('square', 440, now(), 0.06, 0.08),
-  hit: () => { const t = now(); burst(t, 0.12, 0.4, 1500, 300); tone('square', 200, t, 0.1, 0.15, 60); },
+  // FF6-style interface sounds: a soft, quick cursor tick, a bright two-note confirm, a falling cancel
+  blip: () => tone('triangle', 2350, now(), 0.022, 0.06, 1900),
+  click: () => { const t = now(); tone('square', 1175, t, 0.035, 0.06); tone('square', 1760, t + 0.035, 0.06, 0.06); },
+  back: () => { const t = now(); tone('square', 880, t, 0.035, 0.06); tone('square', 587, t + 0.035, 0.06, 0.06); },
+  hit: () => { const t = now(); burst(t, 0.05, 0.3, 5000, 2500); burst(t + 0.02, 0.14, 0.42, 1400, 250); tone('triangle', 160, t, 0.12, 0.22, 55); }, // FF6 hit: a bright crack over a dull body thump
   crit: () => { const t = now(); burst(t, 0.18, 0.5, 2500, 400); tone('sawtooth', 500, t, 0.18, 0.15, 90); tone('square', 1200, t + 0.05, 0.08, 0.1); },
   fire: () => { const t = now(); burst(t, 0.45, 0.35, 3000, 400); tone('sawtooth', 300, t, 0.35, 0.08, 120); },
   ice: () => { const t = now(); [1800, 2400, 3000].forEach((f, i) => tone('triangle', f, t + i * 0.05, 0.25, 0.1, f * 0.7)); fm(t + 0.05, 2600, 0.6, E.sfx, 4, 1, 0.5, 0.25); },
@@ -289,7 +294,7 @@ const SFX = {
   heal: () => { chime(['C5', 'E5', 'G5', 'C6', 'E6'], 0.06, 'harp', 0.45); chime(['G6'], 0.3, 'celesta', 0.3); },
   buff: () => arp(['G4', 'C5', 'G5'], 0.07, 'square', 0.09),
   debuff: () => arp(['G4', 'D4', 'A3'], 0.08, 'sawtooth', 0.07),
-  swing: () => burst(now(), 0.1, 0.25, 4000, 800),
+  swing: () => burst(now(), 0.13, 0.26, 6500, 900), // a sword whoosh sweeping down
   ko: () => tone('sawtooth', 400, now(), 0.5, 0.12, 50),
   levelup: () => arp(['C5', 'E5', 'G5', 'C6', 'G5', 'C6', 'E6'], 0.08, 'square', 0.12),
   coin: () => { const t = now(); tone('square', 1318, t, 0.07, 0.09); tone('square', 1760, t + 0.07, 0.15, 0.09); },
