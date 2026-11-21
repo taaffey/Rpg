@@ -516,3 +516,13 @@ textarea.code:focus{outline:2px solid var(--yel);outline-offset:1px}
 .battle .chg.ready{border-color:#ffd25a;animation:none}.battle .chg.ready small{color:#ffd25a}
 @keyframes chgpulse{50%{border-color:#ffd25a}}
 .beast .tell{margin-top:3px;font-size:8px;line-height:1.5;color:#ffd25a}.beast .tell b{color:#fff6c0}
+
+/* ATB gauges (FF6): a thin bar under each hero's HP that fills in real time and flashes when the hero is ready */
+.partywin .atb{display:block;height:4px;margin:1px 3px 0;background:#08082a;box-shadow:0 0 0 1px #000,0 0 0 2px #5a64a8}
+.partywin .atb i{display:block;height:100%;width:0;background:linear-gradient(#fff 0 40%,#d8d8f0 40%)}
+.partywin .atb.full i{background:linear-gradient(#fff6a0 0 40%,#f8d040 40%);animation:atbfull .5s steps(2) infinite}
+@keyframes atbfull{50%{filter:brightness(1.5)}}
+/* status icons next to a hero's name: smaller, and free to wrap under the name when the party window is narrow (ATB: foes can
+   inflict a status before you ever look), so the name is never cut off */
+.partywin .pn{flex-wrap:wrap;row-gap:0}
+.partywin .pn .ic{width:12px;height:12px;vertical-align:-2px}

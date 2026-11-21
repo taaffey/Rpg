@@ -26,7 +26,7 @@ const gemsOn = () => !!G?.flags?.story?.gems; // gems wake when the first great 
 const lootName = (k, id) => (k === 'gems' && !gemsOn() ? 'Dull Stone' : DB[k][id].name);
 const veteran = () => (G?.stats?.wins || 0) >= 10; // Repeat / Auto join the battle menu once the party has some fights behind it
 // ---------- options (persisted separately from saves) ----------
-const OPT = { music: 0.8, sfx: 0.9, speed: 'normal', text: 'normal', ui: 'normal', enc: 'normal', auto: 'manual', minimap: true, shake: !matchMedia('(prefers-reduced-motion: reduce)').matches };
+const OPT = { music: 0.8, sfx: 0.9, speed: 'normal', text: 'normal', ui: 'normal', enc: 'normal', auto: 'manual', atb: 'wait', minimap: true, shake: !matchMedia('(prefers-reduced-motion: reduce)').matches };
 try { Object.assign(OPT, JSON.parse(localStorage.getItem(SETTINGS) || '{}')); } catch {}
 function applyOptions() { setVolumes(OPT.music, OPT.sfx); FX.shake = OPT.shake; document.documentElement.style.setProperty('--ui-zoom', UI_ZOOM[OPT.ui] || 1); try { localStorage.setItem(SETTINGS, JSON.stringify(OPT)); } catch {} }
 applyOptions();

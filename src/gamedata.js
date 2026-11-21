@@ -10,6 +10,7 @@ export const ENC_MUL = { normal: 1, fewer: 0.4, none: 0 }; // Options > Random f
 export const UI_ZOOM = { normal: 1, large: 1.2, huge: 1.4 }; // Options > Menu size: scales menus and dialogue (not the battle screen, which is already tight)
 export const TEXT_MS = { normal: 28, fast: 10, instant: 0 }; // dialogue typing: ms per character
 export const SPEEDS = { slow: 820, normal: 560, fast: 300, instant: 110 };
+export const ATB_PACE = { slow: 0.75, normal: 1, fast: 1.4, instant: 2 }; // how quickly the ATB gauges fill at each battle speed
 export const CP_AT_LEVEL = [0, 0, 3, 8, 14, 22, 32, 40, 50, 60, 75, 95, 115, 130, 150, 170, 190, 210, 230, 250, 270];
 export const REGION_NAME = { snow: 'Frostfields', swamp: 'Mire Marsh', green: 'Greenmarch', desert: 'Sunscar Sands', autumn: 'Hopsend Isle', ember: 'Cinder Isle', jungle: 'Jade Jungle', obsidian: 'Obsidian Isle' };
 export const MINI = { d: '#e0c070', r: '#3c94f0', '.': '#2aa83a', ',': '#eef4fc', ':': '#4a6a38', _: '#e0c070', '=': '#9a9a9a', '~': '#3c94f0', T: '#0c6a18', t: '#9ab0c8', M: '#a07848', B: '#c0a060', H: '#ffffff', D: '#c04040', E: '#f4d35e', L: '#e0501c', F: '#4ab0b0' };

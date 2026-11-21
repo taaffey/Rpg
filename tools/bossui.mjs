@@ -34,7 +34,8 @@ const logBefore = await ev(() => window.__game.BT.log.length);
 // hero 1 Guards while it winds up, the other three hit it; the bar is lowered so the stagger is certain
 await ev(() => { window.__game.BT.b.e[0].charge.need = 1; });
 const stats0 = await ev(() => ({ braces: window.__game.G.stats?.braces || 0, staggers: window.__game.G.stats?.staggers || 0 }));
-for (let k = 0; k < 4; k++) { await ev((k) => { const g = window.__game, a = g.BT?.ask; if (!a || a.stage !== 'root') return; g.ACT.c(k === 0 ? 'defend' : 'attack'); }, k); await ev(() => { const g = window.__game; if (g.BT?.ask?.stage === 'target') g.ACT.tgt('e', 0); }); await pg.waitForTimeout(40); }
+// ATB: answer each prompt as it comes (the first hero Guards, the rest attack) until the wind-up resolves
+for (let k = 0, guarded = false; k < 400 && (await ev(() => !!window.__game.BT?.b.e[0].charge)); k++) { guarded = await ev((guarded) => { const g = window.__game, a = g.BT?.ask; if (!a || a.stage !== 'root') return guarded; g.ACT.c(guarded ? 'attack' : 'defend'); if (g.BT?.ask?.stage === 'target') g.ACT.tgt('e', 0); return true; }, guarded); await pg.waitForTimeout(50); }
 await pg.waitForFunction(() => !window.__game.BT.b.e[0].charge, null, { timeout: 20000 });
 const log = await ev(() => window.__game.BT.log.join('\n'));
 ok('the wind-up resolved (staggered or unleashed)', /staggered|uses Vindaloo|uses Flame/i.test(log), log.split('\n').slice(-3).join(' / ').slice(0, 120));

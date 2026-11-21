@@ -335,6 +335,9 @@ Object.assign(SKILLS, {
   // paladin (Traffic Warden)
   lastorders: S('Last Orders', 8, 'all', 'mag', 1.1, { fx: ['slow'] }), onthehouse: S('One on the House', 12, 'allies', 'heal', 1.2, { fx: ['atkup'] }), barred: S('You\'re Barred', 10, 'one', 'phys', 2.6, { stun: 0.35 }),
   lockin: S('Lock-In', 12, 'allies', 'buff', 0, { fx: ['defup', 'atkup'] }), timeplease: S('Time, Gentlemen, Please', 18, 'all', 'phys', 1.8, { elem: 'holy', fx: ['slow'] }),
+  // desperation attacks (FF6): a hero below 1/8 HP who picks Fight has a 1-in-16 chance to unleash one instead (free, no Echo)
+  desp_adam: S('Big Brother Energy', 0, 'all', 'phys', 3.2, { pierce: 0.5, crit: 0.2 }), desp_devon: S('Hold My Pint', 0, 'one', 'phys', 2.2, { hits: 3, pierce: 0.4 }),
+  desp_brenna: S('Last Orders, Now', 0, 'all', 'mag', 3, { elem: 'holy' }), desp_wendell: S('Eleven Years of Standing', 0, 'one', 'phys', 6, { pierce: 1, stun: 0.5 }),
   holylight: S('Flashing Beacon', 4, 'one', 'mag', 1.5, { elem: 'holy' }),
   layhands: S('Ticket Cancelled', 4, 'ally', 'heal', 1.6),
   divineshield: S('Resident Permit', 8, 'allies', 'buff', 0, { fx: ['defup'] }),

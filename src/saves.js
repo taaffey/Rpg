@@ -45,7 +45,7 @@ function migrate(g) {
   for (const id of Object.keys(g.inv.items)) if (!ITEMS[id]) delete g.inv.items[id];
   g.flags ||= {}; g.flags.story ||= {}; if (g.inv.gems.length || g.party.some((c) => c.gems.some((x) => x.length)) || Object.keys(g.flags.bosses || {}).length) g.flags.story.gems = true; // saves from before gems were paced keep them
   for (const [b, d] of Object.entries(BOSSES)) if (d.heart && g.flags.bosses[b]) g.flags.qitems[d.heart] = true; // hearts of evils slain before hearts existed
-  for (const c of g.party) { if (c.weapon && !WEAPONS[c.weapon]) c.weapon = null; if (c.armor && !ARMORS[c.armor]) c.armor = null; if (c.acc && !ACCS[c.acc]) c.acc = null; c.exp = Math.max(0, c.exp || 0); c.level = Math.min(L.MAX_LEVEL, c.level || 1); gainExp(c, 0); } // gainExp(0) settles EXP banked under an older curve
+  for (const c of g.party) { if (c.weapon && !WEAPONS[c.weapon]) c.weapon = null; if (c.armor && !ARMORS[c.armor]) c.armor = null; if (c.acc && !ACCS[c.acc]) c.acc = null; if (c.acc2 && !ACCS[c.acc2]) c.acc2 = null; c.exp = Math.max(0, c.exp || 0); c.level = Math.min(L.MAX_LEVEL, c.level || 1); gainExp(c, 0); } // gainExp(0) settles EXP banked under an older curve
   for (const c of g.party) migrateCallings(c, g.inv);
   const m = MAPS[g.map];
   if (!m) { g.map = START.map; g.x = START.x; g.y = START.y; } else if (!WALK.has(m.rows[g.y]?.[g.x] ?? '#') && m.rows[g.y]?.[g.x] !== 'B') { g.x = m.spawn.x; g.y = m.spawn.y; }

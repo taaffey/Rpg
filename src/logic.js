@@ -30,7 +30,7 @@ export function stats(c) {
 // Monks (and any main job that can wield fists) hit hard bare-handed; the bonus grows with level, but real fist weapons stay better.
 const fistJob = (c) => JOBS[c.main].weapons.includes('fists'); // main job only
 export const unarmedBonus = (level) => 2 + Math.floor(level * 0.6);
-export const gear = (c) => [WEAPONS[c.weapon], ARMORS[c.armor], ACCS[c.acc]].filter(Boolean);
+export const gear = (c) => [WEAPONS[c.weapon], ARMORS[c.armor], ACCS[c.acc], ACCS[c.acc2]].filter(Boolean); // two relic slots, as in FF6
 export const resists = (c) => gear(c).flatMap((g) => g.res || []);
 export function weaponOk(c, wid) {
   if (!WEAPONS[wid]) return false;
@@ -211,6 +211,9 @@ export function awardExp(party, exp) {
 // ---------- Battle ----------
 const alive = (x) => x.hp > 0;
 const pick = (arr, rng) => arr[Math.floor(rng() * arr.length)];
+export const RANGED = new Set(['bow']); // weapon types that hit from the back row at full strength
+// desperation attacks: one per hero (by look); skills in data.js
+export const DESPERATION = { adam: 'desp_adam', devon: 'desp_devon', brenna: 'desp_brenna', wendell: 'desp_wendell' };
 export function elemMult(t, e) { if (!e) return 1; if (t.weak.includes(e)) return 1.5; if (t.res.includes(e)) return 0.5; return 1; }
 
 export class Battle {
@@ -219,7 +222,7 @@ export class Battle {
     this.rng = rng; this.boss = boss; this.over = null; this.turn = 0; this.fx = [];
     this.p = party.map((c) => {
       const s = stats(c);
-      return { side: 'p', ch: c, tr: new Set(activeTraits(c)), wpn: WEAPONS[c.weapon] || null, sig: sigSkill(c), name: c.name, hp: c.hp, mp: c.mp, maxhp: s.hp, maxmp: s.mp, atk: s.atk, def: s.def, mag: s.mag, spd: s.spd, weak: [], res: resists(c), st: {}, defending: false };
+      return { side: 'p', ch: c, row: c.row === 'back' ? 'back' : 'front', tr: new Set(activeTraits(c)), wpn: WEAPONS[c.weapon] || null, sig: sigSkill(c), name: c.name, hp: c.hp, mp: c.mp, maxhp: s.hp, maxmp: s.mp, atk: s.atk, def: s.def, mag: s.mag, spd: s.spd, weak: [], res: resists(c), st: {}, defending: false };
     });
     for (const x of this.p) if (x.ch.poison && x.hp > 0) x.st.poison = 4; // FF1: a dodgy tum picked up in one fight comes along to the next
     // rare elites: an enemy with elite: [id, chance] is occasionally replaced by its golden/crystal cousin
@@ -260,7 +263,7 @@ export class Battle {
   }
   speed(x) { return x.spd * (x.st.slow > 0 ? 0.5 : 1) + this.rng() * 2; }
   // approximate upcoming action order (no randomness), for the turn-order bar
-  order() { return [...this.p, ...this.e].filter(alive).sort((a, b) => b.spd * (b.st.slow > 0 ? 0.5 : 1) - a.spd * (a.st.slow > 0 ? 0.5 : 1)); }
+  order() { const eta = (x) => (this.started ? (100 - x.atb) / this.atbRate(x) : -x.spd * (x.st.slow > 0 ? 0.5 : 1)); return [...this.p, ...this.e].filter(alive).sort((a, b) => eta(a) - eta(b)); } // who acts next
 
   // Generator: yields an array of log lines after every action.
   *round(cmds) {
@@ -296,6 +299,36 @@ export class Battle {
     }
     this.check(); this.phases(L);
     if (L.length) yield L;
+  }
+  // ---------- Active Time Battle (FF6) ----------
+  // Every fighter has a gauge (0-100) that fills at a rate set by their speed (Slow halves it). An enemy acts the moment its gauge
+  // fills; a hero waits, full, until the player (or auto-battle) gives an order. Statuses tick at the start of each fighter's own
+  // turn, Guard lasts until that hero's next turn, a boss's second wind fills its gauge faster, and a Swift skill leaves the gauge
+  // part-filled. round() above is the older all-at-once version, kept for the balance simulators.
+  initATB() {
+    const pre = this.preempt, amb = this.ambushed;
+    for (const x of [...this.p, ...this.e]) {
+      x.atb = pre ? (x.side === 'p' ? 100 : 0) : amb ? (x.side === 'e' ? 100 : 0) : Math.round(this.rng() * 55); // FF6 starts the gauges part-filled at random
+      if (x.side === 'p' && x.tr.has('firststrike') && !amb) x.atb = 100;
+    }
+    this.started = true;
+  }
+  atbRate(x) { return (x.spd * (x.st.slow > 0 ? 0.5 : 1) + 20) * 1.35 * (1 + (x.side === 'e' ? x.extra || 0 : 0)) * (x.charge ? 0.55 : 1); } // a boss winding up fills slower: every hero gets about one turn to answer it // gauge points a second: an average hero (SPD 10) acts about every 2.5 s
+  tickATB(dt) { for (const x of [...this.p, ...this.e]) if (alive(x) && x.atb < 100) x.atb = Math.min(100, x.atb + this.atbRate(x) * dt); }
+  ready(x) { return alive(x) && x.atb >= 100; }
+  *turnOf(x, cmd) {
+    this.turn++; x.atb = 0; if (x.side === 'p') x.defending = false;
+    const L0 = [];
+    if (x.st.poison > 0) { const d = Math.max(1, Math.round(x.maxhp * 0.07)); this.hurt(x, d, L0, `${x.name} clutches their tum`); this.fx.push({ t: 'poison' }); }
+    if (alive(x) && x.tr.has('regen') && x.hp < x.maxhp) { const h = Math.min(x.maxhp - x.hp, Math.max(1, Math.round(x.maxhp * 0.05))); x.hp += h; this.fx.push({ t: 'heal', name: x.name, amount: h }); L0.push(`${x.name} regenerates ${h} HP.`); }
+    for (const k of Object.keys(x.st)) if (k !== 'stun' && x.st[k] > 0) x.st[k]--;
+    this.check(); this.phases(L0); if (L0.length) yield L0;
+    if (!alive(x) || this.over) return;
+    if (x.st.stun > 0) { x.st.stun = 0; this.fx.push({ t: 'poison' }); yield [`${x.name} is gobsmacked and can't act!`]; return; }
+    if (cmd.kind === 'combo' && cmd.partner) { cmd.partner.atb = 0; cmd.partner.defending = false; }
+    const L = this.act(x, cmd);
+    if (cmd.kind === 'skill' && skillWithGems(cmd.skillId, cmd.gems || []).swift && alive(x)) x.atb = 40; // Swift: back in action sooner
+    this.check(); this.phases(L); yield L;
   }
   check() {
     if (!this.e.some(alive)) this.over = 'win';
@@ -358,7 +391,11 @@ export class Battle {
         else if (it.mpr) { const h = Math.min(it.mpr * pot, t.maxmp - t.mp); t.mp += h; L.push(`${use}: ${t.name} +${h} MP`); }
         break;
       }
-      case 'skill': this.cast(a, cmd.skillId, cmd.gems || [], cmd.target, L, false, false); break;
+      case 'skill': {
+        const dsp = a.side === 'p' && cmd.skillId === 'attack' && this.mod.desperation && DESPERATION[a.ch.look] && a.hp < a.maxhp / 8 && !(a.st.stun > 0) && this.rng() < 1 / 16; // FF6: below 1/8 HP, Fight sometimes becomes something else
+        if (dsp) { L.push(`★ Desperation! ${a.name}: ${SKILLS[DESPERATION[a.ch.look]].name}!`); this.fx.push({ t: 'phase', name: a.name, text: 'DESPERATION' }); this.cast(a, DESPERATION[a.ch.look], [], cmd.target, L, true, true); break; }
+        this.cast(a, cmd.skillId, cmd.gems || [], cmd.target, L, false, false); break;
+      }
       case 'combo': { // a double tech: both heroes pay the MP and pool their strength into one move at the leader's speed
         const p = cmd.partner, s = SKILLS[cmd.skillId], ca = mpCost(a, s), cp = mpCost(p, s);
         if (!alive(p) || p.st.stun > 0) { L.push(`${p.name} isn't ready! ${a.name} goes it alone.`); this.cast(a, 'attack', [], cmd.target, L, false, false); break; }
@@ -408,6 +445,10 @@ export class Battle {
     const up = a.st.atkup > 0 ? 1.4 : 1, dup = t.st.defup > 0 ? 1.5 : 1;
     let raw = s.kind === 'phys' ? a.atk * up * s.pow - t.def * dup * 0.6 * (1 - s.pierce) : a.mag * up * s.pow - t.def * dup * 0.3 * (1 - s.pierce);
     raw *= (0.9 + this.rng() * 0.2) * elemMult(t, elem) * mult * (t.defending ? 0.5 : 1) * (this.bonus || 1) * (t.charge ? t.charge.vuln : 1) * this.mod.dmg;
+    if (s.kind === 'phys') { // FF6 rows: the back row deals and takes half physical damage; shooters (bows, darts) hit just as hard from there
+      if (a.side === 'p' && a.row === 'back' && !(a.wpn && RANGED.has(a.wpn.type))) raw *= 0.5;
+      if (t.side === 'p' && t.row === 'back') raw *= 0.5;
+    }
     if (a.tr.has('adrenaline') && a.hp < a.maxhp * 0.4) raw *= 1.3; // traits (see TRAITS in data.js)
     if (t.tr.has('stalwart')) raw *= 0.85;
     if (t.side === 'p' && this.p.some((x) => x !== t && alive(x) && x.tr.has('guardian'))) raw *= 0.9;

@@ -69,10 +69,15 @@ await pg.waitForTimeout(300); await key({ '0,-1': 'ArrowUp', '0,1': 'ArrowDown',
 ok('the Frost Spire stays sealed until Morvath falls', (await ev(() => window.__game.G.map)) === 'world' && /Spire|Morvath|sigil/.test(await sayText() + (await ev(() => document.getElementById('overlay').textContent))));
 await sayThrough(); await closeAll();
 const keep = await ev(() => JSON.stringify({ gold: window.__game.G.gold, party: window.__game.G.party, wins: window.__game.G.stats, inv: window.__game.G.inv })); await ev(() => { window.__game.battle(['slime', 'slime']); }); await pg.waitForSelector('[data-act=c]', { timeout: 8000 });
+await pg.waitForFunction(() => window.__game.BT?.ask, null, { timeout: 8000 }); // ATB: a Bro Combo needs both brothers ready, so fill their gauges and hold the foes back
+await ev(() => { const B = window.__game.BT; B.b.e.forEach((e) => { e.atb = -9999; }); B.b.p.forEach((x) => { if (x.name === 'Adam' || x.name === 'Devon') x.atb = 100; }); if (B.ask.p.name !== 'Adam') B.ask = null; else window.__game.ACT.c('root'); }); // the next prompt goes to Adam, first in the party
+await pg.waitForFunction(() => window.__game.BT?.ask?.p.name === 'Adam', null, { timeout: 8000 }); await ev(() => window.__game.ACT.c('root'));
 await pg.click('[data-act=c][data-a=combos]'); await pg.waitForTimeout(150);
 ok('COMBO offers the bros\' double techs', !!(await pg.$('[data-act=c][data-a=combo][data-b=bro_shove]')) && !!(await pg.$('[data-act=c][data-a=combo][data-b=bro_hug]')) && !(await pg.$('[data-act=c][data-a=combo][data-b=pub_brawl]')));
 await pg.click('[data-act=c][data-a=combo][data-b=bro_shove]'); await pg.waitForTimeout(150); await pg.click('[data-act=tgt][data-a=e][data-b="0"]'); await pg.waitForTimeout(150);
-ok('the partner\'s turn is spent on the combo (next prompt skips Devon)', /Brenna/.test(await ev(() => document.querySelector('.cmdhead')?.textContent || '')));
+for (let i = 0; i < 80 && !(await ev(() => window.__game.BT && !window.__game.BT.acting && window.__game.BT.queue.length === 0 && window.__game.BT.b.p.find((x) => x.name === 'Devon').atb < 100)); i++) await pg.waitForTimeout(100); // ATB: the combo plays out, then the gauges run again
+const afterCombo = await ev(() => ({ devon: window.__game.BT.b.p.find((x) => x.name === 'Devon').atb, asked: window.__game.BT.ask?.p.name || '' }));
+ok('the partner\'s turn is spent on the combo (Devon\'s gauge starts again and he is not asked next)', afterCombo.devon < 100 && afterCombo.asked !== 'Devon', JSON.stringify(afterCombo));
 await ev(() => window.__game.BT.b.e.forEach((e) => { e.hp = 1; })); for (let i = 0; i < 30 && (await ev(() => !!window.__game.BT)); i++) await key('Enter', 1, 150);
 await closeAll(); await ev(() => { window.__game.G.gold += 100; window.__game.G.flags.story.quizzed = false; window.__game.goto('haven_inn', 5, 4); }); await pg.waitForTimeout(300); await key('ArrowUp', 1, 400);
 await pg.click('[data-act=quiz]'); await pg.waitForTimeout(200);
@@ -169,14 +174,16 @@ ok(`a rank-up teaches an ability: ${NAMES.jobs.monk} 2, ${NAMES.skills.focus}`, 
 const finishBattle = async () => { // click-driven: Attack the first foe until the battle ends (independent of which button holds focus)
   for (let i = 0; i < 250; i++) {
     if (!(await ev(() => !!window.__game.BT))) break;
-    const vd = await pg.$('[data-act=vdone]'); if (vd) { await vd.click(); break; }
-    const atk = await pg.$('[data-act=c][data-a=attack]'); if (atk) { await atk.click(); continue; }
-    const t = await pg.$('[data-act=tgt][data-a=e]'); if (t) { await t.click(); continue; }
+    // ATB re-renders the battle window whenever a foe acts, so a button can be replaced between finding it and clicking it: just try again
+    const vd = await pg.$('[data-act=vdone]'); if (vd) { if (await vd.click({ timeout: 1500 }).then(() => true, () => false)) break; continue; }
+    const atk = await pg.$('[data-act=c][data-a=attack]'); if (atk) { await atk.click({ timeout: 1500 }).catch(() => {}); continue; }
+    const t = await pg.$('[data-act=tgt][data-a=e]'); if (t) { await t.click({ timeout: 1500 }).catch(() => {}); continue; }
     await pg.waitForTimeout(70);
   }
   await pg.waitForTimeout(250);
 };
-const quickFight = async (grp, boss) => { await ev(([g, b2]) => { window.__game.battle(g, b2); }, [grp, boss]); await pg.waitForSelector('[data-act=c]', { timeout: 8000 }); await ev(() => window.__game.BT.b.e.forEach((e) => { e.hp = 1; })); await finishBattle(); };
+// ATB: foes would act while the test waits for a prompt, so quickFight holds their gauges back
+const quickFight = async (grp, boss) => { await ev(([g, b2]) => { window.__game.battle(g, b2); }, [grp, boss]); await pg.waitForFunction(() => window.__game.BT?.b.started, null, { timeout: 8000 }); await ev(() => window.__game.BT.b.e.forEach((e) => { e.hp = 1; e.atb = -9999; })); await pg.waitForSelector('[data-act=c]', { timeout: 8000 }); await finishBattle(); };
 { const [vx, vy, vk] = await besideNpc('Villager', 'slimes'); await gotoAt('haven', [vx, vy]); await key(vk, 1, 200); }
 ok('quest giver offers a quest', /Villager/.test(await overlayTitle()));
 for (let i = 0; i < 12 && !(await pg.$('[data-act=qaccept]')); i++) await key('Enter', 1, 120);

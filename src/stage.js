@@ -66,7 +66,7 @@ export class Stage {
       this.v.set(e.name, { c: e, side: 'e', big, style: STYLE[base] || 'lunge', spr, x: Math.round(cx - (x0 + x1 + 1) / 2), y: Math.round(feet - y1 - 1 - hover), feet, bb: [x0, y0, x1, y1], hover, w: spr.width, h: spr.height, dead: e.hp <= 0, deadT: e.hp <= 0 ? 9 : 0, t: 0, flash: 0, lunge: 0, cast: 0, blink: 0, seed: i * 1.7 });
     });
     battle.p.forEach((p, i) => {
-      const [cx, feet] = HERO_POS[i] || HERO_POS[3], wt = wtypeOf(p);
+      const [cx0, feet] = HERO_POS[i] || HERO_POS[3], cx = cx0 + (p.row === 'back' ? 14 : 0), wt = wtypeOf(p); // FF6: the back row stands further from the foes
       const frames = Object.fromEntries(BA.HERO_POSES.map((k) => [k, BA.heroFrame(p.ch.look ? `${p.ch.main}@${p.ch.look}` : p.ch.main, k, wt)]));
       this.v.set(p.name, { c: p, side: 'p', frames, spr: frames.idle, x: cx - HERO_CX, y: feet - HERO_FEET, feet, bb: HERO_BB, w: BA.HERO_W, h: BA.HERO_H, dead: p.hp <= 0, deadT: p.hp <= 0 ? 9 : 0, t: 0, flash: 0, lunge: 0, cast: 0, atk: 0, step: 0, seed: i * 1.3 });
     });

@@ -5,7 +5,7 @@ import { BOSSES, CALLING_BATCHES, DIFFICULTY, ENEMIES, ITEMS, JOBS, KEY_ITEMS, Q
 import { BROS, COMBOS, PARTY_SCALE } from './bros.js';
 import { music, sfx } from './audio.js';
 import { Stage } from './stage.js';
-import { DEFEAT, HEART_GEM, RULES, SPEEDS, VICTORY } from './gamedata.js';
+import { ATB_PACE, DEFEAT, HEART_GEM, RULES, SPEEDS, VICTORY } from './gamedata.js';
 import * as SP from './sprites.js';
 import * as UI from './uiart.js';
 import * as L from './logic.js';
@@ -49,6 +49,7 @@ async function battleInner(groupIds, bossId = null) {
   const mod = { ...DIFFICULTY[G.difficulty || 'normal'].mod }, ps = !bossId && PARTY_SCALE[G.party.length];
   if (ps) { mod.hp *= ps.hp; mod.atk *= ps.atk; mod.mag *= ps.atk; }
   for (const k of ['hp', 'atk', 'mag', 'def', 'reward']) mod[k] = (mod[k] ?? 1) * ngMul(k);
+  if (G.flags.story.called) mod.desperation = true; // desperation attacks wake once the party has its callings
   if (!G.flags.story.called) mod.noAmbush = true; // no ambushes while it is two blokes in a cellar
   if (G.rules) { mod.reward *= ruleBonus(); if (G.rules.glass) mod.dmg = 1.5; if (G.rules.rush) mod.rush = true; } // NG+ house rules
   const b = new Battle(G.party, groupIds, Math.random, !!bossId, mod);
@@ -66,20 +67,38 @@ async function battleInner(groupIds, bossId = null) {
   });
   tip('battle', 'Pick Attack or Skills, then a target. Icons under an enemy show its weakness: hit it with that element for +50%. 🔁 Repeat reuses your last move.', 7000);
   if (bossId) BT.stage.card(BOSSES[bossId].name.toUpperCase(), 2.6);
+  // ---- Active Time Battle (FF6): gauges fill in real time; foes act the moment theirs fill, heroes are asked in turn ----
+  // Wait mode (the default, as in FF6) stops the clock while a sub-menu (skills, items, a target) is open; Active never stops it.
+  // One action plays out at a time, and the clock is held while it does.
+  b.initATB(); BT.queue = [];
+  if (b.ambushed || b.preempt) BT.stage.card(b.ambushed ? 'AMBUSHED!' : 'STRIKE FIRST!', 1.6);
+  const play = async (gen) => { BT.acting = true; for (const lines of gen) { BT.log.push(...lines); renderBattle(); playFx(b.fx.splice(0)); await sleep(SPEEDS[OPT.speed]); } BT.acting = false; renderBattle(); };
   renderBattle();
+  let last = performance.now();
   while (!b.over) {
-    const trouble = BT.auto && autoTrouble(b); if (trouble) { BT.auto = false; toast(`⏩ Auto-battle paused: ${trouble}`, 3000); renderBattle(); } // never auto-march a party into a wipe
-    BT.autoPlan = new Set(); // who this round's heals and revives are already going to
-    const cmds = new Map(), caught = b.turn === 0 && b.ambushed; // ambushed: nobody gets to choose anything in round one
-    if (b.turn === 0 && (caught || b.preempt)) BT.stage.card(caught ? 'AMBUSHED!' : 'STRIKE FIRST!', 1.6);
-    for (const p of caught ? [] : b.p.filter((x) => x.hp > 0)) {
-      if (cmds.get(p)?.kind === 'assist') continue; // already teamed up in a Bro Combo
-      const cmd = await askCommand(p);
-      cmds.set(p, cmd); if (cmd.kind === 'combo') cmds.set(cmd.partner, { kind: 'assist' });
+    await new Promise((r) => requestAnimationFrame(() => r()));
+    if (!BT) return; const now = performance.now(), dt = Math.min(0.1, (now - last) / 1000); last = now;
+    if (BT.ask && BT.ask.p.hp <= 0) { BT.ask = null; BT.stage.setActive(null); renderBattle(); } // the hero being asked fell
+    const frozen = (OPT.atb !== 'active' && BT.ask && BT.ask.stage !== 'root') || BT.logBig; // Wait mode, or reading the full log
+    if (!frozen) b.tickATB(dt * (ATB_PACE[OPT.speed] ?? 1));
+    const foe = !frozen && b.e.find((x) => b.ready(x)); // nobody acts while the clock is stopped
+    if (foe) { await play(b.turnOf(foe, b.enemyCmd(foe))); continue; }
+    const q = BT.queue.shift();
+    if (q) { // a combo partner holds a place in the queue (so nobody asks them) until the combo goes off, which spends their turn too
+      if (q.assist) continue;
+      if (q.p.hp > 0) await play(b.turnOf(q.p, q.cmd)); if (q.cmd.kind === 'combo') BT.queue = BT.queue.filter((z) => !(z.assist && z.p === q.cmd.partner));
+      BT.autoPlan = new Set(); continue; // heals and revives have landed, so auto-battle plans afresh
     }
-    BT.ask = null; BT.stage.setActive(null);
-    for (const lines of b.round(cmds)) { BT.log.push(...lines); renderBattle(); playFx(b.fx.splice(0)); await sleep(SPEEDS[OPT.speed]); }
-    renderBattle();
+    if (!BT.ask) {
+      const hero = b.p.find((x) => b.ready(x) && !BT.queue.some((z) => z.p === x));
+      if (hero) {
+        const trouble = BT.auto && autoTrouble(b); if (trouble) { BT.auto = false; toast(`⏩ Auto-battle paused: ${trouble}`, 3000); } // never auto-march a party into a wipe
+        BT.autoPlan ||= new Set();
+        askCommand(hero).then((cmd) => { if (BT && BT.b === b) { BT.queue.push({ p: hero, cmd }); if (cmd.kind === 'combo' && cmd.partner) BT.queue.push({ p: cmd.partner, cmd: null, assist: true }); } });
+        if (BT.auto) continue;
+      }
+    }
+    gauges();
   }
   if (b.over === 'win') { BT.stage.victory(); sfx('levelup'); renderBattle(); await sleep(1200); }
   BT.stage.stop(); S.trans = 0;
@@ -90,6 +109,10 @@ async function battleInner(groupIds, bossId = null) {
   else if (b.over === 'lose') await defeat();
   else { hide(); }
   BT = null; S.busy = false; if (G) { if (b.over !== 'lose') music(musicFor()); draw(); if (b.over === 'win') autosave(); }
+}
+// the ATB gauges move every frame: update just their widths, not the whole window
+function gauges() {
+  for (const x of BT.b.p) { const el = document.querySelector(`.partywin .pm[data-n="${x.name.replace(/["\\]/g, "\\$&")}"] .atb i`); if (el) { el.style.width = `${Math.round(x.atb || 0)}%`; el.parentElement.classList.toggle('full', x.hp > 0 && x.atb >= 100); } }
 }
 function renderBattle() {
   const { b, ask } = BT;
@@ -104,7 +127,7 @@ function renderBattle() {
   <div class="stagewrap"><div id="stagehost"></div>${msg && !BT.logBig ? `<div class="bmsg">${msg}</div>` : ''}${winding ? `<div class="chgwrap">${winding}</div>` : ''}<button class="logtoggle" data-tap="logsize" tabindex="-1" title="Battle log (L)">${BT.logBig ? 'CLOSE' : 'LOG'}</button></div>
   ${BT.logBig ? `<div class="logwrap"><div class="log big" id="log">${BT.log.map(line).join('')}</div></div>` : ''}</div>
   <div class="br${ask && ask.stage !== 'root' ? ' subcmd' : ''}"><div class="pane cmdwin"><div id="cmd">${ask ? cmdHtml(ask) : enemyWin}</div></div>
-  <div class="pane partywin">${b.p.map((p) => { const r = p.hp / p.maxhp; return `<div data-n="${p.name}" class="pm ${p.hp <= 0 ? 'dead' : ''} ${ask?.p === p ? 'active' : ''}">${portrait(ak(p.ch), 'sm' + (p.hp <= 0 ? ' ko' : ''))}<span class="pn">${esc(p.name)}${UI.statusIcons(p.st)}</span><span class="ph ${r < 0.25 ? 'low' : r < 0.5 ? 'mid' : ''}">${p.hp}<small>/${p.maxhp}</small></span><span class="pg">${bar(p.hp, p.maxhp, 'hp')}</span><span class="pmp">MP ${p.mp}</span></div>`; }).join('')}</div></div></div>`;
+  <div class="pane partywin">${b.p.map((p) => { const r = p.hp / p.maxhp; return `<div data-n="${p.name}" class="pm ${p.hp <= 0 ? 'dead' : ''} ${ask?.p === p ? 'active' : ''}">${portrait(ak(p.ch), 'sm' + (p.hp <= 0 ? ' ko' : ''))}<span class="pn">${esc(p.name)}${UI.statusIcons(p.st)}</span><span class="ph ${r < 0.25 ? 'low' : r < 0.5 ? 'mid' : ''}">${p.hp}<small>/${p.maxhp}</small></span><span class="pg">${bar(p.hp, p.maxhp, 'hp')}<span class="atb${p.hp > 0 && p.atb >= 100 ? ' full' : ''}"><i style="width:${Math.round(p.atb || 0)}%"></i></span></span><span class="pmp">MP ${p.mp}</span></div>`; }).join('')}</div></div></div>`;
   ov.className = 'on';
   $('#stagehost').appendChild(BT.stage.canvas);
   const lg = $('#log'); if (lg) lg.scrollTop = lg.scrollHeight;
@@ -136,7 +159,7 @@ function playFx(list) {
   }
 }
 // Bro Combos: the first brother asked can team up with the other while he still stands and has not been asked yet
-const comboPartner = (p) => { const b = BT.b, bro = (x) => BROS.some(([, l]) => l === x.ch.look); if (!bro(p)) return null; const q = b.p.find((x) => x !== p && bro(x)); return q && q.hp > 0 && !q.st.stun && b.p.indexOf(q) > b.p.indexOf(p) ? q : null; };
+const comboPartner = (p) => { const b = BT.b, bro = (x) => BROS.some(([, l]) => l === x.ch.look); if (!bro(p)) return null; const q = b.p.find((x) => x !== p && bro(x)); return q && q.hp > 0 && !q.st.stun && b.ready(q) && !BT.queue?.some((z) => z.p === q) ? q : null; }; // ATB: a Bro Combo needs the other brother's gauge full too
 const combosKnown = () => COMBOS.filter((c) => cond(c.if));
 // a line of banter after a fight (QUIPS in data.js), from someone actually in the party
 const recentQuips = [];

@@ -114,7 +114,7 @@ let B = { i: 0, view: 'main', slot: 0, guild: false };
 ACT.build = (i) => { B = { i: +i, view: 'main', slot: 0, guild: B.guild && inTown() }; buildScreen(); };
 function buildScreen() {
   const c = G.party[B.i];
-  ({ main: buildMain, jobMain: () => jobPick('main'), jobSub: () => jobPick('sub'), trait: traitPick, callings: callingsView, weapon: () => gearPick('weapons'), armor: () => gearPick('armors'), acc: () => gearPick('accs'), slot: slotEdit }[B.view])(c);
+  ({ main: buildMain, jobMain: () => jobPick('main'), jobSub: () => jobPick('sub'), trait: traitPick, callings: callingsView, weapon: () => gearPick('weapons'), armor: () => gearPick('armors'), acc: () => gearPick('accs'), acc2: () => gearPick('accs2'), slot: slotEdit }[B.view])(c);
 }
 const back = (v = 'main') => () => { B.view = v; buildScreen(); };
 ACT.bmain = back('main');
@@ -131,12 +131,13 @@ function buildMain(c) {
   const xpN = expNeeded(c.level), maxed = c.level >= L.MAX_LEVEL;
   show(`<div class="buildhead">${btn('bnav', ic('aleft'), -1, '', 'navbtn')}<div class="who2">${portrait(ak(c), 'lg')}<div><h2 style="background:none;padding:0;margin:0">${esc(c.name)}</h2><div class="lv">LV ${c.level}</div></div></div>${btn('bnav', ic('aright'), 1, '', 'navbtn')}</div>
   <div class="expline"><span>EXP</span>${bar(maxed ? 1 : c.exp, maxed ? 1 : xpN, 'xp')}<span>${maxed ? 'MAX' : `${c.exp}/${xpN}`}</span></div>${c.level >= 18 && L.nextPerk(c.level) ? `<div class="dim" style="font-size:8px">${ic('star')} LV ${L.nextPerk(c.level)[0]}: ${L.nextPerk(c.level)[1]}</div>` : ''}
-  <div class="card">${callingCard(c)}${statLine(s)}</div>
-  <h3>Equipment</h3>${gearRow('Weapon', 'weapon', c.weapon, 'weapons')}${gearRow('Armour', 'armor', c.armor, 'armors')}${gearRow('Acc.', 'acc', c.acc, 'accs')}
+  <div class="card">${callingCard(c)}${statLine(s)}<div class="jobrow"><span>${ic('guard')}<span><span class="dim">ROW</span> ${c.row === 'back' ? 'Back' : 'Front'} <small class="dim">${c.row === 'back' ? 'half physical damage dealt and taken (shooters hit fully)' : 'full physical damage dealt and taken'}</small></span></span>${btn('brow', 'Swap')}</div></div>
+  <h3>Equipment</h3>${gearRow('Weapon', 'weapon', c.weapon, 'weapons')}${gearRow('Armour', 'armor', c.armor, 'armors')}${gearRow('Relic', 'acc', c.acc, 'accs')}${gearRow('Relic 2', 'acc2', c.acc2, 'accs2')}
   <h3>${gemsOn() ? `Skills &amp; Gems <span class="${used > cap ? 'bad' : 'gold'}">◇ ${used}/${cap}</span>` : 'Skills'}</h3>${[0, 1, 2, 3, SIG].map(slotRow).join('')}
   <div class="foot">${btn('bclose', 'Done', '', '', 'primary')}</div>`);
 }
 ACT.bview = (v) => { B.view = v; buildScreen(); };
+ACT.brow = () => { const c = G.party[B.i]; c.row = c.row === 'back' ? 'front' : 'back'; buildScreen(); }; // FF6 rows
 ACT.bslot = (i) => { B.slot = +i; B.view = 'slot'; buildScreen(); };
 // the calling card: current calling with its rank bar, the second-calling and trait slots (each shown once it can be used)
 function callingCard(c) {
@@ -186,19 +187,21 @@ function callingsView() { // every awakened calling: rank stars, abilities learn
     return `<div class="slot callrow ${id === c.main ? 'sel' : ''}">${portrait(akj(c, id), r ? '' : 'ko')}<div class="t"><b>${j.name} ${stars(c, id)}${id === c.main ? ' <span class="chip tag">NOW</span>' : id === c.sub ? ' <span class="chip tag">2ND</span>' : ''}</b><small>${got.length ? got.join(' · ') : '<span class="dim">Not yet taken up.</span>'}${nx ? ` <span class="dim">→ ${nx}${r ? ` (${L.cpToNext(c, id)} CP)` : ''}</span>` : ''}${master}</small></div></div>`;
   }).join('')}<div class="foot">${btn('bmain', 'Back', '', '', 'primary')}</div>`);
 }
-function gearPick(kind) {
-  const c = G.party[B.i], field = { weapons: 'weapon', armors: 'armor', accs: 'acc' }[kind];
+// accs2 is the second relic slot: same items (DB.accs, G.inv.accs), stored in c.acc2
+const FIELD = { weapons: 'weapon', armors: 'armor', accs: 'acc', accs2: 'acc2' }, DBK = (k) => (k === 'accs2' ? 'accs' : k);
+function gearPick(slotKind) {
+  const c = G.party[B.i], field = FIELD[slotKind], kind = DBK(slotKind);
   const gain = (id) => { const now = stats(c), after = stats({ ...c, [field]: id }); return ['atk', 'mag', 'def', 'spd'].reduce((n, k) => n + after[k] - now[k], 0) + (after.hp - now.hp + after.mp - now.mp) / 10; };
   const uniq = [...new Set(G.inv[kind])].map((id) => { const ok = kind !== 'weapons' || L.weaponOk(c, id); return { id, ok, g: ok ? gain(id) : -Infinity }; }).sort((x, y) => y.g - x.g || (x.ok === y.ok ? 0 : x.ok ? -1 : 1)); // usable first, biggest gain first
   const best = uniq[0]?.ok && uniq[0].g > 0 ? uniq[0].id : null;
-  show(`<h2>${ic({ weapons: 'sword', armors: 'armor', accs: 'ring' }[kind])} ${esc(c.name)}: ${{ weapon: 'weapon', armor: 'armour', acc: 'accessory' }[field]}</h2>${c[field] ? `<div class="slot"><span class="lead">${itemIc(kind, c[field])}</span><div class="t"><b><span class="dim">NOW</span> ${DB[kind][c[field]].name}</b></div>${btn('equip', 'Unequip', kind, '')}</div>` : ''}${uniq.map(({ id, ok }) => {
+  show(`<h2>${ic({ weapons: 'sword', armors: 'armor', accs: 'ring' }[kind])} ${esc(c.name)}: ${{ weapon: 'weapon', armor: 'armour', acc: 'relic', acc2: 'second relic' }[field]}</h2>${c[field] ? `<div class="slot"><span class="lead">${itemIc(kind, c[field])}</span><div class="t"><b><span class="dim">NOW</span> ${DB[kind][c[field]].name}</b></div>${btn('equip', 'Unequip', slotKind, '')}</div>` : ''}${uniq.map(({ id, ok }) => {
     const g = DB[kind][id];
     const now = stats(c), after = stats({ ...c, [field]: id }), delta = ok ? ['atk', 'mag', 'def', 'hp', 'mp', 'spd'].filter((k) => after[k] !== now[k]).map((k) => `<span class="${after[k] > now[k] ? 'up' : 'down'}">${after[k] > now[k] ? '▲' : '▼'}${Math.abs(after[k] - now[k])} ${k}</span>`).join(' ') : '';
-    return `<div class="slot"><span class="lead">${itemIc(kind, id)}</span><div class="t"><b>${g.name} <span class="dim">×${G.inv[kind].filter((x) => x === id).length}</span>${id === best ? ' <span class="chip tag">★ Best</span>' : ''}</b><small>${gearDesc(kind, g)}${ok ? '' : ' · <span class="bad">job can\'t use</span>'}</small>${delta ? `<div class="delta">${delta}</div>` : ''}</div>${btn('equip', 'Equip', kind, id, '', !ok)}</div>`;
+    return `<div class="slot"><span class="lead">${itemIc(kind, id)}</span><div class="t"><b>${g.name} <span class="dim">×${G.inv[kind].filter((x) => x === id).length}</span>${id === best ? ' <span class="chip tag">★ Best</span>' : ''}</b><small>${gearDesc(kind, g)}${ok ? '' : ' · <span class="bad">job can\'t use</span>'}</small>${delta ? `<div class="delta">${delta}</div>` : ''}</div>${btn('equip', 'Equip', slotKind, id, '', !ok)}</div>`;
   }).join('') || '<p class="dim">Nothing in inventory.</p>'}<div class="foot">${btn('bmain', 'Back', '', '', 'primary')}</div>`);
 }
-ACT.equip = (kind, id) => {
-  const c = G.party[B.i], field = { weapons: 'weapon', armors: 'armor', accs: 'acc' }[kind];
+ACT.equip = (slotKind, id) => {
+  const c = G.party[B.i], field = FIELD[slotKind], kind = DBK(slotKind);
   if (c[field]) G.inv[kind].push(c[field]);
   c[field] = null;
   if (id) { G.inv[kind].splice(G.inv[kind].indexOf(id), 1); c[field] = id; }
