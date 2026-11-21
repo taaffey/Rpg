@@ -49,12 +49,12 @@ BOSSES.mash_tun = { name: 'The Mash Tun', intro: 'The Great Mash Tun bubbles ove
 
 // ---------------------------------------------------------------- gear
 Object.assign(WEAPONS, {
-  barrel_stave: W('Oak Barrel Stave', 'sword', 26, 0, 2, 1250, undefined, 3, 'Iron-hooped oak, still damp. Hits like a rounders bat and smells like Friday.', { crit: 0.1, def: 4 }),
-  bottle_opener: W('Trusty Bottle Opener', 'dagger', 18, 0, 2, 1150, 'swift', 3, 'Pops caps, locks and the odd foe. A lucky flick stuns. Cheers.', { spd: 4, crit: 0.2, proc: ['stun', 0.12] }),
-  rocket_launcher: W('Bottle Rocket Launcher', 'bow', 25, 0, 2, 1300, 'fire', 3, 'Fireworks night leftovers in a drainpipe. Aim away from the thatch.', { elem: 'fire', pierce: 0.2, spd: 2 }),
-  coopers_mallet: W('Cooper\'s Mallet', 'axe', 31, 0, 2, 1300, 'crit', 3, 'Knocks the hoops onto barrels, and the sense out of foes. Slow, loud.', { spd: -2, crit: 0.12 }),
-  bine_strimmer: W('Hop Bine Strimmer', 'scythe', 22, 12, 2, 1250, 'vamp', 3, 'Strims the bines at harvest. Takes a cut of everything it cuts.', { spd: -1, proc: ['drain', 0.35] }),
-  mash_paddle: W('The Big Mash Paddle', 'staff', 5, 29, 3, 0, 'siphon', 4, 'Stirs vats the size of houses. Spells come out warm, malty and slightly sticky.', { mp: 30, heal: 0.3, sig: 'tonic' }),
+  barrel_stave: W('Banded Broadsword', 'sword', 26, 0, 2, 1250, undefined, 3, 'Broad, heavy and banded in iron. Crits now and then.', { crit: 0.1, def: 4 }),
+  bottle_opener: W('Hooked Dirk', 'dagger', 18, 0, 2, 1150, 'swift', 3, 'A quick, hooked blade. Crits, and a lucky flick stuns.', { spd: 4, crit: 0.2, proc: ['stun', 0.12] }),
+  rocket_launcher: W('Blazing Bow', 'bow', 25, 0, 2, 1300, 'fire', 3, 'Fire arrows that burst through armour.', { elem: 'fire', pierce: 0.2, spd: 2 }),
+  coopers_mallet: W('War Maul', 'axe', 31, 0, 2, 1300, 'crit', 3, 'Slow, loud and crushing. Crits now and then.', { spd: -2, crit: 0.12 }),
+  bine_strimmer: W('Vine Scythe', 'scythe', 22, 12, 2, 1250, 'vamp', 3, 'Takes a cut of everything it cuts.', { spd: -1, proc: ['drain', 0.35] }),
+  mash_paddle: W('Oakheart Staff', 'staff', 5, 29, 3, 0, 'siphon', 4, 'Healing spells are 30% stronger, and its strikes draw back MP.', { mp: 30, heal: 0.3, sig: 'tonic' }),
 });
 Object.assign(ARMORS, {
   field_jacket: { name: 'Waxed Field Jacket', desc: 'Waxed, tweedy, smells of wet dog and money. Sheds rain and opinions.', def: 25, hp: 30, spd: 2, sockets: 1, price: 1150 },

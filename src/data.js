@@ -7,14 +7,14 @@ const S = (name, mp, tgt, kind, pow, x = {}) => ({ name, mp, tgt, kind, pow, ...
 export const SKILLS = {
   attack: S('Attack', 0, 'one', 'phys', 1.0),
   // weapon signature skills
-  cleave: S('Wallop', 3, 'one', 'phys', 1.5),
-  backstab: S('Dodgy Deal', 2, 'one', 'phys', 1.3, { pierce: 0.5 }),
-  arcane: S('Static Shock', 3, 'one', 'mag', 1.3),
-  volley: S('Round the Board', 4, 'all', 'phys', 0.65),
-  flurry: S('Combo Platter', 3, 'one', 'phys', 0.55, { hits: 3 }),
-  lash: S('Cable Tie', 2, 'one', 'phys', 0.9, { fx: ['slow'] }),
-  reap: S('Weed Whack', 3, 'one', 'phys', 1.2, { fx: ['drain'] }),
-  grimoire: S('Autocorrect', 3, 'one', 'mag', 1.3, { elem: 'random' }),
+  cleave: S('Cleave', 3, 'one', 'phys', 1.5),
+  backstab: S('Backstab', 2, 'one', 'phys', 1.3, { pierce: 0.5 }),
+  arcane: S('Arcane Bolt', 3, 'one', 'mag', 1.3),
+  volley: S('Volley', 4, 'all', 'phys', 0.65),
+  flurry: S('Flurry', 3, 'one', 'phys', 0.55, { hits: 3 }),
+  lash: S('Lash', 2, 'one', 'phys', 0.9, { fx: ['slow'] }),
+  reap: S('Reap', 3, 'one', 'phys', 1.2, { fx: ['drain'] }),
+  grimoire: S('Grimoire', 3, 'one', 'mag', 1.3, { elem: 'random' }),
   punch: S('Fisticuffs', 0, 'one', 'phys', 1.0),
   // weapon-specific signature skills (WEAPONS[id].sig overrides the type's)
   mend: S('Kiss It Better', 3, 'ally', 'heal', 1.6),
@@ -84,10 +84,10 @@ export const SKILLS = {
 };
 
 export const WEAPON_TYPES = {
-  sword: { name: 'Bat', sig: 'cleave' }, dagger: { name: 'Pointy Thing', sig: 'backstab' },
-  staff: { name: 'Pole', sig: 'arcane' }, bow: { name: 'Shooter', sig: 'volley' },
-  fists: { name: 'Knuckles', sig: 'flurry' }, whip: { name: 'Cable', sig: 'lash' },
-  scythe: { name: 'Strimmer', sig: 'reap' }, tome: { name: 'Gadget', sig: 'grimoire' },
+  sword: { name: 'Sword', sig: 'cleave' }, dagger: { name: 'Dagger', sig: 'backstab' },
+  staff: { name: 'Staff', sig: 'arcane' }, bow: { name: 'Bow', sig: 'volley' },
+  fists: { name: 'Knuckles', sig: 'flurry' }, whip: { name: 'Whip', sig: 'lash' },
+  scythe: { name: 'Scythe', sig: 'reap' }, tome: { name: 'Tome', sig: 'grimoire' },
 };
 
 // ---- Jobs. skills: [skillId, unlockLevel]
@@ -132,62 +132,62 @@ export const GEMS = {
 const W = (name, type, atk, mag, sockets, price, innate, tier, desc, x = {}) => ({ name, type, atk, mag, sockets, price, innate, tier, desc, ...x });
 export const WEAPONS = {
   // ---- Bats (swords): steady damage, the widest choice of elements
-  iron_sword: W('Rounders Bat', 'sword', 8, 0, 1, 80, undefined, 1, 'Left over from sports day. Still smells of cut grass and shame.'),
-  flame_brand: W('Tiki Torch', 'sword', 13, 0, 2, 320, 'fire', 2, 'A garden tiki torch, still lit. Foes that fear fire fear it more.', { elem: 'fire' }),
-  mythril_sword: W('Vintage Cricket Bat', 'sword', 19, 0, 2, 760, undefined, 3, 'Proper English willow. Finds the gaps and clears the boundary.', { crit: 0.1 }),
-  frostbrand: W('Frozen Leg of Lamb', 'sword', 23, 0, 2, 1150, 'frost', 3, 'Straight from the freezer. Its cold creeps into the wound. Mint sauce extra.', { elem: 'ice', proc: ['slow', 0.2] }),
-  dragonbane: W('Obvious Compensation', 'sword', 25, 0, 3, 0, 'pierce', 4, 'Carved from the Wyrm\'s own fang. Comically huge. Plate and scale part.', { pierce: 0.3, hp: 20 }),
-  sun_blade: W('Warden\'s Lollipop Sign', 'sword', 27, 4, 2, 0, undefined, 4, 'A fallen warden\'s STOP sign, still warm from the morning rush hour.', { elem: 'holy', hp: 15, sig: 'sunstrike' }),
-  // ---- Pointy Things (daggers): fast, critical, poisonous
-  bronze_dirk: W('Biro', 'dagger', 5, 0, 1, 45, undefined, 1, 'Chewed, leaky, quick to draw. Mightier than the sword. Allegedly.', { spd: 2, crit: 0.1 }),
-  viper_fang: W('Kebab Skewer', 'dagger', 9, 0, 2, 260, 'venom', 2, 'Still has bits of last night\'s doner on it. Poisons on contact.', { spd: 2, proc: ['poison', 0.3] }),
-  shadow_edge: W('Sharpened Toothbrush', 'dagger', 14, 0, 2, 0, 'swift', 2, 'Prison-grade bristles. Whoever holds it always moves first.', { spd: 3, crit: 0.15 }),
-  stiletto: W('Precision Screwdriver', 'dagger', 13, 0, 2, 680, 'pierce', 3, 'Tiny, fiddly, and finds every gap in the armour. IT bloke approved.', { spd: 3, crit: 0.2, pierce: 0.5 }),
-  nightfang: W('Swiss Army Knife', 'dagger', 21, 0, 2, 0, undefined, 4, 'Forty-seven tools. One of them stuns. Nobody knows which.', { spd: 5, crit: 0.25, proc: ['stun', 0.12] }),
+  iron_sword: W('Iron Sword', 'sword', 8, 0, 1, 80, undefined, 1, 'Plain, honest steel. Every knight starts somewhere.'),
+  flame_brand: W('Flame Brand', 'sword', 13, 0, 2, 320, 'fire', 2, 'The blade never cools; foes that fear fire fear it more.', { elem: 'fire' }),
+  mythril_sword: W('Mythril Sword', 'sword', 19, 0, 2, 760, undefined, 3, 'Feather-light elven metal that finds the gaps.', { crit: 0.1 }),
+  frostbrand: W('Frostbrand', 'sword', 23, 0, 2, 1150, 'frost', 3, 'Rimed steel forged in Frostholm. Its cold creeps into the wound.', { elem: 'ice', proc: ['slow', 0.2] }),
+  dragonbane: W('Dragonbane', 'sword', 25, 0, 3, 0, 'pierce', 4, 'Forged from the Ashen Wyrm\'s own fang. Scale and plate part before it.', { pierce: 0.3, hp: 20 }),
+  sun_blade: W('Sun Blade', 'sword', 27, 4, 2, 0, undefined, 4, 'A fallen paladin\'s relic, still warm with morning light.', { elem: 'holy', hp: 15, sig: 'sunstrike' }),
+  // ---- Daggers: fast, critical, poisonous
+  bronze_dirk: W('Bronze Dirk', 'dagger', 5, 0, 1, 45, undefined, 1, 'Cheap, quick to draw, easy to hide.', { spd: 2, crit: 0.1 }),
+  viper_fang: W('Viper Fang', 'dagger', 9, 0, 2, 260, 'venom', 2, 'A hollow fang still full of venom.', { spd: 2, proc: ['poison', 0.3] }),
+  shadow_edge: W('Shadow Edge', 'dagger', 14, 0, 2, 0, 'swift', 2, 'Drinks the light around it. Its wielder always moves first.', { spd: 3, crit: 0.15 }),
+  stiletto: W('Stiletto', 'dagger', 13, 0, 2, 680, 'pierce', 3, 'A needle of a blade that slips between armor plates.', { spd: 3, crit: 0.2, pierce: 0.5 }),
+  nightfang: W('Nightfang', 'dagger', 21, 0, 2, 0, undefined, 4, 'Taken from a dead assassin by a ghoul with taste.', { spd: 5, crit: 0.25, proc: ['stun', 0.12] }),
   // ---- Poles (staves): magic, healing, utility
-  oak_staff: W('Broom Handle', 'staff', 2, 6, 1, 40, undefined, 1, 'Snapped off a broom. Hums faintly with mana and floor polish.', { heal: 0.1 }),
-  healing_staff: W('Nan\'s Walking Stick', 'staff', 2, 9, 2, 280, undefined, 2, 'Teaches its bearer to mend. Biscuits in the handle.', { heal: 0.3, mp: 10, sig: 'mend' }),
-  storm_rod: W('Wi-Fi Aerial', 'staff', 3, 12, 2, 300, 'bolt', 2, 'Picks up thunderstorms and, once, a single bar. Crackles in the rain.', { elem: 'bolt' }),
-  archmage_staff: W('Selfie Stick', 'staff', 3, 17, 2, 0, 'echo', 2, 'Telescopic. Spells echo like a bad joke in a quiet pub.', { mp: 15 }),
-  sage_staff: W('Extending Curtain Pole', 'staff', 4, 18, 2, 740, undefined, 3, 'Solid Frostholm pine, rings still on. Sagely straight.', { mp: 20, heal: 0.2 }),
-  lich_staff: W('Morvath\'s Hoover Pipe', 'staff', 5, 30, 3, 0, 'shadow', 4, 'Cold, patient and hungry. It sucks. In every sense.', { mp: 25, elem: 'dark' }),
-  // ---- Shooters (bows): armor-piercing arrows, hit groups with Round the Board
-  short_bow: W('Brass Darts', 'bow', 7, 0, 1, 60, undefined, 1, 'Pub-standard brass darts. Missing a flight, like most of them.', { pierce: 0.2 }),
-  hunter_bow: W('Nerf Blaster', 'bow', 12, 0, 2, 300, 'chain', 2, 'Foam darts ricochet from foe to foe. Do not lick the ammo.', { pierce: 0.2, crit: 0.05 }),
-  longbow: W('Tungsten Darts', 'bow', 17, 0, 2, 740, undefined, 3, 'Pro-grade and heavy. Long reach, tight grouping, cost more than the sofa.', { pierce: 0.25, crit: 0.1 }),
-  frost_bow: W('Frozen Pea Shooter', 'bow', 22, 0, 2, 1050, 'frost', 3, 'Fires frozen peas at speed. Numbs on impact, thaws on the carpet.', { pierce: 0.2, proc: ['slow', 0.25] }),
-  gale_bow: W('Pigeon Cannon', 'bow', 25, 0, 3, 0, 'swift', 4, 'Launches static-charged pigeons at gale force. They land fine. Mostly.', { pierce: 0.25, elem: 'bolt', spd: 4, crit: 0.15 }),
+  oak_staff: W('Oak Staff', 'staff', 2, 6, 1, 40, undefined, 1, 'A walking stick that hums faintly with mana.', { heal: 0.1 }),
+  healing_staff: W('Healing Staff', 'staff', 2, 9, 2, 280, undefined, 2, 'A temple staff that teaches its bearer to mend.', { heal: 0.3, mp: 10, sig: 'mend' }),
+  storm_rod: W('Storm Rod', 'staff', 3, 12, 2, 300, 'bolt', 2, 'Crackles whenever it rains.', { elem: 'bolt' }),
+  archmage_staff: W('Archmage Staff', 'staff', 3, 17, 2, 0, 'echo', 2, 'Its spells echo long after they are cast.', { mp: 15 }),
+  sage_staff: W('Sage Staff', 'staff', 4, 18, 2, 740, undefined, 3, 'Carved by the sages of Frostholm from a single pine.', { mp: 20, heal: 0.2 }),
+  lich_staff: W('Lich Staff', 'staff', 5, 30, 3, 0, 'shadow', 4, 'Morvath\'s focus. Cold, patient and hungry.', { mp: 25, elem: 'dark' }),
+  // ---- Bows: armor-piercing arrows, hit groups with Volley
+  short_bow: W('Short Bow', 'bow', 7, 0, 1, 60, undefined, 1, 'A light hunting bow. Arrows find the gaps in armor.', { pierce: 0.2 }),
+  hunter_bow: W('Hunter Bow', 'bow', 12, 0, 2, 300, 'chain', 2, 'Its arrows ricochet from one foe to the next.', { pierce: 0.2, crit: 0.05 }),
+  longbow: W('Longbow', 'bow', 17, 0, 2, 740, undefined, 3, 'Long draw, long reach.', { pierce: 0.25, crit: 0.1 }),
+  frost_bow: W('Frost Bow', 'bow', 22, 0, 2, 1050, 'frost', 3, 'Frost-tipped arrows numb whatever they strike.', { pierce: 0.2, proc: ['slow', 0.25] }),
+  gale_bow: W('Gale Bow', 'bow', 25, 0, 3, 0, 'swift', 4, 'Strung with a storm wraith\'s last sigh.', { pierce: 0.25, elem: 'bolt', spd: 4, crit: 0.15 }),
   // ---- Knuckles (fists): two blows per Attack, crushing combos
-  iron_knuckle: W('Wrist Wraps', 'fists', 6, 0, 1, 50, undefined, 1, 'Gym bag basics. Two jabs per attack. Soft foes crumple, armour shrugs.', { hits: 2 }),
-  thunder_claw: W('Taser Gloves', 'fists', 11, 0, 2, 320, 'bolt', 2, 'Each blow carries a spark. Sold with a leaflet nobody read.', { hits: 2, elem: 'bolt' }),
-  steel_fist: W('Gauntlets of Gains', 'fists', 15, 0, 2, 700, undefined, 3, 'Weighted lifting gloves that double as armour. Never skip arm day.', { hits: 2, def: 5 }),
-  dragon_claw: W('Scotch Bonnet Knuckles', 'fists', 20, 0, 2, 0, 'focusg', 4, 'Taken from a yeti\'s trophy pile and dipped in chilli. Still smoulders.', { hits: 2, elem: 'fire', sig: 'dragonrush' }),
-  // ---- Cables (whips): magic-tinged control
-  leather_whip: W('Resistance Band', 'whip', 5, 2, 1, 50, undefined, 1, 'A sharp snap makes foes hesitate. Sold as "light". It is not light.', { proc: ['slow', 0.2] }),
-  serpent_lash: W('Petrol Station Charger', 'whip', 10, 4, 2, 280, 'venom', 2, 'Bought at a petrol station. Frayed, sparky, mildly toxic.', { proc: ['poison', 0.3] }),
-  thorn_whip: W('Prickly Hosepipe', 'whip', 14, 7, 2, 700, 'vamp', 3, 'Briar-wound. It drinks through its thorns. Exempt from the hosepipe ban.', { proc: ['slow', 0.3], crit: 0.1 }),
-  // ---- Strimmers (scythes): slow, life-draining, dark
-  rusty_scythe: W('Rusty Hedge Trimmer', 'scythe', 8, 3, 1, 65, undefined, 1, 'Rusty but hungry. Somehow still plugged in, with no socket in sight.', { spd: -1, proc: ['drain', 0.25] }),
-  bone_scythe: W('Haunted Leaf Blower', 'scythe', 13, 6, 2, 360, undefined, 2, 'Blows leaves and lingering spirits. Feeds its wielder.', { spd: -1, elem: 'dark', proc: ['drain', 0.3] }),
-  grave_scythe: W('Graveyard Lawnmower', 'scythe', 19, 11, 2, 950, 'vamp', 3, 'The caretaker\'s ride-on. Never quite stops reaping. Mows low.', { spd: -1, proc: ['drain', 0.35] }),
-  soul_reaper: W('Haunted Chainsaw', 'scythe', 25, 15, 3, 0, 'vamp', 4, 'Hums with the souls it has stolen. Also, just hums. Very loudly.', { elem: 'dark', proc: ['drain', 0.4], sig: 'harvest' }),
-  // ---- Gadgets (tomes): pure magic, random elements
-  dusty_tome: W('Old Phone', 'tome', 1, 7, 1, 45, undefined, 1, 'Cracked screen, 3% battery. Faded spells in the Notes app.', { mp: 8 }),
-  frost_codex: W('Smart Fridge', 'tome', 2, 13, 2, 300, 'frost', 2, 'A smart fridge, mostly. Its screen is cold to the touch. Needs updating.', { elem: 'ice' }),
-  void_grimoire: W('Dead Laptop', 'tome', 2, 17, 2, 0, 'shadow', 2, 'A black screen that whispers "please plug me in". Do not.', { elem: 'dark', mp: 10 }),
-  arcane_tome: W('Terms & Conditions', 'tome', 3, 19, 2, 800, undefined, 3, 'Forty thousand words, nobody has read them. Annotated twice. Hits hard.', { mp: 15, spd: 2 }),
-  blizzard_tome: W('Iced Group Chat', 'tome', 3, 25, 2, 1150, 'frost', 3, 'Left on read all winter. The awkward silence slows foes down.', { elem: 'ice', proc: ['slow', 0.2] }),
+  iron_knuckle: W('Iron Knuckle', 'fists', 6, 0, 1, 50, undefined, 1, 'Two quick jabs per attack. Soft foes crumple; armored ones shrug.', { hits: 2 }),
+  thunder_claw: W('Thunder Claw', 'fists', 11, 0, 2, 320, 'bolt', 2, 'Each blow carries a spark.', { hits: 2, elem: 'bolt' }),
+  steel_fist: W('Steel Fist', 'fists', 15, 0, 2, 700, undefined, 3, 'Gauntlets that double as armor.', { hits: 2, def: 5 }),
+  dragon_claw: W('Dragon Claw', 'fists', 20, 0, 2, 0, 'focusg', 4, 'Torn from a yeti\'s trophy pile; it still smoulders.', { hits: 2, elem: 'fire', sig: 'dragonrush' }),
+  // ---- Whips: magic-tinged control
+  leather_whip: W('Leather Whip', 'whip', 5, 2, 1, 50, undefined, 1, 'A sharp crack that makes foes hesitate.', { proc: ['slow', 0.2] }),
+  serpent_lash: W('Serpent Lash', 'whip', 10, 4, 2, 280, 'venom', 2, 'Barbed with snake fangs.', { proc: ['poison', 0.3] }),
+  thorn_whip: W('Thorn Whip', 'whip', 14, 7, 2, 700, 'vamp', 3, 'Briar-wound. It drinks through its thorns.', { proc: ['slow', 0.3], crit: 0.1 }),
+  // ---- Scythes: slow, life-draining, dark
+  rusty_scythe: W('Rusty Scythe', 'scythe', 8, 3, 1, 65, undefined, 1, 'Rusty but hungry.', { spd: -1, proc: ['drain', 0.25] }),
+  bone_scythe: W('Bone Scythe', 'scythe', 13, 6, 2, 360, undefined, 2, 'Carved from something\'s spine. It feeds its wielder.', { spd: -1, elem: 'dark', proc: ['drain', 0.3] }),
+  grave_scythe: W('Grave Scythe', 'scythe', 19, 11, 2, 950, 'vamp', 3, 'A gravedigger\'s blade that never quite stops reaping.', { spd: -1, proc: ['drain', 0.35] }),
+  soul_reaper: W('Soul Reaper', 'scythe', 25, 15, 3, 0, 'vamp', 4, 'Hums with the souls it has stolen.', { elem: 'dark', proc: ['drain', 0.4], sig: 'harvest' }),
+  // ---- Tomes: pure magic, random elements
+  dusty_tome: W('Dusty Tome', 'tome', 1, 7, 1, 45, undefined, 1, 'Faded spells scribbled in the margins.', { mp: 8 }),
+  frost_codex: W('Frost Codex', 'tome', 2, 13, 2, 300, 'frost', 2, 'Its pages are cold to the touch.', { elem: 'ice' }),
+  void_grimoire: W('Void Grimoire', 'tome', 2, 17, 2, 0, 'shadow', 2, 'Whispers from the dark between stars.', { elem: 'dark', mp: 10 }),
+  arcane_tome: W('Arcane Tome', 'tome', 3, 19, 2, 800, undefined, 3, 'A scholar\'s life work, annotated twice.', { mp: 15, spd: 2 }),
+  blizzard_tome: W('Blizzard Tome', 'tome', 3, 25, 2, 1150, 'frost', 3, 'A whole winter bound in leather.', { elem: 'ice', proc: ['slow', 0.2] }),
   // ---- Novelties (axes): huge hits, slow, critical
-  hand_axe: W('Inflatable Hammer', 'axe', 10, 0, 1, 75, undefined, 1, 'Slow to swing, squeaks on impact, but it bites deep somehow.', { spd: -1, crit: 0.05 }),
-  battle_axe: W('Stolen Traffic Cone', 'axe', 16, 0, 2, 420, 'crit', 2, 'Nicked from roadworks at 2 a.m. Two ends, double the trouble.', { spd: -1, crit: 0.1 }),
-  war_axe: W('Giant Spanner', 'axe', 24, 0, 2, 900, 'berserk', 3, 'Too heavy for the timid. Fits every nut, including the one holding it.', { spd: -2, crit: 0.1 }),
-  titan_axe: W('Titanic Extinguisher', 'axe', 36, 0, 3, 0, 'execute', 4, 'Filled from the Frost Titan\'s heart. Thirty kilos of cold fury.', { spd: -2, crit: 0.15, hp: 30 }),
+  hand_axe: W('Hand Axe', 'axe', 10, 0, 1, 75, undefined, 1, 'Heavy and slow, but it bites deep.', { spd: -1, crit: 0.05 }),
+  battle_axe: W('Battle Axe', 'axe', 16, 0, 2, 420, 'crit', 2, 'Double-bitted, for double the trouble.', { spd: -1, crit: 0.1 }),
+  war_axe: W('War Axe', 'axe', 24, 0, 2, 900, 'berserk', 3, 'Too heavy for the timid.', { spd: -2, crit: 0.1 }),
+  titan_axe: W('Titan Axe', 'axe', 36, 0, 3, 0, 'execute', 4, 'Hewn from the Frost Titan\'s glacier heart.', { spd: -2, crit: 0.15, hp: 30 }),
   // ---- Kitchen Knives (katanas): crits and speed
-  wakizashi: W('Butter Knife', 'katana', 8, 0, 1, 90, undefined, 1, 'The short blade of the cutlery drawer. Spreads misery thinly.', { spd: 1, crit: 0.12 }),
-  iron_katana: W('Bread Knife', 'katana', 13, 0, 1, 380, undefined, 2, 'Serrated and folded a thousand loaves deep. Crusts fear it.', { crit: 0.15 }),
-  moonblade: W('Silver Carving Knife', 'katana', 23, 0, 2, 1000, 'crit', 3, 'Wedding-gift silver. Shines under the moon and carves beautifully.', { spd: 2, crit: 0.2 }),
-  storm_katana: W('Electric Carving Knife', 'katana', 32, 0, 3, 0, 'bolt', 4, 'Lightning given an edge, and a very long cable. Carves a roast in a flash.', { elem: 'bolt', crit: 0.2, spd: 3, sig: 'raijin' }),
-  muramasa: W('Cursed Meat Cleaver', 'katana', 35, 0, 2, 0, undefined, 4, 'Bites deeper than any other and drinks its owner\'s blood. No refunds.', { crit: 0.25, hp: -30, sig: 'demoncut' }),
+  wakizashi: W('Wakizashi', 'katana', 8, 0, 1, 90, undefined, 1, 'A samurai\'s short companion blade.', { spd: 1, crit: 0.12 }),
+  iron_katana: W('Iron Katana', 'katana', 13, 0, 1, 380, undefined, 2, 'Folded a thousand times.', { crit: 0.15 }),
+  moonblade: W('Moonblade', 'katana', 23, 0, 2, 1000, 'crit', 3, 'Shines silver under the moon.', { spd: 2, crit: 0.2 }),
+  storm_katana: W('Storm Katana', 'katana', 32, 0, 3, 0, 'bolt', 4, 'Lightning given an edge.', { elem: 'bolt', crit: 0.2, spd: 3, sig: 'raijin' }),
+  muramasa: W('Muramasa', 'katana', 35, 0, 2, 0, undefined, 4, 'A cursed blade: it bites deeper than any other, and drinks its owner\'s blood.', { crit: 0.25, hp: -30, sig: 'demoncut' }),
 };
 export const ARMORS = {
   cloth: { name: 'Dressing Gown', desc: 'Fluffy, belted, one tea stain. Technically armour.', def: 3, sockets: 0, price: 40 }, leather: { name: 'Leather Bomber Jacket', desc: 'Black, zipped, door-staff chic. Smells of other people\'s trouble.', def: 6, hp: 5, sockets: 0, price: 90 },
@@ -236,7 +236,7 @@ export const BOSSES = {
 };
 
 Object.assign(SKILLS, {
-  chop: S('Big Swing', 3, 'one', 'phys', 1.6, { pierce: 0.25 }),
+  chop: S('Chop', 3, 'one', 'phys', 1.6, { pierce: 0.25 }),
   // berserker (Stag Do Lad)
   rage: S('Rage', 3, 'self', 'buff', 0, { fx: ['atkup'] }),
   hew: S('Hew', 4, 'one', 'phys', 1.8, { pierce: 0.3 }),
@@ -260,7 +260,7 @@ Object.assign(SKILLS, {
   soulstorm: S('Existential Dread', 0, 'all', 'mag', 0.9, { elem: 'dark', fx: ['slow'] }),
   rot: S('Mouldy Swipe', 0, 'one', 'phys', 1.0, { fx: ['poison'] }),
 });
-WEAPON_TYPES.axe = { name: 'Novelty', sig: 'chop' };
+WEAPON_TYPES.axe = { name: 'Axe', sig: 'chop' };
 Object.assign(JOBS, {
   berserker: { name: 'Berserker', icon: '🪓', desc: 'Reckless axe fighter with huge damage and lifesteal.', mod: { hp: 1.5, mp: 0.45, atk: 1.45, def: 1.0, mag: 0.4, spd: 0.95 }, weapons: ['axe', 'sword'], skills: [['hew', 1], ['rage', 2], ['whirlwind', 3], ['bloodlust', 5], ['execution', 6]], trait: ['adrenaline', 4], master: { hp: 25, atk: 4 } },
   alchemist: { name: 'Alchemist', icon: '⚗️', desc: 'Flasks, tonics and elemental concoctions.', mod: { hp: 0.85, mp: 1.4, atk: 0.7, def: 0.8, mag: 1.25, spd: 1.15 }, weapons: ['tome', 'dagger'], skills: [['acidflask', 1], ['tonic', 1], ['frostflask', 2], ['fireflask', 3], ['panacea', 5], ['philosopher', 6]], trait: ['pharmacy', 4], master: { mag: 3, spd: 2 } },
@@ -325,7 +325,7 @@ export const SHOPS = {
 // ===== Content pack 3: Samurai + Paladin, katanas, Storm Cavern, quests =====
 // =====================================================================
 Object.assign(SKILLS, {
-  iai: S('Julienne', 3, 'one', 'phys', 1.4, { crit: 0.3, pierce: 0.2 }),
+  iai: S('Iaido', 3, 'one', 'phys', 1.4, { crit: 0.3, pierce: 0.2 }),
   // samurai (Angry Chef)
   kiai: S('Kiai', 3, 'self', 'buff', 0, { fx: ['atkup'] }),
   flashcut: S('Flashcut', 5, 'one', 'phys', 0.8, { hits: 2 }),
@@ -349,7 +349,7 @@ Object.assign(SKILLS, {
   thunderbreath: S('Thunderous Burp', 0, 'all', 'mag', 1.0, { elem: 'bolt' }),
   stormclaw: S('Static Swipe', 0, 'one', 'phys', 1.6, { elem: 'bolt' }),
 });
-WEAPON_TYPES.katana = { name: 'Kitchen Knife', sig: 'iai' };
+WEAPON_TYPES.katana = { name: 'Katana', sig: 'iai' };
 Object.assign(JOBS, {
   samurai: { name: 'Samurai', icon: '🗾', desc: 'Swift blade master with crits and multi-hit strikes.', mod: { hp: 1.1, mp: 0.7, atk: 1.4, def: 0.95, mag: 0.6, spd: 1.3 }, weapons: ['katana', 'bow'], skills: [['flashcut', 1], ['kiai', 2], ['windblade', 3], ['bladestorm', 5], ['zanshin', 6]], trait: ['bushido', 4], master: { atk: 4, spd: 2 } },
   paladin: { name: 'Paladin', icon: '⚜️', desc: 'Holy warrior who fights, heals and guards.', mod: { hp: 1.3, mp: 1.0, atk: 1.0, def: 1.4, mag: 1.0, spd: 0.8 }, weapons: ['sword', 'staff'], skills: [['holylight', 1], ['layhands', 1], ['divineshield', 2], ['crusade', 3], ['sacredblade', 5], ['divinegrace', 6]], trait: ['guardian', 4], master: { def: 3, hp: 20 } },
@@ -562,12 +562,12 @@ Object.assign(SKILLS, { // enemy-only
   riddle: S('Pub Quiz Riddle', 0, 'one', 'mag', 1.2, { elem: 'dark', stun: 0.25 }),
 });
 Object.assign(WEAPONS, {
-  khopesh: W('Pharaoh\'s Nine Iron', 'sword', 28, 6, 2, 0, 'holy', 4, 'A buried king\'s solid gold golf club. Still remembers noon, and the 19th hole.', { elem: 'holy', crit: 0.12, spd: 2, sig: 'sunstrike' }),
-  scarab_bow: W('Scarab Blowpipe', 'bow', 24, 0, 2, 0, 'venom', 3, 'Beetle-shell blowpipe. Every dart carries desert venom. Mind the spit.', { proc: ['poison', 0.3], spd: 3 }),
-  scorpion_lash: W('Scorpion Mic Cable', 'whip', 18, 6, 2, 0, 'venom', 3, 'A mic cable braided with a scorpion tail. The feedback really stings.', { proc: ['poison', 0.35], crit: 0.1 }),
-  dawn_cestus: W('Blessed Marigolds', 'fists', 17, 4, 2, 0, 'holy', 3, 'Rubber gloves blessed by the temple. They scrub away the restless dead.', { hits: 2, elem: 'holy' }),
-  snowfall: W('Frozen Baguette', 'katana', 25, 0, 2, 0, 'frost', 3, 'Baked by a homesick apprentice, then frozen solid. Crunchy.', { elem: 'ice', spd: 2, crit: 0.15 }),
-  mirage_staff: W('Pharaoh\'s Duster', 'staff', 5, 24, 2, 0, 'focusg', 4, 'Dusts away wounds as if they were never there. Shimmers like heat on sand.', { mp: 20, heal: 0.25, spd: 2 }),
+  khopesh: W('Pharaoh\'s Khopesh', 'sword', 28, 6, 2, 0, 'holy', 4, 'The sun-gold sickle-sword of a buried king. It still remembers noon.', { elem: 'holy', crit: 0.12, spd: 2, sig: 'sunstrike' }),
+  scarab_bow: W('Scarab Bow', 'bow', 24, 0, 2, 0, 'venom', 3, 'Lacquered beetle-shell limbs; every arrow carries desert venom.', { proc: ['poison', 0.3], spd: 3 }),
+  scorpion_lash: W('Scorpion Lash', 'whip', 18, 6, 2, 0, 'venom', 3, 'Braided from a giant scorpion\'s tail, stinger and all.', { proc: ['poison', 0.35], crit: 0.1 }),
+  dawn_cestus: W('Dawn Cestus', 'fists', 17, 4, 2, 0, 'holy', 3, 'Blessed knuckle-wraps that burn the restless dead.', { hits: 2, elem: 'holy' }),
+  snowfall: W('Snowfall', 'katana', 25, 0, 2, 0, 'frost', 3, 'Forged in Frostholm by a homesick apprentice. Cold as a winter dawn.', { elem: 'ice', spd: 2, crit: 0.15 }),
+  mirage_staff: W('Mirage Staff', 'staff', 5, 24, 2, 0, 'focusg', 4, 'Its tip shimmers like heat over sand; wounds close as if they were never there.', { mp: 20, heal: 0.25, spd: 2 }),
 });
 Object.assign(ARMORS, { sandwalker: { name: 'Package Holiday Garb', desc: 'Sun hat, kaftan, sandals. Fire-resistant and beach-ready.', def: 16, mp: 15, mag: 6, spd: 3, res: ['fire'], sockets: 1, price: 0 } });
 Object.assign(ACCS, {
@@ -603,9 +603,9 @@ Object.assign(QUESTS, {
   corsair: { title: 'Redwake\'s Buried Gold', giver: 'Haven old sailor', goal: { type: 'find', item: 'doubloon', where: 'south-east of Haven, where the river meets the inland sea' }, reward: { gold: 400, accs: ['corsair_ring'] },
     lines: { offer: ['Captain Redwake buried his last haul where a river tumbles into the inland sea, a good way south-east of Haven.', 'Stand at the foot of that waterfall and dig. Bring me his gold doubloon and I\'ll give you his earring.'], active: ['South-east of Haven, where a river runs into the inland sea. Walk onto the spot just beside the river mouth.'], ready: ['Redwake\'s doubloon! Sixty years I waited. Here, the old pirate\'s earring is yours. Arr. Sorry. I\'m emotional.'], done: ['Fair winds, treasure hunter.'] } },
   stingers: { title: 'Stingers for the Apothecary', giver: 'Mirewood apothecary', goal: { type: 'kill', ids: ['scorpion', 'ruin_scorpion'], n: 6 }, reward: { gold: 450, weapons: ['scorpion_lash'], items: { antidote: 5, hipotion: 2 } },
-    lines: { offer: ['Scorpion venom, properly brewed, is the base of every good cup of tea. Also clears the sinuses something wonderful.', 'Bring me the stingers of six scorpions from the Sunscar Sands and I\'ll make it worth your while.'], active: ['Six scorpions. The Sunscar Sands, east of the marsh. Bring ice; their shells laugh at fire.'], ready: ['Lovely, lovely stingers. And here is something the leftovers were good for: a mic cable with a sting.'], done: ['My shelves are full of tea, thanks to you. Proper tea. Cures everything.'] } },
+    lines: { offer: ['Scorpion venom, properly brewed, is the base of every good cup of tea. Also clears the sinuses something wonderful.', 'Bring me the stingers of six scorpions from the Sunscar Sands and I\'ll make it worth your while.'], active: ['Six scorpions. The Sunscar Sands, east of the marsh. Bring ice; their shells laugh at fire.'], ready: ['Lovely, lovely stingers. And here is something the leftovers were good for: a whip that stings like they do.'], done: ['My shelves are full of tea, thanks to you. Proper tea. Cures everything.'] } },
   letter: { title: 'A Letter Home', giver: 'Mirewood child', goal: { type: 'deliver', item: 'letter', to: 'the apprentice at the Frostholm Forge' }, reward: { gold: 300, weapons: ['snowfall'] },
-    lines: { offer: ['My big brother is an apprentice at the forge in Frostholm. He hasn\'t written in ages.', 'Could you bring him my letter? The road north is blocked by rocks, or was, but you\'re heroes, right?', 'The ginger one said "just text him". What\'s a text? Is it a letter, but sad?'], active: ['Please give my letter to my brother at the Frostholm Forge!'], deliver: ['A letter... from my little sister? In Mirewood?', 'She drew our boat on it. Ha! And two hairy blobs. That\'s you two, isn\'t it? I miss that bog more than I thought.', 'Please, take this. My first proper blade. It\'s a baguette. Don\'t ask. Tell her I\'ll write back. Every week!'], ready: ['Thank you, thank you!'], done: ['My brother writes every week now! He says you\'re heroes. He drew your beards. Very big.'] } },
+    lines: { offer: ['My big brother is an apprentice at the forge in Frostholm. He hasn\'t written in ages.', 'Could you bring him my letter? The road north is blocked by rocks, or was, but you\'re heroes, right?', 'The ginger one said "just text him". What\'s a text? Is it a letter, but sad?'], active: ['Please give my letter to my brother at the Frostholm Forge!'], deliver: ['A letter... from my little sister? In Mirewood?', 'She drew our boat on it. Ha! And two hairy blobs. That\'s you two, isn\'t it? I miss that bog more than I thought.', 'Please, take this. My first proper blade. Look after it. Tell her I\'ll write back. Every week!'], ready: ['Thank you, thank you!'], done: ['My brother writes every week now! He says you\'re heroes. He drew your beards. Very big.'] } },
   sphinx: { title: 'The Sphinx\'s Riddle', giver: 'Desert oracle', goal: { type: 'boss', id: 'sphinx' }, reward: { gold: 2000, gems: ['echo', 'crit'], items: { elixir: 2 } },
     lines: { offer: ['Beneath the broken stones east of here lies the tomb of the Sun Pharaoh, who bargained with a sphinx for eternal rule.', 'Now the two are one, and it asks every traveller a riddle. None have answered. No, you may not "look it up". Will you silence it?'], active: ['Sunscar Ruins, just east. The Sphinx Pharaoh shrugs off holy and fire; ice and darkness bite. Come at level 11 or more.'], ready: ['The riddle is answered at last. The sands are quiet. Take what the oracle has kept for this day.'], done: ['The sun sets kindly on the ruins now.'] } },
   crystalgolem: { title: 'Heart of Crystal', giver: 'Frostholm prospector', goal: { type: 'kill', ids: ['crystal_golem'], n: 1, lure: { table: 'spire', group: ['crystal_golem'], p: 0.12 } }, reward: { gold: 1500, accs: ['prism_band'] },
@@ -894,7 +894,7 @@ STORY.chat = [
   { id: 'quiz', if: 's:called', lines: [C('devon', 'Do you reckon the quiz is still going, back home?'), C('adam', 'If it is, I knew question nine. Battle of Hastings. 1066.'), C('devon', 'Bro, that hasn\'t even happened yet.'), C('adam', 'Then we\'re early. Good. We\'re never early.')] },
   { id: 'roasties', if: 'wyrm', lines: [C('devon', 'I miss Mum\'s roast potatoes.'), C('adam', 'Me too.'), C('devon', 'I\'d miss you as well. If you weren\'t right here.'), C('adam', 'I\'m not going anywhere without you, Dev. That\'s a promise.')] },
   // ---- shops and the Guild (the silly kit)
-  { id: 'hardware', at: 'haven_smith', lines: [C('devon', 'It\'s a DIY shop with a furnace, bro. Where\'s the tape measure?'), C('adam', 'The "dagger" is a Biro, Dev. Please don\'t ask if it comes in blue.'), C('devon', 'Does it come in blue?'), C('adam', 'It comes in blue.')] },
+  { id: 'hardware', at: 'haven_smith', lines: [C('devon', 'It\'s a DIY shop with a furnace, bro. Where\'s the tape measure?'), C('adam', 'They sell actual swords, Dev. Please don\'t ask if they come in blue.'), C('devon', 'Do they come in blue?'), C('adam', 'They come in steel.')] },
   { id: 'offy', at: 'haven_shop', lines: [C('devon', 'Corner store and an offy in one. Haven has everything.'), C('adam', 'Pints, kebabs and tea. Basically a Friday night.'), C('devon', 'And no queue. I love the Middle Ages.')] },
   { id: 'frost_diy', at: 'frost_smith', lines: [C('devon', 'Bro, they sell a Cracker Crown Jewel. Three sockets. THREE.'), C('adam', 'It\'s a paper hat, Dev. With very good stats.'), C('devon', 'Best hat I\'ve ever seen.')] },
   { id: 'cold_store', at: 'frost_shop', lines: [C('devon', 'A Cold Store. It\'s a shop with a fridge for a roof.'), C('adam', 'Buy a Sunday Roast for the road. It heals the most.'), C('devon', 'Ten roasts. Roast potatoes. Roast everything.')] },

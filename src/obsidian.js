@@ -72,12 +72,12 @@ BOSSES.landlord = { name: 'Landlord of the Void', intro: 'A clock-haloed ghost l
 
 // ---------------------------------------------------------------- gear (the best in the game; the Bell is boss loot)
 Object.assign(WEAPONS, {
-  brass_rail: W('Brass Rail Bat', 'sword', 46, 0, 3, 4400, 'guard', 5, 'A bar rail, polished by a thousand elbows. Crits, and shrugs off a bar fight. Slightly sticky.', { crit: 0.12, def: 5, spd: 1 }),
-  fruit_machine: W('Fruit Machine Slingshot', 'bow', 42, 0, 3, 4400, 'bolt', 5, 'Fires pound coins in a flash of bolt, ignoring armour. Jackpot lights on. The house always wins.', { elem: 'bolt', pierce: 0.25, spd: 4 }),
-  beermat_knuckles: W('Beer Mat Knuckledusters', 'fists', 38, 0, 3, 4200, 'vamp', 5, 'Two stacks of laminated beer mats. Punches twice and drinks in the damage. Sticky, branded, free.', { hits: 2, def: 7, hp: 40 }),
-  licensing_act: W('The Licensing Act (Annotated)', 'tome', 3, 40, 3, 4600, 'focusg', 5, 'Forty pages of small print and a lot of lightning. More MP, a bit quicker. Section 9 is all in capitals.', { mp: 35, spd: 2, sig: 'tempest' }),
-  hand_pump_staff: W('Cellarman\'s Hand Pump', 'staff', 5, 38, 3, 4600, 'siphon', 5, 'A long brass beer pump. Heals by 35% more, and every pull is a round for the house. Mind the drips.', { mp: 35, heal: 0.35, sig: 'cureall' }),
-  last_orders_cleaver: W('Last Orders Cleaver', 'katana', 52, 0, 3, 0, 'execute', 5, 'The Landlord\'s own carving knife. Crits a lot, finishes the weak, and carves a Sunday joint in one swing.', { crit: 0.25, spd: 4, sig: 'zanshin' }),
+  brass_rail: W('Obsidian Blade', 'sword', 46, 0, 3, 4400, 'guard', 5, 'Black volcanic glass with a bright edge. Crits often and helps guard its bearer.', { crit: 0.12, def: 5, spd: 1 }),
+  fruit_machine: W('Stormcaller Bow', 'bow', 42, 0, 3, 4400, 'bolt', 5, 'Looses arrows of lightning that ignore armour. Light and quick.', { elem: 'bolt', pierce: 0.25, spd: 4 }),
+  beermat_knuckles: W('Vampire Claws', 'fists', 38, 0, 3, 4200, 'vamp', 5, 'Strike twice and drink in the damage. Tough to wear, too.', { hits: 2, def: 7, hp: 40 }),
+  licensing_act: W('Tome of Storms', 'tome', 3, 40, 3, 4600, 'focusg', 5, 'Pages that crackle with lightning. More MP, a little quicker.', { mp: 35, spd: 2, sig: 'tempest' }),
+  hand_pump_staff: W('Staff of Renewal', 'staff', 5, 38, 3, 4600, 'siphon', 5, 'Healing spells are 35% stronger, and its strikes draw back MP.', { mp: 35, heal: 0.35, sig: 'cureall' }),
+  last_orders_cleaver: W('Masamune', 'katana', 52, 0, 3, 0, 'execute', 5, 'A legendary blade. Crits often, moves fast and finishes weakened foes.', { crit: 0.25, spd: 4, sig: 'zanshin' }),
 });
 Object.assign(ARMORS, {
   bouncer_parka: { name: 'Bouncer\'s Winter Parka', desc: 'Resists dark. Padded to the chin and radiates "not tonight, lads". Nobody argues with a hood.', def: 46, hp: 70, spd: -1, res: ['dark'], sockets: 3, price: 4800 },

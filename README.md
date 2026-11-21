@@ -79,7 +79,7 @@ Brewer's passive, Happy Hour, makes them twice as potent. Status effects are pub
    heart-gem claimed, **Alchemist, Samurai and Paladin** with the second (see CALLING_BATCHES in data.js).
    The ids stay the classic ones (knight, rogue, mage, cleric, monk, ranger, hexer, bard, berserker, alchemist, samurai,
    paladin), so the engine, art keys and saves are unchanged; only the names, jokes and artwork are silly.
-2. **Weapons** (10 silly families: Bats, Pointy Things, Poles, Shooters, Knuckles, Cables, Strimmers, Gadgets, Novelties, Kitchen Knives; 53 weapons from a Biro to a Titanic Extinguisher; tiers: Haven hardware shop -> Mirewood car boot -> Frostholm DIY forge -> chests, bosses and rare drops):
+2. **Weapons** (10 families: Swords, Daggers, Staves, Bows, Knuckles, Whips, Scythes, Tomes, Axes, Katanas; 75 weapons from an Iron Sword to the Masamune; tiers: Haven hardware shop -> Mirewood car boot -> Frostholm DIY forge -> chests, bosses and rare drops):
    each type grants a **signature skill** (some legendary weapons replace it with their own, e.g. Mend, Raijin, Demon Cut),
    many carry a free **innate gem**, and most have a trait: elemental attacks, extra crit, double blows, armor pierce,
    on-hit Poison/Slow/Stun/drain, healing bonus, or stat bonuses and curses.

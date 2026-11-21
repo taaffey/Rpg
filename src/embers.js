@@ -66,12 +66,12 @@ BOSSES.margherita = { name: 'The Margherita', intro: 'A colossal pizza rises fro
 
 // ---------------------------------------------------------------- gear
 Object.assign(WEAPONS, {
-  cricket_bat: W('Beach Cricket Bat', 'sword', 36, 0, 2, 2700, 'crit', 4, 'Willow, oiled, signed by a man called Steve. Crits like it is the last over.', { crit: 0.12, spd: 1, def: 3 }),
-  ice_pick: W('Ice-Pick Cocktail Stirrer', 'dagger', 26, 0, 2, 2600, 'swift', 4, 'Stirs a mojito, cracks a block of ice, chills a foe. May slow them. Umbrella included.', { spd: 6, crit: 0.2, elem: 'ice', proc: ['slow', 0.25] }),
-  super_soaker: W('Super Soaker 9000', 'bow', 30, 0, 2, 2900, 'frost', 4, 'Eight litres of iced slush and a pump action. Soaks through armour. Aim at your mates only once.', { elem: 'ice', pierce: 0.25, spd: 3 }),
-  oven_gloves: W('Quilted Oven Gloves', 'fists', 26, 0, 2, 2600, 'guard', 4, 'Two thick mitts shaped like crocodiles. Punches twice, shrugs off the heat.', { hits: 2, def: 6, hp: 25 }),
-  laminated_menu: W('Menu of a Thousand Toppings', 'tome', 3, 33, 3, 0, 'echo', 5, 'Pineapple on page nine. A hot take on every page. Spells reply to all.', { mp: 30, spd: 2, sig: 'tempest' }),
-  pizza_cutter: W('Rocker Pizza Cutter', 'katana', 40, 0, 3, 0, 'execute', 5, 'A great round blade on a stick. One clean roll and nothing stays whole.', { crit: 0.25, spd: 3, sig: 'flashcut' }),
+  cricket_bat: W('Sunforged Sword', 'sword', 36, 0, 2, 2700, 'crit', 4, 'Bright as noon on black sand. Crits often and turns a blow.', { crit: 0.12, spd: 1, def: 3 }),
+  ice_pick: W('Icicle Dirk', 'dagger', 26, 0, 2, 2600, 'swift', 4, 'Quick and cold. Crits, chills a foe and may slow them.', { spd: 6, crit: 0.2, elem: 'ice', proc: ['slow', 0.25] }),
+  super_soaker: W('Glacier Bow', 'bow', 30, 0, 2, 2900, 'frost', 4, 'Ice-tipped arrows that cut through armour.', { elem: 'ice', pierce: 0.25, spd: 3 }),
+  oven_gloves: W('Salamander Gauntlets', 'fists', 26, 0, 2, 2600, 'guard', 4, 'Punch twice and shrug off the hits that land back.', { hits: 2, def: 6, hp: 25 }),
+  laminated_menu: W('Codex of Echoes', 'tome', 3, 33, 3, 0, 'echo', 5, 'Every spell cast from its pages may echo a second time.', { mp: 30, spd: 2, sig: 'tempest' }),
+  pizza_cutter: W('Crescent Katana', 'katana', 40, 0, 3, 0, 'execute', 5, 'A cursed masterwork. One clean stroke and nothing stays whole.', { crit: 0.25, spd: 3, sig: 'flashcut' }),
 });
 Object.assign(ARMORS, {
   hivis_overalls: { name: 'Fireproof Hi-Vis Overalls', desc: 'Orange, reflective and rated for lava. Nobody sees you coming. Everyone sees you leaving.', def: 34, hp: 50, spd: 0, res: ['fire'], sockets: 2, price: 2900 },

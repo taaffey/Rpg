@@ -111,10 +111,10 @@ BOSSES.frozen_angler = { name: 'The Frozen Angler', intro: 'The ice cracks. A bu
 
 // ---------------------------------------------------------------- gear (2 per dungeon; one is boss loot, the other a rare drop)
 Object.assign(WEAPONS, {
-  rolling_pin: W('Nan\'s Rolling Pin', 'sword', 12, 0, 2, 300, undefined, 2, 'Solid beech, floured. Hits like a Sunday roast. A good clout may stun. Nan sends her love.', { def: 2, proc: ['stun', 0.1] }),
-  soggy_cutlass: W('Soggy Cutlass', 'katana', 22, 0, 2, 1100, 'crit', 3, 'Waterlogged but sharp. Slashes with swagger and often crits. Smells of low tide.', { crit: 0.18, spd: 1 }),
-  rubber_stamp: W('Rubber Stamp of Approval', 'axe', 25, 0, 2, 0, 'execute', 3, 'Ka-chunk! Hits like a filing cabinet and finishes weakened foes. DENIED, in red.', { spd: -1, crit: 0.12 }),
-  ice_fishing_rod: W('Ice Fishing Rod', 'whip', 19, 7, 2, 1300, 'frost', 3, 'Frosty and flexible. Slows whatever it hooks. Includes a flask and a very long wait.', { elem: 'ice', proc: ['slow', 0.3] }),
+  rolling_pin: W('Weighted Saber', 'sword', 12, 0, 2, 300, undefined, 2, 'A saber with a heavy iron pommel. A good clout may stun.', { def: 2, proc: ['stun', 0.1] }),
+  soggy_cutlass: W('Sea Wolf Katana', 'katana', 22, 0, 2, 1100, 'crit', 3, 'Salt-pitted but keen. Swift, and it often crits.', { crit: 0.18, spd: 1 }),
+  rubber_stamp: W('Executioner\'s Axe', 'axe', 25, 0, 2, 0, 'execute', 3, 'Heavy and final. Crits now and then and finishes weakened foes.', { spd: -1, crit: 0.12 }),
+  ice_fishing_rod: W('Rime Chain', 'whip', 19, 7, 2, 1300, 'frost', 3, 'A chain of frosted links. Strikes with ice and slows whatever it catches.', { elem: 'ice', proc: ['slow', 0.3] }),
 });
 Object.assign(ARMORS, {
   miller_apron: { name: 'Miller\'s Floury Apron', desc: 'Sturdy canvas with big pockets. Light and breezy. Ghosts can still smell the baking.', def: 13, hp: 18, spd: 1, sockets: 1, price: 0 },

@@ -194,11 +194,11 @@ const BA_LOOKS = {
 };
 export function parseKey(key) { const [job, look] = String(key || '').split('@'); return { job, look: BA_LOOKS[look] ? look : null }; }
 
-// ---------- weapon art: the ten weapon TYPES are silly families; a class may carry its own version (ART[job][type]) ----------
+// ---------- weapon art: one drawing per weapon TYPE (a class may carry its own version, ART[job][type]) ----------
 const ART = {
-  _: { sword: 'bat', dagger: 'screwdriver', staff: 'broom', rod: 'mop', bow: 'dart', fists: 'glove', whip: 'cable', scythe: 'strimmer', tome: 'tablet', axe: 'hammer', katana: 'knife', flask: 'demijohn' },
+  _: { sword: 'sword', dagger: 'dagger', staff: 'staff', rod: 'rod', bow: 'bow', fists: 'knuckle', whip: 'whip', scythe: 'scythe', tome: 'tome', axe: 'axe', katana: 'katana', flask: 'flask' },
 };
-const FAMILY = { bat: 'sword', guitar: 'sword', lollipop: 'staff', screwdriver: 'dagger', penknife: 'dagger', dart: 'dagger', broom: 'staff', mop: 'staff', selfie: 'staff', glove: 'fists', marigold: 'fists', cable: 'whip', band: 'whip', miccable: 'whip', strimmer: 'scythe', tablet: 'tome', phone: 'tome', hammer: 'axe', knife: 'katana', demijohn: 'flask' };
+const FAMILY = { sword: 'sword', dagger: 'dagger', staff: 'staff', rod: 'staff', bow: 'bow', knuckle: 'fists', whip: 'whip', scythe: 'scythe', tome: 'tome', axe: 'axe', katana: 'katana', flask: 'flask', bat: 'sword', guitar: 'sword', lollipop: 'staff', screwdriver: 'dagger', penknife: 'dagger', dart: 'dagger', broom: 'staff', mop: 'staff', selfie: 'staff', glove: 'fists', marigold: 'fists', cable: 'whip', band: 'whip', miccable: 'whip', strimmer: 'scythe', tablet: 'tome', phone: 'tome', hammer: 'axe', knife: 'katana', demijohn: 'flask' };
 export const weaponArt = (job, type) => (type === 'none' ? null : (ART[job] && ART[job][type]) || ART._[type] || null);
 
 // ---------- colours of the weapon / prop materials (all classes share them) ----------
@@ -277,6 +277,22 @@ function weaponParts(art, hand, ang, pose, J) {
   const stripe = (a, b, r, m) => P.push(paint(cap(a[0], a[1], b[0], b[1], r, r, m)));
   const fd = unit(J.elF, J.haF);
   switch (art) {
+    // ---- fantasy weapons (the ten families, plus rods and flasks) ----
+    case 'sword': C(at(-1.6), at(1), 0.55, 0.55, 'leather'); E(at(-2.1), 0.8, 0.8, 'gold', Z + 1); C(at(1.2, -2.4), at(1.2, 2.4), 0.55, 0.55, 'gold', Z + 1); Q([at(1.6, 0.95), at(10.6, 0.8), at(12.6, 0), at(10.6, -0.8), at(1.6, -0.95)], 'steel', Z + 1, 1); stripe(at(2.6), at(9.6), 0.22, 'steel2'); break;
+    case 'dagger': C(at(-1.3), at(0.8), 0.5, 0.5, 'leather'); C(at(1, -1.6), at(1, 1.6), 0.42, 0.42, 'gold', Z + 1); Q([at(1.2, 0.75), at(5.4, 0.6), at(7.2, 0), at(5.4, -0.6), at(1.2, -0.75)], 'steel', Z + 1, 0.8); break;
+    case 'staff': C(at(-6), at(10.2), 0.55, 0.55, 'wood'); for (const t of [-1, 1]) C(at(10, t * 0.6), at(12.2, t * 1.9), 0.4, 0.32, 'wood', Z + 1); E(at(12.3), 1.55, 1.55, 'gem', Z + 2); break;
+    case 'rod': C(at(-5), at(9), 0.5, 0.5, 'gold'); E(at(9.8), 1.3, 1.3, 'gold', Z + 1); C(at(10.4, -2), at(10.4, 2), 0.45, 0.45, 'gold', Z + 1); C(at(9.6), at(12.4), 0.45, 0.45, 'gold', Z + 1); E(at(10.4), 0.75, 0.75, 'gem', Z + 2); break;
+    case 'bow': { let q = null; for (let k = 0; k <= 8; k++) { const t = -1 + k / 4, n = add(add(hand, p, t * 6.2), d, 2.4 * (1 - t * t) - 0.6); if (q) C(q, n, 0.5, 0.5, 'wood'); q = n; }
+      C(add(add(hand, p, -6.2), d, -0.6), add(add(hand, p, 6.2), d, -0.6), 0.14, 0.14, 'wht', Z - 0.5);
+      if (pose === 'strike' || pose === 'ready') { C(at(-0.8), at(7.4), 0.18, 0.18, 'wood', Z + 1); Q([at(7.2, 0.6), at(8.8, 0), at(7.2, -0.6)], 'steel', Z + 1, 0.4); } break; }
+    case 'knuckle': E(hand, 1.6, 1.5, 'skin', Z); C(add(hand, p, -1.5), add(hand, p, 1.5), 0.6, 0.6, 'steel', Z + 1); break;
+    case 'whip': { C(hand, at(1.8), 0.6, 0.55, 'wood'); const len = pose === 'strike' ? 15 : 7, droop = pose === 'strike' ? 0.5 : 2.4; let q = at(1.8);
+      for (let k = 1; k <= 7; k++) { const t = k / 7, n = add(add(add(hand, d, 1.8 + len * t), [0, 1], droop * t * t * 3), p, Math.sin(t * 7) * 0.9); C(q, n, 0.5 - t * 0.2, 0.45 - t * 0.2, 'leather'); q = n; } break; }
+    case 'scythe': C(at(-5), at(11.2), 0.5, 0.5, 'wood'); Q([at(10.4, 0.2), at(12, 0.2), at(11.6, -4.6), at(9.6, -7.6), at(10.2, -4.2)], 'steel', Z + 1, 0.8); break;
+    case 'tome': Q([add(hand, [-2.8, -3.4]), add(hand, [2.2, -3.9]), add(hand, [2.8, 2.2]), add(hand, [-2.4, 2.6])], 'red', Z, 1); Q([add(hand, [-1.9, -2.6]), add(hand, [1.5, -3]), add(hand, [1.9, 1.4]), add(hand, [-1.6, 1.8])], 'paper', Z + 1, 0.5); stripe(add(hand, [-0.2, -2.8]), add(hand, [0.1, 1.6]), 0.25, 'gold'); break;
+    case 'axe': C(at(-2.2), at(8.6), 0.6, 0.6, 'wood'); Q([at(5, 0.5), at(8.8, 0.5), at(10, 3.8), at(7, 4.6), at(4, 3.8)], 'steel', Z + 1, 1); Q([at(6, -0.4), at(7.8, -0.4), at(6.9, -2.2)], 'steel', Z + 1, 0.4); break;
+    case 'katana': C(at(-2.8), at(1.4), 0.6, 0.6, 'rubber'); E(at(1.6), 0.6, 1.5, 'gold', Z + 1, { rot: ang * D2R }); Q([at(1.9, 0.6), at(8, 0.95), at(13.8, 0.35), at(13.2, -0.3), at(1.9, -0.5)], 'steel', Z + 1, 0.8); break;
+    case 'flask': { const c = [hand[0] - 0.4, hand[1] - 1.4]; E(c, 2.3, 2.3, 'gem'); C(add(c, [0, -2]), add(c, [0, -4]), 0.8, 0.7, 'wht'); E(add(c, [0, -4.4]), 0.8, 0.55, 'cork', Z + 1); break; }
     case 'bat': C(at(-1.8), at(3.2), 0.62, 0.62, 'bat2'); C(at(2.8), at(11), 0.8, 1.8, 'bat', Z + 1); E(at(11.2), 1.8, 1.8, 'bat', Z + 1); E(at(-1.9), 0.95, 0.95, 'bat2', Z + 1, { d: 0.5 }); stripe(at(-1), at(2.6), 0.75, 'tape'); break;
     case 'guitar': C(at(-2), at(5.5), 0.5, 0.5, 'wood'); E(at(-2.3), 0.8, 1, 'wood'); E(at(6.9), 2.4, 2.6, 'gtr', Z + 1); E(at(9.6), 3.3, 3.4, 'gtr', Z + 1); P.push(paint(ell(at(9.2)[0], at(9.2)[1], 1, 1, 'hole'))); C(at(10.8, -2.2), at(10.8, 2.2), 0.4, 0.4, 'wood', Z + 2); break;
     case 'lollipop': C(at(-3), at(10), 0.55, 0.55, 'wht'); E(at(12.2), 3.9, 3.9, 'wht', Z + 1, { d: 0.5 }); E(at(12.2), 3.2, 3.2, 'stop', Z + 2, { d: 0.5 }); stripe(at(12.2, -2.1), at(12.2, 2.1), 0.75, 'wht'); break;
@@ -391,7 +407,7 @@ const htx = (x) => HERO_CX + (x - 16.5) * hsc()[0], hty = (y) => HERO_FEET - (29
 const heroScale = (parts) => parts.filter(Boolean).map((p) => { const [sx, sy] = hsc(); return { ...p, bb: [Math.floor(htx(p.bb[0])) - 1, Math.floor(hty(p.bb[1])) - 1, Math.ceil(htx(p.bb[2])) + 1, Math.ceil(hty(p.bb[3])) + 1], f: (px, py, hit) => p.f(16.5 + (px - HERO_CX) / sx, 29 + (py - HERO_FEET) / sy, hit) }; });
 function heroSpec(job, poseName, wover, look = null, key = job) {
   const K = { ...(CLS[job] || CLS.knight), ...(OUT[key] || {}) }, LK = look ? BA_LOOKS[look] : null;
-  let art = wover == null ? weaponArt(job, K.weapon) : weaponArt(job, wover); if (art === 'glove' && K.bare) art = 'fist';
+  let art = wover == null ? weaponArt(job, K.weapon) : weaponArt(job, wover); if ((art === 'glove' || art === 'knuckle') && K.bare) art = 'fist';
   const fam = FAMILY[art] || (art === 'fist' ? 'fists' : 'none'), J = heroPose(poseName, fam), mats = allMats(K, LK), parts = [];
   const C = (a, b, r1, r2, m, z) => parts.push(cap(a[0], a[1], b[0], b[1], r1, r2, m, { z }));
   // classes that carry something in the off hand bring it in front of the chest while standing, so the item (and the hand) shows
@@ -426,7 +442,7 @@ function heroSpec(job, poseName, wover, look = null, key = job) {
   if (K.late) K.late(ctx);
   const hand = J.wHand === 'F' ? J.haF : J.haB;
   if (art) parts.push(...weaponParts(art, hand, J.wAng, poseName, J));
-  if (!(art === 'glove' || art === 'marigold')) parts.push(ell(J.haF[0], J.haF[1], 1.2, 1.2, 'skin', { z: 13.5 }));
+  if (!(art === 'glove' || art === 'marigold' || art === 'knuckle')) parts.push(ell(J.haF[0], J.haF[1], 1.2, 1.2, 'skin', { z: 13.5 }));
   // the head: the walker's big side-view head (face, hair, beard, headgear), so a hero looks the same in battle as on the map
   const eyes = J.face === 'x' || J.face === 'd' ? 'shut' : J.face === 'h' ? 'glad' : 'open', HD = headArt(key, eyes);
   return { w: HERO_W, h: HERO_H, mats, parts: heroScale(parts), crease: 1.2, post(api) {
