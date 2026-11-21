@@ -1,8 +1,9 @@
 // ===== Battle UI and flow, victory, defeat, the ending, New Game+ and house rules. =====
 import { GEN } from './mapgen.js';
 import * as DATA from './data.js';
-import { BOSSES, CALLING_BATCHES, DIFFICULTY, ENEMIES, ITEMS, JOBS, KEY_ITEMS, QUESTS, SKILLS, STORY, TRAITS } from './data.js';
+import { BOSSES, CALLING_BATCHES, DIFFICULTY, ENEMIES, ITEMS, JOBS, KEY_ITEMS, QUESTS, SKILLS, STORY, TRAITS, WEAPONS } from './data.js';
 import { BROS, COMBOS, PARTY_SCALE } from './bros.js';
+import { BLITZ, BUSHIDO, COMMANDS, DANCES, TOOLS, loreCost } from './commands.js';
 import { music, sfx } from './audio.js';
 import { Stage } from './stage.js';
 import { ATB_PACE, DEFEAT, HEART_GEM, RULES, SPEEDS, VICTORY } from './gamedata.js';
@@ -52,6 +53,7 @@ async function battleInner(groupIds, bossId = null) {
   if (G.flags.story.called) mod.desperation = true; // desperation attacks wake once the party has its callings
   if (!G.flags.story.called) mod.noAmbush = true; // no ambushes while it is two blokes in a cellar
   if (G.rules) { mod.reward *= ruleBonus(); if (G.rules.glass) mod.dmg = 1.5; if (G.rules.rush) mod.rush = true; } // NG+ house rules
+  mod.inv = G.inv; mod.terrain = stageKind(bossId); // Throw draws on the pack; Dance follows the battlefield
   const b = new Battle(G.party, groupIds, Math.random, !!bossId, mod);
   await transition(); music(bossId ? 'boss' : 'battle');
   const firstId = !bossId && b.e.map((e) => e.id).find((id) => !G.flags.bestiary[id] && fieldNote(id)), note = firstId && fieldNote(firstId); // first sight of a new foe: the party says something
@@ -105,6 +107,8 @@ async function battleInner(groupIds, bossId = null) {
   b.p.forEach((x) => { x.ch.hp = x.hp; x.ch.mp = x.mp; x.ch.poison = x.hp > 0 && x.st.poison > 0; }); // FF1: poison outlasts the fight
   if (b.over === 'fled') { sfx('flee'); const q = quip('flee', 0.6); if (q) toast(q.replace(/<[^>]+>/g, ''), 2600); }
   diag(`fight over: ${b.over} after ${b.turn} rounds, party ${b.p.map((x) => `${x.hp}/${x.maxhp}`).join(' ')}`);
+  if (b.over !== 'lose') for (const it of b.loot) { if (it.kind === 'items') G.inv.items[it.id] = (G.inv.items[it.id] || 0) + 1; else G.inv[it.kind].push(it.id); } // stolen goods are yours to keep
+  if (b.over === 'win') b.learned = b.learnFromBattle();
   if (b.over === 'win') await victory(b, bossId);
   else if (b.over === 'lose') await defeat();
   else { hide(); }
@@ -169,9 +173,29 @@ function quip(kind, chance) {
   recentQuips.push(t); if (recentQuips.length > 12) recentQuips.shift(); // no repeats for a good while
   return `<span class="quip">${esc(c.name)}: “${esc(t)}”</span>`;
 }
+// ---------- class commands (FF6): the button after FIGHT, its list of moves, and what auto-play does with Rage and Dance ----------
+const CMD_ICON = { steal: 'coin', blitz: 'fists', tools: 'cog', bushido: 'katana', lore: 'tome', runic: 'sword', throw: 'dagger', dance: 'spark', rage: 'atkup', sketch: 'skill', trance: 'star', health: 'heal', mimic: 'repeat' };
+const classCmd = (p) => (G.flags.story.called ? COMMANDS[p.ch.main] : null);
+function cmdMoves(p, id) { // [{ id, label, sub, off }]
+  const c = p.ch, lv = c.level, skillRow = ([sid, need]) => ({ id: sid, label: SKILLS[sid].name, sub: lv >= need ? describeSkill({ ...skillWithGems(sid, []), mp: 0 }).replace(/^0 MP · /, 'free · ') : `learned at level ${need}`, off: lv < need });
+  if (id === 'blitz') return BLITZ.map(skillRow);
+  if (id === 'tools') return TOOLS.map(skillRow);
+  if (id === 'bushido') return BUSHIDO.map(([sid, need, rec]) => ({ ...skillRow([sid, need]), sub: lv >= need ? `${describeSkill({ ...skillWithGems(sid, []), mp: 0 }).replace(/^0 MP · /, '')} · recovery ${'▮'.repeat(rec)}` : `learned at level ${need}` }));
+  if (id === 'lore') return (c.lore || []).map((sid) => { const cost = L.mpCost(p, { mp: loreCost(sid) }); return { id: sid, label: SKILLS[sid].name, sub: `${cost} MP · ${describeSkill({ ...skillWithGems(sid, []), mp: cost }).replace(/^\d+ MP · /, '')}`, off: p.mp < cost }; });
+  if (id === 'dance') return (c.dances || []).map((d) => ({ id: d, label: DANCES[d].name, sub: DANCES[d].moves.map((m) => SKILLS[m].name).join(' · ') }));
+  if (id === 'throw') return [...new Set(G.inv.weapons)].map((w) => ({ id: w, label: `${WEAPONS[w].name} ×${G.inv.weapons.filter((x) => x === w).length}`, sub: `${WEAPONS[w].atk || 0} atk${WEAPONS[w].elem ? ' · ' + WEAPONS[w].elem : ''} · used up` }));
+  return [];
+}
+function classCmdBtn(p) {
+  const k = classCmd(p); if (!k) return '';
+  const id = k.id, moves = ['blitz', 'tools', 'bushido', 'lore', 'dance', 'throw'].includes(id) ? cmdMoves(p, id) : null;
+  const off = (moves && !moves.some((m) => !m.off)) || (id === 'trance' && p.tranced) || (id === 'mimic' && !BT.b.lastAlly);
+  return btn('c', `${ic(CMD_ICON[id] || 'spark')}${k.name.toUpperCase()}`, 'cmd', '', '', off);
+}
 function cmdHtml(a) {
   const p = a.p, c = p.ch, head = `<div class="cmdhead">${portrait(ak(c), 'sm')}${esc(p.name)}</div>`, back = btn('c', `${ic('back')}BACK`, 'root');
-  if (a.stage === 'root') return `${head}<div class="cmdlist">${btn('c', `${ic('fight')}FIGHT`, 'attack')}${btn('c', `${ic('skill')}SKILL`, 'skills')}${btn('c', `${ic('item')}ITEM`, 'item', '', '', !!G.rules?.dry)}${btn('c', `${ic('guard')}GUARD`, 'defend')}${comboPartner(p) && combosKnown().length ? btn('c', `${ic('spark')}COMBO`, 'combos') : ''}${veteran() ? `${btn('c', `${ic('repeat')}REPEAT`, 'repeat', '', '', !BT.last.has(p.name))}${btn('c', `${ic('auto')}AUTO`, 'auto')}` : ''}${btn('c', `${ic('run')}RUN`, 'flee', '', '', BT.b.boss)}</div>`;
+  if (a.stage === 'root') return `${head}<div class="cmdlist">${btn('c', `${ic('fight')}FIGHT`, 'attack')}${classCmdBtn(p)}${btn('c', `${ic('skill')}SKILL`, 'skills')}${btn('c', `${ic('item')}ITEM`, 'item', '', '', !!G.rules?.dry)}${btn('c', `${ic('guard')}GUARD`, 'defend')}${comboPartner(p) && combosKnown().length ? btn('c', `${ic('spark')}COMBO`, 'combos') : ''}${veteran() ? `${btn('c', `${ic('repeat')}REPEAT`, 'repeat', '', '', !BT.last.has(p.name))}${btn('c', `${ic('auto')}AUTO`, 'auto')}` : ''}${btn('c', `${ic('run')}RUN`, 'flee', '', '', BT.b.boss)}</div>`;
+  if (a.stage === 'cmdmoves') return `${head}<div class="cmdlist"><div class="dim">${esc(classCmd(p).name.toUpperCase())}</div>` + (cmdMoves(p, a.cmdId).map((m) => btn('c', `<span class="sk"><b>${esc(m.label)}</b></span><small>${esc(m.sub)}</small>`, 'cmdmove', m.id, 'two', m.off)).join('') || '<div class="dim">Nothing here yet.</div>') + `${back}</div>`;
   if (a.stage === 'skills') {
     return `${head}<div class="cmdlist">` + [0, 1, 2, 3, SIG].map((i) => {
       const sid = slotSkill(c, i); if (!sid) return '';
@@ -231,6 +255,9 @@ function autoTrouble(b) {
   return '';
 }
 function askCommand(p) {
+  // FF6: a hero in a Rage attacks at random, and a dancer keeps dancing, until the battle ends
+  if (p.st.rage > 0) { BT.stage.setActive(p.name); const foes = BT.b.e.filter((x) => x.hp > 0); return Promise.resolve({ kind: 'skill', skillId: 'attack', gems: [], target: foes[Math.floor(Math.random() * foes.length)] }); }
+  if (p.dancing) { BT.stage.setActive(p.name); return Promise.resolve({ kind: 'command', id: 'dance', move: p.dancing }); }
   if (BT.auto) { BT.stage.setActive(p.name); return Promise.resolve(autoCommand(p)); }
   BT.stage.setActive(p.name);
   return new Promise((resolve) => { BT.ask = { p, stage: 'root', resolve, pending: null }; renderBattle(); });
@@ -253,6 +280,13 @@ ACT.c = (what, x) => {
   else if (what === 'flee') return finish({ kind: 'flee' });
   else if (what === 'attack') castDirect('attack', []);
   else if (what === 'repeat') return finish(autoCommand(p));
+  else if (what === 'cmd') { const k = classCmd(p); if (!k) return; const id = k.id;
+    if (id === 'steal' || id === 'sketch') toTarget('e', { kind: 'command', id });
+    else if (['blitz', 'tools', 'bushido', 'lore', 'dance', 'throw'].includes(id)) { a.stage = 'cmdmoves'; a.cmdId = id; }
+    else return finish({ kind: 'command', id }); }
+  else if (what === 'cmdmove') { const id = a.cmdId, cmd = { kind: 'command', id, move: x };
+    if (id === 'dance') return finish(cmd);
+    const t = id === 'throw' ? 'one' : SKILLS[x]?.tgt; if (t === 'one') toTarget('e', cmd); else if (t === 'ally') toTarget('p', cmd); else return finish(cmd); }
   else if (what === 'auto') { BT.auto = true; toast('⏩ Auto-battle on. Tap Auto in the corner to stop.', 2600); return finish(autoCommand(p)); }
   else if (what === 'cast') { const i = +x; castDirect(slotSkill(p.ch, i), slotGems(p.ch, i)); }
   else if (what === 'useitem') toTarget('p', { kind: 'item', item: x });
@@ -285,6 +319,8 @@ async function victory(b, bossId) {
       lines.push(`✦ Rank up! ${esc(c.name)}: ${JOBS[k.job].name} ${k.rank}${got.length ? ` — learned <b>${got.join(', ')}</b>` : ''}${k.mastered ? ' <b class="gold">★ Mastered</b>' : ''}`);
       if (k.mastered) for (const j of L.capstonesJustOpened(c)) lines.push(`⭐ ${esc(c.name)} has mastered ${JOBS[j].needs} callings. A new calling is open to them: <b>${JOBS[j].name}</b>.`); }
   }
+  for (const m of b.learned || []) lines.push(`📖 ${m}`);
+  if (b.loot.length) lines.push(`🧺 Stolen: ${b.loot.map((it) => esc(lootName(it.kind, it.id))).join(', ')}`);
   if (lvSfx) setTimeout(() => sfx('levelup'), 1400);
   for (const d of r.drops) {
     if (d.kind === 'items') G.inv.items[d.id] = (G.inv.items[d.id] || 0) + 1; else G.inv[d.kind].push(d.id);

@@ -1,6 +1,8 @@
 // ===== Pure game logic (no DOM): stats, build rules, gem rewriting, battle engine =====
 import { JOBS, SKILLS, GEMS, WEAPONS, ARMORS, ACCS, WEAPON_TYPES, ENEMIES, ITEMS, DROPS } from './data.js';
 import { MECH } from './bossmech.js';
+import { BLITZ, BUSHIDO, DANCES, DANCE_ODDS, TOOLS, loreCost, loreable, terrainDance } from './commands.js';
+const lootLabel = (k, id) => (k === 'items' ? ITEMS[id]?.name : k === 'weapons' ? WEAPONS[id]?.name : k === 'armors' ? ARMORS[id]?.name : k === 'accs' ? ACCS[id]?.name : k === 'gems' ? GEMS[id]?.name : id) || id;
 
 export const STAT_KEYS = ['hp', 'mp', 'atk', 'def', 'mag', 'spd'];
 export const MAX_LEVEL = 30;
@@ -219,7 +221,7 @@ export function elemMult(t, e) { if (!e) return 1; if (t.weak.includes(e)) retur
 export class Battle {
   constructor(party, enemyIds, rng = Math.random, boss = false, mod = {}) {
     this.mod = { hp: 1, atk: 1, mag: 1, def: 1, reward: 1, dmg: 1, ...mod };
-    this.rng = rng; this.boss = boss; this.over = null; this.turn = 0; this.fx = [];
+    this.rng = rng; this.boss = boss; this.over = null; this.turn = 0; this.fx = []; this.loot = []; this.seenLore = new Set(); this.lastAlly = null;
     this.p = party.map((c) => {
       const s = stats(c);
       return { side: 'p', ch: c, row: c.row === 'back' ? 'back' : 'front', tr: new Set(activeTraits(c)), wpn: WEAPONS[c.weapon] || null, sig: sigSkill(c), name: c.name, hp: c.hp, mp: c.mp, maxhp: s.hp, maxmp: s.mp, atk: s.atk, def: s.def, mag: s.mag, spd: s.spd, weak: [], res: resists(c), st: {}, defending: false };
@@ -330,6 +332,70 @@ export class Battle {
     if (cmd.kind === 'skill' && skillWithGems(cmd.skillId, cmd.gems || []).swift && alive(x)) x.atb = 40; // Swift: back in action sooner
     this.check(); this.phases(L); yield L;
   }
+  // ---------- class commands (FF6), see commands.js ----------
+  command(a, cmd, L) {
+    const foes = this.foes(a).filter(alive), friends = this.side(a).filter(alive), lv = a.ch?.level || 1, tgt = (t) => (t && alive(t) ? t : pick(foes, this.rng));
+    switch (cmd.id) {
+      case 'steal': {
+        const t = tgt(cmd.target); if (!t) return; L.push(`${a.name} tries to steal from ${t.name}...`); this.fx.push({ t: 'cast', actor: a.name, kind: 'phys', side: a.side, targets: [t.name] });
+        const d = DROPS[t.id]; if (t.stolen || !d) { L.push('  Nothing to steal.'); return; }
+        if (this.rng() > 0.55 + (a.tr.has('firststrike') ? 0.15 : 0)) { L.push('  Couldn\'t steal anything.'); return; }
+        const it = Array.isArray(d) ? [d[1], d[2]] : d.rare && this.rng() < 0.125 ? d.rare : d.common; if (!it) { L.push('  Nothing to steal.'); return; }
+        t.stolen = true; this.loot.push({ kind: it[0], id: it[1] }); L.push(`  Stole ${lootLabel(it[0], it[1])}!`); return;
+      }
+      case 'blitz': case 'tools': case 'bushido': {
+        const list = cmd.id === 'blitz' ? BLITZ : cmd.id === 'tools' ? TOOLS : BUSHIDO, row = list.find(([id]) => id === cmd.move); if (!row || lv < row[1]) { L.push(`${a.name} hasn't learned that yet.`); return; }
+        const s = SKILLS[cmd.move], t = s.tgt === 'one' ? tgt(cmd.target) : cmd.target;
+        if (s.noBoss && t?.def_?.boss) { L.push(`${a.name} tries ${s.name}... ${t.name} is far too big to lift!`); return; }
+        this.cast(a, cmd.move, [], t, L, true, true);
+        if (s.sacrifice && alive(a)) { a.hp = 0; L.push(`  ${a.name} gives everything and falls!`); this.fx.push({ t: 'hit', name: a.name, d: 0, ko: true }); }
+        if (cmd.id === 'bushido') a.atb = -12 * row[2]; // the stronger the art, the longer to recover
+        return;
+      }
+      case 'lore': {
+        const id = cmd.move; if (!(a.ch.lore || []).includes(id)) return; const cost = mpCost(a, { mp: loreCost(id) });
+        if (a.mp < cost) { L.push(`${a.name} lacks the MP!`); return; } a.mp -= cost; this.cast(a, id, [], SKILLS[id].tgt === 'one' ? tgt(cmd.target) : cmd.target, L, true, true); return;
+      }
+      case 'runic': a.st.runic = 1; L.push(`${a.name} raises the blade. The next spell will be drawn into it.`); this.fx.push({ t: 'cast', actor: a.name, kind: 'buff', side: a.side, targets: [a.name] }); return;
+      case 'throw': {
+        const inv = this.mod.inv, w = WEAPONS[cmd.move], t = tgt(cmd.target); if (!w || !t || !inv || !inv.weapons.includes(cmd.move)) { L.push('Nothing to throw.'); return; }
+        inv.weapons.splice(inv.weapons.indexOf(cmd.move), 1); L.push(`${a.name} throws the ${w.name}!`); this.fx.push({ t: 'cast', actor: a.name, kind: 'phys', elem: w.elem, side: a.side, targets: [t.name] });
+        const d = this.damage(a, t, { kind: 'phys', pow: 1.6 + (w.atk || 0) / 12, pierce: 0.4, crit: 0.1 }, 1, w.elem); this.hurt(t, d, L, `  ${t.name} takes ${d} damage`, elemMult(t, w.elem) > 1); return;
+      }
+      case 'dance': {
+        const dn = DANCES[cmd.move]; if (!dn) return; a.dancing = cmd.move; let r = this.rng() * 16, k = 0; while (k < 3 && (r -= DANCE_ODDS[k]) >= 0) k++;
+        const id = dn.moves[k]; L.push(`${a.name} dances the ${dn.name}!`); this.cast(a, id, [], SKILLS[id].tgt === 'one' ? pick(foes, this.rng) : null, L, true, true); return;
+      }
+      case 'rage': a.st.rage = 9999; L.push(`${a.name} goes berserk!`); this.fx.push({ t: 'phase', name: a.name, text: 'RAGE' }); return;
+      case 'sketch': {
+        const t = tgt(cmd.target); if (!t) return; L.push(`${a.name} sketches ${t.name}...`);
+        const pool = (t.skills || t.def_.skills).map(([sid]) => sid).filter((sid) => SKILLS[sid] && SKILLS[sid].kind !== 'heal');
+        if (!pool.length || this.rng() < 0.15) { L.push('  The sketch comes out wrong.'); return; }
+        const id = pick(pool, this.rng); this.cast(a, id, [], SKILLS[id].tgt === 'one' ? t : null, L, true, true); return;
+      }
+      case 'trance': if (a.tranced) { L.push(`${a.name} has nothing left to draw on.`); return; }
+        a.tranced = true; a.st.trance = 5; { const h = Math.min(a.maxhp - a.hp, Math.round(a.maxhp * 0.3)); a.hp += h; if (h) this.fx.push({ t: 'heal', name: a.name, amount: h }); }
+        L.push(`${a.name} enters a Trance! Power floods in.`); this.fx.push({ t: 'phase', name: a.name, text: 'TRANCE' }); return;
+      case 'health': this.cast(a, 'cmd_health', [], null, L, true, true); for (const x of friends) { x.st.poison = 0; x.st.slow = 0; } return;
+      case 'mimic': {
+        const last = this.lastAlly; if (!last) { L.push(`${a.name} has nothing to copy yet.`); return; } L.push(`${a.name} mimics ${last.who}!`);
+        if (last.cmd.kind === 'skill') this.cast(a, last.cmd.skillId, last.cmd.gems || [], tgt(last.cmd.target), L, true, true);
+        else if (last.cmd.kind === 'command') this.command(a, { ...last.cmd, target: last.cmd.target }, L);
+        return;
+      }
+      default: break;
+    }
+  }
+  // after a won battle: Lore spells seen (by anyone who has taken up the Mage calling and is still standing), dances for new ground
+  learnFromBattle() {
+    const out = [], dance = terrainDance(this.mod.terrain);
+    for (const x of this.p) {
+      if (!alive(x)) continue; const c = x.ch;
+      if (c.cp?.mage != null) for (const id of this.seenLore) if (!(c.lore ||= []).includes(id)) { c.lore.push(id); out.push(`${c.name} learned the Lore <b>${SKILLS[id].name}</b>.`); }
+      if (c.cp?.bard != null && !(c.dances ||= []).includes(dance)) { c.dances.push(dance); out.push(`${c.name} learned the <b>${DANCES[dance].name}</b>.`); }
+    }
+    return out;
+  }
   check() {
     if (!this.e.some(alive)) this.over = 'win';
     else if (!this.p.some(alive)) this.over = 'lose';
@@ -391,7 +457,9 @@ export class Battle {
         else if (it.mpr) { const h = Math.min(it.mpr * pot, t.maxmp - t.mp); t.mp += h; L.push(`${use}: ${t.name} +${h} MP`); }
         break;
       }
+      case 'command': this.command(a, cmd, L); if (a.side === 'p' && cmd.id !== 'mimic') this.lastAlly = { who: a.name, cmd }; break;
       case 'skill': {
+        if (a.side === 'p') this.lastAlly = { who: a.name, cmd };
         const dsp = a.side === 'p' && cmd.skillId === 'attack' && this.mod.desperation && DESPERATION[a.ch.look] && a.hp < a.maxhp / 8 && !(a.st.stun > 0) && this.rng() < 1 / 16; // FF6: below 1/8 HP, Fight sometimes becomes something else
         if (dsp) { L.push(`★ Desperation! ${a.name}: ${SKILLS[DESPERATION[a.ch.look]].name}!`); this.fx.push({ t: 'phase', name: a.name, text: 'DESPERATION' }); this.cast(a, DESPERATION[a.ch.look], [], cmd.target, L, true, true); break; }
         this.cast(a, cmd.skillId, cmd.gems || [], cmd.target, L, false, false); break;
@@ -449,6 +517,8 @@ export class Battle {
       if (a.side === 'p' && a.row === 'back' && !(a.wpn && RANGED.has(a.wpn.type))) raw *= 0.5;
       if (t.side === 'p' && t.row === 'back') raw *= 0.5;
     }
+    if (a.st.rage > 0) raw *= 1.5; // Rage (Berserker)
+    if (a.st.trance > 0) raw *= 1.6; // Trance (Paladin)
     if (a.tr.has('adrenaline') && a.hp < a.maxhp * 0.4) raw *= 1.3; // traits (see TRAITS in data.js)
     if (t.tr.has('stalwart')) raw *= 0.85;
     if (t.side === 'p' && this.p.some((x) => x !== t && alive(x) && x.tr.has('guardian'))) raw *= 0.9;
@@ -465,12 +535,16 @@ export class Battle {
       a.mp -= s.mp;
     }
     const elem = s.elem === 'random' ? pick(['fire', 'ice', 'bolt'], this.rng) : s.elem;
+    if (s.kind === 'mag' && a.side === 'e' && loreable(id)) this.seenLore.add(id); // Lore: the Mage learns what it sees (and survives)
+    const rune = s.kind === 'mag' && this.p.find((x) => x !== a && alive(x) && x.st.runic > 0); // Runic: the next spell cast by anyone is drawn into the blade
+    if (rune) { const back = Math.min(rune.maxmp - rune.mp, s.mp || loreCost(id)); rune.mp += back; rune.st.runic = 0; L.push(`${a.name} casts ${s.name}... ${rune.name}'s blade draws it in! (+${back} MP)`); this.fx.push({ t: 'cast', actor: a.name, kind: 'buff', side: a.side, targets: [rune.name] }); return; }
     L.push(id === 'attack' ? `${a.name} attacks!` : `${a.name} uses ${s.name}${s.tags.length ? ` [${s.tags.join(' + ')}]` : ''}!`);
     let dealt = 0;
     const targets = this.resolveTargets(a, s, target);
     this.fx.push({ t: 'cast', actor: a.name, kind: s.kind, elem, hostile: !!s.hostile, side: a.side, targets: targets.map((x) => x.name) });
     for (const t of targets) {
       if (s.kind === 'phys' || s.kind === 'mag') {
+        if (s.instakill && t.side === 'e' && !t.def_.boss && this.rng() < s.instakill) { const d = t.hp; dealt += d; this.hurt(t, d, L, `  ${s.name} cuts ${t.name} clean in two! (${d})`, true); continue; } // Chainsaw
         let total = 0;
         for (let h = 0; h < s.hits && alive(t); h++) {
           const d = this.damage(a, t, s, 1, elem), crit = this.lastCrit; total += d; dealt += d;
