@@ -49,6 +49,7 @@ function layoutView() {
   const portrait = box.height > box.width * 1.1, big = Math.min(box.width, box.height) >= 560; // iPad / large windows: more of the world, not giant tiles
   const T = portrait ? box.width / (big ? 16 : 12) : Math.min(box.width / (big ? 22 : 16), box.height / (big ? 15 : 12));
   let cols = clamp(Math.round(box.width / T), 10, 26), rows = clamp(Math.round(box.height / T), 8, 20);
+  if (S.viewAll) { const m = mapDef(); cols = m.rows[0].length; rows = m.rows.length; } // debug/tools: the whole map at once (tools/townshot.mjs)
   if (cols !== VW || rows !== VH) { VW = cols; VH = rows; cv.width = cols * TS; cv.height = rows * TS; S.miniDirty = true; }
   const pad = $('#padL'); root.style.setProperty('--padh', (pad && pad.offsetHeight ? pad.offsetHeight + 8 : 0) + 'px'); // dialogue boxes sit above the touch pads
 }

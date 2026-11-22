@@ -125,6 +125,9 @@ const PAL = {
   oakT: ramp('#100904 #1c1007 #2c190c #402412 #563118 #6c4120 #865330'),
   ivy: ramp('#0a2010 #12301a #1a4421 #265c2a #327434 #428c3c #58a64a #78c25c'),
   bronze: ramp('#2e1a06 #4e2e0a #74480f #9c6416 #c4841e #e4a830 #f6cc4c #fff09c'),
+  rose: ramp('#5e3a3a #7c5050 #9a6a66 #b4857e #caa098 #dcbab0 #eacfc6 #f6e4dc'),
+  sage: ramp('#3e4a3e #566456 #6e7e6c #889884 #a2b29c #bccab4 #d2dccb #e6eedf'),
+  ochre: ramp('#5e4420 #7c5c2c #9a763a #b8904c #ceaa66 #e0c282 #ecd6a0 #f6e8c0'),
   oakL: ramp('#0a2410 #12341a #1b461f #265a25 #336f2c #418634 #54a03c #6cb846 #8ad058 #b0e078'),
 };
 // per theme: what each map char is made of (ground classes) and which ramps paint it
@@ -249,13 +252,13 @@ function buildGround(m) {
       if (bu === 0) s = swamp ? 0.2 : 0.1; else if (bu === 1) s += 0.1;
       if (((v + Math.floor(hash(bi, 0, 3) * 40)) % 37 + 37) % 37 === 0) s = 0.1;
       if (bu === 2 && hash(bi, Math.floor(v / 8), 4) < 0.1) s += 0.25; // nail heads
-      if (swamp && bu === 0 && hash(bi, seg, 6) < 0.18) { col = 0; } else col = pick(swamp ? PAL.plank : PAL.wood, cl(s, 0.05, 0.95), px, py);
+      if (swamp && bu === 0 && hash(bi, seg, 6) < 0.05) { col = 0; } else col = pick(swamp ? PAL.plank : PAL.wood, cl(s, 0.05, 0.95), px, py);
       if (dn === G_WAT && ly >= 13) col = ly === 13 ? pick(PAL.wood, 0.75, px, py) : pick(PAL.wood, ly === 14 ? 0.3 : 0.15, px, py);
       if (up === G_WAT && ly === 0) col = pick(PAL.wood, 0.2, px, py);
       if (lf === G_WAT && lx === 0) col = pick(PAL.wood, 0.18, px, py); if (rt === G_WAT && lx === 15) col = pick(PAL.wood, 0.15, px, py);
       const post = (lx <= 2 || lx >= 13) && ((hz ? tx : ty) & 1) === 0;
       if (post && (dn === G_WAT && ly >= 11 || up === G_WAT && ly <= 3) && (hz || lf === G_WAT || rt === G_WAT)) col = pick(PAL.wood, lx === 0 || lx === 13 ? 0.7 : 0.4, px, py);
-      if (swamp && ((hz && (dn === G_WAT || up === G_WAT)) || (!hz && (lf === G_WAT || rt === G_WAT))) && hash(bi, seg, 8) < 0.25) col = pick(PAL.moss, 0.6, px, py); // moss on the edges
+      if (swamp && ((hz && (dn === G_WAT || up === G_WAT)) || (!hz && (lf === G_WAT || rt === G_WAT))) && hash(bi, seg, 8) < 0.07 && (hz ? ly : lx) % 15 < 2) col = pick(PAL.moss, 0.6, px, py); // a little moss on the outer edges
     } else if (c === G_WALL) {
       const upW = cAt(tx, ty - 1) === G_WALL, dnW = cAt(tx, ty + 1) === G_WALL, faceTop = upW ? 0 : dnW ? 16 : 6;
       if (ly < faceTop) { // cap stones
@@ -484,7 +487,12 @@ function buildingPix(theme, b) {
     const w = b.w * 16, H = (b.h + 1) * 16, p = new Pix(w, H), seed = b.x * 31 + b.y * 17, rnd = (k) => hash(seed, k, 99);
     const snow = theme === 'snowtown', swamp = theme === 'swamptown', two = b.h >= 5 && !swamp, stilt = swamp ? 11 : 0;
     const yB = H - 1 - stilt - (swamp ? 0 : 0), WH = two ? 44 : 31, yE = yB - WH + 2, yR = 6, dc = b.door * 16 + 8;
-    const RR = swamp ? PAL.thatch : PAL.slate, WALL = swamp ? PAL.plank : snow ? PAL.splaster : PAL.plaster, shut = [PAL.green, PAL.blue, PAL.red][Math.floor(rnd(3) * 3)];
+    // each kind has its own build so a street is not a row of clones: the smithy is all stone with a forge mouth, the guild hall has a stone
+    // ground floor under a timbered upper storey, shops get a striped awning, houses and the inn vary their plaster and roof
+    const K = b.kind, stoneAll = !swamp && K === 'smith', stoneLow = !swamp && K === 'guild';
+    const RR = swamp ? PAL.thatch : K === 'inn' ? PAL.terra : K === 'smith' ? PAL.slateM : K === 'house' && rnd(8) < 0.5 ? PAL.terra : PAL.slate;
+    const WALL = swamp ? PAL.plank : K === 'inn' ? PAL.ochre : K === 'shop' ? (snow ? PAL.rose : PAL.sage) : K === 'house' ? [PAL.splaster, PAL.sage, PAL.rose, PAL.plaster][Math.floor(rnd(9) * 4)] : snow ? PAL.splaster : PAL.plaster;
+    const shut = K === 'inn' ? PAL.green : K === 'shop' ? PAL.blue : [PAL.green, PAL.blue, PAL.red][Math.floor(rnd(3) * 3)], STONE = K === 'smith' ? PAL.stone : PAL.fstone;
     const hip = swamp || rnd(1) < 0.55, hx = hip ? Math.min(Math.floor(w * 0.2), Math.floor((yE - yR) * 0.55)) : 0;
     // cross gables: one over the door for shops (holds the sign), a second one on big buildings
     const gables = [], ghw = Math.min(11, (b.w * 16) / 4);
@@ -495,6 +503,7 @@ function buildingPix(theme, b) {
     for (let y = yE + 1; y <= yB; y++) for (let x = 1; x < w - 1; x++) {
       const fy = y - yE - 1; let c;
       if (swamp) { const bi = Math.floor(x / 4), pl = x % 4; let v = 0.5 + (hash(bi, 2, seed) - 0.5) * 0.3 + (vnoise(x * 3, y, 4, seed) - 0.5) * 0.2 - (yB - y < 5 ? 0.15 : 0); if (pl === 0) v = 0.1; c = pick(WALL, cl(v - (fy < 3 && !inG(x) ? 0.35 - fy * 0.1 : 0)), x, y); }
+      else if (stoneAll || (stoneLow && two && y > yE + 20)) { const row = Math.floor((yB - y) / 4), bx = Math.floor((x + row * 5 + (hash(row, 1, seed) * 6 | 0)) / 9), bu = (x + row * 5 + (hash(row, 1, seed) * 6 | 0)) % 9, bv = (yB - y) % 4; let v = 0.55 + (hash(bx, row, seed) - 0.5) * 0.34 - (bv === 3 ? 0.38 : bv === 0 ? -0.1 : 0) - (bu === 0 ? 0.32 : 0) + (fbm(x, y, seed) - 0.5) * 0.12; if (fy < 3 && !inG(x)) v -= 0.4 - fy * 0.12; c = pick(STONE, cl(v), x, y); }
       else if (y > yB - (snow ? 7 : 5)) { const row = Math.floor((yB - y) / 3), bx = Math.floor((x + row * 3) / 6), bu = (x + row * 3) % 6, bv = (yB - y) % 3; let v = 0.5 + (hash(bx, row, seed) - 0.5) * 0.3; if (bu === 0 || bv === 2) v = 0.12; else if (bv === 1 && bu === 1) v += 0.2; c = pick(PAL.stone, cl(v), x, y); }
       else { let v = 0.72 + (fbm(x * 1.5, y * 1.5, seed) - 0.5) * 0.2; if (fy < 3 && !inG(x)) v -= 0.42 - fy * 0.12; c = pick(WALL, cl(v), x, y); }
       p.set(x, y, c);
@@ -502,7 +511,9 @@ function buildingPix(theme, b) {
     const beamH = (y, x0 = 1, x1 = w - 2, sh = true) => { for (let x = x0; x <= x1; x++) { p.set(x, y, pick(PAL.timber, 0.75, x, y)); p.set(x, y + 1, pick(PAL.timber, 0.35, x, y)); if (sh) p.set(x, y + 2, dk(p.get(x, y + 2), 0.78)); } };
     const post = (x, y0, y1) => { for (let y = y0; y <= y1; y++) { p.set(x, y, pick(PAL.timber, 0.6, x, y)); p.set(x + 1, y, pick(PAL.timber, 0.25, x, y)); } };
     const fbot = yB - (snow ? 7 : 5), upperB = yE + 19;
-    if (!swamp) {
+    if (stoneAll) { /* solid stone: no timber frame */ }
+    else if (stoneLow && two) { beamH(yE + 3); beamH(upperB); post(1, yE + 1, upperB); post(w - 3, yE + 1, upperB); for (let c = 1; c < b.w; c++) post(c * 16 - 1, yE + 3, upperB); }
+    else if (!swamp) {
       beamH(yE + 3); beamH(fbot - 1, 1, w - 2, false); if (two) beamH(upperB);
       post(1, yE + 1, fbot); post(w - 3, yE + 1, fbot);
       for (let c = 1; c < b.w; c++) post(c * 16 - 1, yE + 3, fbot);
@@ -518,10 +529,13 @@ function buildingPix(theme, b) {
         if (b.kind === 'inn' || b.kind === 'guild') for (const lx of [bx - 1, bx + 15]) { p.set(lx, yB - 17, pick(PAL.iron, 0.3, 0, 0)); for (let y = yB - 16; y < yB - 12; y++) { p.set(lx, y, pick(PAL.glow, 0.9, 0, y)); p.set(lx + 1, y, pick(PAL.glow, 0.6, 0, y)); } p.set(lx, yB - 12, pick(PAL.iron, 0.3, 0, 0)); }
         continue;
       }
+      if (stoneAll && c === (b.door + 1 < b.w ? b.door + 1 : b.door - 1)) { forgeMouth(p, bx, yB, seed); continue; }
       const opt = { shut: swamp ? PAL.bark : shut, box: !swamp && (c + b.x) % 2 === 0, snow, open: swamp, frame: swamp ? PAL.bark : PAL.timber };
-      if (two) { windowAt(p, bx + 5, yE + 6, 6, 8, { ...opt, box: true }); windowAt(p, bx + 4, upperB + 5, 8, 9, opt); }
+      if (two && stoneLow) { windowAt(p, bx + 5, yE + 6, 6, 8, { ...opt, box: true }); if ((c + b.x) % 2) hallBanner(p, bx + 4, upperB + 3, c, seed, snow); else archWindow(p, bx + 5, upperB + 5, 6, 12); }
+      else if (two) { windowAt(p, bx + 5, yE + 6, 6, 8, { ...opt, box: true }); windowAt(p, bx + 4, upperB + 5, 8, 9, opt); }
       else windowAt(p, bx + 4, yE + 7, 8, swamp ? 8 : 10, opt);
     }
+    if (!swamp && K === 'shop') awning(p, b.door * 16 - 12, b.door * 16 + 28, yB - 21, seed, snow);
     if (snow) for (let x = 1; x < w - 1; x++) { const hgt = 2 + Math.floor(vnoise(x, 0, 5, seed) * 4); if (Math.abs(x + 0.5 - dc) < 8) continue; for (let y = yB - hgt; y <= yB; y++) p.set(x, y, pick(PAL.snow, cl(0.9 - (y - (yB - hgt)) * 0.06 - (x / w) * 0.2), x, y)); }
     if (swamp) { // platform and stilts down into the water, a ladder under the door
       for (let y = yB + 1; y <= yB + 3; y++) for (let x = 0; x < w; x++) p.set(x, y, pick(PAL.timber, y === yB + 1 ? 0.7 : 0.25, x, y));
@@ -548,7 +562,7 @@ function buildingPix(theme, b) {
           if (y <= e - 2) p.set(x, y, Math.abs(y - (e - d)) < 1 ? pick(RR, 0.08, x, y) : roofPx(RR, x, y, Math.round(e), x + 0.5 < g.cx ? 0.28 : -0.22, seed + 7, 1, swamp, snow));
           else if (y <= e) p.set(x, y, swamp ? pick(RR, y > e - 1 ? 0.2 : 0.55, x, y) : pick(PAL.wood, y > e - 1 ? 0.12 : 0.7, x, y));
           else if (y <= yE + 1 && Math.abs(x + 0.5 - g.cx) <= g.hw + 1) { let v = 0.74 + (fbm(x * 1.5, y * 1.5, seed) - 0.5) * 0.2 - (y - e < 2 ? 0.3 : 0); const fx = Math.abs(x + 0.5 - g.cx);
-            p.set(x, y, swamp ? pick(WALL, cl(v - 0.2 - (x % 4 === 0 ? 0.3 : 0)), x, y) : (fx < 1 || fx > g.hw && y > e + 1) ? pick(PAL.timber, x < g.cx ? 0.6 : 0.25, x, y) : pick(WALL, cl(v), x, y)); }
+            p.set(x, y, swamp || stoneAll ? pick(stoneAll ? PAL.plank : WALL, cl(v - 0.2 - (x % 4 === 0 ? 0.3 : 0)), x, y) : (fx < 1 || fx > g.hw && y > e + 1) ? pick(PAL.timber, x < g.cx ? 0.6 : 0.25, x, y) : pick(WALL, cl(v), x, y)); }
         } }
       if (!swamp) for (let x = Math.floor(g.cx - g.hw); x <= g.cx + g.hw; x++) { const y = yE + 1; if (edge(x) < y - 1) { p.set(x, y, pick(PAL.timber, 0.7, x, y)); p.set(x, y + 1, pick(PAL.timber, 0.3, x, y)); } }
       p.set(Math.floor(g.cx), Math.floor(g.ya) - 2, pick(PAL.wood, 0.7, 0, 0)); p.set(Math.floor(g.cx) - 1, Math.floor(g.ya) - 1, pick(PAL.wood, 0.4, 0, 0)); p.set(Math.floor(g.cx), Math.floor(g.ya) - 1, pick(PAL.wood, 0.8, 0, 0));
@@ -568,6 +582,31 @@ function buildingPix(theme, b) {
     if (snow) for (let x = 1; x < w - 1; x += 1) { if (hash(x, 5, seed) < 0.45) { const L = 1 + Math.floor(hash(x, 6, seed) * 4); for (let k = 1; k <= L; k++) p.set(x, yE + k, k === L ? pk('#ffffff') : pk('#bfe4fa')); } }
     rim(p, 0.42, 'tlr'); return canv(p);
   });
+}
+function hallBanner(p, x0, y0, c, seed, snow) { // a long guild banner on an iron rod: deep red or blue, gold hem and emblem
+  const C = c % 4 === 1 ? PAL.red : PAL.blue, h = 18, w = 8;
+  for (let x = x0 - 1; x <= x0 + w; x++) p.set(x, y0 - 1, pick(PAL.iron, 0.4, x, 0));
+  for (let y = y0; y < y0 + h; y++) for (let x = x0; x < x0 + w; x++) { const tip = y > y0 + h - 4 && Math.abs(x + 0.5 - (x0 + w / 2)) < y - (y0 + h - 4); if (tip) continue;
+    const edge = x === x0 || x === x0 + w - 1; p.set(x, y, edge ? pick(PAL.gold, 0.55, x, y) : pick(C, cl(0.62 - (x - x0) * 0.05 + (y === y0 ? 0.15 : 0)), x, y)); }
+  for (const [dx, dy] of [[3, 6], [4, 6], [3, 7], [4, 7], [2, 7], [5, 7], [3, 8], [4, 8], [3, 9], [4, 9], [3, 5], [4, 5]]) p.set(x0 + dx, y0 + dy, pick(PAL.gold, 0.8, dx, dy));
+}
+function archWindow(p, x0, y0, w, h) { // tall round-headed hall window in a stone surround
+  for (let y = y0 - 2; y <= y0 + h; y++) for (let x = x0 - 2; x < x0 + w + 2; x++) { const r = y < y0 + 2 ? Math.hypot(x + 0.5 - (x0 + w / 2), (y0 + 2 - y) * 1.2) : Math.abs(x + 0.5 - (x0 + w / 2)); if (r > w / 2 + 1.5) continue;
+    p.set(x, y, r > w / 2 - 0.3 ? pick(PAL.fstone, r > w / 2 + 0.7 ? 0.25 : 0.85, x, y) : pick(PAL.glow, cl(0.85 - (y - y0) * 0.03 - (x === x0 + w / 2 | 0 ? 0.3 : 0)), x, y)); }
+}
+function forgeMouth(p, bx, yB, seed) { // a wide stone arch with the forge burning inside, an anvil silhouette in front
+  const x0 = bx + 1, x1 = bx + 14, top = yB - 17;
+  for (let y = top - 3; y <= yB; y++) for (let x = x0 - 1; x <= x1 + 1; x++) { const r = Math.hypot((x + 0.5 - (x0 + x1 + 1) / 2) / 7.5, Math.max(0, top + 5 - y) / 7); if (r > 1.12) continue;
+    const inner = r < 0.95 && x >= x0 && x <= x1 && y < yB - 1; p.set(x, y, inner ? pick(PAL.glow, cl(0.95 - (yB - y) * 0.035 - Math.abs(x + 0.5 - (x0 + x1 + 1) / 2) * 0.05 + hash(x, y, seed) * 0.12), x, y) : pick(PAL.stone, r > 1.04 ? 0.15 : 0.7, x, y)); }
+  for (let y = yB - 6; y <= yB - 2; y++) for (let x = x0 + 3; x <= x1 - 3; x++) p.set(x, y, pick(PAL.iron, y === yB - 6 ? 0.45 : 0.15, x, y)); // anvil
+  for (let x = x0 + 5; x <= x1 - 5; x++) p.set(x, yB - 1, pick(PAL.iron, 0.1, x, 0));
+}
+function awning(p, x0, x1, y0, seed, snow) { // striped canvas over a shop door, scalloped hem, two iron brackets
+  x0 = Math.max(1, x0); x1 = Math.min(p.w - 2, x1); const R = [PAL.red, PAL.cloth];
+  for (let y = y0; y < y0 + 6; y++) for (let x = x0; x <= x1; x++) { const st = Math.floor((x - x0 + (y - y0) * 0.5) / 4) % 2; p.set(x, y, pick(R[st], cl(0.75 - (y - y0) * 0.08), x, y)); }
+  for (let x = x0; x <= x1; x++) { const k = (x - x0) % 4, sc = k === 1 || k === 2; if (sc) p.set(x, y0 + 6, pick(R[Math.floor((x - x0) / 4) % 2], 0.3, x, 0)); for (let y = y0 + (sc ? 7 : 6); y <= y0 + 8; y++) if (cA(p.get(x, y))) p.set(x, y, dk(p.get(x, y), 0.68)); } // scalloped hem and its shadow on the wall
+  if (snow) for (let x = x0; x <= x1; x++) { p.set(x, y0 - 1, pk('#ffffff')); if (hash(x, 1, seed) < 0.6) p.set(x, y0, pk('#e6eef8')); }
+  for (const bxx of [x0 + 1, x1 - 1]) for (let y = y0 + 6; y < y0 + 10; y++) p.set(bxx, y, pick(PAL.iron, 0.4, 0, y));
 }
 function roofPx(R, x, y, yE, plane, seed, kk, swamp, snow) {
   if (swamp) { const n = vnoise(x * 1.1, y * 0.25, 3, seed), k = yE - y, band = ((k % 6) + 6) % 6; let v = 0.52 + plane + (n - 0.5) * 0.55 - (band === 5 ? 0.25 : 0) + (band === 0 ? 0.08 : 0) - (hash(x, Math.floor(y / 3), seed) < 0.12 ? 0.18 : 0);
@@ -1730,3 +1769,4 @@ function villageObjects(m, t, out) {
 
 // helpers shared with townart2.js (the Hopsend and Kilnhaven themes); handed over lazily so the two modules never import each other
 const KIT = { Pix, PAL, ramp, pk, cR, cG, cB, cA, rgba, cl, mix, dk, hash, vnoise, fbm, bay, pick, outline, rim, blob, canv, once, vor, tuft, boxblur, MG, trunk, thatch, tileRoof, chimney, masonryPx, masonry, oakPost, oakRail, lattice, doorAt, windowAt, eaveShadow, eyebrow, climber, cob, wob, lampPix, puffPix, mk, cylinder, crate, txt, txtW, flipped, wander, braceLine, edgeMask, stoneBlob, PROPS, propPix, plazaPx, MAT, treePix, haystackPix, hivesPix, goosePix, hayCartPix, goatPix, bellPennant, F5, dryWallPx };
+export const _buildingPix = (theme, b) => buildingPix(theme, b); // tools: render one building

@@ -11,7 +11,7 @@ import { ROADSIDE } from './roadside.js';
 import { MAPS } from './maps.js';
 import { LIGHT_ARMOR, autofill, autosave } from './saves.js';
 import { ACT, OPT, TS, diag, maxOf, sanitize, toast } from './core.js';
-import { G } from './state.js';
+import { G, S } from './state.js';
 import { joinLocal, scene, talk } from './story.js';
 import { camState, goto, roadside, route, snap, step, vx, vy } from './world.js';
 import { BT, awakening, battle, defeat, ending, newGamePlus, wipeHome } from './battle.js';
@@ -36,5 +36,5 @@ function testParty(jobs = { adam: 'monk', devon: 'mage', brenna: 'cleric', wende
   for (const c of G.party) { if (jobs[c.look] && c.main !== jobs[c.look]) { L.setCalling(c, jobs[c.look]); delete c.cp.bloke; c.cp[c.main] = 0; c.weapon = null; c.armor = LIGHT_ARMOR.has(c.main) ? 'cloth' : 'leather'; c.slots = [null, null, null, null]; sanitize(c, G.inv); autofill(c); } const st = maxOf(c); c.hp = st.hp; c.mp = st.mp; }
   for (const c of G.party) { if (c.look === 'brenna' || c.look === 'wendell') { c.cp[c.main] = 0; c.weapon = LOCALS[c.look].weapon || null; c.slots = [null, null, null, null]; sanitize(c, G.inv); autofill(c); } }
 }
-if (navigator.webdriver || /[?&]debug\b/.test(location.search)) window.__game = { scene, roadside, ROADSIDE, autosave, defeat, ending, newGamePlus, testParty, wipeHome, get G() { return G; }, get BT() { return BT; }, get v() { return [vx, vy]; }, camState, TS, get route() { return route; }, battle, step, goto, MAPS, snap, OPT, ACT, ui: { shop, inn, guild, socketer, title, slotScreen, diffScreen, talk, itemsMenu, mainMenu, awakening } };
+if (navigator.webdriver || /[?&]debug\b/.test(location.search)) window.__game = { S, scene, roadside, ROADSIDE, autosave, defeat, ending, newGamePlus, testParty, wipeHome, get G() { return G; }, get BT() { return BT; }, get v() { return [vx, vy]; }, camState, TS, get route() { return route; }, battle, step, goto, MAPS, snap, OPT, ACT, ui: { shop, inn, guild, socketer, title, slotScreen, diffScreen, talk, itemsMenu, mainMenu, awakening } };
 title();

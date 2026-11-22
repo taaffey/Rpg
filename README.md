@@ -190,6 +190,8 @@ Produces `dist/index.html` (the whole game in one file, about 1.2 MB (410 KB gzi
 `dist/artifact.html` (the same page as a fragment for hosts that supply the document shell). `dist/` is git-ignored.
 
 ## Tests and tools
+
+- `tools/townshot.mjs`: renders whole towns in one image each (sets `S.viewAll`), for judging layouts at a glance.
     node tools/sim.mjs fast 100      # headless balance sim: every region and boss at expected levels
     node tools/progress.mjs          # playthrough sim from an unarmed level-1 start: level per stage, boss win rates, economy
     node tools/newbie.mjs            # first fights outside Haven with the cheapest weapons (levels 1-3) and unarmed
