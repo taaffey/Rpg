@@ -408,7 +408,7 @@ async function ending() {
   const left = ['wyrm', 'lich'].filter((k) => !G.flags.bosses[k]).map((k) => BOSSES[k].name);
   const quests = Object.keys(QUESTS).filter((id) => qstate(id) === 'done').length, echoN = G.party.reduce((n, c) => n + (c.spells || []).length, 0);
   const roll = [
-    ['BEARDED BROS', 'h'], ['and the Bell of Gemforge', ''], ['', ''], ['AFTERWARD', 'h'],
+    ['BEARDED BROS', 'h'], ['Echoes of the Bell', ''], ['', ''], ['AFTERWARD', 'h'],
     [left.length ? 'Two hearts sleep in the old bell of Haven. The third is still out in the marsh.' : 'Ember, Grave and Rime: the three hearts sleep in the old bell of Haven, and it rings only for those who answer.', ''],
     ...G.party.map((c) => [esc(epilogueOf(c)).replace(/\{n\}/g, esc(c.name)), '']),
     ['Of Sereth, only the grey stone remains. No smith has dared to set it.', ''], ['', ''], ['THE HEROES', 'h'], ...G.party.map((c) => [`${esc(c.name)}: ${JOBS[c.main].name}${c.sub ? ' / ' + JOBS[c.sub].name : ''}, Lv ${c.level}`, '']), ['', ''],

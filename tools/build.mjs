@@ -22,11 +22,11 @@ const js = js0.replace('__BUILD__', build);
 const fonts = ''; // the pixel font is embedded in style.css, no third-party request
 const icon = html.match(/<link rel="icon"[^>]*>/)[0];
 const style = `<style>:root{color-scheme:dark}body{background-color:#0b0e1c}\n${css}</style>`;
-const fragment = `<title>Bearded Bros</title>\n${icon}\n${fonts}\n${style}\n${body}\n<script>${js}</script>\n`;
+const fragment = `<title>Bearded Bros: Echoes of the Bell</title>\n${icon}\n${fonts}\n${style}\n${body}\n<script>${js}</script>\n`;
 writeFileSync(root + 'dist/artifact.html', fragment);
 // standalone document keeps every <meta>/<link> from the dev page's head (viewport-fit, apple-web-app, manifest, touch icon)
 const head = html.match(/<head>([\s\S]*?)<\/head>/)[1].replace(/<link rel="stylesheet" href="style.css">/, '').replace(/<title>[\s\S]*?<\/title>/, '').trim();
-const standalone = `<!doctype html>\n<html lang="en"><head>\n${head}\n<meta name="gemforge-bundled" content="1">\n<title>Bearded Bros</title>\n${style}</head><body>\n${body}\n<script>${js}</script>\n</body></html>\n`;
+const standalone = `<!doctype html>\n<html lang="en"><head>\n${head}\n<meta name="gemforge-bundled" content="1">\n<title>Bearded Bros: Echoes of the Bell</title>\n${style}</head><body>\n${body}\n<script>${js}</script>\n</body></html>\n`;
 writeFileSync(root + 'dist/index.html', standalone);
 cpSync(root + 'assets', root + 'dist/assets', { recursive: true });
 writeFileSync(root + 'dist/sw.js', readFileSync(root + 'assets/sw.js', 'utf8').replace('__BUILD__', build));

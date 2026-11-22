@@ -233,15 +233,17 @@ function drawTitle(t) {
   // the logo, with the bell swinging above it
   cx.textAlign = 'center'; cx.textBaseline = 'alphabetic'; cx.lineJoin = 'round';
   const FONT = '"Press Start 2P", ui-monospace, Menlo, monospace', f1 = Math.min(52 * u, (W - 20) / 7.4, tall ? 1e9 : (ground - 24 * hs - 26 * u) / 4.5), bell = titleBell(), bs = Math.max(2, Math.round(f1 / 14)), ty = tall ? H * 0.2 + f1 : 4 * u + bell.height * bs + f1 * 1.28;
-  const sw = Math.sin(t * 2.4) * 0.22 * (0.55 + 0.45 * Math.sin(t * 0.5)), bx = cxm, by = ty - f1 * 1.28 - bell.height * bs;
+  const sw = Math.sin(t * 2.4) * 0.22 * (0.55 + 0.45 * Math.sin(t * 0.5)), bx = cxm, by = ty - f1 * 1.62 - bell.height * bs;
   cx.strokeStyle = '#8a6a3a'; cx.lineWidth = Math.max(1, bs * 0.8); cx.beginPath(); cx.moveTo(bx, 0); cx.lineTo(bx, by); cx.stroke();
   for (let k = 0; k < 3; k++) { const rr = ((t * 0.6 + k / 3) % 1); cx.strokeStyle = `rgba(255,232,150,${(1 - rr) * 0.35})`; cx.lineWidth = Math.max(1, px); cx.beginPath(); cx.arc(bx, by + bell.height * bs * 0.6, (10 + rr * 60) * bs * 0.5, Math.PI * 0.1, Math.PI * 0.9); cx.stroke(); }
   cx.save(); cx.translate(bx, by); cx.rotate(sw); cx.drawImage(bell, Math.round(-bell.width * bs / 2), 0, bell.width * bs, bell.height * bs); cx.restore();
   const word = (txt, y, f, top, bot, depth) => { cx.font = `${f}px ${FONT}`; const d = Math.max(2, Math.round(f * depth)); cx.lineWidth = Math.max(4, f * 0.2); cx.strokeStyle = '#150a38'; cx.strokeText(txt, cxm, y + d); cx.strokeText(txt, cxm, y); for (let k = d; k > 0; k--) { cx.fillStyle = k === d ? '#3a1456' : '#8a3a22'; cx.fillText(txt, cxm, y + k); }
     const tg = cx.createLinearGradient(0, y - f, 0, y); tg.addColorStop(0, top); tg.addColorStop(0.55, top); tg.addColorStop(0.56, bot); tg.addColorStop(1, '#c86a1e'); cx.fillStyle = tg; cx.fillText(txt, cxm, y); };
-  word('BEARDED', ty, f1, '#fff6c0', '#f0b040', 0.09);
-  word('BROS', ty + f1 * 1.12, f1, '#fff6c0', '#f0b040', 0.09);
-  const f3 = Math.max(7, f1 * 0.27); cx.font = `${f3}px ${FONT}`; cx.lineWidth = Math.max(3, f3 * 0.4); cx.strokeStyle = '#150a38'; cx.strokeText('AND THE BELL OF GEMFORGE', cxm, ty + f1 * 1.12 + f3 * 2.2); cx.fillStyle = '#d8c8ff'; cx.fillText('AND THE BELL OF GEMFORGE', cxm, ty + f1 * 1.12 + f3 * 2.2);
+  const f3 = Math.max(7, f1 * 0.27), tag = (txt, y, col) => { cx.font = `${f3}px ${FONT}`; cx.lineWidth = Math.max(3, f3 * 0.4); cx.strokeStyle = '#150a38'; cx.strokeText(txt, cxm, y); cx.fillStyle = col; cx.fillText(txt, cxm, y); };
+  tag('BEARDED BROS', ty - f1 * 1.2, '#ffd870'); // the series name, small, above the title
+  word('ECHOES', ty, f1, '#fff6c0', '#f0b040', 0.09);
+  word('OF THE BELL', ty + f1 * 0.86, Math.round(f1 * 0.6), '#fff6c0', '#f0b040', 0.09);
+  tag('· AN ADVENTURE IN SEVEN STONES ·', ty + f1 * 0.86 + f3 * 2.4, '#d8c8ff');
 }
 function tick(now) {
   requestAnimationFrame(tick);

@@ -1,4 +1,4 @@
-# Bearded Bros (and the Bell of Gemforge)
+# Bearded Bros: Echoes of the Bell
 
 A turn-based JRPG in the spirit of Final Fantasy 1, 5 and Dragon Warrior, built around deep build customization.
 
