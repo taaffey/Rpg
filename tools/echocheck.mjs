@@ -29,5 +29,8 @@ const log = await ev(() => window.__game.BT.log.join(' | '));
 ok('the call heals the party', /calls Lumen Doe/.test(log) && (await ev(() => window.__game.BT.b.p.reduce((s, p) => s + p.hp, 0))) > hp0, log.slice(-200));
 ok('once per battle', await ev(() => window.__game.BT.b.p[0].called === true));
 await ev(() => window.__game.BT.b.e.forEach((e) => { e.hp = 0; }));
+ok('old gems crumble into Resonance for attuned stones', await ev(async () => { const E = await import('/src/echoes.js'), c = window.__game.G.party[0], before = JSON.stringify(c.ep || {}) + (c.spells || []).length; const l = E.dissolveGems(['echo']); return l.length >= 1 && /echo sinks/.test(l[0]) && JSON.stringify(c.ep || {}) + (c.spells || []).length !== before; }));
+ok('the facet rides on slotted skills', await ev(async () => { const L = await import('/src/logic.js'), c = window.__game.G.party[0], i = c.slots.findIndex(Boolean); return i < 0 || L.slotGems(c, i).includes('thrifty'); }));
+ok('no gems in the pack or the shops', await ev(() => !window.__game.G.inv.gems.length && !document.body.innerHTML.includes('Gem-wright')));
 ok('no page errors', !errs.length, errs.join(' / '));
 await b.close(); process.exit(fails ? 1 : 0);

@@ -92,6 +92,7 @@ export const slotSkill = (c, i) => (i === SIG ? sigSkill(c) : c.slots[i]);
 export function slotGems(c, i) {
   const g = [...c.gems[i]];
   if (i === SIG && c.weapon && WEAPONS[c.weapon]?.innate) g.unshift(WEAPONS[c.weapon].innate);
+  const f = ECHOES[c.echo]?.facet; if (f && slotSkill(c, i) && !g.includes(f)) g.push(f); // the attuned Echo Stone's facet
   return g;
 }
 // After any job/gear change, return anything that no longer fits to the inventory.

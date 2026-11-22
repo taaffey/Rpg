@@ -28,7 +28,7 @@ export const FEATS = [
   { id: 'peaked', name: 'Peaked', text: 'Take a hero to the top level.', test: (e) => !!e.maxLevel },
   { id: 'master', name: 'Master of One', text: 'Master a calling.', test: (e) => !!e.mastered },
   { id: 'versatile', name: 'Jack of All Trades', text: 'Learn 6 callings with one hero.', test: (e) => e.callings >= 6, prog: (e) => n(e.callings, 6) },
-  { id: 'gems', name: 'Gem Geek', text: 'Have 10 gems socketed at once.', test: (e) => e.gems >= 10, prog: (e) => n(e.gems, 10) },
+  { id: 'echo', name: 'Echo Chamber', text: 'Learn 10 spells from Echo Stones.', test: (e) => e.echo >= 10, prog: (e) => n(e.echo, 10) },
   { id: 'quests10', name: 'Dogsbody', text: 'Finish 10 side quests.', test: (e) => e.quests >= 10, prog: (e) => n(e.quests, 10) },
   { id: 'quests_all', name: 'Pillar of the Community', text: 'Finish every side quest.', test: (e) => e.quests >= e.questsTotal, prog: (e) => n(e.quests, e.questsTotal) },
   { id: 'dowser', name: 'Dowser', text: 'Find 10 hidden treasures. Look for twinkles off the path.', test: (e) => e.secrets >= 10, prog: (e) => n(e.secrets, 10) },

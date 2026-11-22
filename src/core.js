@@ -22,7 +22,7 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const esc = (s) => String(s).replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
 const DB = { weapons: WEAPONS, armors: ARMORS, accs: ACCS, gems: GEMS, items: ITEMS };
 // pacing: systems arrive one at a time instead of all on the first screen
-const gemsOn = () => !!G?.flags?.story?.gems; // gems wake when the first great evil falls; until then they are dull stones
+const gemsOn = () => false; // gems are gone: their effects live on as Echo Stone facets (echoes.js). Kept as a switch so the old UI paths stay dormant
 const lootName = (k, id) => (k === 'gems' && !gemsOn() ? 'Dull Stone' : DB[k][id].name);
 const veteran = () => (G?.stats?.wins || 0) >= 10; // Repeat / Auto join the battle menu once the party has some fights behind it
 // ---------- options (persisted separately from saves) ----------
@@ -74,7 +74,7 @@ const heroBtn = (c, act = 'build', a = '', b = '') => { // portrait, name, job, 
 };
 const gemChip = (g, short = false) => `<span class="chip" title="${GEMS[g].desc}">${gemImg(g)}${short ? GEMS[g].name.replace(' Gem', '') : GEMS[g].name}</span>`;
 const statLine = (s) => `<div class="stats">${['hp', 'mp', 'atk', 'def', 'mag', 'spd'].map((k) => `<span>${k.toUpperCase()} <b>${s[k]}</b></span>`).join('')}</div>`;
-const gearLine = (g) => ['atk', 'mag', 'def', 'hp', 'mp', 'spd'].filter((k) => g[k]).map((k) => `${g[k] > 0 ? '+' : ''}${g[k]} ${k}`).concat(g.res ? g.res.map((r) => `resist ${r}`) : [], g.sockets ? [`${g.sockets}◇`] : [], g.innate ? [`innate ${GEMS[g.innate].name}`] : [], weaponTraits(g)).join(', ');
+const gearLine = (g) => ['atk', 'mag', 'def', 'hp', 'mp', 'spd'].filter((k) => g[k]).map((k) => `${g[k] > 0 ? '+' : ''}${g[k]} ${k}`).concat(g.res ? g.res.map((r) => `resist ${r}`) : [], g.innate ? [`innate ${GEMS[g.innate].name}`] : [], weaponTraits(g)).join(', ');
 // weapon traits (see WEAPONS in data.js) as short tags, plus the flavour line for shop / equip lists
 const weaponTraits = (g) => [g.elem && g.type ? `${UI.elemIcon(g.elem)} ${g.elem} attacks` : '', g.hits > 1 ? `${g.hits} hits/attack` : '', g.crit ? `crit +${Math.round(g.crit * 100)}%` : '', g.pierce ? `pierce ${Math.round(g.pierce * 100)}%` : '',
   g.proc ? `${Math.round(g.proc[1] * 100)}% ${g.proc[0]} on hit` : '', g.heal && g.type ? `heal +${Math.round(g.heal * 100)}%` : '', g.sig ? `skill: ${SKILLS[g.sig].name}` : ''].filter(Boolean);

@@ -116,10 +116,10 @@ await closeAll();
 
 // --- build screen: socket gems, change job in a town
 ok('a new game starts with no gems and no gem stock in shops', (await ev(() => window.__game.G.inv.gems.length)) === 0 && (await ev(() => { window.__game.ui.shop('haven_general'); const t = document.getElementById('overlay').textContent; window.__game.ACT.close(); return !/Gem/.test(t); })));
-await ev(() => { window.__game.G.inv.gems.push('chain', 'thrifty'); window.__game.G.flags.story.gems = true; }); // gems wake after the first great evil; switch them on for the build-screen checks
+await ev(() => { window.__game.G.inv.echoes.push('lumen'); }); // gems are gone: an Echo Stone lends its facet to slotted skills instead
 await openMenu();
-await pg.click('[data-act=build][data-a="1"]'); await pg.click('[data-act=bslot][data-a="0"]'); await pg.click('[data-act=gem][data-b=chain]'); await pg.click('[data-act=gem][data-b=thrifty]');
-ok('gems socketed', JSON.stringify(await ev(() => window.__game.G.party[1].gems[0])) === '["chain","thrifty"]');
+await pg.click('[data-act=build][data-a="1"]'); await pg.click('[data-act=bview][data-a=echo]'); await pg.click('[data-act=setecho][data-a=lumen]'); await pg.click('[data-act=bslot][data-a="0"]');
+ok('Echo Stone attuned, its facet rides on the slotted skill', (await ev(() => window.__game.G.party[1].echo)) === 'lumen' && /Dawnthrift/.test(await ev(() => document.getElementById('overlay').textContent)));
 await pg.click('[data-act=bmain]'); await pg.click('[data-act=bview][data-a=jobMain]');
 ok('only the six starting callings are listed before any heart is claimed', (await ev(() => document.querySelectorAll('[data-act=setjob]').length)) === 6 && !(await pg.$('[data-act=setjob][data-b=hexer]')) && !(await pg.$('[data-act=setjob][data-b=alchemist]')));
 await pg.click('[data-act=setjob][data-b=ranger]');
@@ -297,12 +297,10 @@ ok('ending shown after the Titan: last orders at the pub', /Last orders/.test(aw
 await pg.screenshot({ path: process.env.SHOT || '/tmp/ending.png' });
 await pg.click('[data-act=edone]'); await pg.waitForTimeout(200);
 
-// --- gem-wright sells bonus sockets
+// --- the old gem-wright has nothing left to cut
 await ev(() => { window.__game.G.gold = 5000; window.__game.goto('haven_smith', 8, 5); }); await key('ArrowUp', 1, 250);
-ok('Gem-wright opens', /Gem-wright/.test(await overlayTitle()));
-const capBefore = await ev(() => window.__game.G.party[1].extra || 0);
-await pg.click('[data-act=addsock][data-a="1"]'); await pg.waitForTimeout(150);
-ok('bonus socket purchased', (await ev(() => window.__game.G.party[1].extra)) === capBefore + 1 && (await ev(() => window.__game.G.gold)) === 4400);
+ok('the gem-wright talks instead of selling sockets', /Gem-cutter/.test(await overlayTitle()) && !(await pg.$('[data-act=addsock]')));
+await ev(() => { window.__game.G.party[1].echo = null; });
 await closeAll();
 
 // --- saves: slots, confirmations, legacy import, autosave, difficulty

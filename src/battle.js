@@ -1,5 +1,5 @@
 // ===== Battle UI and flow, victory, defeat, the ending, New Game+ and house rules. =====
-import { BOSS_ECHO, ECHOES, resonate } from './echoes.js';
+import { BOSS_ECHO, ECHOES, dissolveGems, resonate } from './echoes.js';
 import { GEN } from './mapgen.js';
 import * as DATA from './data.js';
 import { BOSSES, CALLING_BATCHES, DIFFICULTY, ENEMIES, ITEMS, JOBS, KEY_ITEMS, QUESTS, SKILLS, STORY, TRAITS, WEAPONS } from './data.js';
@@ -328,6 +328,7 @@ async function victory(b, bossId) {
   if (b.found?.length) lines.push(`🗡 Found again: ${b.found.map((w) => esc(WEAPONS[w].name)).join(', ')}`);
   if (lvSfx) setTimeout(() => sfx('levelup'), 1400);
   for (const d of r.drops) {
+    if (d.kind === 'gems') { lines.push(...dissolveGems([d.id])); continue; } // old gem drops feed the Echo Stones
     if (d.kind === 'items') G.inv.items[d.id] = (G.inv.items[d.id] || 0) + 1; else G.inv[d.kind].push(d.id);
     const name = lootName(d.kind, d.id), from = ENEMIES[d.from]?.name;
     lines.push(d.rare ? `<b class="gold">★ RARE: ${name}!</b>${from ? ` <span class="dim">(${esc(from)})</span>` : ''}` : `Got ${name}!`);
@@ -338,11 +339,12 @@ async function victory(b, bossId) {
   const def = bossId ? BOSSES[bossId] : null, open0 = batchesOpen(); let awake = null;
   if (def) {
     G.flags.bosses[bossId] = true; const names = [];
-    for (const k of ['weapons', 'armors', 'accs', 'gems']) for (const id of def.loot[k] || []) { G.inv[k].push(id); names.push(lootName(k, id)); }
+    for (const k of ['weapons', 'armors', 'accs']) for (const id of def.loot[k] || []) { G.inv[k].push(id); names.push(lootName(k, id)); }
     if (names.length) lines.push(`Found <b class="gold">${names.join(', ')}</b>!`);
+    lines.push(...dissolveGems(def.loot.gems));
     const echo = BOSS_ECHO[bossId]; if (echo && !(G.inv.echoes ||= []).includes(echo)) { G.inv.echoes.push(echo); lines.push(`◈ Something small glows where it fell: the Echo Stone <b class="gold">${ECHOES[echo].name}</b>. ${tipOnce('echo') ? 'Attune it on a hero\'s screen (Party) to learn its spells and call its spirit.' : ''}`); }
     if (def.heart) { G.flags.qitems[def.heart] = true; lines.push(`Obtained the <b class="gold">${KEY_ITEMS[def.heart]}</b>.`);
-      const gems = !gemsOn(); if (gems) G.flags.story.gems = true; // the first heart wakes the dull stones too (told in the awakening)
+      const gems = false; // gems are gone (Echo Stones took their place)
       if (batchesOpen() > open0) awake = { heart: def.heart, jobs: CALLING_BATCHES[batchesOpen() - 1], gems: gems ? (G.inv.gems.length ? 'stones' : 'call') : '' };
       else if (gems) lines.push(G.inv.gems.length ? 'The heart pulses. The dull stones in your pack wake with it: they were gems all along.' : 'The heart pulses, as if calling to stones like itself.'); }
   }
@@ -404,13 +406,13 @@ async function ending() {
   if (STORY.finale) { goto('haven', ...MAPS.haven.spots.bell); await sleep(600); await scene(STORY.finale); } // the bell rings for them in Haven: back to The Bell & Anvil, two minutes after they left
   music('ending'); G.flags.story.ended = true;
   const left = ['wyrm', 'lich'].filter((k) => !G.flags.bosses[k]).map((k) => BOSSES[k].name);
-  const quests = Object.keys(QUESTS).filter((id) => qstate(id) === 'done').length, gemsOn = G.party.reduce((n, c) => n + gemsUsed(c), 0);
+  const quests = Object.keys(QUESTS).filter((id) => qstate(id) === 'done').length, echoN = G.party.reduce((n, c) => n + (c.spells || []).length, 0);
   const roll = [
     ['BEARDED BROS', 'h'], ['and the Bell of Gemforge', ''], ['', ''], ['AFTERWARD', 'h'],
     [left.length ? 'Two hearts sleep in the old bell of Haven. The third is still out in the marsh.' : 'Ember, Grave and Rime: the three hearts sleep in the old bell of Haven, and it rings only for those who answer.', ''],
     ...G.party.map((c) => [esc(epilogueOf(c)).replace(/\{n\}/g, esc(c.name)), '']),
     ['Of Sereth, only the grey stone remains. No smith has dared to set it.', ''], ['', ''], ['THE HEROES', 'h'], ...G.party.map((c) => [`${esc(c.name)}: ${JOBS[c.main].name}${c.sub ? ' / ' + JOBS[c.sub].name : ''}, Lv ${c.level}`, '']), ['', ''],
-    ['YOUR JOURNEY', 'h'], [`Time played: ${fmtTime(G.playtime)}`, ''], [`Battles won: ${G.stats?.wins || 0}`, ''], [`Side quests completed: ${quests}/${Object.keys(QUESTS).length}`, ''], [`Gems socketed: ${gemsOn}`, ''], [`Feats earned: ${(unlockFeats(), FEATS.filter((f) => G.flags.feats[f.id]).length)}/${FEATS.length}`, ''], [`Creatures defeated: ${beastDone()}/${Object.keys(ENEMIES).length}`, ''], [`Great evils slain: ${3 - left.length}/3`, ''], ['', ''],
+    ['YOUR JOURNEY', 'h'], [`Time played: ${fmtTime(G.playtime)}`, ''], [`Battles won: ${G.stats?.wins || 0}`, ''], [`Side quests completed: ${quests}/${Object.keys(QUESTS).length}`, ''], [`Spells learned from Echo Stones: ${echoN}`, ''], [`Feats earned: ${(unlockFeats(), FEATS.filter((f) => G.flags.feats[f.id]).length)}/${FEATS.length}`, ''], [`Creatures defeated: ${beastDone()}/${Object.keys(ENEMIES).length}`, ''], [`Great evils slain: ${3 - left.length}/3`, ''], ['', ''],
     ['MADE WITH', 'h'], ['Claude Code', ''], ['every sprite, tile and song', ''], ['was drawn or composed in code', ''], ['', ''], ['THANK YOU FOR PLAYING', 'h'],
   ];
   await new Promise((res) => {

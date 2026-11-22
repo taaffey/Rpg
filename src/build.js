@@ -19,7 +19,7 @@ function itemsMenu(msg = '') {
   const it = Object.entries(G.inv.items).filter(([, n]) => n > 0);
   show(`<h2>🎒 Items</h2><div class="card"><div class="gilbox"><span>Gold</span>${coin(G.gold + ' G')}</div></div>${msg ? `<p class="gold">${msg}</p>` : ''}${it.length ? it.map(([id, n]) => `<div class="slot"><span class="lead">${itemIc('items', id)}</span><div class="t"><b>${ITEMS[id].name} <span class="dim">×${n}</span></b><small>${ITEMS[id].desc}</small></div>${btn('useitem', 'Use', id)}</div>`).join('') : '<p class="dim">No consumables.</p>'}
   ${(G.party.some((c) => c.look === 'devon') || G.flags.story.buspass) ? `<h3>Key items</h3>${G.flags.story.buspass ? `<div class="slot"><span class="lead">${ic('tip')}</span><div class="t"><b>Night Bus Pass</b><small>The N9 stops at every place you have visited. Not in dungeons. "Every stop is a request stop."</small></div>${btn('bus', 'Ride', '', '')}</div>` : ''}${G.party.some((c) => c.look === 'devon') ? `<div class="slot"><span class="lead">${ic('tip')}</span><div class="t"><b>Devon's Phone</b><small>${G.flags.story.charged ? '4% battery! No signal.' : '3% battery. No signal. Never changes.'}</small></div>${btn('phone', 'Use', '', '')}</div>` : ''}` : ''}
-  ${gemsOn() ? `<h3>💎 Gems (${G.inv.gems.length})</h3><div>${G.inv.gems.map((g) => gemChip(g)).join('') || '<span class="dim">none</span>'}</div>` : G.inv.gems.length ? `<h3>Oddments</h3><div class="dim">Dull Stone ×${G.inv.gems.length}</div>` : ''}
+  ${(G.inv.echoes || []).length ? `<h3>◈ Echo Stones (${G.inv.echoes.length}/7)</h3><div class="dim">${G.inv.echoes.map((id) => { const h = G.party.find((c) => c.echo === id); return `${ECHOES[id].name}${h ? ` (${esc(h.name)})` : ''}`; }).join(' · ')}</div>` : ''}
   <div class="foot">${btn('menu', 'Back', '', '', 'primary')}</div>`);
 }
 ACT.items = () => itemsMenu(); ACT.menu = mainMenu;
@@ -127,7 +127,7 @@ function buildMain(c) {
   const slotRow = (i) => {
     const sid = slotSkill(c, i), gems = slotGems(c, i);
     const m2 = sid ? skillWithGems(sid, gems) : null;
-    return `<div class="slot"><span class="lead">${m2 ? ic(i === SIG ? 'star' : UI.skillIconName(m2)) : ic('socket')}</span><div class="t"><b><span class="dim">${i === SIG ? 'Weapon' : `Slot ${i + 1}`}</span> ${sid ? `${m2.name} ${gemsOn() ? gems.map((g) => gemChip(g, true)).join('') : ''}` : '<span class="dim">— empty —</span>'}</b><small>${m2 ? describeSkill(m2) : ''}</small></div>${btn('bslot', 'Edit', i)}</div>`;
+    return `<div class="slot"><span class="lead">${m2 ? ic(i === SIG ? 'star' : UI.skillIconName(m2)) : ic('socket')}</span><div class="t"><b><span class="dim">${i === SIG ? 'Weapon' : `Slot ${i + 1}`}</span> ${sid ? `${m2.name}${m2.tags.length ? ` <span class="gold" style="font-size:8px">◈ ${m2.tags.join(' + ')}</span>` : ''}` : '<span class="dim">— empty —</span>'}</b><small>${m2 ? describeSkill(m2) : ''}</small></div>${btn('bslot', 'Edit', i)}</div>`;
   };
   const xpN = expNeeded(c.level), maxed = c.level >= L.MAX_LEVEL;
   show(`<div class="buildhead">${btn('bnav', ic('aleft'), -1, '', 'navbtn')}<div class="who2">${portrait(ak(c), 'lg')}<div><h2 style="background:none;padding:0;margin:0">${esc(c.name)}</h2><div class="lv">LV ${c.level}</div></div></div>${btn('bnav', ic('aright'), 1, '', 'navbtn')}</div>
@@ -139,7 +139,7 @@ function buildMain(c) {
 }
 ACT.bview = (v) => { B.view = v; buildScreen(); };
 // ===== Echo Stones: one per hero. Spells learned are kept; the stone can move to another hero any time (outside battle).
-const echoInfo = (c, id) => { const st = ECHOES[id]; return st.spells.map(([sp]) => (c.spells || []).includes(sp) ? `<b>${SKILLS[sp].name} ✓</b>` : `${SKILLS[sp].name} ${Math.floor(c.ep?.[sp] || 0)}%`).join(' · ') + ` · level-up ${Object.entries(st.bonus).map(([k, v]) => `+${v} ${k.toUpperCase()}`).join(' ')}${harmony(c, id) ? ' · <span class="gold">Harmony ×2</span>' : ''}`; };
+const echoInfo = (c, id) => { const st = ECHOES[id]; return st.spells.map(([sp]) => (c.spells || []).includes(sp) ? `<b>${SKILLS[sp].name} ✓</b>` : `${SKILLS[sp].name} ${Math.floor(c.ep?.[sp] || 0)}%`).join(' · ') + ` · facet <b>${GEMS[st.facet].name}</b> (${GEMS[st.facet].desc.replace(/\.$/, '').toLowerCase()} on slotted skills)` + ` · level-up ${Object.entries(st.bonus).map(([k, v]) => `+${v} ${k.toUpperCase()}`).join(' ')}${harmony(c, id) ? ' · <span class="gold">Harmony ×2</span>' : ''}`; };
 function echoRow(c) {
   if (!(G.inv.echoes || []).length) return '';
   const st = ECHOES[c.echo];
@@ -228,7 +228,7 @@ function slotEdit(c) {
   const final = sid ? skillWithGems(sid, slotGems(c, i)) : null;
   const inv = [...new Set(G.inv.gems)];
   show(`<h2>${i === SIG ? '⭐ Weapon skill' : 'Skill slot ' + (i + 1)} — ${esc(c.name)}</h2>
-  <div class="card"><div class="row">${final ? ic(UI.skillIconName(final)) : ic('socket')}<b>${final ? final.name : '— empty —'}</b>${final ? `<span class="gold">${final.mp} MP</span>` : ''}</div><div>${gemsOn() ? slotGems(c, i).map((g) => gemChip(g)).join('') : ''}</div><small>${final ? describeSkill(final) : 'Pick a skill below.'}</small></div>
+  <div class="card"><div class="row">${final ? ic(UI.skillIconName(final)) : ic('socket')}<b>${final ? final.name : '— empty —'}</b>${final ? `<span class="gold">${final.mp} MP</span>` : ''}</div><div>${final?.tags.length ? `<span class="gold">◈ ${final.tags.join(' + ')}</span>` : ''}</div><small>${final ? describeSkill(final) : 'Pick a skill below.'}</small></div>
   ${i === SIG ? `<div class="dim">Granted by your weapon (${c.weapon ? WEAPONS[c.weapon].name : 'unarmed'}). ${gemsOn() && c.weapon && WEAPONS[c.weapon].innate ? 'Includes free innate gem: ' + GEMS[WEAPONS[c.weapon].innate].name + '.' : ''}</div>` :
     `<h3>Skill</h3><div class="skillpick">${btn('setskill', `<span>${ic('socket')} Empty</span>`, i, '')}${learnable(c).map((s) => btn('setskill', `<span>${ic(UI.skillIconName(SKILLS[s]))} ${SKILLS[s].name}</span><small>${SKILLS[s].mp}mp</small>`, i, s, c.slots[i] === s ? 'sel two' : 'two')).join('')}</div>`}
   ${gemsOn() ? `<h3>Socketed ◇ ${gemsUsed(c)}/${gemCapacity(c)} <small>max ${GEMS_PER_SLOT}/skill</small></h3>

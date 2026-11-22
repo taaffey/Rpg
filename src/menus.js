@@ -23,7 +23,7 @@ function featEnv() {
     wins: st.wins || 0, wipes: st.wipes || 0, rides: st.rides || 0, phone: G.flags.story.phone || 0, used: st.used || {}, kills: (id) => G.flags.bestiary[id]?.kills || 0,
     bestiary: beastDone(), bestiaryTotal: Object.keys(ENEMIES).length, quests: Object.keys(QUESTS).filter((id) => qstate(id) === 'done').length, questsTotal: Object.keys(QUESTS).length,
     secrets: secrets.filter((k) => G.flags.chests[k]).length, secretsTotal: secrets.length, steps: st.steps || 0, staggers: st.staggers || 0, braces: st.braces || 0, roadside: Object.keys(G.flags.chat).filter((k) => k.startsWith('rs:')).length, gold: G.gold, visited: G.flags.visited, bosses: G.flags.bosses, ended: !!G.flags.story.ended, ngp: G.ngp || 0, rulesOn: Object.keys(G.rules || {}).length,
-    maxLevel: G.party.some((c) => c.level >= L.MAX_LEVEL), mastered: G.party.some((c) => L.mastered(c).length > 0), callings: Math.max(0, ...G.party.map((c) => Object.keys(c.cp || {}).length)), gems: G.party.reduce((x, c) => x + gemsUsed(c), 0),
+    maxLevel: G.party.some((c) => c.level >= L.MAX_LEVEL), mastered: G.party.some((c) => L.mastered(c).length > 0), callings: Math.max(0, ...G.party.map((c) => Object.keys(c.cp || {}).length)), echo: G.party.reduce((x, c) => x + (c.spells || []).length, 0),
   };
 }
 function unlockFeats() {
@@ -58,7 +58,7 @@ ACT.chat = async () => {
   await scene(c.lines);
 };
 function mainMenu() {
-  const menuTip = tipOnce('menu') ? 'TIP: pick a hero, then Edit a skill slot to socket gems. Gems rewrite how a skill works.' : '';
+  const menuTip = G.flags.story.gemRefund && tipOnce('gemrefund') ? `Your old gems crumbled to dust when the Echo Stones woke. A jeweller paid ${G.flags.story.gemRefund} G for the dust (and any sockets you bought).` : tipOnce('menu') ? 'TIP: pick a hero to change their calling, gear and skills. Echo Stones won from bosses are attuned there too.' : '';
   const goal = OBJECTIVES.find((o) => !o.optional && !o.thread && cond(o.show) && cond(o.after) && !cond(o.done)); // the journal's current step, so a returning player sees what they were doing
   const cmds = [['items', 'ITEM', 'bag'], ['magic', 'MAGIC', 'heal'], ['chat', 'CHAT', 'hero'], ['mapscreen', 'MAP', 'map'], ['journal', 'JOURNAL', 'journal'], ['bestiary', 'BESTIARY', 'bestiary'], ['feats', 'FEATS', 'trophy'], ['opts', 'OPTIONS', 'options'], ['save', 'SAVE', 'save'], ['title', 'TITLE', 'title'], ['close', 'CLOSE', 'close']];
   show(`<div class="menugrid"><div class="menuside"><div class="pane menucmd"><div class="cmdlist">${cmds.map(([a, l, n]) => btn(a, ic(n) + l, '', '', a === 'close' ? 'primary' : '')).join('')}</div></div>
@@ -153,7 +153,7 @@ ACT.journal = () => {
   show(`<h2>📜 Journal</h2><p class="dim">Great evils slain: <b class="gold">${n}/3</b> · Hidden treasures: <b class="gold">${found}/${secrets.length}</b>${hearts.length ? `<br>Carried: <b class="gold">${hearts.join(', ')}</b>` : ''}</p>${OBJECTIVES.filter((o) => cond(o.show)).map((o) => { const dn = cond(o.done), locked = !cond(o.after); return `<div class="card ${dn ? 'done' : ''}"><b>${dn ? '✔' : locked ? '🔒' : '◇'} ${o.optional ? '<span class="dim">Optional:</span> ' : ''}${o.title}</b><div class="dim">${locked ? o.lockHint || 'A rockslide buries the northern pass.' : dn ? o.doneHint : o.metHint && cond('s:met') ? o.metHint : o.hint}</div></div>`; }).join('')}
   <h3>Side quests</h3>${(() => { const act = Object.entries(QUESTS).filter(([id]) => qstate(id) === 'active'), dn = Object.entries(QUESTS).filter(([id]) => qstate(id) === 'done');
     return (act.length ? act.map(([id, q]) => `<div class="card ${questDone(id) ? 'done' : ''}"><b>${questDone(id) ? '❓' : '◇'} ${esc(q.title)}</b> <span class="dim">(${questProgress(id)})</span><div class="dim">${questDone(id) ? 'Return to ' + esc(q.giver) + ' to claim your reward.' : esc(q.lines.active[0])}</div></div>`).join('') : '<div class="dim">No active quests. Folk in town sometimes need a hand.</div>') + (dn.length ? `<div class="dim">Completed: ${dn.map(([, q]) => '✔ ' + esc(q.title)).join(' · ')}</div>` : ''); })()}
-  <h3>💡 Tips</h3><div class="dim">${gemsOn() ? `• Gems rewrite skills: try ${GEMS.wide.name} + a heal, ${GEMS.echo.name} on a big spell, ${GEMS.stun.name} on a fast skill.<br>` : ''}• Battles earn CP for each hero's calling; ranks teach abilities that are kept for good. Change callings from the menu.<br>• Inns heal and save. Frostholm's shops sell much better gear.<br>• Hermits and oracles roam the wilds. Listen to them, and watch the ground for a faint glint of buried treasure.</div><div class="foot">${btn('menu', 'Back', '', '', 'primary')}</div>`);
+  <h3>💡 Tips</h3><div class="dim">${(G.inv.echoes || []).length ? '• Echo Stones teach spells as you win, lend a facet to every slotted skill and can be called once a battle. A stone that suits the calling (Harmony) teaches twice as fast.<br>' : ''}• Battles earn CP for each hero's calling; ranks teach abilities that are kept for good. Change callings from the menu.<br>• Inns heal and save. Frostholm's shops sell much better gear.<br>• Hermits and oracles roam the wilds. Listen to them, and watch the ground for a faint glint of buried treasure.</div><div class="foot">${btn('menu', 'Back', '', '', 'primary')}</div>`);
 };
 
 export { announceFeats, beastDone, mainMenu, unlockFeats };

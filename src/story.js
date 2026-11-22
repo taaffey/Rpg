@@ -1,4 +1,5 @@
 // ===== Story and dialogue: conditions, scenes, NPC talk, quests, the locals who join. =====
+import { dissolveGems } from './echoes.js';
 import { ITEMS, JOBS, QUESTS, STORY } from './data.js';
 import { BROS, CALLED, LOCALS, WENDELL } from './bros.js';
 import { music, sfx } from './audio.js';
@@ -56,7 +57,7 @@ function talk(npc) {
   if (npc.service === 'shop') return shop(npc.shop);
   if (npc.service === 'inn') return inn(npc);
   if (npc.service === 'guild') return guild();
-  if (npc.service === 'socketer') return gemsOn() ? socketer() : talk({ ...npc, service: null, quest: null, textBy: null, text: ['Nothing in your pack worth cutting.', 'Come back when you carry a stone that hums.'] });
+  if (npc.service === 'socketer') return talk({ ...npc, service: null, quest: null, textBy: null, text: ['Cut gems? Not any more. They all went soft, crumbled to dust. Whatever lived in them went home.', 'Home being the old spirit stones, if you believe the books. Carry one of those and it drinks the dust right up.'] });
   if (npc.local === 'wendell' && G.party.length < 4 && G.flags.story.called) { joinLocal('wendell'); return scene(WENDELL); } // he joins first, so his own lines play
   const key = `${G.map}:${npc.x},${npc.y}`, { vid, lines } = npcLines(npc), news = vid && G.flags.talked[key] !== vid ? lines : []; // news: a new reactive line, told once before quest talk
   G.flags.talked[key] = vid || true; curNpc = npc;
@@ -98,8 +99,10 @@ function giveReward(r) {
   const got = [];
   if (r.gold) { G.gold += r.gold; got.push(`${r.gold} G`); }
   if (r.flag) G.flags.story[r.flag] = true;
-  for (const k of ['weapons', 'armors', 'accs', 'gems']) for (const id of r[k] || []) { G.inv[k].push(id); got.push(lootName(k, id)); }
+  for (const k of ['weapons', 'armors', 'accs']) for (const id of r[k] || []) { G.inv[k].push(id); got.push(lootName(k, id)); }
+  const echoLines = dissolveGems(r.gems);
   for (const [id, n] of Object.entries(r.items || {})) { G.inv.items[id] = (G.inv.items[id] || 0) + n; got.push(`${ITEMS[id].name} ×${n}`); }
+  got.push(...echoLines.map((l) => `<span style="font-weight:normal;color:inherit">${l}</span>`));
   return got;
 }
 ACT.qclaim = (id) => {

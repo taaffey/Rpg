@@ -45,7 +45,12 @@ function migrate(g) {
   g.inv ||= {}; for (const k of ['weapons', 'armors', 'accs', 'gems']) g.inv[k] = (g.inv[k] || []).filter((id) => DB[k][id]); g.inv.items ||= {};
   for (const id of Object.keys(g.inv.items)) if (!ITEMS[id]) delete g.inv.items[id];
   g.inv.echoes = (g.inv.echoes || []).filter((id) => ECHOES[id]); for (const [b, e] of Object.entries(BOSS_ECHO)) if (g.flags.bosses?.[b] && !g.inv.echoes.includes(e)) g.inv.echoes.push(e); // stones from evils slain before Echo Stones existed
-  g.flags ||= {}; g.flags.story ||= {}; if (g.inv.gems.length || g.party.some((c) => c.gems.some((x) => x.length)) || Object.keys(g.flags.bosses || {}).length) g.flags.story.gems = true; // saves from before gems were paced keep them
+  g.flags ||= {}; g.flags.story ||= {};
+  { // gems are gone (Echo Stones took their place): every gem in the pack or in a socket is sold back at full price, and bought sockets refunded
+    const all = [...g.inv.gems, ...g.party.flatMap((c) => c.gems.flat())], refund = all.reduce((n, id) => n + (DB.gems[id]?.price || 0), 0) + g.party.reduce((n, c) => n + [600, 1500, 3500].slice(0, c.extra || 0).reduce((a, b) => a + b, 0), 0);
+    if (refund) { g.gold = (g.gold || 0) + refund; g.flags.story.gemRefund = refund; }
+    g.inv.gems = []; for (const c of g.party) { c.gems = c.gems.map(() => []); c.extra = 0; }
+  }
   for (const [b, d] of Object.entries(BOSSES)) if (d.heart && g.flags.bosses[b]) g.flags.qitems[d.heart] = true; // hearts of evils slain before hearts existed
   for (const c of g.party) { if (c.weapon && !WEAPONS[c.weapon]) c.weapon = null; if (c.armor && !ARMORS[c.armor]) c.armor = null; if (c.acc && !ACCS[c.acc]) c.acc = null; if (c.acc2 && !ACCS[c.acc2]) c.acc2 = null; c.exp = Math.max(0, c.exp || 0); c.level = Math.min(L.MAX_LEVEL, c.level || 1); gainExp(c, 0); } // gainExp(0) settles EXP banked under an older curve
   for (const c of g.party) migrateCallings(c, g.inv);

@@ -1,4 +1,5 @@
 // ===== The map engine: view, minimap, rendering, movement, touch and keyboard input, chests, roadside moments, goto/step. =====
+import { dissolveGems } from './echoes.js';
 import { MAPS, WALK } from './maps.js';
 import { GEN } from './mapgen.js';
 import { DIRV, ENC_MUL, KEYS, LIGHT, MINI, MINI_FLOOR, MINI_WALL, QITEM, REGION_NAME } from './gamedata.js';
@@ -475,10 +476,12 @@ ACT.close = hide;
 function openChest(x, y, secret = null) { // secret: loot of a hidden treasure spot (m.secrets), found by stepping on it
   const c = secret || mapDef().chests?.[`${x},${y}`] || { gold: 50 }; G.flags.chests[chestKey(x, y)] = true; S.miniDirty = true; sfx('chest');
   const got = [];
-  for (const k of ['weapons', 'armors', 'accs', 'gems']) for (const id of c[k] || []) { G.inv[k].push(id); got.push(lootName(k, id)); }
+  for (const k of ['weapons', 'armors', 'accs']) for (const id of c[k] || []) { G.inv[k].push(id); got.push(lootName(k, id)); }
+  const echoLines = dissolveGems(c.gems);
   for (const [id, n] of Object.entries(c.items || {})) { G.inv.items[id] = (G.inv.items[id] || 0) + n; got.push(`${ITEMS[id].name} ×${n}`); }
   if (c.gold) { G.gold += c.gold; got.push(`${c.gold} G`); }
   if (c.qitem) { G.flags.qitems[c.qitem] = true; got.push(`<span class="gold">${QITEM[c.qitem]}</span> (quest item)`); }
+  got.push(...echoLines.map((l) => `<span style="font-weight:normal;color:inherit">${l}</span>`));
   draw();
   show(`<h2>${secret ? '✨ Hidden treasure!' : '📦 Treasure!'}</h2><p>${secret ? 'Something glints in the ground... You dig up:' : 'You found:'}</p>${got.map((g) => `<div class="slot"><span class="lead">${ic('chest')}</span><div class="t"><b class="gold">${g}</b></div></div>`).join('')}<div class="foot">${btn('close', 'OK', '', '', 'primary')}</div>`);
 }
